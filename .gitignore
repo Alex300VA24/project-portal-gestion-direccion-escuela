@@ -14,7 +14,6 @@
 /.agents
 /.codex
 /.impeccable
-/docs
 /skills-lock.json
 /auth.json
 /node_modules
