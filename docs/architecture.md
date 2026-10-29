@@ -38,12 +38,13 @@ Los namespaces siguen PSR-4 bajo `App\Modules\{NombreModulo}`. Los nombres de di
 
 ## 3. Responsabilidades por capa
 
-- **Routes:** definen prefijos, nombres y middleware del módulo. No contienen lógica de negocio.
 - **Controllers:** reciben la petición, coordinan servicios y producen respuestas HTTP.
-- **Requests:** autorizan la operación y validan la entrada.
-- **Services:** contienen casos de uso y límites transaccionales. No conocen HTTP ni vistas.
+- **Database:** contiene las migraciones por modulos.
 - **Models:** representan persistencia Eloquent. Todo modelo modular declara una tabla calificada, por ejemplo `gestion_horarios.horarios`.
 - **Policies:** expresan autorización por recurso mediante roles y permisos.
+- **Requests:** autorizan la operación y validan la entrada.
+- **Routes:** definen prefijos, nombres y middleware del módulo. No contienen lógica de negocio.
+- **Services:** contienen casos de uso y límites transaccionales. No conocen HTTP ni vistas.
 - **Shared:** contiene abstracciones realmente reutilizables. No debe acumular reglas exclusivas de un módulo.
 
 Un módulo puede usar `app/Shared` y contratos públicos de otro módulo. No debe acceder directamente a controladores, vistas o tablas internas de otro módulo. Una dependencia entre módulos debe ser explícita y evitar ciclos.
@@ -132,7 +133,47 @@ docker compose down
 
 La carpeta `docs` permanece en Git, pero `.dockerignore` la excluye de la imagen porque no es necesaria en ejecución.
 
-## 8. Agregar un módulo
+## 8. Crear una nueva migración
+
+1. Dentro del modulo requerido en su carpeta Database/Migrations/ se crea el archivo de migración.
+2. Se pide cumplir con el estándar de crear un archivo de migración por cada tabla planeada.
+3. El nombre del archivo de migración seguirá la convención `año_mes_dia_000001_create_[nombre_en_plural]_table`. Son 6 cifras.
+4. Toda migración tiene que seguir esta plantilla:
+
+```
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('nombre_tabla', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('nombre_tabla');
+    }
+};
+
+```
+
+Aviso: En el caso de una tabla considerada general (como cursos). La migración se encontrará en app/Shared/Database/Migrations/
+
+## 9. Agregar un módulo
 
 1. Definir nombre, slug y esquema único en `config/modules.php`.
 2. Crear el directorio `app/Modules/{NombreModulo}` y sus seis capas.
@@ -145,14 +186,14 @@ La carpeta `docs` permanece en Git, pero `.dockerignore` la excluye de la imagen
 9. Agregar pruebas de rutas, autorización, validación, servicio y aislamiento de esquema.
 10. Ejecutar migraciones y la suite completa dentro de Docker.
 
-## 9. Pruebas y criterios
+## 10. Pruebas y criterios
 
 - Las pruebas de rutas verifican que cada módulo expone endpoints web y API con nombres únicos.
 - Las pruebas de aislamiento verifican que cada modelo apunta a su propio esquema.
 - La prueba PostgreSQL confirma que los 12 esquemas configurados existen.
 - Cada funcionalidad nueva debe incluir pruebas felices, validación, autorización y errores esperados.
 
-## 10. Limitaciones actuales
+## 11. Limitaciones actuales
 
 - Los servicios modulares son scaffolds y todavía devuelven los datos recibidos sin lógica de negocio.
 - Las clases `Registro` apuntan a tablas `registros`, pero aún no existen migraciones para crear esas tablas.
