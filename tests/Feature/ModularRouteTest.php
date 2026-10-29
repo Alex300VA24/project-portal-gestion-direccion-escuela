@@ -39,7 +39,7 @@ final class ModularRouteTest extends TestCase
     public static function modules(): array
     {
         return [
-            'pre_matricula' => ['pre-matricula', 'Pre Matrícula', 'pre_matricula'],
+            'prematricula' => ['pre-matricula', 'Pre Matrícula', 'prematricula'],
             'bienestar' => ['bienestar', 'Bienestar', 'bienestar'],
             'investigacion_formativa' => ['investigacion-formativa', 'Investigación Formativa', 'investigacion_formativa'],
             'seguimiento_estudiante' => ['seguimiento-estudiante', 'Seguimiento al Estudiante', 'seguimiento_estudiante'],

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'pre-matricula' => ['name' => 'Pre Matrícula', 'schema' => 'pre_matricula'],
+    'pre-matricula' => ['name' => 'Pre Matrícula', 'schema' => 'prematricula'],
     'bienestar' => ['name' => 'Bienestar', 'schema' => 'bienestar'],
     'investigacion-formativa' => ['name' => 'Investigación Formativa', 'schema' => 'investigacion_formativa'],
     'seguimiento-estudiante' => ['name' => 'Seguimiento al Estudiante', 'schema' => 'seguimiento_estudiante'],

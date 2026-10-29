@@ -43,7 +43,7 @@ final class ModuleSchemaIsolationTest extends TestCase
     public static function moduleTables(): array
     {
         return [
-            'pre_matricula' => [PreMatriculaRegistro::class, 'pre_matricula.registros'],
+            'prematricula' => [PreMatriculaRegistro::class, 'prematricula.solicitud_prematricula'],
             'bienestar' => [BienestarRegistro::class, 'bienestar.registros'],
             'investigacion_formativa' => [InvestigacionFormativaRegistro::class, 'investigacion_formativa.registros'],
             'seguimiento_estudiante' => [SeguimientoEstudianteRegistro::class, 'seguimiento_estudiante.registros'],

@@ -11,7 +11,7 @@ final class PreMatriculaController extends ModuleController
 {
     protected const MODULE = 'Pre Matrícula';
 
-    protected const SCHEMA = 'pre_matricula';
+    protected const SCHEMA = 'prematricula';
 
     protected const VIEW = 'modules.pre-matricula.index';
 
