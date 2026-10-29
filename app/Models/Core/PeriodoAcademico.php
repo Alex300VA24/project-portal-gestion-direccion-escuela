@@ -15,9 +15,11 @@ final class PeriodoAcademico extends Model
 
     protected $fillable = [
         'codigo',
-        'nombre',
+        'anio',
+        'tipo',
         'fecha_inicio',
         'fecha_fin',
+        'numero_semanas',
         'estado',
     ];
 

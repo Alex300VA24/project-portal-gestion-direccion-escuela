@@ -18,6 +18,7 @@ final class Seccion extends Model
         'id_curso_plan',
         'codigo',
         'capacidad',
+        'id_docente_responsable',
         'estado',
     ];
 

@@ -2,10 +2,14 @@
 
 namespace Tests\Unit;
 
+use App\Models\Core\Curso;
 use App\Models\Core\CursoPlan;
 use App\Models\Core\Estudiante;
 use App\Models\Core\PeriodoAcademico;
+use App\Models\Core\Persona;
+use App\Models\Core\PlanEstudios;
 use App\Models\Core\Seccion;
+use App\Models\GestionMatriculas\HistorialAcademico;
 use App\Models\Seguridad\Usuario;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +37,10 @@ final class PrematriculaReferenceModelTest extends TestCase
             'curso_plan' => [CursoPlan::class, 'core.curso_plan', 'id_curso_plan'],
             'seccion' => [Seccion::class, 'core.seccion', 'id_seccion'],
             'usuario' => [Usuario::class, 'seguridad.usuario', 'id_usuario'],
+            'persona' => [Persona::class, 'core.persona', 'id_persona'],
+            'plan_estudios' => [PlanEstudios::class, 'core.plan_estudios', 'id_plan'],
+            'curso' => [Curso::class, 'core.curso', 'id_curso'],
+            'historial' => [HistorialAcademico::class, 'gestion_matriculas.v_historial_academico', 'id'],
         ];
     }
 }

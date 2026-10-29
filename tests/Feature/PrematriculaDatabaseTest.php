@@ -10,10 +10,12 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\CreatesPrematriculaAcademicData;
 use Tests\TestCase;
 
 final class PrematriculaDatabaseTest extends TestCase
 {
+    use CreatesPrematriculaAcademicData;
     use DatabaseTransactions;
 
     protected function setUp(): void
@@ -31,7 +33,7 @@ final class PrematriculaDatabaseTest extends TestCase
             $this->markTestSkipped('Las migraciones de prematrícula aún no se ejecutaron.');
         }
 
-        $this->createReferenceData();
+        $this->createPrematriculaAcademicData();
     }
 
     public function test_module_contains_the_three_expected_tables(): void
@@ -64,9 +66,9 @@ final class PrematriculaDatabaseTest extends TestCase
         $this->assertSame([501, 502], $solicitud->detalles->pluck('id_curso_plan')->all());
         $this->assertTrue($solicitud->enviada_en->equalTo('2026-10-28 15:00:00'));
         $this->assertTrue($solicitud->detalles->first()->solicitud->is($solicitud));
-        $this->assertSame('E2026001', $solicitud->estudiante->codigo_estudiante);
+        $this->assertSame('E2026001', $solicitud->estudiante->codigo_universitario);
         $this->assertSame('2026-II', $solicitud->periodo->codigo);
-        $this->assertSame('CP-501', $solicitud->detalles->first()->cursoPlan->codigo);
+        $this->assertSame('CP-501', $solicitud->detalles->first()->cursoPlan->curso->codigo);
     }
 
     public function test_all_seven_module_foreign_keys_are_installed(): void
@@ -228,52 +230,5 @@ final class PrematriculaDatabaseTest extends TestCase
             'estado' => 'solicitado',
             'motivo_rechazo' => null,
         ];
-    }
-
-    private function createReferenceData(): void
-    {
-        DB::table('core.periodo_academico')->insert([
-            'id_periodo' => 202602,
-            'codigo' => '2026-II',
-            'nombre' => 'Semestre 2026-II',
-            'fecha_inicio' => '2026-08-01',
-            'fecha_fin' => '2026-12-20',
-            'estado' => 'activo',
-        ]);
-        DB::table('core.estudiante')->insert([
-            'id_estudiante' => 1001,
-            'codigo_estudiante' => 'E2026001',
-            'estado' => 'activo',
-        ]);
-        DB::table('core.curso_plan')->insert([
-            [
-                'id_curso_plan' => 501,
-                'codigo' => 'CP-501',
-                'ciclo' => 1,
-                'creditos' => 3,
-                'estado' => 'activo',
-            ],
-            [
-                'id_curso_plan' => 502,
-                'codigo' => 'CP-502',
-                'ciclo' => 1,
-                'creditos' => 4,
-                'estado' => 'activo',
-            ],
-        ]);
-        DB::table('core.seccion')->insert([
-            'id_seccion' => 901,
-            'id_periodo' => 202602,
-            'id_curso_plan' => 501,
-            'codigo' => 'A',
-            'capacidad' => 30,
-            'estado' => 'activa',
-        ]);
-        DB::table('seguridad.usuario')->insert([
-            'id_usuario' => 801,
-            'correo_institucional' => 'revisor@example.test',
-            'contrasena_hash' => '$2y$12$prueba.funcional.sin.uso.real',
-            'estado' => 'activo',
-        ]);
     }
 }

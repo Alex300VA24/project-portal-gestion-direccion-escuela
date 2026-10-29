@@ -3,6 +3,7 @@
 namespace App\Models\Core;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class CursoPlan extends Model
@@ -14,15 +15,27 @@ final class CursoPlan extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'codigo',
+        'id_plan',
+        'id_curso',
         'ciclo',
-        'creditos',
-        'estado',
+        'tipo',
+        'id_area',
+        'creditos_requeridos',
     ];
 
     protected function casts(): array
     {
-        return ['creditos' => 'decimal:2'];
+        return ['creditos_requeridos' => 'decimal:2'];
+    }
+
+    public function planEstudios(): BelongsTo
+    {
+        return $this->belongsTo(PlanEstudios::class, 'id_plan', 'id_plan');
+    }
+
+    public function curso(): BelongsTo
+    {
+        return $this->belongsTo(Curso::class, 'id_curso', 'id_curso');
     }
 
     public function secciones(): HasMany
