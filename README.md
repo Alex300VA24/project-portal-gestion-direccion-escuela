@@ -62,7 +62,7 @@ docker compose ps
 El contenedor `app` espera a PostgreSQL y ejecuta automáticamente:
 
 ```bash
-php artisan migrate --force
+docker compose exec app php artisan migrate --force
 ```
 
 La aplicación queda disponible en [http://localhost:8000](http://localhost:8000).
