@@ -1,62 +1,244 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Portal Gestión Dirección
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicación Laravel 13 organizada como monolito modular. Usa PostgreSQL 17, un esquema por módulo, Laravel Breeze y `spatie/laravel-permission`.
 
-## Project documentation
+## Documentación
 
-- [Architecture](docs/architecture.md)
+- [Arquitectura del proyecto](docs/architecture.md)
 
-## About Laravel
+## Instalación recomendada con Docker
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Docker instala PHP, Apache, Composer, Node.js y PostgreSQL dentro de las imágenes. En el equipo solo se requieren:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Git.
+- Docker Desktop con Docker Compose v2.
+- Puertos `8000` y `5433` disponibles.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### 1. Clonar el repositorio
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/Alex300VA24/project-portal-gestion-direccion-escuela.git
+cd project-portal-gestion-direccion-escuela
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Crear el archivo de entorno
 
-## Contributing
+Windows PowerShell:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```powershell
+Copy-Item .env.example .env
+```
 
-## Code of Conduct
+Linux o macOS:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+cp .env.example .env
+```
 
-## Security Vulnerabilities
+No se debe confirmar `.env` en Git. Antes de compartir o desplegar el proyecto, cambie `DB_PASSWORD` y las credenciales `POSTGRES_*`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. Construir la imagen y generar `APP_KEY`
 
-## License
+```bash
+docker compose build
+docker compose run --rm --no-deps app php artisan key:generate --show
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+El segundo comando imprime una clave con formato `base64:...`. Cópiela en `.env`:
+
+```dotenv
+APP_KEY=base64:CLAVE_GENERADA
+```
+
+La clave debe persistir. Cambiarla después invalida sesiones y datos cifrados existentes.
+
+### 4. Levantar la aplicación
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+El contenedor `app` espera a PostgreSQL y ejecuta automáticamente:
+
+```bash
+php artisan migrate --force
+```
+
+La aplicación queda disponible en [http://localhost:8000](http://localhost:8000).
+
+### 5. Verificar la instalación
+
+```bash
+docker compose exec app php artisan about
+docker compose exec app php artisan migrate:status
+docker compose exec postgresql pg_isready -U postgres -d portal_gestion_direccion
+```
+
+Resultado esperado:
+
+- Los servicios `app` y `postgresql` aparecen activos.
+- PostgreSQL aparece como `healthy` o acepta conexiones.
+- Las migraciones aparecen ejecutadas.
+- `http://localhost:8000` responde correctamente.
+
+## Conexión PostgreSQL
+
+La aplicación usa dos direcciones según el origen de la conexión:
+
+| Origen | Host | Puerto | Base de datos |
+| --- | --- | --- | --- |
+| Contenedor `app` | `postgresql` | `5432` | `portal_gestion_direccion` |
+| Equipo local | `127.0.0.1` | `5433` | `portal_gestion_direccion` |
+
+`docker-compose.yml` sobrescribe `DB_HOST` y `DB_PORT` dentro del contenedor. El `.env` conserva `127.0.0.1:5433` para comandos ejecutados desde el equipo local.
+
+Los datos se guardan en el volumen `app_postgresql_data`. `docker compose down` conserva el volumen.
+
+> `docker compose down -v` elimina el volumen y todos los datos de PostgreSQL. Úselo solo para reiniciar completamente el entorno.
+
+## Comandos habituales
+
+```bash
+# Ver estado
+docker compose ps
+
+# Ver logs
+docker compose logs -f app postgresql
+
+# Ejecutar Artisan
+docker compose exec app php artisan migrate:status
+docker compose exec app php artisan route:list
+docker compose exec app php artisan tinker
+
+# Limpiar cachés Laravel
+docker compose exec app php artisan optimize:clear
+
+# Detener servicios sin borrar datos
+docker compose down
+
+# Reconstruir después de cambiar dependencias o frontend
+docker compose up -d --build
+```
+
+La imagen Docker es de ejecución: instala dependencias Composer con `--no-dev` y excluye `tests`. Ejecute la suite desde una instalación local de desarrollo.
+
+## Instalación local para desarrollo
+
+Use esta opción si necesita Vite en modo desarrollo o ejecutar PHPUnit fuera del contenedor.
+
+Requisitos:
+
+- PHP `8.4.1` o superior con `pdo_pgsql`, `pgsql`, `mbstring`, `bcmath`, `openssl` y `fileinfo`.
+- Composer 2.
+- Node.js 22 y npm.
+- PostgreSQL accesible. Puede usar solo el servicio Docker incluido.
+
+### 1. Preparar PostgreSQL
+
+Para usar PostgreSQL mediante Docker:
+
+```bash
+docker compose up -d postgresql
+```
+
+El servidor queda disponible en `127.0.0.1:5433`, como indica `.env.example`.
+
+### 2. Instalar y configurar Laravel
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+composer install
+php artisan key:generate
+php artisan migrate
+npm ci
+npm run build
+```
+
+Linux o macOS:
+
+```bash
+cp .env.example .env
+composer install
+php artisan key:generate
+php artisan migrate
+npm ci
+npm run build
+```
+
+### 3. Iniciar el entorno de desarrollo
+
+```bash
+composer run dev
+```
+
+Este comando inicia el servidor Laravel, el worker de colas, Pail y Vite. La URL predeterminada es [http://localhost:8000](http://localhost:8000).
+
+### 4. Ejecutar pruebas
+
+```bash
+composer test
+```
+
+Las pruebas PostgreSQL requieren una base migrada y las variables `DB_*` correctas.
+
+## Cambiar puertos
+
+Si `8000` está ocupado, cambie el mapeo del servicio `app`:
+
+```yaml
+ports:
+  - "8001:80"
+```
+
+Si `5433` está ocupado, cambie el mapeo de PostgreSQL y `DB_PORT` en `.env`:
+
+```yaml
+ports:
+  - "5434:5432"
+```
+
+```dotenv
+DB_PORT=5434
+```
+
+La comunicación interna entre contenedores continúa usando `postgresql:5432`.
+
+## Solución de problemas
+
+### La aplicación muestra un error sobre la clave
+
+Confirme que `.env` contiene una clave válida:
+
+```dotenv
+APP_KEY=base64:...
+```
+
+Después reinicie el servicio:
+
+```bash
+docker compose up -d --force-recreate app
+```
+
+### PostgreSQL no está disponible
+
+```bash
+docker compose ps
+docker compose logs postgresql
+```
+
+Revise que `5433` esté libre y que `POSTGRES_DB`, `POSTGRES_USER` y `POSTGRES_PASSWORD` coincidan con las credenciales `DB_*`.
+
+### Cambios de código no aparecen en Docker
+
+El proyecto se copia dentro de la imagen; no usa un bind mount. Reconstruya la imagen:
+
+```bash
+docker compose up -d --build app
+```
+
+## Licencia
+
+Este proyecto usa Laravel, distribuido bajo licencia MIT.
