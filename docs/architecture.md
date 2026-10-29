@@ -4,7 +4,7 @@
 
 Portal Gestión Dirección usa Laravel 13 como monolito modular. La aplicación se despliega como una sola unidad, pero separa el dominio en 12 módulos dentro de `app/Modules`.
 
-Cada módulo encapsula sus controladores, validaciones, modelos, servicios, políticas y rutas. El código transversal vive en `app/Shared`. PostgreSQL usa un esquema independiente por módulo y conserva datos comunes en `public`.
+Cada módulo encapsula sus controladores, validaciones, modelos, servicios, políticas y rutas. El código transversal vive en `app/Shared`. PostgreSQL usa un esquema independiente por módulo, `core` y `seguridad` para el dominio compartido, y `public` para infraestructura de Laravel.
 
 ## 2. Estructura
 
@@ -74,7 +74,7 @@ Los alias `role`, `permission` y `role_or_permission` se registran en `bootstrap
 
 | Módulo | URL base | Esquema |
 | --- | --- | --- |
-| Pre Matrícula | `pre-matricula` | `pre_matricula` |
+| Pre Matrícula | `pre-matricula` | `prematricula` |
 | Bienestar | `bienestar` | `bienestar` |
 | Investigación Formativa | `investigacion-formativa` | `investigacion_formativa` |
 | Seguimiento al Estudiante | `seguimiento-estudiante` | `seguimiento_estudiante` |
@@ -87,15 +87,20 @@ Los alias `role`, `permission` y `role_or_permission` se registran en `bootstrap
 | Gestión de Matrículas | `gestion-matriculas` | `gestion_matriculas` |
 | Seguimiento al Egresado | `seguimiento-egresado` | `seguimiento_egresado` |
 
-Las tablas compartidas, como `users`, `roles` y `permissions`, pertenecen al esquema `public`. Las tablas de dominio pertenecen al esquema de su módulo.
+Las tablas de infraestructura, como `users`, `roles` y `permissions`, pertenecen al esquema `public`. La identidad académica vive en `seguridad`; los planes, cursos y períodos compartidos viven en `core`. Las tablas exclusivas de cada módulo pertenecen a su esquema.
+
+COTECU conserva listas de cotejo, documentos y revisiones en `cotecu`. Sus planes, sílabos y revisores referencian `core.plan_estudios`, `core.curso_plan`, `core.periodo_academico` y `seguridad.usuario`. Gestión de Matrículas y Pre Matrícula usan los mismos catálogos compartidos.
 
 ### Control de cambios de base de datos
 
 - Toda modificación de esquema se realiza mediante una migración nueva. No se modifica una migración ya ejecutada en entornos compartidos.
 - La migración `2026_10_28_000000_create_module_schemas.php` crea los esquemas declarados en `config/modules.php`.
 - Las migraciones de tablas deben ejecutarse después de la creación de esquemas y usar nombres calificados, por ejemplo `gestion_horarios.horarios`.
+- `ModulesServiceProvider` registra las migraciones guardadas en `app/Modules/*/Database/Migrations`.
+- Una migración con claves foráneas entre esquemas debe ordenarse después de las migraciones que crean sus tablas referenciadas.
 - `php artisan migrate` aplica cambios pendientes y registra el lote en `public.migrations`.
 - `php artisan migrate:status` muestra el estado. `php artisan migrate:rollback` revierte el último lote cuando su método `down()` es seguro.
+- `php artisan migrate:fresh` no elimina tablas ubicadas fuera de `public`. Para reconstruir una base Docker descartable se ejecuta `docker compose down --volumes` y luego `docker compose up -d --build`.
 - Eliminar el volumen PostgreSQL destruye los datos persistidos. No se usa `docker compose down -v` en un entorno con datos que deban conservarse.
 
 ## 6. Autenticación y autorización
@@ -154,7 +159,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('nombre_tabla', function (Blueprint $table) {
+        Schema::create('nombre_esquema.nombre_tabla', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
         });
@@ -165,13 +170,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('nombre_tabla');
+        Schema::dropIfExists('nombre_esquema.nombre_tabla');
     }
 };
 
 ```
 
-Aviso: En el caso de una tabla considerada general (como cursos), la migración se encontrará en database/migrations/
+Las migraciones de dominio compartido para `core` y `seguridad` se guardan en `database/migrations`. Las migraciones exclusivas de un módulo permanecen dentro de `app/Modules/{Modulo}/Database/Migrations`.
 
 ## 9. Agregar un módulo
 
@@ -196,7 +201,7 @@ Aviso: En el caso de una tabla considerada general (como cursos), la migración 
 ## 11. Limitaciones actuales
 
 - Los servicios modulares son scaffolds y todavía devuelven los datos recibidos sin lógica de negocio.
-- Las clases `Registro` apuntan a tablas `registros`, pero aún no existen migraciones para crear esas tablas.
+- Las clases `Registro` de módulos sin dominio implementado aún apuntan a tablas `registros` pendientes de migración. Pre Matrícula, Gestión de Matrículas y COTECU ya usan tablas reales.
 - Las Policies están definidas, pero todavía no están aplicadas a las rutas o acciones de los módulos.
 - Las rutas modulares actuales no exigen autenticación ni permisos.
 - Las vistas modulares son páginas base y aún no implementan operaciones completas de dominio.

@@ -50,10 +50,10 @@ final class ModuleSchemaIsolationTest extends TestCase
             'web_institucional' => [WebInstitucionalRegistro::class, 'web_institucional.registros'],
             'calidad' => [CalidadRegistro::class, 'calidad.registros'],
             'gestion_horarios' => [GestionHorariosRegistro::class, 'gestion_horarios.registros'],
-            'cotecu' => [CotecuRegistro::class, 'cotecu.registros'],
+            'cotecu' => [CotecuRegistro::class, 'cotecu.planes_curriculares'],
             'gestion_practicas' => [GestionPracticasRegistro::class, 'gestion_practicas.registros'],
             'tesis_proyecto_tesis' => [TesisProyectoTesisRegistro::class, 'tesis_proyecto_tesis.registros'],
-            'gestion_matriculas' => [GestionMatriculasRegistro::class, 'gestion_matriculas.registros'],
+            'gestion_matriculas' => [GestionMatriculasRegistro::class, 'gestion_matriculas.matricula'],
             'seguimiento_egresado' => [SeguimientoEgresadoRegistro::class, 'seguimiento_egresado.registros'],
         ];
     }

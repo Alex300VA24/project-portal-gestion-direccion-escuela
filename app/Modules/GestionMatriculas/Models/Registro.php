@@ -6,5 +6,9 @@ use App\Shared\Models\ModuleModel;
 
 final class Registro extends ModuleModel
 {
-    protected $table = 'gestion_matriculas.registros';
+    protected $table = 'gestion_matriculas.matricula';
+
+    protected $primaryKey = 'id_matricula';
+
+    public $timestamps = false;
 }

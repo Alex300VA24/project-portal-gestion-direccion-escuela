@@ -6,5 +6,5 @@ use App\Shared\Models\ModuleModel;
 
 final class Registro extends ModuleModel
 {
-    protected $table = 'cotecu.registros';
+    protected $table = 'cotecu.planes_curriculares';
 }
