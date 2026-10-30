@@ -36,15 +36,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('semestres_academicos', function (Blueprint $table) {
-            $table->id();
-            $table->string('codigo', 10)->unique();
-            $table->date('fecha_inicio');
-            $table->date('fecha_fin');
-            $table->string('estado', 20)->default('Activo');
-            $table->timestamps();
-        });
-
         // ===========================================================================
         // 2. MÓDULO DE REVISIÓN DE PLANES CURRICULARES
         // ===========================================================================

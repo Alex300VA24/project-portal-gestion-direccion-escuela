@@ -171,7 +171,7 @@ return new class extends Migration
 
 ```
 
-Aviso: En el caso de una tabla considerada general (como cursos). La migración se encontrará en app/Shared/Database/Migrations/
+Aviso: En el caso de una tabla considerada general (como cursos), la migración se encontrará en database/migrations/
 
 ## 9. Agregar un módulo
 
