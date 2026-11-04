@@ -6,5 +6,9 @@ use App\Shared\Models\ModuleModel;
 
 final class Registro extends ModuleModel
 {
-    protected $table = 'calidad.registros';
+    protected $table = 'calidad.indicador';
+
+    protected $primaryKey = 'id_indicador';
+
+    public $timestamps = false;
 }

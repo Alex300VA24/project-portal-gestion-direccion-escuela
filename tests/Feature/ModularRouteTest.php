@@ -48,7 +48,7 @@ final class ModularRouteTest extends TestCase
             'gestion_horarios' => ['gestion-horarios', 'Gestión de Horarios', 'gestion_horarios'],
             'cotecu' => ['cotecu', 'COTECU', 'cotecu'],
             'gestion_practicas' => ['gestion-practicas', 'Gestión de Prácticas', 'gestion_practicas'],
-            'tesis_proyecto_tesis' => ['tesis-proyecto-tesis', 'Tesis y Proyecto de Tesis', 'tesis_proyecto_tesis'],
+            'tesis' => ['tesis-proyecto-tesis', 'Tesis y Proyecto de Tesis', 'tesis'],
             'gestion_matriculas' => ['gestion-matriculas', 'Gestión de Matrículas', 'gestion_matriculas'],
             'seguimiento_egresado' => ['seguimiento-egresado', 'Seguimiento al Egresado', 'seguimiento_egresado'],
         ];

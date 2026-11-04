@@ -8,11 +8,11 @@ return new class extends Migration
     public function up(): void
     {
         DB::unprepared(file_get_contents(
-            database_path('gestion_horarios/03_restricciones_indices.sql')
+            dirname(__DIR__).'/Sql/03_restricciones_indices.sql'
         ));
 
         DB::unprepared(file_get_contents(
-            database_path('gestion_horarios/04_comentarios.sql')
+            dirname(__DIR__).'/Sql/04_comentarios.sql'
         ));
     }
 
@@ -41,7 +41,7 @@ return new class extends Migration
         );
 
         $sql = file_get_contents(
-            database_path('gestion_horarios/03_restricciones_indices.sql')
+            dirname(__DIR__).'/Sql/03_restricciones_indices.sql'
         );
 
         preg_match_all(

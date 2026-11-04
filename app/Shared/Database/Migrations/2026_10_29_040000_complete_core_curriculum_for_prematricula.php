@@ -384,9 +384,6 @@ return new class extends Migration
     private function ensureReferenceTablesAreEmpty(): void
     {
         foreach ([
-            'prematricula.detalle_solicitud',
-            'prematricula.solicitud_prematricula',
-            'prematricula.cronograma_prematricula',
             'core.seccion',
             'core.curso_plan',
             'core.estudiante',

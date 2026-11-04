@@ -1,16 +1,29 @@
 <?php
 
+$module = static fn (
+    string $name,
+    string $schema,
+    string $directory,
+    bool $migrationsEnabled = false,
+): array => [
+    'name' => $name,
+    'schema' => $schema,
+    'migration_path' => "app/Modules/{$directory}/Database/Migrations",
+    'migrations_enabled' => $migrationsEnabled,
+    'dependencies' => $migrationsEnabled ? ['shared'] : [],
+];
+
 return [
-    'pre-matricula' => ['name' => 'Pre Matrícula', 'schema' => 'prematricula'],
-    'bienestar' => ['name' => 'Bienestar', 'schema' => 'bienestar'],
-    'investigacion-formativa' => ['name' => 'Investigación Formativa', 'schema' => 'investigacion_formativa'],
-    'seguimiento-estudiante' => ['name' => 'Seguimiento al Estudiante', 'schema' => 'seguimiento_estudiante'],
-    'web-institucional' => ['name' => 'Web Institucional', 'schema' => 'web_institucional'],
-    'calidad' => ['name' => 'Calidad', 'schema' => 'calidad'],
-    'gestion-horarios' => ['name' => 'Gestión de Horarios', 'schema' => 'gestion_horarios'],
-    'cotecu' => ['name' => 'COTECU', 'schema' => 'cotecu'],
-    'gestion-practicas' => ['name' => 'Gestión de Prácticas', 'schema' => 'gestion_practicas'],
-    'tesis-proyecto-tesis' => ['name' => 'Tesis y Proyecto de Tesis', 'schema' => 'tesis_proyecto_tesis'],
-    'gestion-matriculas' => ['name' => 'Gestión de Matrículas', 'schema' => 'gestion_matriculas'],
-    'seguimiento-egresado' => ['name' => 'Seguimiento al Egresado', 'schema' => 'seguimiento_egresado'],
+    'pre-matricula' => $module('Pre Matrícula', 'prematricula', 'PreMatricula', true),
+    'bienestar' => $module('Bienestar', 'bienestar', 'Bienestar'),
+    'investigacion-formativa' => $module('Investigación Formativa', 'investigacion_formativa', 'InvestigacionFormativa'),
+    'seguimiento-estudiante' => $module('Seguimiento al Estudiante', 'seguimiento_estudiante', 'SeguimientoEstudiante'),
+    'web-institucional' => $module('Web Institucional', 'web_institucional', 'WebInstitucional'),
+    'calidad' => $module('Calidad', 'calidad', 'Calidad', true),
+    'gestion-horarios' => $module('Gestión de Horarios', 'gestion_horarios', 'GestionHorarios', true),
+    'cotecu' => $module('COTECU', 'cotecu', 'Cotecu', true),
+    'gestion-practicas' => $module('Gestión de Prácticas', 'gestion_practicas', 'GestionPracticas', true),
+    'tesis-proyecto-tesis' => $module('Tesis y Proyecto de Tesis', 'tesis', 'TesisProyectoTesis', true),
+    'gestion-matriculas' => $module('Gestión de Matrículas', 'gestion_matriculas', 'GestionMatriculas', true),
+    'seguimiento-egresado' => $module('Seguimiento al Egresado', 'seguimiento_egresado', 'SeguimientoEgresado'),
 ];

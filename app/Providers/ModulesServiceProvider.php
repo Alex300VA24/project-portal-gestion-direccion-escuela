@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\File;
+use App\Shared\Database\ModularMigrationRegistry;
 use Illuminate\Support\ServiceProvider;
 
 class ModulesServiceProvider extends ServiceProvider
@@ -12,7 +12,7 @@ class ModulesServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ModularMigrationRegistry::class);
     }
 
     /**
@@ -20,18 +20,8 @@ class ModulesServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $modulesPath = app_path('Modules');
-
-        if (! File::isDirectory($modulesPath)) {
-            return;
-        }
-
-        foreach (File::directories($modulesPath) as $modulePath) {
-            $migrationsPath = $modulePath . '/Database/Migrations';
-
-            if (File::isDirectory($migrationsPath)) {
-                $this->loadMigrationsFrom($migrationsPath);
-            }
-        }
+        // Las rutas se ejecutan por grupos mediante module:migrate.
+        // No se registran en el migrador global porque Laravel ordena todas
+        // las rutas por timestamp y perdería el orden infraestructura -> shared -> módulo.
     }
 }

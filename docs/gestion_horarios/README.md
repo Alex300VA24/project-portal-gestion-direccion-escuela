@@ -319,8 +319,8 @@ publicar (pruebas N5 y N6).
 ```bash
 # El servidor PostgreSQL debe estar disponible (por ejemplo, el de Docker:
 # docker compose up -d postgresql -> localhost:5433)
-php artisan migrate            # aplica las migraciones nuevas
-php artisan migrate:status     # debe mostrar en estado "Ran"
+php artisan module:migrate gestion-horarios
+php artisan module:migrate:status gestion-horarios
 ```
 
 Las 16 migraciones del módulo (una por tabla más la de restricciones),
@@ -352,7 +352,7 @@ Notas de integración:
   (`gestion_horarios.<tabla>`) y crea su esquema si no existe; el orden
   inverso de `down()` es válido porque ninguna FK apunta a una tabla creada
   después (revisado una a una).
-- `000016` carga `database/gestion_horarios/03_restricciones_indices.sql`
+- `000016` carga `app/Modules/GestionHorarios/Database/Sql/03_restricciones_indices.sql`
   y `04_comentarios.sql`; su `down()` elimina los 5 disparadores, las 2 FK
   añadidas, los 37 índices (detectados por regex sobre el propio SQL) y las
   6 funciones, en ese orden.
@@ -367,13 +367,13 @@ $psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe"   # o el psql en PATH
 $db = "portal_gestion_direccion_pruebas"
 
 & $psql -X -v ON_ERROR_STOP=1 -d $db -f database\shared\01_core_seguridad.sql
-& $psql -X -v ON_ERROR_STOP=1 -d $db -f database\gestion_horarios\01_tablas_base.sql
-& $psql -X -v ON_ERROR_STOP=1 -d $db -f database\gestion_horarios\02_tablas_adicionales.sql
-& $psql -X -v ON_ERROR_STOP=1 -d $db -f database\gestion_horarios\03_restricciones_indices.sql
-& $psql -X -v ON_ERROR_STOP=1 -d $db -f database\gestion_horarios\04_comentarios.sql
+& $psql -X -v ON_ERROR_STOP=1 -d $db -f app\Modules\GestionHorarios\Database\Sql\01_tablas_base.sql
+& $psql -X -v ON_ERROR_STOP=1 -d $db -f app\Modules\GestionHorarios\Database\Sql\02_tablas_adicionales.sql
+& $psql -X -v ON_ERROR_STOP=1 -d $db -f app\Modules\GestionHorarios\Database\Sql\03_restricciones_indices.sql
+& $psql -X -v ON_ERROR_STOP=1 -d $db -f app\Modules\GestionHorarios\Database\Sql\04_comentarios.sql
 
 # Pruebas de integridad (45 aserciones; termina con ROLLBACK)
-& $psql -X -v ON_ERROR_STOP=1 -d $db -f database\gestion_horarios\05_pruebas_integridad.sql
+& $psql -X -v ON_ERROR_STOP=1 -d $db -f app\Modules\GestionHorarios\Database\Sql\05_pruebas_integridad.sql
 ```
 
 Añade `-h 127.0.0.1 -p <puerto> -U <usuario>` según el entorno. Cualquier

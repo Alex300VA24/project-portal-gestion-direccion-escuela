@@ -31,7 +31,9 @@ app/
 resources/views/modules/{modulo-kebab-case}/
 routes/{web,api}.php
 config/modules.php
-database/migrations/
+database/migrations/                         # infraestructura public
+app/Shared/Database/Migrations/              # esquemas compartidos
+app/Modules/{Modulo}/Database/Migrations/    # migraciones del módulo
 ```
 
 Los namespaces siguen PSR-4 bajo `App\Modules\{NombreModulo}`. Los nombres de directorio y clases usan PascalCase; las URLs, nombres de ruta y directorios de vistas usan kebab-case.
@@ -83,7 +85,7 @@ Los alias `role`, `permission` y `role_or_permission` se registran en `bootstrap
 | Gestión de Horarios | `gestion-horarios` | `gestion_horarios` |
 | COTECU | `cotecu` | `cotecu` |
 | Gestión de Prácticas | `gestion-practicas` | `gestion_practicas` |
-| Tesis y Proyecto de Tesis | `tesis-proyecto-tesis` | `tesis_proyecto_tesis` |
+| Tesis y Proyecto de Tesis | `tesis-proyecto-tesis` | `tesis` |
 | Gestión de Matrículas | `gestion-matriculas` | `gestion_matriculas` |
 | Seguimiento al Egresado | `seguimiento-egresado` | `seguimiento_egresado` |
 
@@ -96,10 +98,10 @@ COTECU conserva listas de cotejo, documentos y revisiones en `cotecu`. Sus plane
 - Toda modificación de esquema se realiza mediante una migración nueva. No se modifica una migración ya ejecutada en entornos compartidos.
 - La migración `2026_10_28_000000_create_module_schemas.php` crea los esquemas declarados en `config/modules.php`.
 - Las migraciones de tablas deben ejecutarse después de la creación de esquemas y usar nombres calificados, por ejemplo `gestion_horarios.horarios`.
-- `ModulesServiceProvider` registra las migraciones guardadas en `app/Modules/*/Database/Migrations`.
+- `ModulesServiceProvider` registra el inventario modular. `module:migrate` ejecuta cada ruta por separado para respetar dependencias.
 - Una migración con claves foráneas entre esquemas debe ordenarse después de las migraciones que crean sus tablas referenciadas.
-- `php artisan migrate` aplica cambios pendientes y registra el lote en `public.migrations`.
-- `php artisan migrate:status` muestra el estado. `php artisan migrate:rollback` revierte el último lote cuando su método `down()` es seguro.
+- `php artisan module:migrate all` aplica infraestructura, compartidos y módulos habilitados.
+- `php artisan module:migrate:status all` muestra el estado agrupado. El historial permanece en `public.migrations`.
 - `php artisan migrate:fresh` no elimina tablas ubicadas fuera de `public`. Para reconstruir una base Docker descartable se ejecuta `docker compose down --volumes` y luego `docker compose up -d --build`.
 - Eliminar el volumen PostgreSQL destruye los datos persistidos. No se usa `docker compose down -v` en un entorno con datos que deban conservarse.
 
@@ -123,14 +125,14 @@ Los nombres de permisos deben ser estables y contener el módulo y la acción, p
 - **app:** aplicación Laravel con Apache. Expone `http://localhost:8000` y conecta internamente a `postgresql:5432`.
 - **postgresql:** PostgreSQL 17. Expone `localhost:5433` para evitar colisión con PostgreSQL local en `5432`.
 
-El volumen `app_postgresql_data` persiste la base de datos fuera del ciclo de vida del contenedor. El servicio `app` espera el healthcheck de PostgreSQL y ejecuta `php artisan migrate --force` antes de iniciar Apache.
+El volumen `app_postgresql_data` persiste la base de datos fuera del ciclo de vida del contenedor. El servicio `app` espera el healthcheck de PostgreSQL y ejecuta `php artisan module:migrate all --force` antes de iniciar Apache.
 
 Comandos habituales:
 
 ```bash
 docker compose up -d --build
 docker compose ps
-docker compose exec app php artisan migrate:status
+docker compose exec app php artisan module:migrate:status all
 docker compose exec app php artisan test
 docker compose logs app postgresql
 docker compose down
@@ -176,7 +178,7 @@ return new class extends Migration
 
 ```
 
-Las migraciones de dominio compartido para `core` y `seguridad` se guardan en `database/migrations`. Las migraciones exclusivas de un módulo permanecen dentro de `app/Modules/{Modulo}/Database/Migrations`.
+Las migraciones compartidas de `core`, `seguridad` y `comun` se guardan en `app/Shared/Database/Migrations`. Las exclusivas permanecen dentro de cada módulo.
 
 ## 9. Agregar un módulo
 

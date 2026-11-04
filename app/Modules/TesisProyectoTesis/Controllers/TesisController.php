@@ -11,7 +11,7 @@ final class TesisController extends ModuleController
 {
     protected const MODULE = 'Tesis y Proyecto de Tesis';
 
-    protected const SCHEMA = 'tesis_proyecto_tesis';
+    protected const SCHEMA = 'tesis';
 
     protected const VIEW = 'modules.tesis-proyecto-tesis.index';
 

@@ -11,7 +11,7 @@ use Tests\TestCase;
  * foráneas y comentarios de catálogo de las cuatro tablas nuevas.
  *
  * Las pruebas de reglas de negocio (rechazos) viven en
- * database/gestion_horarios/05_pruebas_integridad.sql.
+ * app/Modules/GestionHorarios/Database/Sql/05_pruebas_integridad.sql.
  */
 final class GestionHorariosDatabaseTest extends TestCase
 {
@@ -108,25 +108,26 @@ final class GestionHorariosDatabaseTest extends TestCase
         }
 
         sort($comentadas);
+        $esperadas = self::TABLAS_NUEVAS;
+        sort($esperadas);
 
-        $this->assertSame(self::TABLAS_NUEVAS, $comentadas);
+        $this->assertSame($esperadas, $comentadas);
     }
 
-    public function test_shared_tables_of_other_modules_remain_untouched(): void
+    public function test_shared_tables_are_not_duplicated_inside_the_module_schema(): void
     {
         $this->requirePostgres();
 
         $filas = DB::select(
-            "SELECT count(*) AS total
+            "SELECT table_name
                FROM information_schema.tables
-              WHERE table_schema IN (
-                    'pre_matricula', 'bienestar', 'investigacion_formativa',
-                    'seguimiento_estudiante', 'web_institucional', 'calidad',
-                    'cotecu', 'gestion_practicas', 'tesis_proyecto_tesis',
-                    'gestion_matriculas', 'seguimiento_egresado')"
+              WHERE table_schema = 'gestion_horarios'
+                AND table_name IN (
+                    'periodo_academico', 'curso_plan', 'seccion',
+                    'docente', 'ambiente', 'usuario')"
         );
 
-        $this->assertSame(0, (int) $filas[0]->total);
+        $this->assertSame([], $filas);
     }
 
     public function test_original_unique_constraints_are_preserved(): void

@@ -5,6 +5,7 @@ Aplicación Laravel 13 organizada como monolito modular. Usa PostgreSQL 17, un e
 ## Documentación
 
 - [Arquitectura del proyecto](docs/architecture.md)
+- [Migraciones modulares PostgreSQL](docs/migraciones_modulares.md)
 
 ## Instalación recomendada con Docker
 
@@ -67,7 +68,7 @@ La aplicación queda disponible en [http://localhost:8000](http://localhost:8000
 
 ```bash
 docker compose exec app php artisan about
-docker compose exec app php artisan migrate:status
+docker compose exec app php artisan module:migrate:status all
 docker compose exec postgresql pg_isready -U postgres -d portal_gestion_direccion
 ```
 
@@ -103,7 +104,7 @@ docker compose ps
 docker compose logs -f app postgresql
 
 # Ejecutar Artisan
-docker compose exec app php artisan migrate:status
+docker compose exec app php artisan module:migrate:status all
 docker compose exec app php artisan route:list
 docker compose exec app php artisan tinker
 
@@ -148,7 +149,7 @@ Windows PowerShell:
 Copy-Item .env.example .env
 composer install
 php artisan key:generate
-php artisan migrate
+php artisan module:migrate all
 npm ci
 npm run build
 ```
@@ -159,7 +160,7 @@ Linux o macOS:
 cp .env.example .env
 composer install
 php artisan key:generate
-php artisan migrate
+php artisan module:migrate all
 npm ci
 npm run build
 ```
@@ -182,21 +183,16 @@ Las pruebas PostgreSQL requieren una base migrada y las variables `DB_*` correct
 
 ## Cambiar puertos
 
-Si `8000` está ocupado, cambie el mapeo del servicio `app`:
-
-```yaml
-ports:
-  - "8001:80"
-```
-
-Si `5433` está ocupado, cambie el mapeo de PostgreSQL y `DB_PORT` en `.env`:
-
-```yaml
-ports:
-  - "5434:5432"
-```
+Si `8000` está ocupado, defina `APP_HTTP_PORT` en `.env`:
 
 ```dotenv
+APP_HTTP_PORT=8001
+```
+
+Si `5433` está ocupado, defina `POSTGRES_HOST_PORT` y `DB_PORT`:
+
+```dotenv
+POSTGRES_HOST_PORT=5434
 DB_PORT=5434
 ```
 

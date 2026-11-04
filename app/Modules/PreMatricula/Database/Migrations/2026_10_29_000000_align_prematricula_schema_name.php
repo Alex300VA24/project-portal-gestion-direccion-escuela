@@ -33,13 +33,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        if ($this->schemaExists('prematricula') && ! $this->schemaExists('pre_matricula')) {
-            DB::statement('ALTER SCHEMA "prematricula" RENAME TO "pre_matricula"');
-        }
+        // No se revierte el nombre: el esquema puede contener datos preexistentes.
     }
 
     private function schemaExists(string $schema): bool
