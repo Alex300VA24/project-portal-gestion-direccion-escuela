@@ -2,9 +2,11 @@
 
 ## Alcance y fuentes
 
-El runner integra Pre Matrícula, Gestión de Matrículas, Calidad, Tesis,
-COTECU, Gestión de Horarios y Gestión de Prácticas. Bienestar queda
-postergado y no participa en el runner.
+El runner integra los 12 módulos (Pre Matrícula, Bienestar, Investigación
+Formativa, Seguimiento al Estudiante, Web Institucional, Calidad, Gestión de
+Horarios, COTECU, Gestión de Prácticas, Tesis, Gestión de Matrículas y
+Seguimiento al Egresado) y los 3 esquemas generales (`core`, `seguridad`,
+`comun`).
 
 Orden de precedencia documental:
 
@@ -20,7 +22,6 @@ Orden de precedencia documental:
 database/migrations/                         # infraestructura Laravel en public
 app/Shared/Database/Migrations/              # core, seguridad y comun
 app/Modules/{Modulo}/Database/Migrations/    # propiedad del módulo
-app/Modules/Bienestar/Database/MigrationsPending/
 ```
 
 `ModulesServiceProvider` no agrega rutas al migrador global. Laravel mezcla
@@ -51,6 +52,21 @@ una base existente no los repita.
 | `gestion_practicas` | 11 | SQL actualizado, incluida `empresa_usuario` |
 | `calidad` | 12 | Modelo modular PDF |
 | `tesis` | 22 | Modelo modular PDF |
+| `bienestar` | 18 | `esquemas_y_origen_de_tablas.pdf` B.2 |
+| `investigacion_formativa` | 11 | `esquemas_y_origen_de_tablas.pdf` B.3 |
+| `seguimiento_estudiante` | 23 | `esquemas_y_origen_de_tablas.pdf` B.4 |
+| `web_institucional` | 13 | Migraciones existentes + FK a esquemas compartidos |
+| `seguimiento_egresado` | 40 | `esquemas_y_origen_de_tablas.pdf` B.12 |
+
+Esquemas generales:
+
+| Esquema | Tablas |
+| --- | ---: |
+| `core` | 22 (incluye `equivalencia_curso`) |
+| `seguridad` | 10 (rol, permiso, rol_permiso, usuario_rol, solicitud_acceso, token_usuario, registro_acceso, auditoria inalterable) |
+| `comun` | 7 |
+
+`seguridad.modulo_sistema` se siembra con los 12 módulos.
 
 Dependencias compartidas añadidas:
 
@@ -73,13 +89,16 @@ Las FK de un módulo solo pueden apuntar al mismo esquema, `core`,
 `seguridad`, `comun` o `public`. `gestion_matriculas.id_solicitud_prematricula`
 permanece como referencia lógica sin FK entre módulos.
 
-## Bienestar postergado
+## Bienestar, Seguimiento al Estudiante y borradores legacy
 
-La migración recibida crea 17 tablas sin nombre de esquema y usa tablas
-legacy de `public` (`estudiantes`, `personas` y `profesores`). El modelo
-documentado exige 18 tablas dentro de `bienestar` y contratos compartidos de
-`core`, `seguridad` y `comun`. La migración y sus seis dependencias legacy se
-guardan en `Database/MigrationsPending`; no se ejecutan accidentalmente.
+Los borradores anteriores de Bienestar (17 tablas sin esquema, apoyadas en
+`personas`, `estudiantes` y `profesores` de `public`) y de Seguimiento al
+Estudiante (tablas en `public`) se reemplazaron por migraciones que siguen el
+PDF dentro de sus esquemas y apuntan a `core`, `seguridad` y `comun`. Las
+dependencias legacy de Bienestar se eliminaron.
+
+Las referencias lógicas entre módulos (por ejemplo
+`seguimiento_estudiante.atencion_derivacion.id_caso_bienestar`) no llevan FK.
 
 ## Docker aislado
 
@@ -98,10 +117,12 @@ conservarlo durante una inspección manual.
 
 ## Resultado verificado
 
-Validado el 3 de noviembre de 2026 con PostgreSQL 17 y PHP 8.4:
+Validado el 4 de noviembre de 2026 con PostgreSQL 17 y PHP 8.4:
 
 - Conteos exactos: Pre Matrícula 3, Matrícula 9, COTECU 10, Horarios 15,
-  Prácticas 11, Calidad 12 y Tesis 22.
+  Prácticas 11, Calidad 12, Tesis 22, Bienestar 18, Investigación Formativa 11,
+  Seguimiento Estudiante 23, Web Institucional 13 y Seguimiento Egresado 40;
+  `core` 22, `seguridad` 10 y `comun` 7.
 - Segunda ejecución idempotente y `module:migrate:status all` sin pendientes.
 - Rollback completo por módulo y reconstrucción posterior sin errores.
 - Renombrado legacy `tesis_proyecto_tesis` a `tesis` conservando una tabla de
