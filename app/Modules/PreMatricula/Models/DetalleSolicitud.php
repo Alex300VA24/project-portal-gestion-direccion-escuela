@@ -2,8 +2,8 @@
 
 namespace App\Modules\PreMatricula\Models;
 
-use App\Models\Core\CursoPlan;
-use App\Models\Core\Seccion;
+use App\Shared\Models\Core\CursoPlan;
+use App\Shared\Models\Core\Seccion;
 use App\Shared\Models\ModuleModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

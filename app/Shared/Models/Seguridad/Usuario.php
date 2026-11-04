@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Models\Seguridad;
+namespace App\Shared\Models\Seguridad;
 
-use App\Models\Core\Persona;
+use App\Shared\Models\Core\Persona;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 

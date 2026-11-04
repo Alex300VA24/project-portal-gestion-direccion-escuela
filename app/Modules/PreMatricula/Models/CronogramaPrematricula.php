@@ -2,7 +2,7 @@
 
 namespace App\Modules\PreMatricula\Models;
 
-use App\Models\Core\PeriodoAcademico;
+use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\ModuleModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

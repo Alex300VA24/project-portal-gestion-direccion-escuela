@@ -2,15 +2,15 @@
 
 namespace Tests\Unit;
 
-use App\Models\Core\Curso;
-use App\Models\Core\CursoPlan;
-use App\Models\Core\Estudiante;
-use App\Models\Core\PeriodoAcademico;
-use App\Models\Core\Persona;
-use App\Models\Core\PlanEstudios;
-use App\Models\Core\Seccion;
-use App\Models\GestionMatriculas\HistorialAcademico;
-use App\Models\Seguridad\Usuario;
+use App\Shared\Models\Core\Curso;
+use App\Shared\Models\Core\CursoPlan;
+use App\Shared\Models\Core\Estudiante;
+use App\Shared\Models\Core\PeriodoAcademico;
+use App\Shared\Models\Core\Persona;
+use App\Shared\Models\Core\PlanEstudios;
+use App\Shared\Models\Core\Seccion;
+use App\Modules\GestionMatriculas\Models\HistorialAcademico;
+use App\Shared\Models\Seguridad\Usuario;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

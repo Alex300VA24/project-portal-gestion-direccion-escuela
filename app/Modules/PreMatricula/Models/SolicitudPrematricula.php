@@ -2,9 +2,9 @@
 
 namespace App\Modules\PreMatricula\Models;
 
-use App\Models\Core\Estudiante;
-use App\Models\Core\PeriodoAcademico;
-use App\Models\Seguridad\Usuario;
+use App\Shared\Models\Core\Estudiante;
+use App\Shared\Models\Core\PeriodoAcademico;
+use App\Shared\Models\Seguridad\Usuario;
 use App\Shared\Models\ModuleModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
