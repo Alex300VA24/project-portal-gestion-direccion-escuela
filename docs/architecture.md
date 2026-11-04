@@ -4,7 +4,7 @@
 
 Portal Gestión Dirección usa Laravel 13 como monolito modular. La aplicación se despliega como una sola unidad, pero separa el dominio en 12 módulos dentro de `app/Modules`.
 
-Cada módulo encapsula sus controladores, validaciones, modelos, servicios, políticas y rutas. El código transversal vive en `app/Shared`. PostgreSQL usa un esquema independiente por módulo, `core` y `seguridad` para el dominio compartido, y `public` para infraestructura de Laravel.
+Cada módulo encapsula sus controladores, validaciones, modelos, servicios, políticas, rutas, vistas y migraciones. El código transversal vive en `app/Shared`. PostgreSQL usa un esquema independiente por módulo, `core` y `seguridad` para el dominio compartido, y `public` para infraestructura de Laravel.
 
 ## 2. Estructura
 
@@ -94,6 +94,8 @@ Las tablas de infraestructura, como `users`, `roles` y `permissions`, pertenecen
 COTECU conserva listas de cotejo, documentos y revisiones en `cotecu`. Sus planes, sílabos y revisores referencian `core.plan_estudios`, `core.curso_plan`, `core.periodo_academico` y `seguridad.usuario`. Gestión de Matrículas y Pre Matrícula usan los mismos catálogos compartidos.
 
 ### Control de cambios de base de datos
+
+El detalle de esquemas, tablas y reglas de dependencia está en [base_de_datos.md](base_de_datos.md). La guía para trabajar dentro de un módulo está en [GUIA_MODULOS.md](../GUIA_MODULOS.md).
 
 - Toda modificación de esquema se realiza mediante una migración nueva. No se modifica una migración ya ejecutada en entornos compartidos.
 - La migración `2026_10_28_000000_create_module_schemas.php` crea los esquemas declarados en `config/modules.php`.
@@ -203,7 +205,7 @@ Las migraciones compartidas de `core`, `seguridad` y `comun` se guardan en `app/
 ## 11. Limitaciones actuales
 
 - Los servicios modulares son scaffolds y todavía devuelven los datos recibidos sin lógica de negocio.
-- Las clases `Registro` de módulos sin dominio implementado aún apuntan a tablas `registros` pendientes de migración. Pre Matrícula, Gestión de Matrículas y COTECU ya usan tablas reales.
+- Las clases `Registro` de módulos sin dominio implementado aún apuntan a tablas `registros` pendientes de migración. Los módulos tienen su esquema completo migrado, pero sus modelos Eloquent se irán creando por funcionalidad.
 - Las Policies están definidas, pero todavía no están aplicadas a las rutas o acciones de los módulos.
 - Las rutas modulares actuales no exigen autenticación ni permisos.
 - Las vistas modulares son páginas base y aún no implementan operaciones completas de dominio.

@@ -7,8 +7,7 @@
 -- estas definiciones se reconstruyen a partir de la especificación
 -- del modelo y del procedimiento Bizagi de Gestión de Horarios.
 -- Deben reconciliarse con el SQL modular definitivo cuando esté
--- disponible (ver docs/gestion_horarios/README.md, sección
--- "Compatibilidad con el modelo modular").
+-- disponible.
 --
 -- ORDEN DE EJECUCIÓN:
 --   1) database/shared/01_core_seguridad.sql

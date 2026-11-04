@@ -8,7 +8,7 @@
 -- completamente por las tablas originales.
 --
 -- ESTAS CUATRO TABLAS NO FORMABAN PARTE DEL MODELO ORIGINAL.
--- Se documentan aquí y en docs/gestion_horarios/README.md para el
+-- Se documentan aquí para el
 -- trabajo colaborativo del equipo.
 -- ============================================================
 

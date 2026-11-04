@@ -1,11 +1,13 @@
 # Portal Gestión Dirección
 
-Aplicación Laravel 13 organizada como monolito modular. Usa PostgreSQL 17, un esquema por módulo, Laravel Breeze y `spatie/laravel-permission`.
+Aplicación Laravel 13 organizada como monolito modular de 12 módulos. Usa PostgreSQL 17, un esquema por módulo más `core`, `seguridad` y `comun`, Laravel Breeze y `spatie/laravel-permission`.
 
 ## Documentación
 
-- [Arquitectura del proyecto](docs/architecture.md)
-- [Migraciones modulares PostgreSQL](docs/migraciones_modulares.md)
+- [Arquitectura del sistema](docs/architecture.md)
+- [Base de datos general](docs/base_de_datos.md)
+- [Guía para trabajar en un módulo](GUIA_MODULOS.md)
+- [Convenciones de Git](docs/PC-Convenciones-Git.md)
 
 ## Instalación recomendada con Docker
 
