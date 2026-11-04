@@ -7,18 +7,23 @@ use Tests\TestCase;
 
 final class ModularMigrationRegistryTest extends TestCase
 {
-    public function test_all_resolves_only_the_seven_enabled_modules(): void
+    public function test_all_resolves_the_twelve_enabled_modules(): void
     {
         $registry = app(ModularMigrationRegistry::class);
 
         $this->assertSame([
             'pre-matricula',
+            'bienestar',
+            'investigacion-formativa',
+            'seguimiento-estudiante',
+            'web-institucional',
             'calidad',
             'gestion-horarios',
             'cotecu',
             'gestion-practicas',
             'tesis-proyecto-tesis',
             'gestion-matriculas',
+            'seguimiento-egresado',
         ], $registry->targets('all'));
     }
 
@@ -32,10 +37,10 @@ final class ModularMigrationRegistryTest extends TestCase
         );
     }
 
-    public function test_bienestar_is_not_migrable(): void
+    public function test_unknown_module_is_not_migrable(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        app(ModularMigrationRegistry::class)->targets('bienestar');
+        app(ModularMigrationRegistry::class)->targets('inexistente');
     }
 }

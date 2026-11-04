@@ -37,6 +37,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas SQL modulares.' }
 
     $migrationPaths = @(
+        'app/Modules/SeguimientoEgresado/Database/Migrations',
+        'app/Modules/WebInstitucional/Database/Migrations',
+        'app/Modules/SeguimientoEstudiante/Database/Migrations',
+        'app/Modules/InvestigacionFormativa/Database/Migrations',
+        'app/Modules/Bienestar/Database/Migrations',
         'app/Modules/GestionMatriculas/Database/Migrations',
         'app/Modules/TesisProyectoTesis/Database/Migrations',
         'app/Modules/GestionPracticas/Database/Migrations',

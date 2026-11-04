@@ -13,7 +13,15 @@ BEGIN
             ('gestion_horarios', 15),
             ('gestion_practicas', 11),
             ('calidad', 12),
-            ('tesis', 22)
+            ('tesis', 22),
+            ('bienestar', 18),
+            ('investigacion_formativa', 11),
+            ('seguimiento_estudiante', 23),
+            ('web_institucional', 13),
+            ('seguimiento_egresado', 40),
+            ('core', 22),
+            ('seguridad', 10),
+            ('comun', 7)
         ) AS counts(schema_name, table_count)
     LOOP
         SELECT count(*) INTO actual_count
@@ -42,7 +50,9 @@ BEGIN
     WHERE c.contype = 'f'
       AND child_ns.nspname IN (
           'prematricula', 'gestion_matriculas', 'cotecu',
-          'gestion_horarios', 'gestion_practicas', 'calidad', 'tesis'
+          'gestion_horarios', 'gestion_practicas', 'calidad', 'tesis',
+          'bienestar', 'investigacion_formativa', 'seguimiento_estudiante',
+          'web_institucional', 'seguimiento_egresado'
       )
       AND parent_ns.nspname <> child_ns.nspname
       AND parent_ns.nspname NOT IN ('core', 'seguridad', 'comun', 'public');
@@ -70,6 +80,41 @@ BEGIN
     IF tesis.calcular_nota_sustentacion(-1) IS NOT NULL THEN
         RAISE EXCEPTION 'calcular_nota_sustentacion debía devolver NULL sin filas';
     END IF;
+END
+$$;
+
+DO $$
+DECLARE
+    missing_fk INTEGER;
+BEGIN
+    IF (SELECT count(*) FROM seguridad.modulo_sistema) <> 12 THEN
+        RAISE EXCEPTION 'seguridad.modulo_sistema debe listar los 12 módulos';
+    END IF;
+
+    -- Los 3 esquemas generales no dependen de módulos.
+    SELECT count(*) INTO missing_fk
+    FROM pg_constraint c
+    JOIN pg_class child ON child.oid = c.conrelid
+    JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
+    JOIN pg_class parent ON parent.oid = c.confrelid
+    JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
+    WHERE c.contype = 'f'
+      AND child_ns.nspname IN ('core', 'seguridad', 'comun')
+      AND parent_ns.nspname NOT IN ('core', 'seguridad', 'comun');
+
+    IF missing_fk <> 0 THEN
+        RAISE EXCEPTION 'Los esquemas compartidos tienen % FK hacia módulos', missing_fk;
+    END IF;
+
+    -- seguridad.auditoria es inalterable.
+    BEGIN
+        UPDATE seguridad.auditoria SET accion = 'OTRA' WHERE FALSE;
+        INSERT INTO seguridad.auditoria (tabla_afectada, accion) VALUES ('smoke', 'OTRA');
+        UPDATE seguridad.auditoria SET accion = 'INSERT' WHERE tabla_afectada = 'smoke';
+        RAISE EXCEPTION 'seguridad.auditoria permitió un UPDATE';
+    EXCEPTION WHEN check_violation THEN
+        NULL;
+    END;
 END
 $$;
 

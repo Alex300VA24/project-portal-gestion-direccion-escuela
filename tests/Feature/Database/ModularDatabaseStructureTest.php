@@ -15,6 +15,17 @@ final class ModularDatabaseStructureTest extends TestCase
         'gestion_practicas' => 11,
         'calidad' => 12,
         'tesis' => 22,
+        'bienestar' => 18,
+        'investigacion_formativa' => 11,
+        'seguimiento_estudiante' => 23,
+        'web_institucional' => 13,
+        'seguimiento_egresado' => 40,
+    ];
+
+    private const SHARED_COUNTS = [
+        'core' => 22,
+        'seguridad' => 10,
+        'comun' => 7,
     ];
 
     protected function setUp(): void
@@ -36,6 +47,23 @@ final class ModularDatabaseStructureTest extends TestCase
 
             $this->assertSame($expected, $actual, "Conteo incorrecto en {$schema}");
         }
+    }
+
+    public function test_shared_schemas_have_the_expected_table_counts(): void
+    {
+        foreach (self::SHARED_COUNTS as $schema => $expected) {
+            $actual = DB::table('information_schema.tables')
+                ->where('table_schema', $schema)
+                ->where('table_type', 'BASE TABLE')
+                ->count();
+
+            $this->assertSame($expected, $actual, "Conteo incorrecto en {$schema}");
+        }
+    }
+
+    public function test_module_catalog_lists_the_twelve_modules(): void
+    {
+        $this->assertSame(12, DB::table('seguridad.modulo_sistema')->count());
     }
 
     public function test_module_foreign_keys_never_target_another_module(): void
