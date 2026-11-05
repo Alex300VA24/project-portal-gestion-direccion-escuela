@@ -1,15 +1,3 @@
-FROM node:22-alpine AS frontend
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY resources ./resources
-COPY vite.config.js tailwind.config.js postcss.config.js ./
-RUN npm run build
-
-
 FROM composer:2 AS dependencies
 
 WORKDIR /app
@@ -22,6 +10,19 @@ RUN composer install \
     --prefer-dist \
     --optimize-autoloader \
     --no-scripts
+
+
+FROM node:22-alpine AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY --from=dependencies /app/vendor/livewire ./vendor/livewire
+COPY resources ./resources
+COPY vite.config.js tailwind.config.js postcss.config.js ./
+RUN npm run build
 
 
 FROM php:8.4-apache AS application
