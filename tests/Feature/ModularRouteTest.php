@@ -43,7 +43,6 @@ final class ModularRouteTest extends TestCase
             'bienestar' => ['bienestar', 'Bienestar', 'bienestar'],
             'investigacion_formativa' => ['investigacion-formativa', 'Investigación Formativa', 'investigacion_formativa'],
             'seguimiento_estudiante' => ['seguimiento-estudiante', 'Seguimiento al Estudiante', 'seguimiento_estudiante'],
-            'web_institucional' => ['web-institucional', 'Web Institucional', 'web_institucional'],
             'calidad' => ['calidad', 'Calidad', 'calidad'],
             'gestion_horarios' => ['gestion-horarios', 'Gestión de Horarios', 'gestion_horarios'],
             'cotecu' => ['cotecu', 'COTECU', 'cotecu'],

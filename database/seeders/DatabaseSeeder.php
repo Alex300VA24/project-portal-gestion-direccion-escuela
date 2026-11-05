@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,11 +17,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $accounts = [
+            ['role' => 'director_escuela', 'name' => 'Director de Escuela', 'email' => 'director@portal.local'],
+            ['role' => 'secretaria', 'name' => 'Secretaría Académica', 'email' => 'secretaria@portal.local'],
+            ['role' => 'profesor', 'name' => 'Profesor Demo', 'email' => 'profesor@portal.local'],
+            ['role' => 'alumno', 'name' => 'Alumno Demo', 'email' => 'alumno@portal.local'],
+        ];
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        foreach ($accounts as $account) {
+            $role = Role::firstOrCreate([
+                'name' => $account['role'],
+                'guard_name' => 'web',
+            ]);
+
+            $user = User::updateOrCreate(
+                ['email' => $account['email']],
+                [
+                    'name' => $account['name'],
+                    'email_verified_at' => now(),
+                    'password' => Hash::make('Portal2026!'),
+                ],
+            );
+
+            $user->syncRoles([$role]);
+        }
     }
 }

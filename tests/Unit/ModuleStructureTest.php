@@ -104,10 +104,14 @@ final class ModuleStructureTest extends TestCase
         $directories = [];
 
         foreach (glob($this->path('app/Modules/*'), GLOB_ONLYDIR) ?: [] as $directory) {
+            if (basename($directory) === 'WebInstitucional') {
+                continue; // Es una superficie pública, no un módulo seleccionable.
+            }
+
             $directories[basename($directory)] = $directory;
         }
 
-        $this->assertCount(12, $directories);
+        $this->assertCount(11, $directories);
 
         return $directories;
     }

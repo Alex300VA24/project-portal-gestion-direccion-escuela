@@ -18,8 +18,11 @@ final class ModularDatabaseStructureTest extends TestCase
         'bienestar' => 18,
         'investigacion_formativa' => 11,
         'seguimiento_estudiante' => 23,
-        'web_institucional' => 13,
         'seguimiento_egresado' => 40,
+    ];
+
+    private const PUBLIC_SURFACE_COUNTS = [
+        'web_institucional' => 13,
     ];
 
     private const SHARED_COUNTS = [
@@ -61,9 +64,22 @@ final class ModularDatabaseStructureTest extends TestCase
         }
     }
 
-    public function test_module_catalog_lists_the_twelve_modules(): void
+    public function test_public_surfaces_have_the_expected_table_counts(): void
     {
-        $this->assertSame(12, DB::table('seguridad.modulo_sistema')->count());
+        foreach (self::PUBLIC_SURFACE_COUNTS as $schema => $expected) {
+            $actual = DB::table('information_schema.tables')
+                ->where('table_schema', $schema)
+                ->where('table_type', 'BASE TABLE')
+                ->count();
+
+            $this->assertSame($expected, $actual, "Conteo incorrecto en {$schema}");
+        }
+    }
+
+    public function test_module_catalog_lists_the_eleven_modules(): void
+    {
+        $this->assertSame(11, DB::table('seguridad.modulo_sistema')->count());
+        $this->assertFalse(DB::table('seguridad.modulo_sistema')->where('codigo', 'web_institucional')->exists());
     }
 
     public function test_module_foreign_keys_never_target_another_module(): void

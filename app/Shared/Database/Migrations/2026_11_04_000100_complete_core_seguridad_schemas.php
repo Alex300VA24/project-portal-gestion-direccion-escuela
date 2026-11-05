@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Completa los esquemas compartidos según esquemas_y_origen_de_tablas.pdf:
  * core (equivalencia_curso, 22 tablas) y seguridad (10 tablas), más el
- * catálogo de los 12 módulos en seguridad.modulo_sistema.
+ * catálogo de los 11 módulos en seguridad.modulo_sistema.
  */
 return new class extends Migration
 {
@@ -15,7 +15,6 @@ return new class extends Migration
         ['bienestar', 'Bienestar', 'bienestar'],
         ['investigacion_formativa', 'Investigación formativa', 'investigacion_formativa'],
         ['seguimiento_estudiante', 'Seguimiento al estudiante', 'seguimiento_estudiante'],
-        ['web_institucional', 'Web institucional', 'web_institucional'],
         ['calidad', 'Calidad', 'calidad'],
         ['gestion_horarios', 'Gestión de horarios', 'gestion_horarios'],
         ['cotecu', 'COTECU', 'cotecu'],

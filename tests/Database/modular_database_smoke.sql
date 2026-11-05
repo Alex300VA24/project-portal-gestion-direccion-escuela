@@ -52,7 +52,7 @@ BEGIN
           'prematricula', 'gestion_matriculas', 'cotecu',
           'gestion_horarios', 'gestion_practicas', 'calidad', 'tesis',
           'bienestar', 'investigacion_formativa', 'seguimiento_estudiante',
-          'web_institucional', 'seguimiento_egresado'
+          'seguimiento_egresado'
       )
       AND parent_ns.nspname <> child_ns.nspname
       AND parent_ns.nspname NOT IN ('core', 'seguridad', 'comun', 'public');
@@ -87,8 +87,12 @@ DO $$
 DECLARE
     missing_fk INTEGER;
 BEGIN
-    IF (SELECT count(*) FROM seguridad.modulo_sistema) <> 12 THEN
-        RAISE EXCEPTION 'seguridad.modulo_sistema debe listar los 12 módulos';
+    IF (SELECT count(*) FROM seguridad.modulo_sistema) <> 11 THEN
+        RAISE EXCEPTION 'seguridad.modulo_sistema debe listar los 11 módulos';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM seguridad.modulo_sistema WHERE codigo = 'web_institucional') THEN
+        RAISE EXCEPTION 'Web institucional es una superficie pública, no un módulo';
     END IF;
 
     -- Los 3 esquemas generales no dependen de módulos.

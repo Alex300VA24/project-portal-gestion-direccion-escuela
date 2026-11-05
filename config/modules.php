@@ -18,7 +18,6 @@ return [
     'bienestar' => $module('Bienestar', 'bienestar', 'Bienestar', true),
     'investigacion-formativa' => $module('Investigación Formativa', 'investigacion_formativa', 'InvestigacionFormativa', true),
     'seguimiento-estudiante' => $module('Seguimiento al Estudiante', 'seguimiento_estudiante', 'SeguimientoEstudiante', true),
-    'web-institucional' => $module('Web Institucional', 'web_institucional', 'WebInstitucional', true),
     'calidad' => $module('Calidad', 'calidad', 'Calidad', true),
     'gestion-horarios' => $module('Gestión de Horarios', 'gestion_horarios', 'GestionHorarios', true),
     'cotecu' => $module('COTECU', 'cotecu', 'Cotecu', true),
