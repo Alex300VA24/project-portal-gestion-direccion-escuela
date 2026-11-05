@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Seleccionar módulo · Portal Gestión Dirección</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -25,7 +26,7 @@
         ];
     @endphp
     <header class="portal-header">
-        <a class="portal-brand" href="{{ route('dashboard') }}"><span aria-hidden="true">PG</span><strong>Portal Gestión Dirección</strong></a>
+        <a class="portal-brand" href="{{ route('dashboard') }}"><img class="portal-brand-logo" src="{{ asset('img/logo-informatica.png') }}" alt=""><strong>Portal Gestión Dirección</strong></a>
         <div class="portal-account"><span class="portal-avatar" aria-hidden="true">{{ Str::upper(Str::substr(auth()->user()->name, 0, 2)) }}</span><span><strong>{{ auth()->user()->name }}</strong><small>{{ $role }}</small></span><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Salir</button></form></div>
     </header>
     <main class="portal-content">

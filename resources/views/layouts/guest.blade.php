@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Acceso seguro al Portal Gestión Dirección.">
     <title>Acceso · Portal Gestión Dirección</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -16,7 +17,7 @@
     <main id="contenido" class="auth-shell">
         <aside class="auth-context" aria-label="Portal Gestión Dirección">
             <a class="auth-brand" href="{{ route('web-institucional.index') }}" aria-label="Volver a la web institucional">
-                <span aria-hidden="true">PGD</span>
+                <img class="auth-brand-logo" src="{{ asset('img/logo-informatica.png') }}" alt="">
                 <span><strong>Portal Gestión</strong><small>Dirección de Escuela</small></span>
             </a>
 

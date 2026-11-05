@@ -4,6 +4,7 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Portal institucional para la gestión académica, calidad y servicios de la escuela profesional.">
     <title>Portal Gestión Dirección</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -12,7 +13,7 @@
     <div class="institutional-topline"><span>Plataforma de gestión académica e institucional</span><span>Acceso para la comunidad universitaria</span></div>
     <header class="institutional-header">
         <a class="institutional-brand" href="{{ route('web-institucional.index') }}" aria-label="Portal Gestión Dirección, inicio">
-            <span aria-hidden="true">PGD</span>
+            <img class="institutional-brand-logo" src="{{ asset('img/logo-informatica.png') }}" alt="">
             <span class="institutional-brand-copy"><strong>Portal Gestión</strong><small>Dirección de Escuela</small></span>
         </a>
         <nav aria-label="Navegación institucional"><a href="#proposito">Propósito</a><a href="#comunidad">Comunidad</a><a href="#modulos">Módulos</a></nav>
@@ -28,7 +29,7 @@
             </div>
             <div class="institutional-hero-system" aria-label="Estructura del portal">
                 <div class="system-window-head"><span></span><strong>Arquitectura del portal</strong><small>Conectado</small></div>
-                <div class="system-core"><span>PGD</span><strong>Identidad institucional</strong><small>Una sesión segura</small></div>
+                <div class="system-core"><span><img src="{{ asset('img/logo-informatica.png') }}" alt=""></span><strong>Identidad institucional</strong><small>Una sesión segura</small></div>
                 <ol class="system-flow">
                     <li><span>01</span><div><strong>Gestión académica</strong><small>Periodos, cursos y seguimiento</small></div></li>
                     <li><span>02</span><div><strong>Gestión de Calidad</strong><small>Procesos, indicadores y evidencias</small></div></li>

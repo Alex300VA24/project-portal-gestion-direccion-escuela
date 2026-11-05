@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#17224d">
     <title>@yield('title', 'Calidad') · Portal Gestión Dirección</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
     <script>
         (() => { const d = document.documentElement.dataset, s = localStorage; d.theme = s.getItem('portal-theme') || 'light'; d.contrast = s.getItem('portal-contrast') || 'normal'; d.fontSize = s.getItem('portal-font-size') || 'normal'; })();
     </script>
@@ -19,7 +20,7 @@
     <div class="quality-shell">
         <aside id="quality-navigation" class="quality-sidebar" :class="{ 'is-open': navigationOpen }" aria-label="Navegación de Calidad">
             <a class="quality-brand" href="{{ route('calidad.home') }}">
-                <span class="quality-brand-mark" aria-hidden="true">PG</span>
+                <img class="quality-brand-mark" src="{{ asset('img/logo-informatica.png') }}" alt="">
                 <span><strong>Calidad</strong><small>Portal Gestión Dirección</small></span>
             </a>
             <nav class="quality-nav">
