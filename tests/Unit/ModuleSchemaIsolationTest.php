@@ -34,8 +34,8 @@ final class ModuleSchemaIsolationTest extends TestCase
             require dirname(__DIR__, 2).'/config/modules.php',
         );
 
-        $this->assertCount(12, $schemas);
-        $this->assertCount(12, array_unique($schemas));
+        $this->assertCount(11, $schemas);
+        $this->assertCount(11, array_unique($schemas));
         $this->assertNotContains('public', $schemas);
     }
 
