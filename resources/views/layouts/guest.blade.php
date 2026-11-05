@@ -1,30 +1,50 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Acceso seguro al Portal Gestión Dirección.">
+    <title>Acceso · Portal Gestión Dirección</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="auth-body">
+    <a class="skip-link" href="#contenido">Saltar al formulario</a>
+    <main id="contenido" class="auth-shell">
+        <aside class="auth-context" aria-label="Portal Gestión Dirección">
+            <a class="auth-brand" href="{{ route('web-institucional.index') }}" aria-label="Volver a la web institucional">
+                <span aria-hidden="true">PGD</span>
+                <span><strong>Portal Gestión</strong><small>Dirección de Escuela</small></span>
+            </a>
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
-
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
+            <div class="auth-context-copy">
+                <h2>Una sola identidad para toda la gestión.</h2>
+                <p>Ingresa con tu cuenta institucional y continúa en los módulos habilitados para tu rol.</p>
+                <ul>
+                    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Acceso centralizado</li>
+                    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Rutas independientes por módulo</li>
+                    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Información institucional compartida</li>
+                </ul>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            <div class="auth-network" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+                <svg viewBox="0 0 620 260"><path d="M8 209 169 73l147 94L468 38l144 93"/><path d="M8 209h604"/></svg>
+            </div>
+            <p class="auth-context-footer">Portal institucional · Acceso protegido</p>
+        </aside>
+
+        <section class="auth-panel">
+            <a class="auth-back" href="{{ route('web-institucional.index') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg>
+                Web institucional
+            </a>
+            <div class="auth-form-frame">
                 {{ $slot }}
             </div>
-        </div>
-    </body>
+        </section>
+    </main>
+</body>
 </html>

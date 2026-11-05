@@ -2,18 +2,29 @@
 
 namespace App\Modules\WebInstitucional\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Modules\WebInstitucional\Requests\WebInstitucionalRequest;
 use App\Modules\WebInstitucional\Services\WebInstitucionalService;
-use App\Shared\Controllers\ModuleController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
-final class WebInstitucionalController extends ModuleController
+final class WebInstitucionalController extends Controller
 {
-    protected const MODULE = 'Web Institucional';
+    public function index(): View
+    {
+        return view('modules.web-institucional.index');
+    }
 
-    protected const SCHEMA = 'web_institucional';
+    public function create(): View
+    {
+        return view('modules.web-institucional.index', ['creating' => true]);
+    }
 
-    protected const VIEW = 'modules.web-institucional.index';
+    public function apiIndex(): JsonResponse
+    {
+        return response()->json(['surface' => 'web-institucional']);
+    }
 
     public function store(WebInstitucionalRequest $request, WebInstitucionalService $service): RedirectResponse
     {
