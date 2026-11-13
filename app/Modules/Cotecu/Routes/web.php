@@ -19,4 +19,7 @@ Route::prefix('cotecu')
             'titulo' => 'Revisar sílabos',
             'descripcion' => 'Sílabos enviados a revisión junto con su lista de cotejo.',
         ])->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones');
+
+        Route::get('/planes', [CotecuController::class, 'planes'])
+            ->middleware('permission:cotecu.plan.list')->name('planes.index');
     });

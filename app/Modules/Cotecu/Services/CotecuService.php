@@ -2,6 +2,7 @@
 
 namespace App\Modules\Cotecu\Services;
 
+use App\Modules\Cotecu\Models\Registro;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Seguridad\Usuario;
 use App\Shared\Services\ModuleService;
@@ -61,5 +62,44 @@ final class CotecuService extends ModuleService
         $id = Usuario::query()->where('correo_institucional', $email)->value('id_usuario');
 
         return $id === null ? null : (int) $id;
+    }
+
+    /**
+     * Documentos del plan curricular visibles para la cuenta en sesión.
+     *
+     * Regla de visibilidad de COTECU: quien sube o revisa (plan.upload /
+     * plan.review) ve todos los estados; quien solo lista ve únicamente
+     * los Validado.
+     *
+     * @return Collection<int, Registro>
+     */
+    public function planes(): Collection
+    {
+        $query = Registro::query()
+            ->join('core.plan_estudios', 'core.plan_estudios.id_plan', '=', 'cotecu.planes_curriculares.id_plan')
+            ->select(
+                'cotecu.planes_curriculares.*',
+                'core.plan_estudios.nombre as plan_nombre',
+                'core.plan_estudios.codigo as plan_codigo',
+            )
+            ->orderByDesc('cotecu.planes_curriculares.version');
+
+        if (! $this->vePlanesEnProceso()) {
+            $query->where('cotecu.planes_curriculares.estado', 'Validado');
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * La cuenta participa del proceso de planes (sube o revisa): por eso
+     * ve los planes en cualquier estado.
+     */
+    public function vePlanesEnProceso(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null
+            && ($user->can('cotecu.plan.upload') || $user->can('cotecu.plan.review'));
     }
 }

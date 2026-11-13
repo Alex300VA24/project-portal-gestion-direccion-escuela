@@ -53,4 +53,19 @@ final class CotecuController extends ModuleController
             'hayPeriodoActivo' => $this->service->hayPeriodoActivo(),
         ]);
     }
+
+    /**
+     * Planes curriculares: sin selector de semestre (no tienen
+     * id_periodo) y con el filtro de visibilidad aplicado por el
+     * servicio según los permisos de la cuenta.
+     */
+    public function planes(): View
+    {
+        return view('modules.cotecu.planes', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'planes' => $this->service->planes(),
+            'puedeSubir' => auth()->user()?->can('cotecu.plan.upload') ?? false,
+        ]);
+    }
 }
