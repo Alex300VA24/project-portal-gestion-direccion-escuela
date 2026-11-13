@@ -3,10 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Cotecu\Models\Registro;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Core\Persona;
+use App\Shared\Models\Core\PlanEstudios;
 use App\Shared\Models\Seguridad\Usuario;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -23,6 +26,14 @@ use Spatie\Permission\Models\Role;
  * institucionales compartidas: este seeder solo siembra lo mínimo para
  * probar el módulo (los FK de cotecu.silabos apuntan a ellas). En
  * producción los carga quien administre core/seguridad; COTECU solo lee.
+ *
+ * El catálogo del plan (facultad, escuela, plan, documentos) también es
+ * demo. Limpieza:
+ *   DELETE FROM cotecu.planes_curriculares WHERE id_plan IN
+ *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
+ *   DELETE FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020';
+ *   DELETE FROM core.escuela_profesional WHERE codigo = 'EP-INF';
+ *   DELETE FROM core.facultad WHERE codigo = 'FAC-CFM';
  */
 class CotecuDemoSeeder extends Seeder
 {
@@ -73,6 +84,45 @@ class CotecuDemoSeeder extends Seeder
         ['email' => 'director-cotecu@portal.local', 'numero_documento' => '70000005', 'nombres' => 'Director', 'apellido_paterno' => 'COTECU'],
     ];
 
+    /**
+     * Catálogo académico mínimo para ver planes curriculares:
+     * facultad → escuela → plan de estudios → documentos del plan.
+     * Valores fijos acordados; áreas y cursos vienen en el pase del
+     * selector de cursos de sílabos.
+     */
+    private const FACULTAD = [
+        'codigo' => 'FAC-CFM',
+        'nombre' => 'Ciencias Físicas y Matemáticas',
+    ];
+
+    private const ESCUELA = [
+        'codigo' => 'EP-INF',
+        'nombre' => 'Ingeniería Informática',
+        'estado' => 'Activo',
+    ];
+
+    private const PLAN = [
+        'codigo' => 'PLAN-INF-2020',
+        'nombre' => 'Plan de estudios 2020 - Ingeniería Informática',
+        'version' => '2020',
+        'anio_aprobacion' => 2020,
+        'resolucion_aprobacion' => 'R.D. N° 142-2020-UNT',
+        'fecha_vigencia_inicio' => '2021-03-01',
+        'es_predeterminado' => true,
+        'estado' => 'Vigente',
+    ];
+
+    /**
+     * Documentos del plan curricular que COTECU revisa (cotecu.planes_curriculares).
+     * Sin id_periodo: es por plan y se versiona, no por semestre.
+     * archivo_url es placeholder hasta decidir el storage (disco público
+     * vs comun.archivo).
+     */
+    private const PLANES_CURRICULARES = [
+        ['version' => 1, 'estado' => 'Validado', 'archivo_url' => 'demo/planes/plan-inf-2020-v1.pdf'],
+        ['version' => 2, 'estado' => 'Pendiente', 'archivo_url' => 'demo/planes/plan-inf-2020-v2.pdf'],
+    ];
+
     public function run(): void
     {
         foreach (self::PERIODOS as $periodo) {
@@ -114,6 +164,45 @@ class CotecuDemoSeeder extends Seeder
         $directorCotecu->syncRoles(['profesor']);
         $directorCotecu->givePermissionTo('cotecu.plan.upload');
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 5 cuentas institucionales y director de COTECU.');
+        $this->sembrarPlanCurricular();
+
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 5 cuentas institucionales, director de COTECU y plan curricular.');
+    }
+
+    /**
+     * Cadena mínima para que la pantalla de planes tenga filas:
+     * facultad → escuela → plan de estudios → documentos del plan.
+     */
+    private function sembrarPlanCurricular(): void
+    {
+        DB::table('core.facultad')->updateOrInsert(
+            ['codigo' => self::FACULTAD['codigo']],
+            ['nombre' => self::FACULTAD['nombre']],
+        );
+
+        $idFacultad = DB::table('core.facultad')
+            ->where('codigo', self::FACULTAD['codigo'])
+            ->value('id_facultad');
+
+        DB::table('core.escuela_profesional')->updateOrInsert(
+            ['codigo' => self::ESCUELA['codigo']],
+            array_merge(self::ESCUELA, ['id_facultad' => $idFacultad]),
+        );
+
+        $idEscuela = DB::table('core.escuela_profesional')
+            ->where('codigo', self::ESCUELA['codigo'])
+            ->value('id_escuela');
+
+        $plan = PlanEstudios::firstOrCreate(
+            ['codigo' => self::PLAN['codigo']],
+            array_merge(self::PLAN, ['id_escuela' => $idEscuela]),
+        );
+
+        foreach (self::PLANES_CURRICULARES as $documento) {
+            Registro::firstOrCreate(
+                ['id_plan' => $plan->id_plan, 'version' => $documento['version']],
+                array_merge($documento, ['nombre' => self::PLAN['nombre']]),
+            );
+        }
     }
 }
