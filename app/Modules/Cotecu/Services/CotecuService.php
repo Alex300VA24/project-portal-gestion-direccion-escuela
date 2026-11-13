@@ -3,6 +3,7 @@
 namespace App\Modules\Cotecu\Services;
 
 use App\Shared\Models\Core\PeriodoAcademico;
+use App\Shared\Models\Seguridad\Usuario;
 use App\Shared\Services\ModuleService;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -40,5 +41,25 @@ final class CotecuService extends ModuleService
     public function hayPeriodoActivo(): bool
     {
         return PeriodoAcademico::query()->where('estado', 'Activo')->exists();
+    }
+
+    /**
+     * id_usuario en seguridad.usuario de la cuenta con sesión iniciada.
+     *
+     * Puente: public.users.email ↔ seguridad.usuario.correo_institucional.
+     * Devuelve null cuando la cuenta no tiene fila institucional: la
+     * subida debe avisar en vez de reventar con una violación de FK.
+     */
+    public function idUsuarioActual(): ?int
+    {
+        $email = auth()->user()?->email;
+
+        if ($email === null) {
+            return null;
+        }
+
+        $id = Usuario::query()->where('correo_institucional', $email)->value('id_usuario');
+
+        return $id === null ? null : (int) $id;
     }
 }
