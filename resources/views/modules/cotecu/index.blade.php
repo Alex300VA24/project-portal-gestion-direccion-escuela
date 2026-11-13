@@ -1,17 +1,14 @@
 @extends('layouts.cotecu')
 
 @section('title', 'Inicio')
-@section('page-label', 'Inicio')
 
 @section('content')
     <div class="quality-page">
         <header class="quality-page-heading">
             <div>
-                <span class="quality-eyebrow">COTECU</span>
                 <h1>Inicio</h1>
                 <p>Coordinación técnica curricular. Desde aquí se administrarán las listas de cotejo, los planes curriculares, los sílabos y sus revisiones.</p>
             </div>
-            <span class="quality-code">Esquema {{ $schema }}</span>
         </header>
 
         <section class="quality-empty">
