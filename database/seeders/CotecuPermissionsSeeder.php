@@ -28,25 +28,36 @@ class CotecuPermissionsSeeder extends Seeder
         'cotecu.silabo.upload',
         'cotecu.silabo.list',
         'cotecu.silabo.review',
+        'cotecu.plan.list',
+        'cotecu.plan.upload',
+        'cotecu.plan.review',
     ];
 
     /**
      * Asignación rol institucional => permisos de COTECU.
      * El alumno no recibe permisos hasta que se decida su acceso al módulo.
+     *
+     * cotecu.plan.upload no aparece aquí: lo recibe a nivel de usuario el
+     * director de COTECU (el profesor convocado para una nueva currícula),
+     * sin crear un rol nuevo (ver CotecuDemoSeeder).
      */
     private const ROLE_PERMISSIONS = [
         'director_escuela' => [
             'cotecu.view',
             'cotecu.silabo.list',
             'cotecu.silabo.review',
+            'cotecu.plan.list',
+            'cotecu.plan.review',
         ],
         'secretaria' => [
             'cotecu.view',
             'cotecu.silabo.list',
+            'cotecu.plan.list',
         ],
         'profesor' => [
             'cotecu.view',
             'cotecu.silabo.upload',
+            'cotecu.plan.list',
         ],
         'alumno' => [],
     ];

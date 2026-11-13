@@ -2,17 +2,22 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Core\Persona;
 use App\Shared\Models\Seguridad\Usuario;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 /**
  * Datos de prueba de COTECU: semestres académicos y cuentas institucionales.
  *
  * Idempotente: se puede ejecutar cuantas veces sea necesario.
- * Uso: php artisan db:seed --class=CotecuDemoSeeder
+ * Uso (en este orden):
+ *   1. php artisan db:seed                     (DatabaseSeeder: roles y cuentas base)
+ *   2. php artisan db:seed --class=CotecuPermissionsSeeder
+ *   3. php artisan db:seed --class=CotecuDemoSeeder
  *
  * core.periodo_academico, core.persona y seguridad.usuario son tablas
  * institucionales compartidas: este seeder solo siembra lo mínimo para
@@ -63,6 +68,9 @@ class CotecuDemoSeeder extends Seeder
         ['email' => 'secretaria@portal.local', 'numero_documento' => '70000002', 'nombres' => 'Secretaría', 'apellido_paterno' => 'Académica'],
         ['email' => 'profesor@portal.local', 'numero_documento' => '70000003', 'nombres' => 'Profesor', 'apellido_paterno' => 'Demo'],
         ['email' => 'alumno@portal.local', 'numero_documento' => '70000004', 'nombres' => 'Alumno', 'apellido_paterno' => 'Demo'],
+        // Director de COTECU: el profesor convocado para una nueva currícula.
+        // Conserva el rol profesor y recibe cotecu.plan.upload a nivel usuario.
+        ['email' => 'director-cotecu@portal.local', 'numero_documento' => '70000005', 'nombres' => 'Director', 'apellido_paterno' => 'COTECU'],
     ];
 
     public function run(): void
@@ -92,6 +100,20 @@ class CotecuDemoSeeder extends Seeder
             );
         }
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos y 4 cuentas institucionales.');
+        // Cuenta del portal del director de COTECU: entra con el rol
+        // profesor y recibe cotecu.plan.upload directamente en el usuario
+        // (sin crear un rol nuevo). Exige CotecuPermissionsSeeder previo.
+        $directorCotecu = User::updateOrCreate(
+            ['email' => 'director-cotecu@portal.local'],
+            [
+                'name' => 'Director COTECU',
+                'email_verified_at' => now(),
+                'password' => Hash::make('Portal2026!'),
+            ],
+        );
+        $directorCotecu->syncRoles(['profesor']);
+        $directorCotecu->givePermissionTo('cotecu.plan.upload');
+
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 5 cuentas institucionales y director de COTECU.');
     }
 }
