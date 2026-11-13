@@ -13,11 +13,14 @@
             @if ($periodos->isNotEmpty())
                 <form class="quality-period-form" method="GET" action="{{ route('cotecu.silabos.index') }}">
                     <label for="periodo">Semestre</label>
-                    <select id="periodo" name="periodo" onchange="this.form.submit()">
-                        @foreach ($periodos as $periodo)
-                            <option value="{{ $periodo->codigo }}" @selected($periodoSeleccionado?->codigo === $periodo->codigo)>{{ $periodo->codigo }}</option>
-                        @endforeach
-                    </select>
+                    <span class="quality-select">
+                        <select id="periodo" name="periodo" onchange="this.form.submit()">
+                            @foreach ($periodos as $periodo)
+                                <option value="{{ $periodo->codigo }}" @selected($periodoSeleccionado?->codigo === $periodo->codigo)>{{ $periodo->codigo }}</option>
+                            @endforeach
+                        </select>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </span>
                 </form>
             @endif
         </header>

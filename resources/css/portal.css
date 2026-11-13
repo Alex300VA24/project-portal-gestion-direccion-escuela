@@ -370,4 +370,9 @@ html[data-contrast="alto"] .quality-body :is(.quality-panel, .quality-repository
 .quality-file-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .quality-open-link { display: inline-flex; min-height: 40px; align-items: center; padding: 0 14px; color: var(--quality-green); border: 1px solid var(--quality-border); border-radius: 9px; font-size: 13px; font-weight: 700; }
 .quality-open-link:hover { border-color: var(--quality-green); }
+.quality-select { position: relative; }
+.quality-period-form .quality-select:has(svg) select { appearance: none; padding-right: 34px; }
+.quality-period-form .quality-select > svg { position: absolute; right: 11px; top: 50%; width: 16px; color: var(--quality-muted); transform: translateY(-50%); pointer-events: none; }
+.quality-period-form .institutional-primary { white-space: nowrap; padding-inline: 24px; }
+.quality-period-form .institutional-primary:disabled { opacity: .62; cursor: not-allowed; background: var(--portal-green); transform: none; }
 @media (max-width: 760px) { .quality-doctabs { grid-template-columns: 1fr; } .quality-document-list > li { grid-template-columns: 48px minmax(0, 1fr); } .quality-document-list .quality-file-meta { grid-column: 2; align-items: flex-start; } }

@@ -13,13 +13,16 @@
             @if ($periodos->isNotEmpty())
                 <form class="quality-period-form" method="GET" action="{{ route('cotecu.mis-silabos') }}">
                     <label for="periodo">Semestre</label>
-                    <select id="periodo" name="periodo" onchange="this.form.submit()">
-                        @foreach ($periodos as $periodo)
-                            <option value="{{ $periodo->codigo }}" @selected($periodoSeleccionado?->codigo === $periodo->codigo)>{{ $periodo->codigo }}</option>
-                        @endforeach
-                    </select>
-                    <button class="quality-open-link" type="button" @disabled(! $hayPeriodoActivo) @click="subirOpen = true">
-                        <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:7px"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                    <span class="quality-select">
+                        <select id="periodo" name="periodo" onchange="this.form.submit()">
+                            @foreach ($periodos as $periodo)
+                                <option value="{{ $periodo->codigo }}" @selected($periodoSeleccionado?->codigo === $periodo->codigo)>{{ $periodo->codigo }}</option>
+                            @endforeach
+                        </select>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </span>
+                    <button class="institutional-primary" type="button" @disabled(! $hayPeriodoActivo) @click="subirOpen = true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
                         Subir sílabo
                     </button>
                 </form>
