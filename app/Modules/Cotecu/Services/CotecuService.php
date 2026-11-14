@@ -3,11 +3,14 @@
 namespace App\Modules\Cotecu\Services;
 
 use App\Modules\Cotecu\Models\Registro;
+use App\Modules\Cotecu\Models\Silabo;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Core\PlanEstudios;
+use App\Shared\Models\Core\Seccion;
 use App\Shared\Models\Seguridad\Usuario;
 use App\Shared\Services\ModuleService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class CotecuService extends ModuleService
@@ -26,16 +29,24 @@ final class CotecuService extends ModuleService
     }
 
     /**
+     * Periodo Activo, si existe: el único en el que se puede subir un
+     * sílabo.
+     */
+    public function periodoActivo(): ?PeriodoAcademico
+    {
+        return PeriodoAcademico::query()
+            ->where('estado', 'Activo')
+            ->orderByDesc('fecha_inicio')
+            ->first();
+    }
+
+    /**
      * Periodo de contexto de las pantallas: el Activo; si no hay, el más
      * reciente. Así la vista nunca queda sin semestre que mostrar.
      */
     public function periodoActual(): ?PeriodoAcademico
     {
-        return PeriodoAcademico::query()
-            ->where('estado', 'Activo')
-            ->orderByDesc('fecha_inicio')
-            ->first()
-            ?? $this->periodos()->first();
+        return $this->periodoActivo() ?? $this->periodos()->first();
     }
 
     /**
@@ -43,7 +54,7 @@ final class CotecuService extends ModuleService
      */
     public function hayPeriodoActivo(): bool
     {
-        return PeriodoAcademico::query()->where('estado', 'Activo')->exists();
+        return $this->periodoActivo() !== null;
     }
 
     /**
@@ -134,6 +145,128 @@ final class CotecuService extends ModuleService
         return Registro::query()->create([
             'id_plan' => $idPlan,
             'nombre' => $nombre,
+            'version' => $version,
+            'archivo_url' => $archivo,
+            'estado' => 'Pendiente',
+        ]);
+    }
+
+    /**
+     * id_docente en core.docente de la cuenta en sesión.
+     *
+     * Sigue el puente institucional: seguridad.usuario → id_persona →
+     * core.docente. Devuelve null cuando la cuenta no es docente: sus
+     * secciones (y por tanto su selector) quedan vacías.
+     */
+    public function idDocenteActual(): ?int
+    {
+        $idUsuario = $this->idUsuarioActual();
+
+        if ($idUsuario === null) {
+            return null;
+        }
+
+        $idPersona = Usuario::query()->where('id_usuario', $idUsuario)->value('id_persona');
+
+        if ($idPersona === null) {
+            return null;
+        }
+
+        $idDocente = DB::table('core.docente')->where('id_persona', $idPersona)->value('id_docente');
+
+        return $idDocente === null ? null : (int) $idDocente;
+    }
+
+    /**
+     * Secciones asignadas a la cuenta en sesión en un periodo: son las
+     * únicas que puede elegir al subir un sílabo, con los datos del
+     * curso listos para el selector.
+     *
+     * @return Collection<int, Seccion>
+     */
+    public function seccionesDelProfesor(?int $idPeriodo): Collection
+    {
+        $idDocente = $this->idDocenteActual();
+
+        if ($idDocente === null || $idPeriodo === null) {
+            return new Collection();
+        }
+
+        return Seccion::query()
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'core.seccion.id_curso_plan')
+            ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
+            ->where('core.seccion.id_docente_responsable', $idDocente)
+            ->where('core.seccion.id_periodo', $idPeriodo)
+            ->orderBy('c.codigo')
+            ->select(
+                'core.seccion.id_seccion',
+                'core.seccion.id_curso_plan',
+                'core.seccion.codigo as seccion_codigo',
+                'cp.ciclo',
+                'c.codigo as curso_codigo',
+                'c.nombre as curso_nombre',
+            )
+            ->get();
+    }
+
+    /**
+     * Sílabos de la cuenta en sesión en un periodo, con los datos del
+     * curso y el ciclo para listarlos.
+     *
+     * @return Collection<int, Silabo>
+     */
+    public function misSilabos(?int $idPeriodo): Collection
+    {
+        $idUsuario = $this->idUsuarioActual();
+
+        if ($idUsuario === null || $idPeriodo === null) {
+            return new Collection();
+        }
+
+        return Silabo::query()
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'cotecu.silabos.id_curso_plan')
+            ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
+            ->where('cotecu.silabos.id_profesor', $idUsuario)
+            ->where('cotecu.silabos.id_periodo', $idPeriodo)
+            ->orderBy('c.codigo')
+            ->select(
+                'cotecu.silabos.id',
+                'cotecu.silabos.version',
+                'cotecu.silabos.estado',
+                'cotecu.silabos.archivo_url',
+                'cp.ciclo',
+                'c.codigo as curso_codigo',
+                'c.nombre as curso_nombre',
+            )
+            ->get();
+    }
+
+    /**
+     * Registra un sílabo del profesor en estado Pendiente.
+     *
+     * La subida de archivo está simulada en esta versión de COTECU: no
+     * se recibe binario, solo se guarda una ruta por defecto en
+     * storage/app/private/ como archivo_url.
+     */
+    public function registrarSilabo(int $idCursoPlan, int $idPeriodo, int $idProfesor, int $version): Silabo
+    {
+        $cursoCodigo = DB::table('core.curso_plan')
+            ->join('core.curso', 'core.curso.id_curso', '=', 'core.curso_plan.id_curso')
+            ->where('core.curso_plan.id_curso_plan', $idCursoPlan)
+            ->value('core.curso.codigo');
+
+        $periodoCodigo = DB::table('core.periodo_academico')
+            ->where('id_periodo', $idPeriodo)
+            ->value('codigo');
+
+        $archivo = 'storage/app/private/cotecu/silabos/'
+            . Str::lower((string) $cursoCodigo) . '-' . Str::lower((string) $periodoCodigo)
+            . '-v' . $version . '.pdf';
+
+        return Silabo::query()->create([
+            'id_curso_plan' => $idCursoPlan,
+            'id_periodo' => $idPeriodo,
+            'id_profesor' => $idProfesor,
             'version' => $version,
             'archivo_url' => $archivo,
             'estado' => 'Pendiente',

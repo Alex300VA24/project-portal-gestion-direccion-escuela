@@ -12,6 +12,9 @@ Route::prefix('cotecu')
         Route::get('/mis-silabos', [CotecuController::class, 'misSilabos'])
             ->middleware('permission:cotecu.silabo.upload')->name('mis-silabos');
 
+        Route::post('/mis-silabos', [CotecuController::class, 'storeSilabo'])
+            ->middleware('permission:cotecu.silabo.upload')->name('mis-silabos.store');
+
         Route::get('/silabos', [CotecuController::class, 'silabos'])
             ->middleware('permission:cotecu.silabo.list')->name('silabos.index');
 
