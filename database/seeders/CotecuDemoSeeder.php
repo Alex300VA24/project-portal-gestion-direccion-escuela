@@ -27,8 +27,15 @@ use Spatie\Permission\Models\Role;
  * probar el módulo (los FK de cotecu.silabos apuntan a ellas). En
  * producción los carga quien administre core/seguridad; COTECU solo lee.
  *
- * El catálogo del plan y el catálogo académico (áreas, departamento,
- * cursos) también son demo. Limpieza (hijos primero, por las FK):
+ * El catálogo del plan, el catálogo académico (áreas, departamento,
+ * cursos) y las secciones con sus sílabos también son demo. Limpieza
+ * (hijos primero, por las FK):
+ *   DELETE FROM cotecu.silabos WHERE id_profesor IN
+ *     (SELECT id_usuario FROM seguridad.usuario WHERE correo_institucional LIKE '%@portal.local');
+ *   DELETE FROM core.seccion WHERE id_curso_plan IN
+ *     (SELECT id_curso_plan FROM core.curso_plan WHERE id_plan IN
+ *       (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020'));
+ *   DELETE FROM core.docente WHERE codigo_docente IN ('DOC-DEMO','DOC-AJENO');
  *   DELETE FROM cotecu.planes_curriculares WHERE id_plan IN
  *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
  *   DELETE FROM core.curso_plan WHERE id_plan IN
@@ -90,6 +97,10 @@ class CotecuDemoSeeder extends Seeder
         // permisos de sílabos que no le corresponden): entra solo con
         // permisos directos de plan.
         ['email' => 'director-cotecu@portal.local', 'numero_documento' => '70000005', 'nombres' => 'Director', 'apellido_paterno' => 'COTECU'],
+        // Docente ajeno al Profesor Demo: existe para comprobar que
+        // cada docente solo ve (y sube) las secciones que le fueron
+        // asignadas. Entra con el rol profesor.
+        ['email' => 'docente-ajeno@portal.local', 'numero_documento' => '70000006', 'nombres' => 'Docente', 'apellido_paterno' => 'Ajeno'],
     ];
 
     /**
@@ -166,6 +177,51 @@ class CotecuDemoSeeder extends Seeder
         ['ciclo' => 3, 'codigo' => 'INF-303', 'nombre' => 'Electiva: Gestión de Proyectos', 'creditos' => 2, 'area' => 'ING', 'tipo' => 'Electivo'],
     ];
 
+    /**
+     * Docentes de prueba en core.docente. Puente completo de un sílabo
+     * a su autor: users.email → seguridad.usuario → id_persona →
+     * core.docente → core.seccion.id_docente_responsable.
+     *
+     * DOC-DEMO es el Profesor Demo (persona ya sembrada) y DOC-AJENO
+     * carga la persona nueva 70000006: sus secciones no deben
+     * aparecerle al Profesor Demo ni viceversa.
+     */
+    private const DOCENTES = [
+        ['numero_documento' => '70000003', 'codigo_docente' => 'DOC-DEMO'],
+        ['numero_documento' => '70000006', 'codigo_docente' => 'DOC-AJENO'],
+    ];
+
+    /**
+     * Asignaciones docente–curso–semestre en core.seccion: es la tabla
+     * intermedia que decide qué cursos carga cada profesor en su
+     * selector. Un mismo curso con varios profesores son varias
+     * secciones (una por responsable).
+     */
+    private const SECCIONES = [
+        // Periodo activo: el Profesor Demo tiene 3 cursos asignados...
+        ['periodo' => '2026-II', 'curso' => 'INF-101', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-II', 'curso' => 'INF-201', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-II', 'curso' => 'INF-301', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        // ...y el Docente Ajeno otros 2 (la prueba del filtro).
+        ['periodo' => '2026-II', 'curso' => 'MAT-101', 'codigo' => 'A', 'docente' => 'DOC-AJENO'],
+        ['periodo' => '2026-II', 'curso' => 'INF-302', 'codigo' => 'A', 'docente' => 'DOC-AJENO'],
+        // Semestre cerrado: histórico del Profesor Demo para el
+        // selector de semestre de Mis sílabos.
+        ['periodo' => '2026-I', 'curso' => 'INF-101', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+    ];
+
+    /**
+     * Sílabos de prueba del Profesor Demo (cotecu.silabos): 2 en el
+     * periodo activo y 1 histórico en el cerrado, para que la pantalla
+     * Mis sílabos no arranque vacía en ningún semestre.
+     * archivo_url usa la ruta simulada que genera el formulario.
+     */
+    private const SILABOS = [
+        ['periodo' => '2026-II', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-ii-v1.pdf'],
+        ['periodo' => '2026-I', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-i-v1.pdf'],
+    ];
+
     public function run(): void
     {
         foreach (self::PERIODOS as $periodo) {
@@ -211,8 +267,9 @@ class CotecuDemoSeeder extends Seeder
 
         $this->sembrarPlanCurricular();
         $this->sembrarCatalogoAcademico();
+        $this->sembrarSeccionesYSilabos();
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 5 cuentas institucionales, director de COTECU, plan curricular y catálogo académico (3 áreas, 9 cursos).');
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones y 3 sílabos de prueba.');
     }
 
     /**
@@ -306,6 +363,101 @@ class CotecuDemoSeeder extends Seeder
                     'tipo' => $curso['tipo'],
                     'id_area' => $idArea,
                 ],
+            );
+        }
+    }
+
+    /**
+     * Docentes, sus secciones por semestre y los sílabos de prueba del
+     * Profesor Demo. Es lo que alimenta el selector de cursos de Mis
+     * sílabos: cada docente solo carga sus propias secciones.
+     *
+     * Idempotente: re-ejecutar no duplica filas (claves lógicas de cada
+     * tabla: codigo_docente, la unique de core.seccion y la combinación
+     * periodo+curso+versión del sílabo).
+     */
+    private function sembrarSeccionesYSilabos(): void
+    {
+        // Cuenta del portal del Docente Ajeno, con el mismo rol (y por
+        // lo tanto los mismos permisos de COTECU) que el Profesor Demo.
+        $ajeno = User::updateOrCreate(
+            ['email' => 'docente-ajeno@portal.local'],
+            [
+                'name' => 'Docente Ajeno',
+                'email_verified_at' => now(),
+                'password' => Hash::make('Portal2026!'),
+            ],
+        );
+        $ajeno->syncRoles(['profesor']);
+
+        $idDepartamento = DB::table('core.departamento_academico')
+            ->where('codigo', self::DEPARTAMENTO['codigo'])
+            ->value('id_departamento');
+
+        foreach (self::DOCENTES as $docente) {
+            $idPersona = Persona::query()
+                ->where('numero_documento', $docente['numero_documento'])
+                ->value('id_persona');
+
+            DB::table('core.docente')->updateOrInsert(
+                ['codigo_docente' => $docente['codigo_docente']],
+                [
+                    'id_persona' => $idPersona,
+                    'id_departamento' => $idDepartamento,
+                    'estado' => 'Activo',
+                ],
+            );
+        }
+
+        $idPlan = PlanEstudios::query()
+            ->where('codigo', self::PLAN['codigo'])
+            ->value('id_plan');
+
+        foreach (self::SECCIONES as $asignacion) {
+            $idPeriodo = PeriodoAcademico::query()
+                ->where('codigo', $asignacion['periodo'])
+                ->value('id_periodo');
+
+            $idCurso = DB::table('core.curso')
+                ->where('codigo', $asignacion['curso'])
+                ->value('id_curso');
+
+            $idCursoPlan = DB::table('core.curso_plan')
+                ->where('id_plan', $idPlan)
+                ->where('id_curso', $idCurso)
+                ->value('id_curso_plan');
+
+            $idDocente = DB::table('core.docente')
+                ->where('codigo_docente', $asignacion['docente'])
+                ->value('id_docente');
+
+            DB::table('core.seccion')->updateOrInsert(
+                ['id_periodo' => $idPeriodo, 'id_curso_plan' => $idCursoPlan, 'codigo' => $asignacion['codigo']],
+                ['id_docente_responsable' => $idDocente, 'estado' => 'Activo'],
+            );
+        }
+
+        $idProfesor = Usuario::query()
+            ->where('correo_institucional', 'profesor@portal.local')
+            ->value('id_usuario');
+
+        foreach (self::SILABOS as $silabo) {
+            $idPeriodo = PeriodoAcademico::query()
+                ->where('codigo', $silabo['periodo'])
+                ->value('id_periodo');
+
+            $idCurso = DB::table('core.curso')
+                ->where('codigo', $silabo['curso'])
+                ->value('id_curso');
+
+            $idCursoPlan = DB::table('core.curso_plan')
+                ->where('id_plan', $idPlan)
+                ->where('id_curso', $idCurso)
+                ->value('id_curso_plan');
+
+            DB::table('cotecu.silabos')->updateOrInsert(
+                ['id_periodo' => $idPeriodo, 'id_curso_plan' => $idCursoPlan, 'id_profesor' => $idProfesor, 'version' => $silabo['version']],
+                ['archivo_url' => $silabo['archivo_url'], 'estado' => $silabo['estado']],
             );
         }
     }
