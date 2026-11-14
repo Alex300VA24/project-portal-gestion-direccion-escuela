@@ -376,3 +376,13 @@ html[data-contrast="alto"] .quality-body :is(.quality-panel, .quality-repository
 .quality-period-form .institutional-primary { white-space: nowrap; padding-inline: 24px; }
 .quality-period-form .institutional-primary:disabled { opacity: .62; cursor: not-allowed; background: var(--portal-green); transform: none; }
 @media (max-width: 760px) { .quality-doctabs { grid-template-columns: 1fr; } .quality-document-list > li { grid-template-columns: 48px minmax(0, 1fr); } .quality-document-list .quality-file-meta { grid-column: 2; align-items: flex-start; } }
+
+/* Revisión de sílabos: marcado de la lista de cotejo */
+.quality-open-link svg { width: 16px; flex: none; }
+.quality-body textarea { width: 100%; min-height: 76px; padding: 9px 12px; color: var(--quality-ink); background: var(--quality-surface); border: 1px solid var(--quality-border); border-radius: 9px; font: inherit; line-height: 1.45; resize: vertical; }
+.quality-body textarea:focus { border-color: var(--quality-green); }
+.quality-body textarea:disabled { color: var(--quality-muted); background: var(--quality-surface-alt); opacity: .75; cursor: not-allowed; }
+.quality-body input[type="checkbox"] { width: 20px; height: 20px; flex: none; accent-color: var(--quality-green); cursor: pointer; }
+.quality-body input[type="checkbox"]:disabled { cursor: not-allowed; }
+.quality-a11y-row > label { display: inline-flex; align-items: center; gap: 10px; min-width: 0; font-weight: 700; line-height: 1.35; }
+.quality-a11y-row > textarea { flex: 1 1 auto; width: auto; min-width: 170px; }

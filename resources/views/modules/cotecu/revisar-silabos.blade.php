@@ -16,6 +16,16 @@
             </div>
         </header>
 
+        @if ($errors->any())
+            <div class="quality-alert" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>
+                <div>
+                    <strong>No se pudo procesar la revisión</strong>
+                    <span>{{ $errors->first() }}</span>
+                </div>
+            </div>
+        @endif
+
         @if (session('exito'))
             <div class="quality-alert" role="status">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
@@ -51,6 +61,7 @@
                             @endif
                             <strong>{{ $revision->archivo_url }}</strong>
                             <small>Revisión {{ $revision->id }}</small>
+                            <a class="quality-open-link" href="{{ route('cotecu.silabos.revisiones.show', $revision->id) }}">Revisar</a>
                         </div>
                     </li>
                 @endforeach

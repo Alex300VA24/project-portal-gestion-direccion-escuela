@@ -2,6 +2,7 @@
 
 namespace App\Modules\Cotecu\Controllers;
 
+use App\Modules\Cotecu\Models\Revision;
 use App\Modules\Cotecu\Services\CotecuService;
 use App\Shared\Controllers\ModuleController;
 use App\Shared\Models\Core\PlanEstudios;
@@ -130,6 +131,91 @@ final class CotecuController extends ModuleController
             'periodoActual' => $this->service->periodoActual(),
             'cola' => $this->service->colaRevisionSilabos(),
         ]);
+    }
+
+    /**
+     * Pantalla de marcado de una revisión de sílabo: el sílabo a la
+     * izquierda (lector de PDF por integrar) y la lista de cotejo a la
+     * derecha, con checkbox y observación por ítem.
+     *
+     * Una revisión ya cerrada se reabre en solo lectura: mismos ítems
+     * con su marcado guardado y sin botón de guardado.
+     */
+    public function revisarSilabo(Revision $revision): View
+    {
+        $detalle = $this->service->detalleRevision((int) $revision->id);
+
+        return view('modules.cotecu.revisar-silabo', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'revision' => $detalle ?? $revision,
+            'items' => $this->service->itemsDeRevision($revision),
+            'resultados' => $this->service->resultadosDeRevision((int) $revision->id),
+            'cerrada' => $revision->estado_final !== 'Pendiente',
+        ]);
+    }
+
+    /**
+     * Guarda el marcado y cierra la revisión: todos los ítems cumplen →
+     * Validado; al menos uno sin marcar → Observado. El estado final se
+     * aplica también al sílabo, que así sale de la cola.
+     *
+     * Un ítem sin marcar exige su observación; un ítem marcado nunca
+     * la guarda (se limpia en el servicio).
+     */
+    public function storeRevision(Request $request, Revision $revision): RedirectResponse
+    {
+        if ($revision->estado_final !== 'Pendiente') {
+            return redirect()
+                ->route('cotecu.silabos.revisiones')
+                ->withErrors(['general' => 'Esta revisión ya fue cerrada.']);
+        }
+
+        $items = $this->service->itemsDeRevision($revision);
+
+        if ($items->isEmpty()) {
+            return redirect()
+                ->route('cotecu.silabos.revisiones')
+                ->withErrors(['general' => 'Esta revisión no tiene ítems en su lista de cotejo.']);
+        }
+
+        $reglas = [];
+        $mensajes = [];
+
+        foreach ($items as $item) {
+            $incumple = ! $request->boolean("items.{$item->id}.cumple");
+
+            $reglas["items.{$item->id}.cumple"] = ['nullable', 'boolean'];
+            $reglas["items.{$item->id}.observacion"] = [
+                'nullable',
+                'string',
+                'max:1500',
+                Rule::requiredIf($incumple),
+            ];
+            $mensajes["items.{$item->id}.observacion.required"] = 'Indica la observación del ítem que incumple.';
+            $mensajes["items.{$item->id}.observacion.max"] = 'La observación no puede superar los 1500 caracteres.';
+        }
+
+        $request->validate($reglas, $mensajes);
+
+        $marcas = [];
+
+        foreach ($items as $item) {
+            $observacion = $request->input("items.{$item->id}.observacion");
+
+            $marcas[(int) $item->id] = [
+                'cumple' => $request->boolean("items.{$item->id}.cumple"),
+                'observacion' => is_string($observacion) ? trim($observacion) : null,
+            ];
+        }
+
+        $estadoFinal = $this->service->cerrarRevision($revision, $items, $marcas);
+
+        return redirect()
+            ->route('cotecu.silabos.revisiones')
+            ->with('exito', $estadoFinal === 'Validado'
+                ? 'Revisión cerrada: el sílabo fue Validado.'
+                : 'Revisión cerrada: el sílabo fue Observado.');
     }
 
     /**

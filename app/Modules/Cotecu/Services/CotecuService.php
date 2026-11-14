@@ -10,7 +10,9 @@ use App\Shared\Models\Core\PlanEstudios;
 use App\Shared\Models\Core\Seccion;
 use App\Shared\Models\Seguridad\Usuario;
 use App\Shared\Services\ModuleService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -321,6 +323,35 @@ final class CotecuService extends ModuleService
             }
         }
 
+        return $this->revisionesQuery()
+            ->where('s.estado', 'Pendiente')
+            ->orderByDesc('p.fecha_inicio')
+            ->orderBy('c.codigo')
+            ->get();
+    }
+
+    /**
+     * Detalle de una revisión de sílabo para su pantalla de marcado:
+     * la misma cruzada de la cola, renglón único. A diferencia de la
+     * cola no filtra por estado, para que una revisión ya cerrada
+     * pueda reabrirse en solo lectura.
+     */
+    public function detalleRevision(int $idRevision): ?Revision
+    {
+        return $this->revisionesQuery()
+            ->where('cotecu.revisiones_silabo.id', $idRevision)
+            ->first();
+    }
+
+    /**
+     * Cruzada de la cola: registro ⋈ sílabo ⋈ curso ⋈ periodo ⋈
+     * profesor (persona) con los datos que muestran las pantallas de
+     * revisión.
+     *
+     * @return Builder<Revision>
+     */
+    private function revisionesQuery(): Builder
+    {
         return Revision::query()
             ->join('cotecu.silabos as s', 's.id', '=', 'cotecu.revisiones_silabo.silabo_id')
             ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
@@ -328,9 +359,6 @@ final class CotecuService extends ModuleService
             ->join('core.periodo_academico as p', 'p.id_periodo', '=', 's.id_periodo')
             ->join('seguridad.usuario as u', 'u.id_usuario', '=', 's.id_profesor')
             ->leftJoin('core.persona as pe', 'pe.id_persona', '=', 'u.id_persona')
-            ->where('s.estado', 'Pendiente')
-            ->orderByDesc('p.fecha_inicio')
-            ->orderBy('c.codigo')
             ->select(
                 'cotecu.revisiones_silabo.id',
                 'cotecu.revisiones_silabo.estado_final',
@@ -341,7 +369,91 @@ final class CotecuService extends ModuleService
                 'c.nombre as curso_nombre',
                 'p.codigo as periodo_codigo',
                 DB::raw("concat(pe.nombres, ' ', pe.apellido_paterno) as profesor_nombre"),
-            )
+            );
+    }
+
+    /**
+     * Ítems de la lista de cotejo de una revisión, en orden de marcado.
+     *
+     * @return SupportCollection<int, object>
+     */
+    public function itemsDeRevision(Revision $revision): SupportCollection
+    {
+        return DB::table('cotecu.lista_cotejo_silabos_items')
+            ->where('lista_cotejo_silabo_id', $revision->lista_cotejo_silabo_id)
+            ->orderBy('orden')
             ->get();
+    }
+
+    /**
+     * Marcado ya guardado de una revisión, indexado por ítem: es lo que
+     * se pinta al reabrir una revisión cerrada (solo lectura).
+     *
+     * @return SupportCollection<int, object>
+     */
+    public function resultadosDeRevision(int $idRevision): SupportCollection
+    {
+        return DB::table('cotecu.resultados_silabos_items')
+            ->where('revision_silabo_id', $idRevision)
+            ->get()
+            ->keyBy('item_silabo_id');
+    }
+
+    /**
+     * Cierra la revisión: guarda el marcado de cada ítem en
+     * cotecu.resultados_silabos_items y decide el estado final — todos
+     * cumplen → Validado; al menos uno sin marcar → Observado —
+     * aplicándolo también al sílabo para que salga de la cola.
+     *
+     * Regla del cierre: un ítem marcado (cumple) nunca guarda
+     * observación (se limpia); un ítem sin marcar conserva la suya.
+     *
+     * @param  SupportCollection<int, object>  $items
+     * @param  array<int, array{cumple: bool, observacion: string|null}>  $marcas
+     */
+    public function cerrarRevision(Revision $revision, SupportCollection $items, array $marcas): string
+    {
+        $todosCumplen = true;
+
+        foreach ($items as $item) {
+            if (! ($marcas[(int) $item->id]['cumple'] ?? false)) {
+                $todosCumplen = false;
+            }
+        }
+
+        $estadoFinal = $todosCumplen ? 'Validado' : 'Observado';
+
+        DB::transaction(function () use ($revision, $items, $marcas, $estadoFinal) {
+            foreach ($items as $item) {
+                $marca = $marcas[(int) $item->id] ?? ['cumple' => false, 'observacion' => null];
+                $cumple = $marca['cumple'];
+                $observacion = $cumple ? null : $marca['observacion'];
+
+                $actualizado = DB::table('cotecu.resultados_silabos_items')
+                    ->where('revision_silabo_id', $revision->id)
+                    ->where('item_silabo_id', $item->id)
+                    ->update([
+                        'cumple' => $cumple,
+                        'observacion_item' => $observacion,
+                        'updated_at' => now(),
+                    ]);
+
+                if ($actualizado === 0) {
+                    DB::table('cotecu.resultados_silabos_items')->insert([
+                        'revision_silabo_id' => $revision->id,
+                        'item_silabo_id' => $item->id,
+                        'cumple' => $cumple,
+                        'observacion_item' => $observacion,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            $revision->update(['estado_final' => $estadoFinal]);
+            Silabo::query()->whereKey($revision->silabo_id)->update(['estado' => $estadoFinal]);
+        });
+
+        return $estadoFinal;
     }
 }

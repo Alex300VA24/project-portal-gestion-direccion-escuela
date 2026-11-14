@@ -1,0 +1,99 @@
+@extends('layouts.cotecu')
+
+@section('title', 'Revisar sílabo')
+@section('page-label', 'Revisar sílabos')
+
+@section('content')
+    <div class="quality-page">
+        <header class="quality-page-heading">
+            <div>
+                <h1>Revisar sílabo</h1>
+                <p>
+                    <span class="quality-period">{{ $revision->periodo_codigo ?? '—' }}</span>
+                    {{ $revision->curso_codigo ?? '' }} · {{ $revision->curso_nombre ?? '' }} · Ciclo {{ $revision->ciclo ?? '—' }} ·
+                    Versión {{ $revision->version ?? '—' }} · Profesor: {{ $revision->profesor_nombre ?? '—' }}
+                </p>
+            </div>
+            <div class="quality-period-form">
+                @if ($cerrada)
+                    @if ($revision->estado_final === 'Validado')
+                        <span class="quality-status is-success">Revisión: {{ $revision->estado_final }}</span>
+                    @else
+                        <span class="quality-status is-danger">Revisión: {{ $revision->estado_final }}</span>
+                    @endif
+                @endif
+                <a class="quality-open-link" href="{{ route('cotecu.silabos.revisiones') }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+                    Volver al listado
+                </a>
+            </div>
+        </header>
+
+        @if ($errors->any())
+            <div class="quality-alert" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>
+                <div>
+                    <strong>No se pudo cerrar la revisión</strong>
+                    <span>{{ $errors->first() }}</span>
+                </div>
+            </div>
+        @endif
+
+        <div class="quality-panel">
+            <div class="quality-improvement-grid">
+                <article>
+                    <span class="quality-eyebrow">Documento PDF</span>
+                    <section class="quality-empty">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/></svg>
+                        <h2>acá irá el lector de pdf</h2>
+                        <p>El visor del sílabo se integrará en una siguiente entrega de COTECU. La ruta simulada del archivo es:</p>
+                        <p><code>{{ $revision->archivo_url ?? '—' }}</code></p>
+                    </section>
+                </article>
+
+                <article>
+                    <span class="quality-eyebrow">Lista de cotejo</span>
+                    <h2>{{ $items->count() }} ítems</h2>
+                    <p>Marca cada ítem. Si algo no se cumple, déjalo sin marcar y escribe su observación: un solo ítem sin marcar deja el sílabo <strong>Observado</strong>.</p>
+
+                    @if ($items->isNotEmpty())
+                        <form method="POST" action="{{ route('cotecu.silabos.revisiones.store', $revision->id) }}">
+                            @csrf
+                            @foreach ($items as $item)
+                                @php($resultado = $resultados->get($item->id))
+                                @php($cumpleInicial = old("items.{$item->id}.cumple", $resultado?->cumple ?? false))
+                                <div class="quality-a11y-row"
+                                     x-data="{ cumple: {{ $cumpleInicial ? 'true' : 'false' }}, cerrada: {{ $cerrada ? 'true' : 'false' }} }">
+                                    <label>
+                                        <input type="hidden" name="items[{{ $item->id }}][cumple]" value="0">
+                                        <input type="checkbox"
+                                               name="items[{{ $item->id }}][cumple]"
+                                               value="1"
+                                               x-model="cumple"
+                                               @checked($cumpleInicial)
+                                               @disabled($cerrada)>
+                                        <span>{{ $item->descripcion }}</span>
+                                    </label>
+                                    <textarea name="items[{{ $item->id }}][observacion]"
+                                              rows="2"
+                                              placeholder="Observación si no se cumple…"
+                                              :disabled="cumple || cerrada"
+                                              @disabled($cerrada)>{{ old("items.{$item->id}.observacion", $resultado?->observacion_item ?? '') }}</textarea>
+                                </div>
+                            @endforeach
+
+                            <div class="quality-a11y-actions">
+                                @unless ($cerrada)
+                                    <button class="institutional-primary" type="submit">Guardar y cerrar revisión</button>
+                                @endunless
+                                <a class="quality-open-link" href="{{ route('cotecu.silabos.revisiones') }}">Cancelar</a>
+                            </div>
+                        </form>
+                    @else
+                        <p class="quality-list-empty">Esta lista de cotejo no tiene ítems registrados.</p>
+                    @endif
+                </article>
+            </div>
+        </div>
+    </div>
+@endsection
