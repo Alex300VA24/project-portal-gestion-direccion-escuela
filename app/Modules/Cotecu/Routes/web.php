@@ -18,10 +18,8 @@ Route::prefix('cotecu')
         Route::get('/silabos', [CotecuController::class, 'silabos'])
             ->middleware('permission:cotecu.silabo.list')->name('silabos.index');
 
-        Route::view('/silabos/revisiones', 'modules.cotecu.stub', [
-            'titulo' => 'Revisar sílabos',
-            'descripcion' => 'Sílabos enviados a revisión junto con su lista de cotejo.',
-        ])->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones');
+        Route::get('/silabos/revisiones', [CotecuController::class, 'revisionesSilabos'])
+            ->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones');
 
         Route::get('/planes', [CotecuController::class, 'planes'])
             ->middleware('permission:cotecu.plan.list')->name('planes.index');

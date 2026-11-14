@@ -3,6 +3,7 @@
 namespace App\Modules\Cotecu\Services;
 
 use App\Modules\Cotecu\Models\Registro;
+use App\Modules\Cotecu\Models\Revision;
 use App\Modules\Cotecu\Models\Silabo;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Core\PlanEstudios;
@@ -271,5 +272,76 @@ final class CotecuService extends ModuleService
             'archivo_url' => $archivo,
             'estado' => 'Pendiente',
         ]);
+    }
+
+    /**
+     * Cola de revisión de sílabos: los registros de revisión de los
+     * sílabos en estado Pendiente, con los datos del curso, el semestre
+     * y el profesor que pide la pantalla Revisar sílabos.
+     *
+     * Backfill idempotente ("si es que no hay"): cada sílabo Pendiente
+     * sin fila en cotecu.revisiones_silabo recibe una con la lista de
+     * cotejo activa, el revisor = cuenta en sesión y estado_final
+     * 'Pendiente'. Reabrir la pantalla no duplica registros: solo se
+     * inserta si el sílabo todavía no tiene.
+     *
+     * Los sílabos Validado/Observado ya fueron revisados: no aparecen.
+     * No hay filtro de semestre (un pendiente sigue pendiente aunque
+     * cambie el semestre); cada fila muestra su chip de semestre.
+     *
+     * @return Collection<int, Revision>
+     */
+    public function colaRevisionSilabos(): Collection
+    {
+        $idRevisor = $this->idUsuarioActual();
+        $idLista = DB::table('cotecu.listas_cotejo_silabos')
+            ->where('estado', 'Activo')
+            ->orderByDesc('id')
+            ->value('id');
+
+        if ($idRevisor !== null && $idLista !== null) {
+            $pendientes = DB::table('cotecu.silabos')
+                ->where('estado', 'Pendiente')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('cotecu.revisiones_silabo')
+                        ->whereColumn('cotecu.revisiones_silabo.silabo_id', 'cotecu.silabos.id');
+                })
+                ->pluck('id');
+
+            foreach ($pendientes as $idSilabo) {
+                DB::table('cotecu.revisiones_silabo')->insert([
+                    'silabo_id' => $idSilabo,
+                    'lista_cotejo_silabo_id' => $idLista,
+                    'id_revisor' => $idRevisor,
+                    'estado_final' => 'Pendiente',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        return Revision::query()
+            ->join('cotecu.silabos as s', 's.id', '=', 'cotecu.revisiones_silabo.silabo_id')
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
+            ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
+            ->join('core.periodo_academico as p', 'p.id_periodo', '=', 's.id_periodo')
+            ->join('seguridad.usuario as u', 'u.id_usuario', '=', 's.id_profesor')
+            ->leftJoin('core.persona as pe', 'pe.id_persona', '=', 'u.id_persona')
+            ->where('s.estado', 'Pendiente')
+            ->orderByDesc('p.fecha_inicio')
+            ->orderBy('c.codigo')
+            ->select(
+                'cotecu.revisiones_silabo.id',
+                'cotecu.revisiones_silabo.estado_final',
+                's.version',
+                's.archivo_url',
+                'cp.ciclo',
+                'c.codigo as curso_codigo',
+                'c.nombre as curso_nombre',
+                'p.codigo as periodo_codigo',
+                DB::raw("concat(pe.nombres, ' ', pe.apellido_paterno) as profesor_nombre"),
+            )
+            ->get();
     }
 }

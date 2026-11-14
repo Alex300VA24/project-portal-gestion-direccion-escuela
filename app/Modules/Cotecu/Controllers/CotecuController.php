@@ -118,6 +118,21 @@ final class CotecuController extends ModuleController
     }
 
     /**
+     * Cola de revisión de sílabos para el director de escuela: al
+     * abrirla se crean (si hace falta) los registros de revisión de los
+     * sílabos Pendiente y se listan con su semestre, profesor y estado.
+     */
+    public function revisionesSilabos(): View
+    {
+        return view('modules.cotecu.revisar-silabos', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'periodoActual' => $this->service->periodoActual(),
+            'cola' => $this->service->colaRevisionSilabos(),
+        ]);
+    }
+
+    /**
      * Planes curriculares: sin selector de semestre (no tienen
      * id_periodo) y con el filtro de visibilidad aplicado por el
      * servicio según los permisos de la cuenta.
