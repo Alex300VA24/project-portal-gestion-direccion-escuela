@@ -22,4 +22,7 @@ Route::prefix('cotecu')
 
         Route::get('/planes', [CotecuController::class, 'planes'])
             ->middleware('permission:cotecu.plan.list')->name('planes.index');
+
+        Route::post('/planes', [CotecuController::class, 'store'])
+            ->middleware('permission:cotecu.plan.upload')->name('planes.store');
     });

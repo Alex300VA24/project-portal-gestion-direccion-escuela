@@ -4,9 +4,11 @@ namespace App\Modules\Cotecu\Services;
 
 use App\Modules\Cotecu\Models\Registro;
 use App\Shared\Models\Core\PeriodoAcademico;
+use App\Shared\Models\Core\PlanEstudios;
 use App\Shared\Models\Seguridad\Usuario;
 use App\Shared\Services\ModuleService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 final class CotecuService extends ModuleService
 {
@@ -101,5 +103,40 @@ final class CotecuService extends ModuleService
 
         return $user !== null
             && ($user->can('cotecu.plan.upload') || $user->can('cotecu.plan.review'));
+    }
+
+    /**
+     * Catálogo de planes de estudios para el selector del formulario.
+     *
+     * @return Collection<int, PlanEstudios>
+     */
+    public function planesEstudio(): Collection
+    {
+        return PlanEstudios::query()
+            ->orderBy('codigo')
+            ->get();
+    }
+
+    /**
+     * Registra un documento del plan curricular en estado Pendiente.
+     *
+     * La subida de archivo está simulada en esta versión de COTECU: no se
+     * recibe binario, solo se guarda una ruta por defecto en
+     * storage/app/private/ como archivo_url.
+     *
+     * @param  array{codigo: string, nombre: string}  $plan
+     */
+    public function registrarPlanCurricular(int $idPlan, string $codigo, string $nombre, int $version): Registro
+    {
+        $archivo = 'storage/app/private/cotecu/planes/'
+            . Str::lower($codigo) . '-v' . $version . '.pdf';
+
+        return Registro::query()->create([
+            'id_plan' => $idPlan,
+            'nombre' => $nombre,
+            'version' => $version,
+            'archivo_url' => $archivo,
+            'estado' => 'Pendiente',
+        ]);
     }
 }

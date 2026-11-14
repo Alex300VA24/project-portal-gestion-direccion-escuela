@@ -4,7 +4,7 @@
 @section('page-label', 'Planes curriculares')
 
 @section('content')
-    <div class="quality-page" x-data="{ subirOpen: false }">
+    <div class="quality-page" x-data="{ subirOpen: {{ $errors->any() ? 'true' : 'false' }} }">
         <header class="quality-page-heading">
             <div>
                 <h1>Planes curriculares</h1>
@@ -17,6 +17,26 @@
                 </button>
             @endif
         </header>
+
+        @if (session('exito'))
+            <div class="quality-alert" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
+                <div>
+                    <strong>{{ session('exito') }}</strong>
+                    <span>El documento queda a la espera de la revisión del director de escuela.</span>
+                </div>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="quality-alert" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>
+                <div>
+                    <strong>No se pudo guardar el plan curricular</strong>
+                    <span>{{ $errors->first() }}@if ($errors->count() > 1) (y {{ $errors->count() - 1 }} más.)@endif</span>
+                </div>
+            </div>
+        @endif
 
         @if ($planes->isEmpty())
             <section class="quality-empty">
@@ -46,6 +66,7 @@
                             @else
                                 <span class="quality-status is-warning">{{ $plan->estado }}</span>
                             @endif
+                            <strong>{{ $plan->archivo_url }}</strong>
                             <small>Plan {{ $plan->plan_nombre }}</small>
                         </div>
                     </li>
@@ -53,17 +74,63 @@
             </ul>
         @endif
 
+        @if ($puedeSubir)
         <div class="quality-modal" x-cloak x-show="subirOpen" x-transition.opacity @keydown.escape.window="subirOpen = false">
             <div class="quality-modal-backdrop" @click="subirOpen = false"></div>
             <section class="quality-dialog" role="dialog" aria-modal="true" aria-labelledby="subir-plan-title">
                 <header>
-                    <div><span class="quality-eyebrow">COTECU</span><h2 id="subir-plan-title">Sección en construcción</h2></div>
+                    <div><span class="quality-eyebrow">COTECU</span><h2 id="subir-plan-title">Subir plan curricular</h2></div>
                     <button class="quality-icon-button" type="button" @click="subirOpen = false" aria-label="Cerrar">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
                 </header>
-                <p>El formulario de subida de planes curriculares se habilitará en la siguiente entrega del módulo COTECU.</p>
+                <form method="POST" action="{{ route('cotecu.planes.store') }}">
+                    @csrf
+                    <div class="quality-a11y-body">
+                        <div class="quality-a11y-row">
+                            <div>
+                                <strong>Plan de estudios</strong>
+                                <small>Plan aprobado al que pertenece el documento</small>
+                            </div>
+                            <span class="quality-select">
+                                <select name="id_plan" required>
+                                    <option value="">Seleccione un plan…</option>
+                                    @foreach ($planesEstudio as $item)
+                                        <option value="{{ $item->id_plan }}" @selected(old('id_plan') == $item->id_plan)>{{ $item->codigo }} · {{ $item->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </span>
+                        </div>
+                        <div class="quality-a11y-row">
+                            <div>
+                                <strong>Versión</strong>
+                                <small>Número correlativo del documento</small>
+                            </div>
+                            <span class="quality-search">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+                                <input type="number" name="version" min="1" step="1" required value="{{ old('version') }}" placeholder="Ej. 3">
+                            </span>
+                        </div>
+                        <div class="quality-a11y-row">
+                            <div><strong>Archivo PDF</strong></div>
+                            <span class="quality-search">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/></svg>
+                                <input type="file" name="archivo" accept="application/pdf" disabled aria-describedby="aviso-archivo">
+                            </span>
+                        </div>
+                        <div class="quality-a11y-row">
+                            <div>
+                                <small id="aviso-archivo">Aún no se puede subir archivos en esta versión de COTECU. Ubicación por defecto: <code>storage/app/private/</code></small>
+                            </div>
+                        </div>
+                        <div class="quality-a11y-actions">
+                            <button class="institutional-primary" type="submit">Guardar plan curricular</button>
+                            <button class="quality-reset" type="button" @click="subirOpen = false">Cancelar</button>
+                        </div>
+                    </div>
+                </form>
             </section>
         </div>
+        @endif
     </div>
 @endsection
