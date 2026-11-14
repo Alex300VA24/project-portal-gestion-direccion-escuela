@@ -28,10 +28,20 @@ use Spatie\Permission\Models\Role;
  * producción los carga quien administre core/seguridad; COTECU solo lee.
  *
  * El catálogo del plan, el catálogo académico (áreas, departamento,
- * cursos) y las secciones con sus sílabos también son demo. Limpieza
- * (hijos primero, por las FK):
+ * cursos), las secciones con sus sílabos y la lista de cotejo también
+ * son demo. Limpieza (hijos primero, por las FK):
+ *   DELETE FROM cotecu.resultados_silabos_items WHERE revision_silabo_id IN
+ *     (SELECT id FROM cotecu.revisiones_silabo WHERE silabo_id IN
+ *       (SELECT id FROM cotecu.silabos WHERE id_profesor IN
+ *         (SELECT id_usuario FROM seguridad.usuario WHERE correo_institucional LIKE '%@portal.local')));
+ *   DELETE FROM cotecu.revisiones_silabo WHERE silabo_id IN
+ *     (SELECT id FROM cotecu.silabos WHERE id_profesor IN
+ *       (SELECT id_usuario FROM seguridad.usuario WHERE correo_institucional LIKE '%@portal.local'));
  *   DELETE FROM cotecu.silabos WHERE id_profesor IN
  *     (SELECT id_usuario FROM seguridad.usuario WHERE correo_institucional LIKE '%@portal.local');
+ *   DELETE FROM cotecu.lista_cotejo_silabos_items WHERE lista_cotejo_silabo_id IN
+ *     (SELECT id FROM cotecu.listas_cotejo_silabos WHERE nombre = 'Lista de cotejo de sílabos 2026');
+ *   DELETE FROM cotecu.listas_cotejo_silabos WHERE nombre = 'Lista de cotejo de sílabos 2026';
  *   DELETE FROM core.seccion WHERE id_curso_plan IN
  *     (SELECT id_curso_plan FROM core.curso_plan WHERE id_plan IN
  *       (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020'));
@@ -211,15 +221,40 @@ class CotecuDemoSeeder extends Seeder
     ];
 
     /**
-     * Sílabos de prueba del Profesor Demo (cotecu.silabos): 2 en el
-     * periodo activo y 1 histórico en el cerrado, para que la pantalla
-     * Mis sílabos no arranque vacía en ningún semestre.
+     * Sílabos de prueba del Profesor Demo (cotecu.silabos): 3 en el
+     * periodo activo y 1 histórico en el cerrado, para que las pantallas
+     * Mis sílabos y Revisar sílabos no arranquen vacías en ningún
+     * semestre. Los 2 Pendiente del periodo activo son los que alimentan
+     * la cola de revisión (el backfill les crea su registro al abrir
+     * la pantalla).
      * archivo_url usa la ruta simulada que genera el formulario.
      */
     private const SILABOS = [
         ['periodo' => '2026-II', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-ii-v1.pdf'],
         ['periodo' => '2026-II', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-ii-v1.pdf'],
         ['periodo' => '2026-I', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-i-v1.pdf'],
+    ];
+
+    /**
+     * Lista de cotejo de sílabos (cotecu.listas_cotejo_silabos): es la
+     * fila que exige la FK NOT NULL de revisiones_silabo.lista_cotejo_
+     * silabo_id, sin la cual no se puede registrar ninguna revisión.
+     *
+     * Solo metadatos + los 3 ítems de cotejo: el marcado de cada revisión
+     * se guarda aparte, en cotecu.resultados_silabos_items (cumple y
+     * observación por ítem). El contenido definitivo de la lista lo carga
+     * quien corresponda; mientras tanto esta es la demo.
+     */
+    private const LISTA_COTEJO_SILABO = [
+        'nombre' => 'Lista de cotejo de sílabos 2026',
+        'version' => 'v1',
+        'estado' => 'Activo',
+        'items' => [
+            '¿Tiene el logo de la universidad?',
+            '¿Tiene el nombre del curso?',
+            '¿Tiene su cuadro de horas correctamente asignadas?',
+        ],
     ];
 
     public function run(): void
@@ -268,8 +303,9 @@ class CotecuDemoSeeder extends Seeder
         $this->sembrarPlanCurricular();
         $this->sembrarCatalogoAcademico();
         $this->sembrarSeccionesYSilabos();
+        $this->sembrarListaCotejoSilabos();
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones y 3 sílabos de prueba.');
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones, 4 sílabos y lista de cotejo con 3 ítems.');
     }
 
     /**
@@ -458,6 +494,36 @@ class CotecuDemoSeeder extends Seeder
             DB::table('cotecu.silabos')->updateOrInsert(
                 ['id_periodo' => $idPeriodo, 'id_curso_plan' => $idCursoPlan, 'id_profesor' => $idProfesor, 'version' => $silabo['version']],
                 ['archivo_url' => $silabo['archivo_url'], 'estado' => $silabo['estado']],
+            );
+        }
+    }
+
+    /**
+     * Lista de cotejo de sílabos y sus 3 ítems: es lo que permite crear
+     * registros en cotecu.revisiones_silabo (la FK lista_cotejo_silabo_id
+     * es NOT NULL) y lo que el director de escuela marca al revisar.
+     *
+     * Idempotente: re-ejecutar no duplica filas (clave lógica de la
+     * lista por nombre y de cada ítem por lista+orden).
+     */
+    private function sembrarListaCotejoSilabos(): void
+    {
+        DB::table('cotecu.listas_cotejo_silabos')->updateOrInsert(
+            ['nombre' => self::LISTA_COTEJO_SILABO['nombre']],
+            [
+                'version' => self::LISTA_COTEJO_SILABO['version'],
+                'estado' => self::LISTA_COTEJO_SILABO['estado'],
+            ],
+        );
+
+        $idLista = DB::table('cotecu.listas_cotejo_silabos')
+            ->where('nombre', self::LISTA_COTEJO_SILABO['nombre'])
+            ->value('id');
+
+        foreach (self::LISTA_COTEJO_SILABO['items'] as $indice => $descripcion) {
+            DB::table('cotecu.lista_cotejo_silabos_items')->updateOrInsert(
+                ['lista_cotejo_silabo_id' => $idLista, 'orden' => $indice + 1],
+                ['descripcion' => $descripcion],
             );
         }
     }
