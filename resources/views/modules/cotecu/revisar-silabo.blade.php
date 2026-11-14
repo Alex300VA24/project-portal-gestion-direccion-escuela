@@ -52,9 +52,8 @@
                 </article>
 
                 <article>
-                    <span class="quality-eyebrow">Lista de cotejo</span>
-                    <h2>{{ $items->count() }} ítems</h2>
-                    <p>Marca cada ítem. Si algo no se cumple, déjalo sin marcar y escribe su observación: un solo ítem sin marcar deja el sílabo <strong>Observado</strong>.</p>
+                    <h2 class="quality-eyebrow">Lista de cotejo</h2>
+                    <p>Marca lo que sí se cumple. Lo que no, déjalo sin marcar y obsérvalo: un solo ítem sin marcar deja el sílabo Observado.</p>
 
                     @if ($items->isNotEmpty())
                         <form method="POST" action="{{ route('cotecu.silabos.revisiones.store', $revision->id) }}">
