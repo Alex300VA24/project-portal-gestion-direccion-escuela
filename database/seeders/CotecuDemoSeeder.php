@@ -79,8 +79,10 @@ class CotecuDemoSeeder extends Seeder
         ['email' => 'secretaria@portal.local', 'numero_documento' => '70000002', 'nombres' => 'Secretaría', 'apellido_paterno' => 'Académica'],
         ['email' => 'profesor@portal.local', 'numero_documento' => '70000003', 'nombres' => 'Profesor', 'apellido_paterno' => 'Demo'],
         ['email' => 'alumno@portal.local', 'numero_documento' => '70000004', 'nombres' => 'Alumno', 'apellido_paterno' => 'Demo'],
-        // Director de COTECU: el profesor convocado para una nueva currícula.
-        // Conserva el rol profesor y recibe cotecu.plan.upload a nivel usuario.
+        // Director de COTECU: el profesor convocado para una nueva
+        // currícula. No lleva rol institucional (el rol profesor trae
+        // permisos de sílabos que no le corresponden): entra solo con
+        // permisos directos de plan.
         ['email' => 'director-cotecu@portal.local', 'numero_documento' => '70000005', 'nombres' => 'Director', 'apellido_paterno' => 'COTECU'],
     ];
 
@@ -150,9 +152,11 @@ class CotecuDemoSeeder extends Seeder
             );
         }
 
-        // Cuenta del portal del director de COTECU: entra con el rol
-        // profesor y recibe cotecu.plan.upload directamente en el usuario
-        // (sin crear un rol nuevo). Exige CotecuPermissionsSeeder previo.
+        // Cuenta del portal del director de COTECU: sin rol institucional
+        // (el rol profesor le daría acceso a sílabos, que no le corresponde).
+        // Entra solo con permisos directos de COTECU: ver el módulo, ver
+        // la lista de planes y subir planes. Exige CotecuPermissionsSeeder
+        // previo.
         $directorCotecu = User::updateOrCreate(
             ['email' => 'director-cotecu@portal.local'],
             [
@@ -161,8 +165,8 @@ class CotecuDemoSeeder extends Seeder
                 'password' => Hash::make('Portal2026!'),
             ],
         );
-        $directorCotecu->syncRoles(['profesor']);
-        $directorCotecu->givePermissionTo('cotecu.plan.upload');
+        $directorCotecu->syncRoles([]);
+        $directorCotecu->syncPermissions(['cotecu.view', 'cotecu.plan.list', 'cotecu.plan.upload']);
 
         $this->sembrarPlanCurricular();
 
