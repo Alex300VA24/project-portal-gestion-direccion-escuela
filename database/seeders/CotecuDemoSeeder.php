@@ -27,10 +27,16 @@ use Spatie\Permission\Models\Role;
  * probar el módulo (los FK de cotecu.silabos apuntan a ellas). En
  * producción los carga quien administre core/seguridad; COTECU solo lee.
  *
- * El catálogo del plan (facultad, escuela, plan, documentos) también es
- * demo. Limpieza:
+ * El catálogo del plan y el catálogo académico (áreas, departamento,
+ * cursos) también son demo. Limpieza (hijos primero, por las FK):
  *   DELETE FROM cotecu.planes_curriculares WHERE id_plan IN
  *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
+ *   DELETE FROM core.curso_plan WHERE id_plan IN
+ *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
+ *   DELETE FROM core.curso WHERE codigo IN
+ *     ('INF-101','MAT-101','INF-102','INF-201','MAT-201','INF-202','INF-301','INF-302','INF-303');
+ *   DELETE FROM core.area_formacion WHERE codigo IN ('CSC','MAT','ING');
+ *   DELETE FROM core.departamento_academico WHERE codigo = 'DA-INF';
  *   DELETE FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020';
  *   DELETE FROM core.escuela_profesional WHERE codigo = 'EP-INF';
  *   DELETE FROM core.facultad WHERE codigo = 'FAC-CFM';
@@ -89,8 +95,7 @@ class CotecuDemoSeeder extends Seeder
     /**
      * Catálogo académico mínimo para ver planes curriculares:
      * facultad → escuela → plan de estudios → documentos del plan.
-     * Valores fijos acordados; áreas y cursos vienen en el pase del
-     * selector de cursos de sílabos.
+     * Valores fijos acordados.
      */
     private const FACULTAD = [
         'codigo' => 'FAC-CFM',
@@ -117,12 +122,48 @@ class CotecuDemoSeeder extends Seeder
     /**
      * Documentos del plan curricular que COTECU revisa (cotecu.planes_curriculares).
      * Sin id_periodo: es por plan y se versiona, no por semestre.
-     * archivo_url es placeholder hasta decidir el storage (disco público
-     * vs comun.archivo).
+     * archivo_url es una ruta simulada: la subida de archivo todavía no
+     * está implementada (ver el aviso en el formulario de planes).
      */
     private const PLANES_CURRICULARES = [
         ['version' => 1, 'estado' => 'Validado', 'archivo_url' => 'demo/planes/plan-inf-2020-v1.pdf'],
         ['version' => 2, 'estado' => 'Pendiente', 'archivo_url' => 'demo/planes/plan-inf-2020-v2.pdf'],
+    ];
+
+    /**
+     * Áreas de formación de core.area_formacion. core.curso_plan.id_area
+     * es NOT NULL: cada curso del plan debe pertenecer a un área.
+     */
+    private const AREAS = [
+        ['codigo' => 'CSC', 'nombre' => 'Ciencia de la Computación'],
+        ['codigo' => 'MAT', 'nombre' => 'Matemática'],
+        ['codigo' => 'ING', 'nombre' => 'Ingeniería'],
+    ];
+
+    /**
+     * Departamento académico de la escuela (FK a la facultad demo).
+     * Se siembra por si el selector de cursos pasa a ser por secciones.
+     */
+    private const DEPARTAMENTO = [
+        'codigo' => 'DA-INF',
+        'nombre' => 'Informática',
+    ];
+
+    /**
+     * Cursos del PLAN-INF-2020 en core.curso (créditos) y su fila en
+     * core.curso_plan (ciclo, tipo y área). La tabla de cursos no tiene
+     * código propio: se deriva de core.curso.codigo, único por diseño.
+     */
+    private const CURSOS = [
+        ['ciclo' => 1, 'codigo' => 'INF-101', 'nombre' => 'Fundamentos de Programación', 'creditos' => 3, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 1, 'codigo' => 'MAT-101', 'nombre' => 'Cálculo I', 'creditos' => 4, 'area' => 'MAT', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 1, 'codigo' => 'INF-102', 'nombre' => 'Introducción a la Ingeniería Informática', 'creditos' => 2, 'area' => 'ING', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 2, 'codigo' => 'INF-201', 'nombre' => 'Estructuras de Datos', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 2, 'codigo' => 'MAT-201', 'nombre' => 'Matemática Discreta', 'creditos' => 3, 'area' => 'MAT', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 2, 'codigo' => 'INF-202', 'nombre' => 'Programación Orientada a Objetos', 'creditos' => 3, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 3, 'codigo' => 'INF-301', 'nombre' => 'Bases de Datos', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 3, 'codigo' => 'INF-302', 'nombre' => 'Sistemas Operativos', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 3, 'codigo' => 'INF-303', 'nombre' => 'Electiva: Gestión de Proyectos', 'creditos' => 2, 'area' => 'ING', 'tipo' => 'Electivo'],
     ];
 
     public function run(): void
@@ -169,8 +210,9 @@ class CotecuDemoSeeder extends Seeder
         $directorCotecu->syncPermissions(['cotecu.view', 'cotecu.plan.list', 'cotecu.plan.upload']);
 
         $this->sembrarPlanCurricular();
+        $this->sembrarCatalogoAcademico();
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 5 cuentas institucionales, director de COTECU y plan curricular.');
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 5 cuentas institucionales, director de COTECU, plan curricular y catálogo académico (3 áreas, 9 cursos).');
     }
 
     /**
@@ -206,6 +248,64 @@ class CotecuDemoSeeder extends Seeder
             Registro::firstOrCreate(
                 ['id_plan' => $plan->id_plan, 'version' => $documento['version']],
                 array_merge($documento, ['nombre' => self::PLAN['nombre']]),
+            );
+        }
+    }
+
+    /**
+     * Catálogo académico para el selector de cursos de sílabos:
+     * áreas de formación, departamento de la escuela y los cursos del
+     * PLAN-INF-2020 con su fila en core.curso_plan (ciclo, tipo, área).
+     *
+     * Idempotente por código: re-ejecutar no duplica filas.
+     */
+    private function sembrarCatalogoAcademico(): void
+    {
+        foreach (self::AREAS as $area) {
+            DB::table('core.area_formacion')->updateOrInsert(
+                ['codigo' => $area['codigo']],
+                ['nombre' => $area['nombre']],
+            );
+        }
+
+        $idFacultad = DB::table('core.facultad')
+            ->where('codigo', self::FACULTAD['codigo'])
+            ->value('id_facultad');
+
+        DB::table('core.departamento_academico')->updateOrInsert(
+            ['codigo' => self::DEPARTAMENTO['codigo']],
+            ['nombre' => self::DEPARTAMENTO['nombre'], 'id_facultad' => $idFacultad],
+        );
+
+        $idPlan = PlanEstudios::query()
+            ->where('codigo', self::PLAN['codigo'])
+            ->value('id_plan');
+
+        foreach (self::CURSOS as $curso) {
+            DB::table('core.curso')->updateOrInsert(
+                ['codigo' => $curso['codigo']],
+                [
+                    'nombre' => $curso['nombre'],
+                    'creditos' => $curso['creditos'],
+                    'estado' => 'Activo',
+                ],
+            );
+
+            $idCurso = DB::table('core.curso')
+                ->where('codigo', $curso['codigo'])
+                ->value('id_curso');
+
+            $idArea = DB::table('core.area_formacion')
+                ->where('codigo', $curso['area'])
+                ->value('id_area');
+
+            DB::table('core.curso_plan')->updateOrInsert(
+                ['id_plan' => $idPlan, 'id_curso' => $idCurso],
+                [
+                    'ciclo' => $curso['ciclo'],
+                    'tipo' => $curso['tipo'],
+                    'id_area' => $idArea,
+                ],
             );
         }
     }
