@@ -393,8 +393,8 @@ html[data-contrast="alto"] .quality-body :is(.quality-panel, .quality-repository
 .quality-page:has(.quality-improvement-grid):has(.quality-alert) { max-height: calc(100dvh - 396px); }
 .quality-page:has(.quality-improvement-grid) > .quality-page-heading { flex: none; }
 .quality-page:has(.quality-improvement-grid) > .quality-alert { flex: none; }
-.quality-page:has(.quality-improvement-grid) > .quality-panel { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
-.quality-improvement-grid { grid-auto-rows: minmax(0, 1fr); }
+.quality-page:has(.quality-improvement-grid) > .quality-panel { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.quality-improvement-grid { flex: 1 1 auto; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
 .quality-improvement-grid > article { overflow-y: auto; min-height: 0; }
 @media (max-width: 760px) {
     .quality-page:has(.quality-improvement-grid) { max-height: none; }
