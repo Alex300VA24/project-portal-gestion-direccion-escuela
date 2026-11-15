@@ -241,7 +241,7 @@ class CotecuDemoSeeder extends Seeder
      * fila que exige la FK NOT NULL de revisiones_silabo.lista_cotejo_
      * silabo_id, sin la cual no se puede registrar ninguna revisión.
      *
-     * Solo metadatos + los 3 ítems de cotejo: el marcado de cada revisión
+     * Solo metadatos + los 10 ítems de cotejo: el marcado de cada revisión
      * se guarda aparte, en cotecu.resultados_silabos_items (cumple y
      * observación por ítem). El contenido definitivo de la lista lo carga
      * quien corresponda; mientras tanto esta es la demo.
@@ -254,6 +254,13 @@ class CotecuDemoSeeder extends Seeder
             '¿Tiene el logo de la universidad?',
             '¿Tiene el nombre del curso?',
             '¿Tiene su cuadro de horas correctamente asignadas?',
+            '¿Tiene los datos del docente?',
+            '¿Tiene los resultados de aprendizaje?',
+            '¿Tiene la metodología?',
+            '¿Tiene la evaluación sumada al 100%?',
+            '¿Tiene las unidades organizadas por semana?',
+            '¿Tiene la bibliografía?',
+            '¿Tiene el horario?',
         ],
     ];
 
@@ -305,7 +312,7 @@ class CotecuDemoSeeder extends Seeder
         $this->sembrarSeccionesYSilabos();
         $this->sembrarListaCotejoSilabos();
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones, 4 sílabos y lista de cotejo con 3 ítems.');
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones, 4 sílabos y lista de cotejo con 10 ítems.');
     }
 
     /**
@@ -499,7 +506,7 @@ class CotecuDemoSeeder extends Seeder
     }
 
     /**
-     * Lista de cotejo de sílabos y sus 3 ítems: es lo que permite crear
+     * Lista de cotejo de sílabos y sus 10 ítems: es lo que permite crear
      * registros en cotecu.revisiones_silabo (la FK lista_cotejo_silabo_id
      * es NOT NULL) y lo que el director de escuela marca al revisar.
      *
