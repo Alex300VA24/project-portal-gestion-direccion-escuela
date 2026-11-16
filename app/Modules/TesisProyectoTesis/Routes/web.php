@@ -78,6 +78,9 @@ Route::prefix('tesis-proyecto-tesis')
             // Jurado (profesor con asignación activa en el proyecto)
             Route::middleware('role:profesor')->prefix('jurado')->name('jurado.')->group(function () {
                 Route::get('/proyectos', [JuradoController::class, 'proyectos'])->name('proyectos');
+                Route::get('/sustentaciones', [JuradoController::class, 'sustentaciones'])->name('sustentaciones');
+                Route::get('/sustentaciones/{sustentacion}/resultado', [JuradoController::class, 'resultado'])->whereUuid('sustentacion')->name('resultado');
+                Route::post('/sustentaciones/{sustentacion}/resultado', [JuradoController::class, 'registrarResultado'])->whereUuid('sustentacion')->name('resultado.registrar');
 
                 Route::prefix('proyectos/{proyecto}')->whereUuid('proyecto')->middleware('can:verComoJurado,proyecto')->group(function () {
                     Route::get('/verificar', [JuradoController::class, 'verificar'])->name('verificar');
@@ -90,6 +93,10 @@ Route::prefix('tesis-proyecto-tesis')
             Route::middleware('role:secretaria')->prefix('secretaria')->name('secretaria.')->group(function () {
                 Route::get('/resoluciones', [SecretariaController::class, 'resoluciones'])->name('resoluciones');
                 Route::post('/resoluciones/{solicitud}', [SecretariaController::class, 'registrarResolucion'])->whereUuid('solicitud')->name('resoluciones.registrar');
+                Route::get('/sustentaciones', [SecretariaController::class, 'sustentaciones'])->name('sustentaciones');
+                Route::get('/sustentaciones/programar/{proyecto}', [SecretariaController::class, 'programar'])
+                    ->whereUuid('proyecto')->middleware('can:gestionarComoSecretaria,proyecto')->name('sustentaciones.programar');
+                Route::post('/sustentaciones/programar/{proyecto}', [SecretariaController::class, 'guardarProgramacion'])->whereUuid('proyecto')->name('sustentaciones.guardar');
                 Route::get('/actas', [SecretariaController::class, 'actas'])->name('actas');
                 Route::get('/actas/{acta}', [SecretariaController::class, 'verActa'])->whereUuid('acta')->name('actas.ver');
                 Route::post('/actas/{acta}/firmada', [SecretariaController::class, 'subirFirmada'])->whereUuid('acta')->name('actas.firmada');

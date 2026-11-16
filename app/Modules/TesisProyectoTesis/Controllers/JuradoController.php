@@ -4,8 +4,12 @@ namespace App\Modules\TesisProyectoTesis\Controllers;
 
 use App\Modules\TesisProyectoTesis\Models\Observacion;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Models\Sustentacion;
+use App\Modules\TesisProyectoTesis\Requests\RegistrarResultadoRequest;
 use App\Modules\TesisProyectoTesis\Requests\VerificarRubricaRequest;
+use App\Modules\TesisProyectoTesis\Services\CatalogoService;
 use App\Modules\TesisProyectoTesis\Services\JuradoService;
+use App\Modules\TesisProyectoTesis\Services\SustentacionService;
 use App\Modules\TesisProyectoTesis\Services\RevisionService;
 use App\Modules\TesisProyectoTesis\Services\RubricaService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
@@ -56,6 +60,42 @@ final class JuradoController extends BaseController
         };
 
         return redirect()->route('tesis-proyecto-tesis.jurado.verificar', $proyecto)->with('status', $mensaje);
+    }
+
+    public function sustentaciones(Request $request, SustentacionService $sustentaciones, CatalogoService $catalogo): View
+    {
+        $id = $this->identidad($request);
+        $lista = $sustentaciones->deJurado((int) $id->idDocente)
+            ->each(fn ($s) => $s->setAttribute('lugar', $catalogo->nombreAmbiente($s->id_ambiente))
+                ->setAttribute('registrado', $sustentaciones->miResultado($s, (int) $id->idDocente) !== null));
+
+        return $this->vista($request, 'jurado.sustentaciones', ['sustentaciones' => $lista], 'jurado', 'sustentaciones',
+            ['sustentaciones' => $lista->where('estado', 'Programada')->where('registrado', false)->count()]);
+    }
+
+    public function resultado(Request $request, Sustentacion $sustentacion, SustentacionService $sustentaciones, SeguimientoService $seguimiento, CatalogoService $catalogo): View
+    {
+        $id = $this->identidad($request);
+        abort_unless($request->user()->can('verComoJurado', $sustentacion->proyecto), 403);
+
+        return $this->vista($request, 'jurado.resultado', [
+            ...$seguimiento->ficha($sustentacion->proyecto),
+            'sustentacion' => $sustentacion,
+            'lugar' => $catalogo->nombreAmbiente($sustentacion->id_ambiente),
+            'mio' => $sustentaciones->miResultado($sustentacion, (int) $id->idDocente),
+            'miCargo' => $sustentacion->proyecto->juradosActivos()->where('id_docente', $id->idDocente)->value('cargo'),
+            'registro' => $sustentaciones->registroJurado($sustentacion),
+        ], 'jurado', 'sustentaciones');
+    }
+
+    public function registrarResultado(RegistrarResultadoRequest $request, Sustentacion $sustentacion, SustentacionService $sustentaciones): RedirectResponse
+    {
+        $d = $request->validated();
+        $s = $sustentaciones->registrarResultado($sustentacion, $this->identidad($request), $d['resultado'], (bool) ($d['mencion'] ?? false), $d['hora_fin'] ?? null);
+
+        return redirect()->route('tesis-proyecto-tesis.jurado.resultado', $s)->with('status', $s->estado === 'Realizada'
+            ? 'Resultado registrado. Con los tres resultados se consolidó: '.($s->resultado === 'Aprobado' ? 'aprobado por '.($s->modo_resultado === 'Unanimidad' ? 'unanimidad' : 'mayoría') : 'desaprobado').'.'
+            : 'Resultado registrado. Falta el registro de los demás miembros.');
     }
 
     public function levantar(Request $request, Proyecto $proyecto, Observacion $observacion, RevisionService $revisiones): RedirectResponse

@@ -3,10 +3,16 @@
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
 use App\Modules\TesisProyectoTesis\Models\Acta;
+use App\Modules\TesisProyectoTesis\Models\Proyecto;
 use App\Modules\TesisProyectoTesis\Models\Solicitud;
+use App\Modules\TesisProyectoTesis\Requests\ProgramarSustentacionRequest;
 use App\Modules\TesisProyectoTesis\Requests\RegistrarResolucionRequest;
 use App\Modules\TesisProyectoTesis\Requests\SubirActaFirmadaRequest;
 use App\Modules\TesisProyectoTesis\Services\ActaService;
+use App\Modules\TesisProyectoTesis\Services\CatalogoService;
+use App\Modules\TesisProyectoTesis\Services\RubricaService;
+use App\Modules\TesisProyectoTesis\Services\SimilitudService;
+use App\Modules\TesisProyectoTesis\Services\SustentacionService;
 use App\Modules\TesisProyectoTesis\Services\DesignacionService;
 use App\Modules\TesisProyectoTesis\Services\IdentidadService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
@@ -31,6 +37,48 @@ final class SecretariaController extends BaseController
             'docentes' => $identidad->docentesActivos(),
             'recientes' => $designacion->resolucionesRecientes(),
         ], 'secretaria', 'resoluciones', ['resoluciones' => $pendientes->count()]);
+    }
+
+    public function sustentaciones(Request $request, SustentacionService $sustentaciones): View
+    {
+        $this->identidad($request);
+        $pendientes = $sustentaciones->porProgramar();
+
+        return $this->vista($request, 'secretaria.sustentaciones', [
+            'pendientes' => $pendientes,
+            'recientes' => $sustentaciones->recientes(),
+        ], 'secretaria', 'sustentaciones', ['sustentaciones' => $pendientes->count()]);
+    }
+
+    public function programar(Request $request, Proyecto $proyecto, SustentacionService $sustentaciones, SeguimientoService $seguimiento, CatalogoService $catalogo, RubricaService $rubrica, SimilitudService $similitud): View
+    {
+        $this->identidad($request);
+        $filtro = $request->validate(['ambiente' => ['nullable', 'string', 'max:30', 'regex:/^[A-Za-z0-9-]+$/'], 'fecha' => ['nullable', 'date_format:Y-m-d']]);
+        $ambientes = $catalogo->ambientes();
+        $codigo = $filtro['ambiente'] ?? old('ambiente', $ambientes[0]['codigo'] ?? null);
+        $fecha = \Illuminate\Support\Carbon::parse($filtro['fecha'] ?? old('fecha', now()->toDateString()));
+
+        return $this->vista($request, 'secretaria.programar', [
+            ...$seguimiento->ficha($proyecto),
+            'ambientes' => $ambientes,
+            'ambienteSel' => $codigo,
+            'fechaSel' => $fecha,
+            'agenda' => $sustentaciones->agenda($codigo ? $catalogo->idAmbientePorCodigo($codigo) : null, $fecha),
+            'participantes' => $sustentaciones->participantes($proyecto),
+            'intento' => $proyecto->sustentaciones()->count() + 1,
+            'programable' => in_array($proyecto->estado, SustentacionService::PROGRAMABLES, true),
+            'reporte' => $similitud->historial($proyecto)->firstWhere('resultado', 'Apto'),
+            'totalCriterios' => $rubrica->criterios($proyecto->etapa)->count(),
+        ], 'secretaria', 'sustentaciones');
+    }
+
+    public function guardarProgramacion(ProgramarSustentacionRequest $request, Proyecto $proyecto, SustentacionService $sustentaciones): RedirectResponse
+    {
+        $d = $request->validated();
+        $s = $sustentaciones->programar($proyecto, $this->identidad($request), $d['fecha'], $d['hora'], $d['ambiente']);
+
+        return redirect()->route('tesis-proyecto-tesis.secretaria.sustentaciones')
+            ->with('status', "Sustentación de {$proyecto->codigo} programada para el {$s->fecha_hora->format('d/m/Y H:i')}. Se notificó a los participantes.");
     }
 
     public function actas(Request $request, ActaService $actas): View

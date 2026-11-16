@@ -34,7 +34,7 @@
                 se reunió el Jurado conformado por:</p>
             <ul style="list-style: none; padding: 0">
                 @foreach ($jurado as $j)
-                    <li>{{ $j['cargo'] }}(a): {{ $nombreDoc($j['id_docente']) }} · código {{ $codigoDoc($j['id_docente']) }}</li>
+                    <li>{{ $j['cargo'] === 'Vocal' ? 'Vocal' : $j['cargo'].'(a)' }}: {{ $nombreDoc($j['id_docente']) }} · código {{ $codigoDoc($j['id_docente']) }}</li>
                 @endforeach
                 <li>Asesor(a): {{ $nombreDoc($idAsesor) }} · código {{ $codigoDoc($idAsesor) }}</li>
             </ul>
