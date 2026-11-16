@@ -110,7 +110,7 @@
     .tz-btn-secondary:hover { border-color: var(--tz-navy); }
     .tz-btn-danger { background: #fff; color: var(--tz-danger) !important; border-color: #e6b3ad; }
     .tz-btn:disabled, .tz-btn[aria-disabled="true"] { background: var(--tz-alt); color: #8a90a6 !important; border-color: var(--tz-border); cursor: not-allowed; }
-    .tz-btn-sm { min-height: 36px; padding: 0 12px; font-size: 14px; }
+    .tz-btn-sm { min-height: 44px; padding: 0 12px; font-size: 14px; }
     .tz-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 
     /* Formularios */
@@ -126,7 +126,8 @@
     .tz-input[aria-invalid="true"], .tz-select[aria-invalid="true"], .tz-textarea[aria-invalid="true"] { border-color: var(--tz-danger); }
     .tz-error { font-size: 13px; color: var(--tz-danger); font-weight: 600; }
     .tz-check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
-    .tz-check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--tz-green); }
+    .tz-check { min-height: 44px; align-items: center; }
+    .tz-check input { width: 22px; height: 22px; flex: none; accent-color: var(--tz-green); }
     .tz-fieldset { border: 1px solid var(--tz-border); border-radius: 12px; padding: 18px; display: grid; gap: 14px; }
     .tz-fieldset legend { padding: 0 6px; font-weight: 700; color: var(--tz-navy); }
     .tz-step { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--tz-navy); color: #fff; font-size: 13px; font-weight: 700; margin-right: 6px; }
@@ -137,7 +138,7 @@
     .tz-rubric-line { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
     .tz-rubric-line > b { color: var(--tz-navy); }
     .tz-seg { display: inline-flex; border: 1px solid #bbc2ce; border-radius: 10px; overflow: hidden; }
-    .tz-seg label { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 12px; font-size: 14px; font-weight: 700; cursor: pointer; border-left: 1px solid #bbc2ce; color: var(--tz-ink); }
+    .tz-seg label { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 700; cursor: pointer; border-left: 1px solid #bbc2ce; color: var(--tz-ink); }
     .tz-seg label:first-child { border-left: 0; }
     .tz-seg input { position: absolute; opacity: 0; pointer-events: none; }
     .tz-seg label.is-on-ok { background: #e3f3ea; color: #0a5f3f; }
