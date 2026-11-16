@@ -54,6 +54,10 @@ Route::prefix('tesis-proyecto-tesis')
                     Route::get('/entregas/{entrega}/revisar', [AsesorController::class, 'revisar'])->whereUuid('entrega')->name('revisar');
                     Route::post('/entregas/{entrega}/revisar', [AsesorController::class, 'guardarRevision'])->whereUuid('entrega')->name('revisar.guardar');
                     Route::post('/observaciones/{observacion}/levantar', [AsesorController::class, 'levantar'])->whereUuid('observacion')->withoutScopedBindings()->name('observaciones.levantar');
+                    Route::get('/verificar', [AsesorController::class, 'verificar'])->name('verificar');
+                    Route::post('/verificar', [AsesorController::class, 'guardarVerificacion'])->name('verificar.guardar');
+                    Route::get('/similitud', [AsesorController::class, 'similitud'])->name('similitud');
+                    Route::post('/similitud', [AsesorController::class, 'registrarSimilitud'])->name('similitud.registrar');
                 });
             });
 

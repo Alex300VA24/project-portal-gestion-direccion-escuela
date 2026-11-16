@@ -5,11 +5,16 @@ namespace App\Modules\TesisProyectoTesis\Controllers;
 use App\Modules\TesisProyectoTesis\Models\Entrega;
 use App\Modules\TesisProyectoTesis\Models\Observacion;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Requests\RegistrarSimilitudRequest;
 use App\Modules\TesisProyectoTesis\Requests\RevisarAvanceRequest;
+use App\Modules\TesisProyectoTesis\Requests\VerificarRubricaRequest;
 use App\Modules\TesisProyectoTesis\Services\AsesorService;
 use App\Modules\TesisProyectoTesis\Services\AvanceService;
 use App\Modules\TesisProyectoTesis\Services\RevisionService;
+use App\Modules\TesisProyectoTesis\Services\RubricaService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
+use App\Modules\TesisProyectoTesis\Services\SimilitudService;
+use App\Modules\TesisProyectoTesis\Support\Estados;
 use App\Modules\TesisProyectoTesis\Support\Parametros;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,6 +69,55 @@ final class AsesorController extends BaseController
 
         return redirect()->route('tesis-proyecto-tesis.asesor.proyecto', $proyecto)
             ->with('status', "Revisión de la entrega v{$entrega->version} enviada a los estudiantes.");
+    }
+
+    public function verificar(Request $request, Proyecto $proyecto, RubricaService $rubrica): View
+    {
+        $id = $this->identidad($request);
+        $entrega = $rubrica->entregaObjetivo($proyecto);
+        $criterios = $rubrica->criterios($proyecto->etapa);
+
+        return $this->vista($request, 'asesor.verificar', [
+            ...$this->seguimiento->ficha($proyecto),
+            'entrega' => $entrega,
+            'criterios' => $criterios,
+            'rubrica' => $rubrica->vigente(),
+            'registrada' => $entrega ? $rubrica->revisionDe($entrega, (int) $id->idDocente, 'Verificacion') : null,
+            'anterior' => $rubrica->ultimaVerificacion($proyecto, (int) $id->idDocente),
+            'abiertas' => $this->revisiones->observacionesAbiertasDe($proyecto, (int) $id->idDocente),
+            'habilitado' => $entrega !== null && in_array($proyecto->estado, Estados::DESARROLLO, true),
+        ], 'asesor', 'proyectos');
+    }
+
+    public function guardarVerificacion(VerificarRubricaRequest $request, Proyecto $proyecto, RubricaService $rubrica): RedirectResponse
+    {
+        $revision = $rubrica->verificarComoAsesor($proyecto, $this->identidad($request), $request->validated());
+
+        return $revision->conforme
+            ? redirect()->route('tesis-proyecto-tesis.asesor.similitud', $proyecto)->with('status', 'Rúbrica conforme. Ahora registra el reporte de Turnitin.')
+            : redirect()->route('tesis-proyecto-tesis.asesor.verificar', $proyecto)->with('status', 'Verificación guardada. Las observaciones se enviaron a los estudiantes.');
+    }
+
+    public function similitud(Request $request, Proyecto $proyecto, SimilitudService $similitud): View
+    {
+        $id = $this->identidad($request);
+
+        return $this->vista($request, 'asesor.similitud', [
+            ...$this->seguimiento->ficha($proyecto),
+            ...$similitud->requisitos($proyecto, (int) $id->idDocente),
+            'historialReportes' => $similitud->historial($proyecto),
+            'maximo' => Parametros::SIMILITUD_MAXIMA,
+        ], 'asesor', 'proyectos');
+    }
+
+    public function registrarSimilitud(RegistrarSimilitudRequest $request, Proyecto $proyecto, SimilitudService $similitud): RedirectResponse
+    {
+        $reporte = $similitud->registrar($proyecto, $this->identidad($request), (float) $request->validated('porcentaje'),
+            $request->file('archivo'), $request->validated('indicaciones'), $request->boolean('conformidad'));
+
+        return $reporte->resultado === 'Apto'
+            ? redirect()->route('tesis-proyecto-tesis.asesor.proyectos')->with('status', "Conformidad registrada ({$reporte->porcentaje} %). Se avisó al Director y a los estudiantes.")
+            : redirect()->route('tesis-proyecto-tesis.asesor.similitud', $proyecto)->with('error', "Similitud {$reporte->porcentaje} %: supera el límite. El proyecto vuelve a los estudiantes para corregir.");
     }
 
     public function levantar(Request $request, Proyecto $proyecto, Observacion $observacion): RedirectResponse
