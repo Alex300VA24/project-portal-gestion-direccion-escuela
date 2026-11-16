@@ -2,11 +2,17 @@
 
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
+use App\Modules\TesisProyectoTesis\Models\Observacion;
+use App\Modules\TesisProyectoTesis\Models\Proyecto;
 use App\Modules\TesisProyectoTesis\Requests\RegistrarProyectoRequest;
+use App\Modules\TesisProyectoTesis\Requests\ResponderObservacionRequest;
+use App\Modules\TesisProyectoTesis\Requests\SubirEntregaRequest;
+use App\Modules\TesisProyectoTesis\Services\AvanceService;
 use App\Modules\TesisProyectoTesis\Services\CatalogoService;
 use App\Modules\TesisProyectoTesis\Services\IdentidadService;
 use App\Modules\TesisProyectoTesis\Services\ProyectoService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
+use App\Modules\TesisProyectoTesis\Support\Estados;
 use App\Modules\TesisProyectoTesis\Support\Parametros;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -82,6 +88,71 @@ final class AlumnoController extends BaseController
 
         return redirect()->route('tesis-proyecto-tesis.alumno.panel')
             ->with('status', "Proyecto {$proyecto->codigo} registrado. El Director solicitará tu asesor al Decanato.");
+    }
+
+    /** Accesos del menú: llevan al proyecto vigente del estudiante. */
+    public function irAvances(Request $request): RedirectResponse
+    {
+        return $this->irA($request, 'tesis-proyecto-tesis.alumno.proyecto.avances');
+    }
+
+    public function irObservaciones(Request $request): RedirectResponse
+    {
+        return $this->irA($request, 'tesis-proyecto-tesis.alumno.proyecto.observaciones');
+    }
+
+    private function irA(Request $request, string $ruta): RedirectResponse
+    {
+        $proyecto = $this->proyectos->proyectoDeEstudiante((int) $this->identidad($request)->idEstudiante);
+
+        return $proyecto
+            ? redirect()->route($ruta, $proyecto)
+            : redirect()->route('tesis-proyecto-tesis.alumno.panel')->with('error', 'Primero registra tu proyecto de tesis.');
+    }
+
+    public function avances(Request $request, Proyecto $proyecto, AvanceService $avances): View
+    {
+        $pendientes = $avances->observaciones($proyecto)->where('estado', 'Pendiente');
+
+        return $this->vista($request, 'alumno.avances', [
+            'proyecto' => $proyecto,
+            'entregas' => $this->seguimiento->entregas($proyecto),
+            'semana' => $this->seguimiento->semanaActual($proyecto),
+            'pendientes' => $pendientes,
+            'recibe' => in_array($proyecto->estado, Estados::PERMITEN_ENTREGA, true),
+        ], 'alumno', 'avances', ['observaciones' => $pendientes->count()]);
+    }
+
+    public function subirAvance(SubirEntregaRequest $request, Proyecto $proyecto, AvanceService $avances): RedirectResponse
+    {
+        $entrega = $avances->subir($proyecto, $this->identidad($request), $request->validated(), $request->file('archivo'));
+
+        return redirect()->route('tesis-proyecto-tesis.alumno.proyecto.avances', $proyecto)
+            ->with('status', "Entrega v{$entrega->version} enviada. Tu revisor recibió un aviso.");
+    }
+
+    public function observaciones(Request $request, Proyecto $proyecto, AvanceService $avances): View
+    {
+        $lista = $avances->observaciones($proyecto);
+
+        return $this->vista($request, 'alumno.observaciones', [
+            'proyecto' => $proyecto,
+            'grupos' => [
+                'Pendiente' => $lista->where('estado', 'Pendiente')->values(),
+                'Respondida' => $lista->where('estado', 'Respondida')->values(),
+                'Levantada' => $lista->where('estado', 'Levantada')->values(),
+            ],
+            'entregas' => $avances->entregasParaCorreccion($proyecto),
+        ], 'alumno', 'observaciones', ['observaciones' => $lista->where('estado', 'Pendiente')->count()]);
+    }
+
+    public function responder(ResponderObservacionRequest $request, Observacion $observacion, AvanceService $avances): RedirectResponse
+    {
+        $avances->responder($observacion, $this->identidad($request), $request->validated('respuesta'), $request->validated('entrega'));
+        $proyecto = $avances->proyectoDeObservacion($observacion);
+
+        return redirect()->route('tesis-proyecto-tesis.alumno.proyecto.observaciones', $proyecto)
+            ->with('status', 'Respuesta enviada. El revisor confirmará si la observación queda levantada.');
     }
 
     /**

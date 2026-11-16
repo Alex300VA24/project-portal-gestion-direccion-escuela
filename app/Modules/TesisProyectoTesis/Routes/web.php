@@ -2,6 +2,7 @@
 
 use App\Modules\TesisProyectoTesis\Controllers\AlumnoController;
 use App\Modules\TesisProyectoTesis\Controllers\ArchivoController;
+use App\Modules\TesisProyectoTesis\Controllers\AsesorController;
 use App\Modules\TesisProyectoTesis\Controllers\DirectorController;
 use App\Modules\TesisProyectoTesis\Controllers\InicioController;
 use App\Modules\TesisProyectoTesis\Controllers\SecretariaController;
@@ -32,6 +33,28 @@ Route::prefix('tesis-proyecto-tesis')
                 Route::get('/proyecto/registrar', [AlumnoController::class, 'registrar'])->name('proyecto.registrar');
                 Route::post('/proyecto/registrar', [AlumnoController::class, 'guardar'])->name('proyecto.guardar');
                 Route::get('/coautor', [AlumnoController::class, 'coautor'])->middleware('throttle:20,1')->name('coautor');
+                Route::get('/avances', [AlumnoController::class, 'irAvances'])->name('avances');
+                Route::get('/observaciones', [AlumnoController::class, 'irObservaciones'])->name('observaciones');
+
+                Route::prefix('proyecto/{proyecto}')->whereUuid('proyecto')->middleware('can:verComoAlumno,proyecto')->group(function () {
+                    Route::get('/avances', [AlumnoController::class, 'avances'])->name('proyecto.avances');
+                    Route::post('/avances', [AlumnoController::class, 'subirAvance'])->name('proyecto.avances.subir');
+                    Route::get('/observaciones', [AlumnoController::class, 'observaciones'])->name('proyecto.observaciones');
+                });
+                Route::post('/observaciones/{observacion}/responder', [AlumnoController::class, 'responder'])
+                    ->whereUuid('observacion')->name('observaciones.responder');
+            });
+
+            // Asesor (profesor con designación activa en el proyecto)
+            Route::middleware('role:profesor')->prefix('asesor')->name('asesor.')->group(function () {
+                Route::get('/proyectos', [AsesorController::class, 'proyectos'])->name('proyectos');
+
+                Route::prefix('proyectos/{proyecto}')->whereUuid('proyecto')->middleware('can:verComoAsesor,proyecto')->scopeBindings()->group(function () {
+                    Route::get('/', [AsesorController::class, 'proyecto'])->name('proyecto');
+                    Route::get('/entregas/{entrega}/revisar', [AsesorController::class, 'revisar'])->whereUuid('entrega')->name('revisar');
+                    Route::post('/entregas/{entrega}/revisar', [AsesorController::class, 'guardarRevision'])->whereUuid('entrega')->name('revisar.guardar');
+                    Route::post('/observaciones/{observacion}/levantar', [AsesorController::class, 'levantar'])->whereUuid('observacion')->withoutScopedBindings()->name('observaciones.levantar');
+                });
             });
 
             // Director de Escuela
