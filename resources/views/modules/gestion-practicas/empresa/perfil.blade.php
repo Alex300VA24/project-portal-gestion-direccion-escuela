@@ -1,0 +1,29 @@
+<x-app-layout>
+    <x-slot name="header"><h2 class="font-semibold text-xl text-gray-800 leading-tight">Perfil de la empresa</h2></x-slot>
+
+    @php
+        $campo = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600';
+    @endphp
+
+    <div class="py-8">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            @include('modules.gestion-practicas.partials.menu')
+            @include('modules.gestion-practicas.partials.mensajes')
+
+            <form method="POST" action="{{ route('gestion-practicas.empresa.perfil.update') }}" class="bg-white shadow-sm sm:rounded-lg p-6 grid gap-4 sm:grid-cols-2">
+                @csrf @method('PUT')
+
+                <div><x-input-label value="RUC" /><p class="mt-2 text-sm text-gray-700">{{ $empresa->ruc }}</p></div>
+                <div><x-input-label value="Razón social" /><p class="mt-2 text-sm text-gray-700">{{ $empresa->razon_social }}</p></div>
+
+                <div class="sm:col-span-2"><x-input-label for="nombre_comercial" value="Nombre comercial" /><input id="nombre_comercial" name="nombre_comercial" value="{{ old('nombre_comercial', $empresa->nombre_comercial) }}" class="{{ $campo }}"></div>
+                <div class="sm:col-span-2"><x-input-label for="direccion" value="Dirección" /><input id="direccion" name="direccion" value="{{ old('direccion', $empresa->direccion) }}" required class="{{ $campo }}"></div>
+                <div><x-input-label for="telefono" value="Teléfono" /><input id="telefono" name="telefono" value="{{ old('telefono', $empresa->telefono) }}" required class="{{ $campo }}"></div>
+                <div><x-input-label for="correo" value="Correo de contacto" /><input id="correo" name="correo" type="email" value="{{ old('correo', $empresa->correo) }}" required class="{{ $campo }}"></div>
+                <div class="sm:col-span-2"><x-input-label for="pagina_web" value="Página web" /><input id="pagina_web" name="pagina_web" type="url" value="{{ old('pagina_web', $empresa->pagina_web) }}" placeholder="https://" class="{{ $campo }}"></div>
+
+                <div class="sm:col-span-2"><x-primary-button>Guardar perfil</x-primary-button></div>
+            </form>
+        </div>
+    </div>
+</x-app-layout>
