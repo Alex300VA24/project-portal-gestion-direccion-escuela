@@ -31,6 +31,20 @@ final class CatalogoService
         return DB::table('core.linea_investigacion')->where('id_linea', $id)->where('estado', 'Activo')->exists();
     }
 
+    /** Id de una línea activa a partir de su código (los formularios nunca envían ids). */
+    public function idLineaPorCodigo(string $codigo): ?int
+    {
+        $id = DB::table('core.linea_investigacion')->where('codigo', $codigo)->where('estado', 'Activo')->value('id_linea');
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    /** @return list<string> */
+    public function codigosLineas(): array
+    {
+        return array_column($this->lineas(), 'codigo');
+    }
+
     /** @param list<int> $ids @return array<int, string> */
     public function nombresLineas(array $ids): array
     {

@@ -27,6 +27,19 @@ final class HistorialService
         ]);
     }
 
+    /** Primer registro del historial (sin estado anterior). */
+    public function inicial(Proyecto $proyecto, int $idUsuario, ?string $comentario = null): void
+    {
+        HistorialEstado::create([
+            'id_proyecto' => $proyecto->id_proyecto,
+            'estado_anterior' => null,
+            'estado_nuevo' => $proyecto->estado,
+            'cambiado_por' => $idUsuario,
+            'cambiado_en' => Carbon::now(),
+            'observacion' => $comentario,
+        ]);
+    }
+
     /**
      * Bloquea la fila del proyecto (FOR UPDATE) y la recarga para verificar el estado
      * dentro de la transacción (protección ante doble envío).
