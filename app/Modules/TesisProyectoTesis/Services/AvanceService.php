@@ -24,6 +24,7 @@ final class AvanceService
         private readonly ArchivoService $archivos,
         private readonly HistorialService $historial,
         private readonly NotificacionService $notificaciones,
+        private readonly JuradoService $jurado,
     ) {}
 
     /**
@@ -63,6 +64,8 @@ final class AvanceService
 
             $this->notificaciones->notificar($destinos, 'entrega.subida', "Nueva entrega · {$p->codigo} v{$version}",
                 "Los estudiantes subieron la {$tipo}.", $p);
+
+            $this->jurado->notificarIntermediaSiCorresponde($p);
 
             return $entrega;
         });
