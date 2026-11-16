@@ -116,6 +116,30 @@ abstract class TesisTestCase extends TestCase
         return $proyecto;
     }
 
+    /** Crea una entrega directamente (sin pasar por la pantalla). */
+    protected function entrega(Proyecto $p, string $tipo = 'Final', string $estado = 'Pendiente', string $alumno = 'alumno@portal.local'): \App\Modules\TesisProyectoTesis\Models\Entrega
+    {
+        $version = (int) \App\Modules\TesisProyectoTesis\Models\Entrega::query()->where('id_proyecto', $p->id_proyecto)->where('etapa', $p->etapa)->max('version') + 1;
+
+        return \App\Modules\TesisProyectoTesis\Models\Entrega::create([
+            'id_proyecto' => $p->id_proyecto, 'etapa' => $p->etapa, 'version' => $version, 'tipo' => $tipo,
+            'numero_semana' => 10, 'estado' => $estado, 'entregado_por' => $this->idEstudiante($alumno),
+            'id_archivo' => app(\App\Modules\TesisProyectoTesis\Services\ArchivoService::class)->guardar($this->pdf(), $this->idUsuario($alumno)),
+        ])->refresh();
+    }
+
+    /**
+     * Marcas de la rúbrica para la etapa: todo «cumple» salvo lo indicado.
+     *
+     * @param  array<int, string>  $cambios  orden => marca
+     */
+    protected function marcas(string $etapa = 'Proyecto', array $cambios = []): array
+    {
+        $ordenes = app(\App\Modules\TesisProyectoTesis\Services\RubricaService::class)->criterios($etapa)->keys()->all();
+
+        return array_replace(array_fill_keys($ordenes, 'cumple'), $cambios);
+    }
+
     /** Jurado demo estándar. */
     protected function juradoDemo(): array
     {
