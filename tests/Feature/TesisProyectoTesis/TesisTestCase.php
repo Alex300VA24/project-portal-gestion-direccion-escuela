@@ -3,7 +3,6 @@
 namespace Tests\Feature\TesisProyectoTesis;
 
 use App\Models\User;
-use App\Modules\TesisProyectoTesis\Database\Seeders\DemoTesisSeeder;
 use App\Modules\TesisProyectoTesis\Database\Seeders\TesisDatabaseSeeder;
 use App\Modules\TesisProyectoTesis\Models\AsesorProyecto;
 use App\Modules\TesisProyectoTesis\Models\JuradoProyecto;
