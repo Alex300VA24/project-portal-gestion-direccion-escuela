@@ -118,6 +118,13 @@ final class CatalogoService
             ->all();
     }
 
+    public function idAmbientePorCodigo(string $codigo): ?int
+    {
+        $id = DB::table('core.ambiente')->where('codigo', $codigo)->where('estado', 'Activo')->value('id_ambiente');
+
+        return $id !== null ? (int) $id : null;
+    }
+
     public function ambienteActivoExiste(int $id): bool
     {
         return DB::table('core.ambiente')->where('id_ambiente', $id)->where('estado', 'Activo')->exists();
