@@ -140,7 +140,7 @@ final class IdentidadService
     /**
      * Docentes activos que pueden ser asesores o jurados.
      *
-     * @return list<array{id: int, nombre: string, categoria: ?string, departamento: ?string, lineas: list<int>}>
+     * @return list<array{id: int, codigo: string, nombre: string, categoria: ?string, departamento: ?string, lineas: list<int>}>
      */
     public function docentesActivos(): array
     {
@@ -155,6 +155,7 @@ final class IdentidadService
         foreach ($datos as $id => $d) {
             $lista[] = [
                 'id' => $id,
+                'codigo' => $d['codigo'],
                 'nombre' => $d['nombre'],
                 'categoria' => $d['categoria'],
                 'departamento' => $d['departamento'],
@@ -165,6 +166,18 @@ final class IdentidadService
         usort($lista, fn ($a, $b) => strcmp($a['nombre'], $b['nombre']));
 
         return $lista;
+    }
+
+    /** Id de un docente activo a partir de su código (los formularios nunca envían ids). */
+    public function idDocentePorCodigo(?string $codigo): ?int
+    {
+        if ($codigo === null || trim($codigo) === '') {
+            return null;
+        }
+
+        $id = DB::table('core.docente')->where('codigo_docente', trim($codigo))->where('estado', 'Activo')->value('id_docente');
+
+        return $id !== null ? (int) $id : null;
     }
 
     public function docenteActivoExiste(int $id): bool
