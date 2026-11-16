@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\TesisProyectoTesis\Controllers\AlumnoController;
 use App\Modules\TesisProyectoTesis\Controllers\ArchivoController;
 use App\Modules\TesisProyectoTesis\Controllers\InicioController;
 use App\Modules\TesisProyectoTesis\Services\ExpedienteService;
@@ -21,5 +22,14 @@ Route::prefix('tesis-proyecto-tesis')
                 ->whereIn('tipo', ExpedienteService::TIPOS)
                 ->whereUuid('uuid')
                 ->name('archivos.descargar');
+
+            // Estudiante
+            Route::middleware('role:alumno')->prefix('alumno')->name('alumno.')->group(function () {
+                Route::get('/', [AlumnoController::class, 'panel'])->name('panel');
+                Route::get('/proyecto', [AlumnoController::class, 'proyecto'])->name('proyecto');
+                Route::get('/proyecto/registrar', [AlumnoController::class, 'registrar'])->name('proyecto.registrar');
+                Route::post('/proyecto/registrar', [AlumnoController::class, 'guardar'])->name('proyecto.guardar');
+                Route::get('/coautor', [AlumnoController::class, 'coautor'])->middleware('throttle:20,1')->name('coautor');
+            });
         });
     });
