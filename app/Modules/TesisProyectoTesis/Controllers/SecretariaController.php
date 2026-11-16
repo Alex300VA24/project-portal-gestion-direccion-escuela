@@ -2,8 +2,11 @@
 
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
+use App\Modules\TesisProyectoTesis\Models\Acta;
 use App\Modules\TesisProyectoTesis\Models\Solicitud;
 use App\Modules\TesisProyectoTesis\Requests\RegistrarResolucionRequest;
+use App\Modules\TesisProyectoTesis\Requests\SubirActaFirmadaRequest;
+use App\Modules\TesisProyectoTesis\Services\ActaService;
 use App\Modules\TesisProyectoTesis\Services\DesignacionService;
 use App\Modules\TesisProyectoTesis\Services\IdentidadService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
@@ -28,6 +31,38 @@ final class SecretariaController extends BaseController
             'docentes' => $identidad->docentesActivos(),
             'recientes' => $designacion->resolucionesRecientes(),
         ], 'secretaria', 'resoluciones', ['resoluciones' => $pendientes->count()]);
+    }
+
+    public function actas(Request $request, ActaService $actas): View
+    {
+        $this->identidad($request);
+        $lista = $actas->listado();
+
+        return $this->vista($request, 'secretaria.actas', ['actas' => $lista], 'secretaria', 'actas',
+            ['actas' => $lista->whereNull('id_archivo_firmado')->count()]);
+    }
+
+    public function verActa(Request $request, Acta $acta, ActaService $actas): View
+    {
+        $this->identidad($request);
+        abort_unless($request->user()->can('gestionarComoSecretaria', $acta->proyecto), 403);
+
+        return $this->vista($request, 'secretaria.acta', $actas->documento($acta), 'secretaria', 'actas');
+    }
+
+    public function subirFirmada(SubirActaFirmadaRequest $request, Acta $acta, ActaService $actas): RedirectResponse
+    {
+        $actas->subirFirmada($acta, $this->identidad($request), $request->file('archivo'));
+
+        return redirect()->route('tesis-proyecto-tesis.secretaria.actas.ver', $acta)->with('status', 'Documento firmado registrado. Ahora puedes informar al Director.');
+    }
+
+    public function informar(Request $request, Acta $acta, ActaService $actas): RedirectResponse
+    {
+        abort_unless($request->user()->can('gestionarComoSecretaria', $acta->proyecto), 403);
+        $actas->informarDirector($acta, $this->identidad($request));
+
+        return redirect()->route('tesis-proyecto-tesis.secretaria.actas')->with('status', "Se informó al Director (N.° {$acta->numero}).");
     }
 
     public function registrarResolucion(RegistrarResolucionRequest $request, Solicitud $solicitud, DesignacionService $designacion): RedirectResponse

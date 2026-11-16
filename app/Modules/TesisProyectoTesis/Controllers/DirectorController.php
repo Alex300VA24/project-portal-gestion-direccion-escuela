@@ -3,10 +3,14 @@
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Requests\AsignarJuradoRequest;
+use App\Modules\TesisProyectoTesis\Requests\ReemplazarJuradoRequest;
 use App\Modules\TesisProyectoTesis\Requests\SolicitarAsesorRequest;
 use App\Modules\TesisProyectoTesis\Services\DesignacionService;
 use App\Modules\TesisProyectoTesis\Services\DirectorService;
+use App\Modules\TesisProyectoTesis\Services\JuradoService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
+use App\Modules\TesisProyectoTesis\Services\SimilitudService;
 use App\Modules\TesisProyectoTesis\Support\Estados;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +53,38 @@ final class DirectorController extends BaseController
             'sugerencias' => $designacion->sugerencias($proyecto),
             'puedeSolicitar' => $proyecto->estado === Estados::REGISTRADO && $designacion->solicitudPendiente($proyecto) === null,
         ], 'director', 'panel');
+    }
+
+    public function jurado(Request $request, Proyecto $proyecto, JuradoService $jurado, SeguimientoService $seguimiento, SimilitudService $similitud): View
+    {
+        $this->identidad($request);
+        $asesor = $proyecto->asesorActivo()->value('id_docente');
+
+        return $this->vista($request, 'director.jurado', [
+            ...$seguimiento->ficha($proyecto),
+            'candidatos' => $jurado->candidatos($proyecto),
+            'miembros' => $jurado->avanceMiembros($proyecto),
+            'conformidad' => $asesor ? $similitud->requisitos($proyecto, (int) $asesor) : null,
+            'reporte' => $similitud->historial($proyecto)->firstWhere('resultado', 'Apto'),
+            'puedeAsignar' => $proyecto->estado === Estados::VERIFICADO_ASESOR && ! $proyecto->juradosActivos()->exists(),
+            'puedeReemplazar' => $proyecto->juradosActivos()->exists() && ! in_array($proyecto->estado, [Estados::PROGRAMADO, Estados::SUSTENTADO, Estados::TESIS_APROBADA], true),
+            'historialJurado' => $proyecto->jurados()->where('estado', 'Reemplazado')->get(['cargo', 'id_docente', 'fecha_fin', 'motivo_cambio']),
+        ], 'director', 'panel');
+    }
+
+    public function asignarJurado(AsignarJuradoRequest $request, Proyecto $proyecto, JuradoService $jurado): RedirectResponse
+    {
+        $jurado->asignar($proyecto, $this->identidad($request), $request->validated());
+
+        return redirect()->route('tesis-proyecto-tesis.director.panel')->with('status', "Jurado asignado a {$proyecto->codigo}. Se notificó a los tres miembros.");
+    }
+
+    public function reemplazarJurado(ReemplazarJuradoRequest $request, Proyecto $proyecto, JuradoService $jurado): RedirectResponse
+    {
+        $d = $request->validated();
+        $jurado->reemplazar($proyecto, $this->identidad($request), $d['cargo'], $d['docente'], $d['motivo']);
+
+        return redirect()->route('tesis-proyecto-tesis.director.jurado', $proyecto)->with('status', "Se reemplazó al {$d['cargo']} del jurado.");
     }
 
     public function enviarSolicitudAsesor(SolicitarAsesorRequest $request, Proyecto $proyecto, DesignacionService $designacion): RedirectResponse

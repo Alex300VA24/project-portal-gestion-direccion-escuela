@@ -5,6 +5,7 @@ use App\Modules\TesisProyectoTesis\Controllers\ArchivoController;
 use App\Modules\TesisProyectoTesis\Controllers\AsesorController;
 use App\Modules\TesisProyectoTesis\Controllers\DirectorController;
 use App\Modules\TesisProyectoTesis\Controllers\InicioController;
+use App\Modules\TesisProyectoTesis\Controllers\JuradoController;
 use App\Modules\TesisProyectoTesis\Controllers\SecretariaController;
 use App\Modules\TesisProyectoTesis\Services\ExpedienteService;
 use Illuminate\Support\Facades\Route;
@@ -68,12 +69,31 @@ Route::prefix('tesis-proyecto-tesis')
                 Route::get('/proyectos/{proyecto}/solicitar-asesor', [DirectorController::class, 'solicitarAsesor'])
                     ->middleware('can:gestionarComoDirector,proyecto')->name('asesor.solicitar');
                 Route::post('/proyectos/{proyecto}/solicitar-asesor', [DirectorController::class, 'enviarSolicitudAsesor'])->name('asesor.enviar');
+                Route::get('/proyectos/{proyecto}/jurado', [DirectorController::class, 'jurado'])
+                    ->middleware('can:gestionarComoDirector,proyecto')->whereUuid('proyecto')->name('jurado');
+                Route::post('/proyectos/{proyecto}/jurado', [DirectorController::class, 'asignarJurado'])->whereUuid('proyecto')->name('jurado.asignar');
+                Route::post('/proyectos/{proyecto}/jurado/reemplazar', [DirectorController::class, 'reemplazarJurado'])->whereUuid('proyecto')->name('jurado.reemplazar');
+            });
+
+            // Jurado (profesor con asignación activa en el proyecto)
+            Route::middleware('role:profesor')->prefix('jurado')->name('jurado.')->group(function () {
+                Route::get('/proyectos', [JuradoController::class, 'proyectos'])->name('proyectos');
+
+                Route::prefix('proyectos/{proyecto}')->whereUuid('proyecto')->middleware('can:verComoJurado,proyecto')->group(function () {
+                    Route::get('/verificar', [JuradoController::class, 'verificar'])->name('verificar');
+                    Route::post('/verificar', [JuradoController::class, 'guardar'])->name('verificar.guardar');
+                    Route::post('/observaciones/{observacion}/levantar', [JuradoController::class, 'levantar'])->whereUuid('observacion')->name('observaciones.levantar');
+                });
             });
 
             // Secretaría
             Route::middleware('role:secretaria')->prefix('secretaria')->name('secretaria.')->group(function () {
                 Route::get('/resoluciones', [SecretariaController::class, 'resoluciones'])->name('resoluciones');
-                Route::post('/resoluciones/{solicitud}', [SecretariaController::class, 'registrarResolucion'])->name('resoluciones.registrar');
+                Route::post('/resoluciones/{solicitud}', [SecretariaController::class, 'registrarResolucion'])->whereUuid('solicitud')->name('resoluciones.registrar');
+                Route::get('/actas', [SecretariaController::class, 'actas'])->name('actas');
+                Route::get('/actas/{acta}', [SecretariaController::class, 'verActa'])->whereUuid('acta')->name('actas.ver');
+                Route::post('/actas/{acta}/firmada', [SecretariaController::class, 'subirFirmada'])->whereUuid('acta')->name('actas.firmada');
+                Route::post('/actas/{acta}/informar', [SecretariaController::class, 'informar'])->whereUuid('acta')->name('actas.informar');
             });
         });
     });
