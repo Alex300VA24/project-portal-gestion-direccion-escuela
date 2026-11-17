@@ -9,11 +9,13 @@ use App\Modules\InvestigacionFormativa\Requests\HabilitarSeccionRequest;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
 use App\Modules\InvestigacionFormativa\Services\DatosAcademicosService;
+use App\Modules\InvestigacionFormativa\Services\ReporteService;
 use App\Modules\InvestigacionFormativa\Support\ActorInvestigacion;
 use App\Shared\Models\Core\Seccion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 final class DirectorController extends Controller
@@ -22,14 +24,40 @@ final class DirectorController extends Controller
         private readonly AccesoInvestigacionService $acceso,
         private readonly DatosAcademicosService $datos,
         private readonly ConfiguracionService $configuracion,
+        private readonly ReporteService $reportes,
     ) {}
 
     public function index(Request $request): View
     {
         $actor = $this->actorDe($request);
 
+        $filtros = $request->validate([
+            'escuela' => ['nullable', 'integer'],
+            'periodo' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $idEscuela = isset($filtros['escuela']) && $filtros['escuela'] !== null && $filtros['escuela'] !== ''
+            ? (int) $filtros['escuela']
+            : null;
+        $periodo = isset($filtros['periodo']) && trim((string) $filtros['periodo']) !== ''
+            ? trim((string) $filtros['periodo'])
+            : null;
+
+        try {
+            $reporte = $this->reportes->resumenDirector($actor, $idEscuela, $periodo);
+        } catch (AccesoDenegado $exception) {
+            abort(403, $exception->getMessage());
+        }
+
         return view('modules.investigacion-formativa.director.index', [
-            'escuelas' => $this->datos->escuelasDeDirector($actor->user->id),
+            'escuelas' => $reporte->escuelas,
+            'periodos' => $reporte->periodos,
+            'secciones' => $reporte->secciones,
+            'totales' => $reporte->totales,
+            'filtros' => [
+                'escuela' => $idEscuela,
+                'periodo' => $periodo,
+            ],
         ]);
     }
 
@@ -70,6 +98,32 @@ final class DirectorController extends Controller
             ->with('status', $request->boolean('habilitada')
                 ? 'La sección quedó habilitada para Investigación Formativa.'
                 : 'La sección quedó deshabilitada para Investigación Formativa.');
+    }
+
+    public function resultados(Request $request, Seccion $seccion): View
+    {
+        $actor = $this->actorDe($request);
+        Gate::authorize('verResultados', $seccion);
+
+        $pagina = max(1, $request->integer('comentarios', 1));
+        $porPagina = min(100, max(1, $request->integer('por_pagina', 10)));
+
+        $reporte = $this->reportes->porSeccion(
+            $actor,
+            (int) $seccion->id_seccion,
+            $pagina,
+            $porPagina,
+        );
+
+        $reporte->comentarios->appends($request->only(['por_pagina', 'escuela', 'periodo']));
+        $seccion->load(['periodo', 'cursoPlan.curso']);
+
+        return view('modules.investigacion-formativa.director.resultados', [
+            'seccion' => $seccion,
+            'reporte' => $reporte,
+            'pagina' => $pagina,
+            'porPagina' => $porPagina,
+        ]);
     }
 
     private function actorDe(Request $request): ActorInvestigacion

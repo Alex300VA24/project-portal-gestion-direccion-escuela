@@ -44,6 +44,17 @@ final class AccesoInvestigacionService
         };
     }
 
+    public function puedeVerResultados(User $user, int $idSeccion): bool
+    {
+        $actor = $this->identidad->resolver($user);
+        $seccion = $this->datos->seccionConEscuela($idSeccion);
+
+        return $actor->tieneRol('director_escuela')
+            && $seccion !== null
+            && $seccion->id_escuela !== null
+            && $this->tieneAlcanceEscuela($actor, $seccion->id_escuela);
+    }
+
     public function exigirVerSeccion(User $user, int $idSeccion, string $workspace): ActorInvestigacion
     {
         $actor = $this->identidad->resolver($user);

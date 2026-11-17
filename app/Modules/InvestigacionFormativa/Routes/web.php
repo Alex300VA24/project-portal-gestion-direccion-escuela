@@ -14,9 +14,13 @@ Route::prefix('investigacion-formativa')
         Route::middleware(['auth', 'permission:investigacion-formativa.view'])->group(function () {
             Route::get('/', [InvestigacionFormativaController::class, 'index'])->name('index');
 
-            Route::get('/director', [DirectorController::class, 'index'])
-                ->middleware('permission:investigacion-formativa.courses.manage')
-                ->name('director.index');
+            Route::middleware('permission:investigacion-formativa.reports.view')->group(function () {
+                Route::get('/director', [DirectorController::class, 'index'])
+                    ->name('director.index');
+
+                Route::get('/director/secciones/{seccion}/resultados', [DirectorController::class, 'resultados'])
+                    ->name('director.resultados');
+            });
 
             Route::middleware('permission:investigacion-formativa.courses.manage')->group(function () {
                 Route::get('/director/cursos', [DirectorController::class, 'cursos'])

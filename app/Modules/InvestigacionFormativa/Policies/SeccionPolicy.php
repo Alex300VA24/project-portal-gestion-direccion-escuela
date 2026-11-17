@@ -58,7 +58,7 @@ final class SeccionPolicy
     public function verResultados(User $user, Seccion $seccion): bool
     {
         return $this->seguro(fn (): bool => $user->can('investigacion-formativa.reports.view')
-            && $this->acceso->puedeVerSeccion($user, (int) $seccion->id_seccion, 'director_escuela'));
+            && $this->acceso->puedeVerResultados($user, (int) $seccion->id_seccion));
     }
 
     public function crearGrupo(User $user, Seccion $seccion): bool
