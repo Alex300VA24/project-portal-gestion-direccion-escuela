@@ -21,6 +21,7 @@ Route::prefix('tesis-proyecto-tesis')
 
         Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/notificaciones/leer', [InicioController::class, 'marcarLeidas'])->name('notificaciones.leer');
+            Route::post('/notificaciones/abrir', [InicioController::class, 'abrirNotificacion'])->middleware('throttle:60,1')->name('notificaciones.abrir');
 
             Route::get('/archivos/{tipo}/{uuid}', [ArchivoController::class, 'descargar'])
                 ->whereIn('tipo', ExpedienteService::TIPOS)

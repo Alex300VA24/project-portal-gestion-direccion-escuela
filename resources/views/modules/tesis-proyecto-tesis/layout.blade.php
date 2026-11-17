@@ -34,9 +34,15 @@
                                 <ul>
                                     @forelse ($tesisNav['avisos'] as $aviso)
                                         <li class="{{ $aviso['leida'] ? '' : 'is-new' }}">
-                                            <strong>{{ $aviso['titulo'] }}</strong>
-                                            <div class="tz-muted">{{ $aviso['mensaje'] }}</div>
-                                            <div class="tz-muted tz-small">{{ $aviso['fecha']->diffForHumans() }}</div>
+                                            <form method="POST" action="{{ route('tesis-proyecto-tesis.notificaciones.abrir') }}">
+                                                @csrf
+                                                <input type="hidden" name="n" value="{{ $aviso['token'] }}">
+                                                <button type="submit" class="tz-aviso">
+                                                    <strong>{{ $aviso['titulo'] }}</strong>
+                                                    <span class="tz-muted">{{ $aviso['mensaje'] }}</span>
+                                                    <span class="tz-muted tz-small">{{ $aviso['fecha']->diffForHumans() }}{{ $aviso['leida'] ? '' : ' · sin leer' }} · Ir a la acción →</span>
+                                                </button>
+                                            </form>
                                         </li>
                                     @empty
                                         <li class="tz-muted">No tienes notificaciones.</li>

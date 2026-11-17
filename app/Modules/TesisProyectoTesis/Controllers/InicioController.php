@@ -2,6 +2,7 @@
 
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
+use App\Modules\TesisProyectoTesis\Services\EnlaceNotificacionService;
 use App\Modules\TesisProyectoTesis\Services\IdentidadService;
 use App\Modules\TesisProyectoTesis\Services\NavegacionService;
 use App\Modules\TesisProyectoTesis\Services\NotificacionService;
@@ -54,6 +55,19 @@ final class InicioController extends BaseController
                 'resumen' => $paneles->resumenRol($c, $id),
             ], $contextos),
         ]);
+    }
+
+    /**
+     * Abre un aviso: lo marca como leído y lleva a la pantalla de la acción (calculada en el servidor).
+     */
+    public function abrirNotificacion(Request $request, NotificacionService $notificaciones, EnlaceNotificacionService $enlaces): RedirectResponse
+    {
+        $datos = $request->validate(['n' => ['required', 'string', 'max:2000']]);
+        $aviso = $notificaciones->abrir($datos['n'], $this->identidad($request)->idUsuario);
+
+        abort_if($aviso === null, 404);
+
+        return redirect()->to($enlaces->destino($request->user(), $aviso['evento'], $aviso['id_proyecto']));
     }
 
     public function marcarLeidas(Request $request, NotificacionService $notificaciones): RedirectResponse

@@ -40,6 +40,10 @@
     .tz-pop ul { list-style: none; margin: 0; padding: 0; max-height: 380px; overflow: auto; }
     .tz-pop li { padding: 12px 16px; border-bottom: 1px solid var(--tz-border); font-size: 14px; }
     .tz-pop li.is-new strong::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tz-focus); margin-right: 8px; }
+    .tz-pop li:has(form) { padding: 0; }
+    .tz-aviso { display: grid; gap: 2px; width: 100%; min-height: 44px; padding: 12px 16px; text-align: left; background: none; border: 0; font: inherit; font-size: 14px; color: var(--tz-ink); cursor: pointer; }
+    .tz-aviso:hover { background: var(--tz-alt); }
+    .tz-pop li.is-new .tz-aviso strong::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tz-focus); margin-right: 8px; }
     .tz-link-btn { background: none; border: 0; padding: 0; color: var(--tz-green-dark); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 
     .tz-shell { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 140px); }
