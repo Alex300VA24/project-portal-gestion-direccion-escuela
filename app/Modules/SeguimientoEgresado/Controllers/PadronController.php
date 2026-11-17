@@ -177,47 +177,9 @@ class PadronController extends Controller
             // BOM UTF-8 para Excel
             fprintf($salida, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($salida, [
-                'matricula',
-                'tipo_doc',
-                'numero_documento',
-                'nombres',
-                'apellido_paterno',
-                'apellido_materno',
-                'cohorte',
-                'correo_personal',
-                'telefono',
-                'estado_academico',
-                'direccion',
-            ]);
-
-            fputcsv($salida, [
-                '1021400818',
-                'DNI',
-                '74561239',
-                'Claudia Marcela',
-                'Paredes',
-                'Ríos',
-                '2018',
-                'claudia.paredes@gmail.com',
-                '944123456',
-                'TITULADO',
-                'Urb. Las Quintanas 320, Trujillo',
-            ]);
-
-            fputcsv($salida, [
-                '1021400918',
-                'DNI',
-                '71239845',
-                'Jorge Luis',
-                'Navarro',
-                'Sánchez',
-                '2018',
-                'jorge.navarro@gmail.com',
-                '951987654',
-                'BACHILLER',
-                'Av. España 1820, Trujillo',
-            ]);
+            fputcsv($salida, ['matricula', 'tipo_doc', 'numero_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 'cohorte', 'correo_institucional']);
+            fputcsv($salida, ['1021400818', 'DNI', '74561239', 'Claudia Marcela', 'Paredes', 'Ríos', '2018', 'claudia.paredes@correo.test']);
+            fputcsv($salida, ['1021400918', 'DNI', '71239845', 'Jorge Luis', 'Navarro', 'Sánchez', '2018', 'jorge.navarro@correo.test']);
 
             fclose($salida);
         }, 200, $cabeceras);
@@ -237,11 +199,15 @@ class PadronController extends Controller
             'apellido_paterno' => 'required|string|max:100',
             'apellido_materno' => 'nullable|string|max:100',
             'id_cohorte' => 'required',
-            'periodo_egreso' => 'required|string|max:20',
-            'grado' => 'required|string|in:EGRESADO,BACHILLER,TITULADO',
+            'periodo_egreso' => 'nullable|string|max:20',
+            'grado' => 'required|string|in:PROXIMO,EGRESADO,BACHILLER,TITULADO',
             'apto_f1' => 'required|string|in:APTO,PENDIENTE',
-            'correo_institucional' => 'nullable|email|max:150',
+            'correo_institucional' => 'required|email|max:150',
+            'correo_personal' => 'nullable|email|max:150',
             'telefono' => 'nullable|string|max:50',
+        ], [
+            'correo_institucional.required' => 'El correo institucional es obligatorio: a él se envía el enlace de contacto inicial.',
+            'correo_institucional.email' => 'El correo institucional no es válido.',
         ]);
 
         return DB::transaction(function () use ($request, $id) {
@@ -249,7 +215,11 @@ class PadronController extends Controller
                 ->orWhere('anio_ingreso', $request->input('id_cohorte'))
                 ->first();
 
-            $cohorteId = $cohorte ? $cohorte->id : (Cohorte::first()->id ?? 1);
+            if (! $cohorte) {
+                return response()->json(['success' => false, 'message' => 'La cohorte indicada no existe. Regístrela primero en «Cohortes y Denominador I1».'], 422);
+            }
+
+            $cohorteId = $cohorte->id;
 
             if ($id) {
                 $egresado = Egresado::findOrFail($id);
@@ -276,23 +246,26 @@ class PadronController extends Controller
             $egresado->nombres = $request->nombres;
             $egresado->apellido_paterno = $request->apellido_paterno;
             $egresado->apellido_materno = $request->apellido_materno;
-            $egresado->periodo_egreso = $request->periodo_egreso;
-            $egresado->correo_institucional = $request->correo_institucional ?? ($request->codigo_matricula.'@unitru.edu.pe');
+            $egresado->periodo_egreso = $request->periodo_egreso ?: null;
+            $egresado->correo_institucional = $request->correo_institucional;
             $egresado->save();
 
-            $contacto = $egresado->contactoVigente;
-            if (! $contacto) {
-                $contacto = new ContactoEgresado;
-                $contacto->id_egresado = $egresado->id;
-                $contacto->vigente_desde = now();
-                $contacto->origen_registro = 'SECRETARIA';
+            // El contacto solo se guarda si la Secretaría trae un correo personal y un celular reales; si no, lo registra
+            // el propio alumno con su enlace de contacto inicial.
+            if ($request->correo_personal && $request->telefono) {
+                $contacto = $egresado->contactoVigente;
+                if (! $contacto) {
+                    $contacto = new ContactoEgresado;
+                    $contacto->id_egresado = $egresado->id;
+                    $contacto->vigente_desde = now();
+                    $contacto->origen_registro = 'SECRETARIA';
+                }
+                $contacto->correo_personal = $request->correo_personal;
+                $contacto->celular_whatsapp = $request->telefono;
+                $contacto->save();
             }
-            $contacto->correo_personal = $request->correo_personal ?? ($request->codigo_matricula.'@gmail.com');
-            $contacto->celular_whatsapp = $request->telefono ?? '999999999';
-            $contacto->save();
 
-            $catEstado = CatEstadoAcademico::where('codigo', $request->grado)->first()
-                ?? CatEstadoAcademico::first();
+            $catEstado = CatEstadoAcademico::where('codigo', $request->grado)->firstOrFail();
 
             $estadoActual = $egresado->estadoVigente;
             $cambioGrado = ! $estadoActual || $estadoActual->id_estado_academico !== $catEstado->id;
@@ -307,7 +280,7 @@ class PadronController extends Controller
                 HistorialEstadoAcademico::create([
                     'id_egresado' => $egresado->id,
                     'id_estado_academico' => $catEstado->id,
-                    'creditos_aprobados' => 220.0,
+                    'creditos_aprobados' => null,
                     'apto_graduarse' => $request->apto_f1 === 'APTO',
                     'vigente_desde' => now(),
                     'vigente_hasta' => null,
@@ -431,7 +404,7 @@ class PadronController extends Controller
             'id_egresado' => 'required|integer|exists:'.Esquema::validar('egresado').',id',
             'grado' => 'required|string|in:EGRESADO,BACHILLER,TITULADO',
             'apto_f1' => 'required|string|in:APTO,PENDIENTE',
-            'creditos_aprobados' => 'nullable|numeric',
+            'creditos_aprobados' => 'nullable|numeric|min:0',
             'resolucion_bachiller' => 'nullable|string|max:100',
             'fecha_bachiller' => 'nullable|date',
             'resolucion_titulo' => 'nullable|string|max:100',
@@ -451,7 +424,7 @@ class PadronController extends Controller
             HistorialEstadoAcademico::create([
                 'id_egresado' => $egresado->id,
                 'id_estado_academico' => $catEstado->id,
-                'creditos_aprobados' => $request->creditos_aprobados ?? 220.0,
+                'creditos_aprobados' => $request->creditos_aprobados,
                 'apto_graduarse' => $request->apto_f1 === 'APTO',
                 'resolucion_bachiller' => $request->resolucion_bachiller,
                 'fecha_bachiller' => $request->fecha_bachiller,
@@ -466,6 +439,55 @@ class PadronController extends Controller
                 'success' => true,
                 'message' => "Estado académico actualizado para {$egresado->nombre_completo}.",
                 'egresado' => $egresado->fresh(['estadoVigente.estadoAcademico']),
+            ]);
+        });
+    }
+
+    /**
+     * Confirma oficialmente el egreso de un alumno apto (PROXIMO) con su fecha real. Cierra la etapa anterior y abre la
+     * de egresado; el expediente y los contactos se conservan. El periodo se calcula de la fecha (I hasta julio, II después).
+     */
+    public function confirmarEgreso(Request $request, int $id)
+    {
+        $egresado = Egresado::with('estadoVigente.estadoAcademico')->findOrFail($id);
+
+        $request->validate([
+            'fecha_egreso' => ['required', 'date', 'before_or_equal:today', $egresado->fecha_ingreso ? 'after_or_equal:'.Carbon::parse($egresado->fecha_ingreso)->toDateString() : 'nullable'],
+        ], [
+            'fecha_egreso.required' => 'Indique la fecha real de egreso.',
+            'fecha_egreso.before_or_equal' => 'La fecha de egreso no puede ser futura.',
+            'fecha_egreso.after_or_equal' => 'La fecha de egreso no puede ser anterior al ingreso.',
+        ]);
+
+        $actual = $egresado->estadoVigente;
+        if ($actual === null || $actual->estadoAcademico->codigo !== 'PROXIMO') {
+            return response()->json(['success' => false, 'message' => 'Solo se puede confirmar el egreso de un alumno apto para egresar.'], 422);
+        }
+
+        $fecha = Carbon::parse($request->fecha_egreso);
+
+        return DB::transaction(function () use ($egresado, $actual, $fecha) {
+            $actual->vigente_hasta = $this->cierreDeVigencia($actual->vigente_desde);
+            $actual->save();
+
+            HistorialEstadoAcademico::create([
+                'id_egresado' => $egresado->id,
+                'id_estado_academico' => CatEstadoAcademico::where('codigo', 'EGRESADO')->value('id'),
+                'creditos_aprobados' => $actual->creditos_aprobados,
+                'apto_graduarse' => true,
+                'vigente_desde' => $actual->vigente_hasta,
+                'vigente_hasta' => null,
+                'id_usuario_registro' => UsuarioInterno::idActual() ?? $actual->id_usuario_registro,
+            ]);
+
+            $egresado->fecha_egreso = $fecha->toDateString();
+            $egresado->periodo_egreso = $fecha->year.'-'.($fecha->month <= 7 ? 'I' : 'II');
+            $egresado->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Egreso confirmado para {$egresado->nombre_completo}.",
+                'egresado' => $egresado->fresh(['cohorte', 'contactoVigente', 'estadoVigente.estadoAcademico']),
             ]);
         });
     }

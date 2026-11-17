@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Log;
 class PadronImportService
 {
     /**
-     * Procesa un archivo CSV o Excel (.xlsx) para importar egresados al padrón oficial.
+     * Procesa un archivo CSV o Excel (.xlsx) con los alumnos aptos para egresar: matrícula, documento, nombres,
+     * apellidos, correo institucional válido y cohorte. Quedan como «próximos a egresar» (PROXIMO), todavía no como
+     * egresados: lo que el archivo no trae (fechas, créditos, resoluciones, contacto) queda vacío, nunca se inventa.
      * Evita duplicados, valida campos obligatorios y audita cada fila.
      *
      * @param  UploadedFile|string  $archivo  Archivo subido o ruta en disco
@@ -272,6 +274,7 @@ class PadronImportService
         $nombres = $norm['nombres'] ?? $norm['nombre'] ?? null;
         $apPaterno = $norm['apellido_paterno'] ?? $norm['paterno'] ?? $norm['primer_apellido'] ?? null;
         $anioCohorte = $norm['cohorte'] ?? $norm['anio_ingreso'] ?? $norm['promocion'] ?? null;
+        $correoInst = $norm['correo_institucional'] ?? $norm['correo_inst'] ?? null;
 
         if (empty($matricula)) {
             return 'Fila sin código de matrícula universitario obligatorio.';
@@ -301,12 +304,35 @@ class PadronImportService
             return 'Nombres y apellido paterno son obligatorios.';
         }
 
+        if ($mensaje = $this->errorDeFechasYCorreo($correoInst, $norm)) {
+            return $mensaje;
+        }
+
         if (empty($anioCohorte)) {
             return 'La cohorte de ingreso (año) es obligatoria.';
         }
         $anioNum = (int) preg_replace('/[^0-9]/', '', $anioCohorte);
         if (! Cohorte::where('anio_ingreso', $anioNum)->exists()) {
             return "La cohorte '{$anioCohorte}' no existe en el catálogo institucional. Debe registrarla previamente en 'Cohortes y Denominador I1' con su número oficial de ingresantes.";
+        }
+
+        return null;
+    }
+
+    /** Mensaje de error si el correo institucional falta o es inválido, o si una fecha del archivo no es una fecha real. */
+    protected function errorDeFechasYCorreo(?string $correoInst, array $norm): ?string
+    {
+        if (empty($correoInst)) {
+            return 'El correo institucional es obligatorio: a él se envía el enlace de contacto inicial.';
+        }
+        if (! filter_var($correoInst, FILTER_VALIDATE_EMAIL)) {
+            return "El correo institucional '{$correoInst}' no es válido.";
+        }
+        foreach (['fecha_ingreso' => 'ingreso', 'fecha_egreso' => 'egreso'] as $campo => $nombre) {
+            $valor = $norm[$campo] ?? null;
+            if (! empty($valor) && (! strtotime($valor) || strtotime($valor) > strtotime('today'))) {
+                return "La fecha de {$nombre} '{$valor}' no es una fecha válida ni futura.";
+            }
         }
 
         return null;
@@ -363,7 +389,7 @@ class PadronImportService
         $direccion = $norm['direccion'] ?? null;
         $fechaIngreso = $norm['fecha_ingreso'] ?? null;
         $fechaEgreso = $norm['fecha_egreso'] ?? null;
-        $estadoAcademicoStr = strtoupper($norm['estado_academico'] ?? $norm['estado'] ?? 'EGRESADO');
+        $estadoAcademicoStr = strtoupper($norm['estado_academico'] ?? $norm['estado'] ?? 'PROXIMO');
 
         // Validaciones obligatorias
         if (empty($matricula)) {
@@ -376,6 +402,10 @@ class PadronImportService
 
         if (empty($numDoc)) {
             return $this->registrarFilaRechazada($importacionId, $numeroFila, $data, 'El número de documento (DNI) es obligatorio.');
+        }
+
+        if ($mensaje = $this->errorDeFechasYCorreo($correoInst, $norm)) {
+            return $this->registrarFilaRechazada($importacionId, $numeroFila, $data, $mensaje);
         }
 
         // 1. Verificación de duplicados por matrícula
@@ -428,10 +458,12 @@ class PadronImportService
         }
 
         // 4. Mapeo del estado académico inicial
+        // Sin etapa en el archivo, el alumno queda apto para egresar (PROXIMO): el egreso lo confirma la Secretaría.
         $estadoId = match ($estadoAcademicoStr) {
             'TITULADO' => $estTituladoId,
             'BACHILLER' => $estBachillerId,
-            default => $estEgresadoId,
+            'EGRESADO' => $estEgresadoId,
+            default => (int) CatEstadoAcademico::where('codigo', 'PROXIMO')->value('id'),
         };
 
         // Inserción atómica en BD
@@ -452,8 +484,6 @@ class PadronImportService
                 $fechaIngreso,
                 $fechaEgreso,
                 $estadoId,
-                $estBachillerId,
-                $estTituladoId,
                 $usuarioId,
                 $importacionId,
                 $numeroFila,
@@ -468,36 +498,39 @@ class PadronImportService
                     'apellido_paterno' => ucwords(strtolower($apPaterno)),
                     'apellido_materno' => $apMaterno ? ucwords(strtolower($apMaterno)) : null,
                     'programa' => 'Ingeniería Informática',
-                    'correo_institucional' => $correoInst ?: "{$matricula}@unitru.edu.pe",
+                    'correo_institucional' => $correoInst,
                     'sede' => 'Sede Central (Trujillo)',
-                    'fecha_ingreso' => $fechaIngreso ?: "{$cohorte->anio_ingreso}-04-01",
-                    'fecha_egreso' => $fechaEgreso ?: (($cohorte->anio_ingreso + 4).'-12-20'),
-                    'periodo_egreso' => ($cohorte->anio_ingreso + 4).'-II',
+                    'fecha_ingreso' => $fechaIngreso ?: null,
+                    'fecha_egreso' => $fechaEgreso ?: null,
+                    'periodo_egreso' => null,
                     'creado_en' => now(),
                 ]);
 
-                // Crear contacto inicial
-                ContactoEgresado::create([
-                    'id_egresado' => $egresado->id,
-                    'correo_personal' => $correoPers ?: "egresado.{$matricula}@gmail.com",
-                    'celular_whatsapp' => $telefono ?: '999000000',
-                    'telefono_fijo' => $fijo,
-                    'direccion' => $direccion ?: 'Trujillo, La Libertad',
-                    'vigente_desde' => now(),
-                    'vigente_hasta' => null,
-                    'origen_registro' => 'SECRETARIA',
-                ]);
+                // El contacto solo se registra si el archivo trae un correo personal y un celular reales; si no, lo deja el
+                // propio alumno con su enlace de contacto inicial.
+                if ($correoPers && $telefono) {
+                    ContactoEgresado::create([
+                        'id_egresado' => $egresado->id,
+                        'correo_personal' => $correoPers,
+                        'celular_whatsapp' => $telefono,
+                        'telefono_fijo' => $fijo ?: null,
+                        'direccion' => $direccion ?: null,
+                        'vigente_desde' => now(),
+                        'vigente_hasta' => null,
+                        'origen_registro' => 'SECRETARIA',
+                    ]);
+                }
 
                 // Crear estado académico vigente
                 HistorialEstadoAcademico::create([
                     'id_egresado' => $egresado->id,
                     'id_estado_academico' => $estadoId,
                     'apto_graduarse' => true,
-                    'creditos_aprobados' => 220.0,
-                    'fecha_bachiller' => ($estadoId === $estBachillerId || $estadoId === $estTituladoId) ? now()->subMonths(6) : null,
-                    'resolucion_bachiller' => ($estadoId === $estBachillerId || $estadoId === $estTituladoId) ? "R-AUTO-{$matricula}-UNT" : null,
-                    'fecha_titulo' => ($estadoId === $estTituladoId) ? now()->subMonths(1) : null,
-                    'resolucion_titulo' => ($estadoId === $estTituladoId) ? "R-TIT-{$matricula}-UNT" : null,
+                    'creditos_aprobados' => null,
+                    'fecha_bachiller' => null,
+                    'resolucion_bachiller' => null,
+                    'fecha_titulo' => null,
+                    'resolucion_titulo' => null,
                     'vigente_desde' => now(),
                     'vigente_hasta' => null,
                     'id_usuario_registro' => $usuarioId,

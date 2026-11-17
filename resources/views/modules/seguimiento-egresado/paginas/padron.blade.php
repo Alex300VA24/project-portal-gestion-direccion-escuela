@@ -826,7 +826,8 @@
           <option value="">Todos los grados</option>
           <option value="TITULADO">Titulado Profesional</option>
           <option value="BACHILLER">Bachiller</option>
-          <option value="EGRESADO">Egresado Regular</option>
+          <option value="PROXIMO">Aptos para egresar</option>
+          <option value="EGRESADO">Egresado</option>
         </select>
       </div>
 
@@ -1035,7 +1036,7 @@
       <div>
         <h2 style="font-size: 17px; margin: 0;">Control de Acreditación y Grados Académicos (F1 / F4)</h2>
         <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">
-          Verificación de créditos aprobados (220.0), condición de apto para colación y registro oficial de resoluciones decanales y rectorales.
+          Verificación de créditos aprobados, condición de apto para colación y registro oficial de resoluciones decanales y rectorales.
         </p>
       </div>
     </div>
@@ -1198,7 +1199,7 @@
             </div>
             <div class="sg-info-block">
               <span class="sg-info-label">Créditos Aprobados</span>
-              <span class="sg-info-val" id="exp-creditos">220.0 / 220.0 (100%)</span>
+              <span class="sg-info-val" id="exp-creditos">—</span>
             </div>
             <div class="sg-info-block">
               <span class="sg-info-label">Estado Académico Oficial</span>
@@ -1269,7 +1270,33 @@
 
     <div class="sg-modal-foot">
       <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalExpediente()">Cerrar Ficha</button>
+      <button type="button" class="sg-button sg-button-secondary" id="btn-confirmar-egreso" style="display: none;" onclick="abrirConfirmarEgreso()">Confirmar egreso</button>
       <button type="button" class="sg-button" onclick="abrirModalActualizarEstadoDesdeFicha()">Actualizar Estado Académico</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR EGRESO (fecha real; cierra la etapa «apto para egresar» y abre la de egresado) -->
+<div id="modal-confirmar-egreso" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-egreso-title">
+  <div class="sg-modal-dialog" style="max-width: 520px;">
+    <div class="sg-modal-head">
+      <div>
+        <h2 id="modal-egreso-title">Confirmar egreso</h2>
+        <p id="modal-egreso-subtitulo">Registro oficial de la fecha real de egreso</p>
+      </div>
+      <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarConfirmarEgreso()">✕</button>
+    </div>
+    <div class="sg-modal-body">
+      <div class="sg-field">
+        <label class="sg-label" for="egreso-fecha">Fecha real de egreso *</label>
+        <input class="sg-input" id="egreso-fecha" type="date" required>
+        <p class="sg-help">El expediente y los contactos registrados se conservan. El periodo se calcula con esta fecha.</p>
+      </div>
+      <p class="sg-field-error" id="egreso-error" role="alert" style="display: none;"></p>
+    </div>
+    <div class="sg-modal-foot">
+      <button type="button" class="sg-button sg-button-secondary" onclick="cerrarConfirmarEgreso()">Cancelar</button>
+      <button type="button" class="sg-button" id="btn-guardar-egreso" onclick="guardarConfirmarEgreso()">Confirmar egreso</button>
     </div>
   </div>
 </div>
@@ -1320,14 +1347,15 @@
           </div>
 
           <div class="sg-field">
-            <label class="sg-label" for="nuevo-periodo">Periodo de Egreso *</label>
-            <input class="sg-input" id="nuevo-periodo" type="text" required placeholder="Ej. 2024-I">
+            <label class="sg-label" for="nuevo-periodo">Periodo de Egreso (solo si ya egresó)</label>
+            <input class="sg-input" id="nuevo-periodo" type="text" placeholder="Ej. 2024-I">
           </div>
 
           <div class="sg-field">
             <label class="sg-label" for="nuevo-grado">Grado Académico Actual *</label>
             <select class="sg-select" id="nuevo-grado" required>
-              <option value="EGRESADO">Egresado Regular</option>
+              <option value="PROXIMO">Apto para egresar (todavía no egresó)</option>
+              <option value="EGRESADO">Egresado</option>
               <option value="BACHILLER">Bachiller en Ingeniería Informática</option>
               <option value="TITULADO">Titulado Profesional</option>
             </select>
@@ -1342,8 +1370,8 @@
           </div>
 
           <div class="sg-field">
-            <label class="sg-label" for="nuevo-correo-inst">Correo Institucional</label>
-            <input class="sg-input" id="nuevo-correo-inst" type="email" placeholder="usuario@unitru.edu.pe">
+            <label class="sg-label" for="nuevo-correo-inst">Correo Institucional *</label>
+            <input class="sg-input" id="nuevo-correo-inst" type="email" required placeholder="usuario@unitru.edu.pe">
           </div>
 
           <div class="sg-field">
@@ -1454,7 +1482,7 @@
 
           <div class="sg-field">
             <label class="sg-label" for="estado-creditos">Créditos Aprobados Validados</label>
-            <input class="sg-input" id="estado-creditos" type="text" value="220.0" placeholder="Ej. 220.0">
+            <input class="sg-input" id="estado-creditos" type="text" value="" placeholder="Solo si se conoce">
           </div>
 
           <div class="sg-field">
@@ -1697,12 +1725,12 @@
               'paterno' => $eg->apellido_paterno,
               'materno' => $eg->apellido_materno ?? '',
               'nombreCompleto' => $eg->apellido_paterno . ' ' . ($eg->apellido_materno ? $eg->apellido_materno . ' ' : '') . $eg->nombres,
-              'cohorte' => (string)($eg->cohorte->anio_ingreso ?? '2018'),
-              'egreso' => $eg->periodo_egreso ?? '2022-II',
-              'fechaEgreso' => $eg->fecha_egreso ? date('d/m/Y', strtotime($eg->fecha_egreso)) : '20/12/2022',
-              'plan' => $eg->cohorte->planCurricular->codigo_version ?? 'Plan 2017',
-              'creditos' => ($eg->estadoVigente->creditos_aprobados ?? '220.0') . ' / 220.0 (100%)',
-              'grado' => $eg->estadoVigente->estadoAcademico->codigo ?? 'EGRESADO',
+              'cohorte' => (string)($eg->cohorte->anio_ingreso ?? '—'),
+              'egreso' => $eg->periodo_egreso ?? 'Sin confirmar',
+              'fechaEgreso' => $eg->fecha_egreso ? date('d/m/Y', strtotime($eg->fecha_egreso)) : '—',
+              'plan' => $eg->cohorte->planCurricular->codigo_version ?? '—',
+              'creditos' => isset($eg->estadoVigente->creditos_aprobados) ? $eg->estadoVigente->creditos_aprobados . ' créditos' : '—',
+              'grado' => $eg->estadoVigente->estadoAcademico->codigo ?? 'PROXIMO',
               'aptoF1' => ($eg->estadoVigente && $eg->estadoVigente->apto_graduarse) ? 'APTO' : 'PENDIENTE',
               'resBachiller' => $eg->estadoVigente->resolucion_bachiller ?? '',
               'fechaBachiller' => $eg->estadoVigente->fecha_bachiller ?? '',
@@ -1711,17 +1739,9 @@
               'correoInst' => $eg->correo_institucional ?? '',
               'correoPers' => $eg->contactoVigente->correo_personal ?? '',
               'telefono' => $eg->contactoVigente->celular_whatsapp ?? '',
-              'ciudad' => $eg->contactoVigente->direccion ?? 'Trujillo, La Libertad',
-              'responsable' => $eg->estadoVigente->usuarioRegistro->nombre_completo ?? 'Secretaría Académica',
-              'historial' => [
-                  [
-                      'campania' => 'Campaña Anual de Seguimiento 2023 (M2)',
-                      'fecha' => '22/09/2023',
-                      'estado' => 'Encuesta Respondida',
-                      'badge' => 'sg-pill-success',
-                      'detalle' => 'Reporta empleo formal en ingeniería de software. Coincidencia plena con perfil de egreso.'
-                  ]
-              ],
+              'ciudad' => $eg->contactoVigente->direccion ?? '',
+              'responsable' => $eg->estadoVigente->usuarioRegistro->nombre_completo ?? '—',
+              'historial' => [],
           ];
       }
   }
@@ -2161,7 +2181,8 @@
       let gradoPill = '';
       if (item.grado === 'TITULADO') gradoPill = '<span class="sg-status-pill sg-pill-success">Titulado Profesional</span>';
       else if (item.grado === 'BACHILLER') gradoPill = '<span class="sg-status-pill sg-pill-primary">Bachiller</span>';
-      else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado Regular</span>';
+      else if (item.grado === 'PROXIMO') gradoPill = '<span class="sg-status-pill sg-pill-warning">Apto para egresar</span>';
+      else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado</span>';
 
       let aptoBadge = item.aptoF1 === 'APTO'
         ? '<span class="sg-status-pill sg-pill-success">Apto Verificado</span>'
@@ -2639,7 +2660,8 @@
       let gradoPill = '';
       if (item.grado === 'TITULADO') gradoPill = '<span class="sg-status-pill sg-pill-success">Titulado Profesional</span>';
       else if (item.grado === 'BACHILLER') gradoPill = '<span class="sg-status-pill sg-pill-primary">Bachiller</span>';
-      else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado Regular</span>';
+      else if (item.grado === 'PROXIMO') gradoPill = '<span class="sg-status-pill sg-pill-warning">Apto para egresar</span>';
+      else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado</span>';
 
       let aptoBadge = item.aptoF1 === 'APTO'
         ? '<span class="sg-status-pill sg-pill-success">Apto Acreditado</span>'
@@ -2701,7 +2723,7 @@
     document.getElementById('modal-estado-subtitulo').textContent = 'Matrícula: ' + item.codigo + ' | Expediente Nº ' + id;
     document.getElementById('estado-select-grado').value = item.grado;
     document.getElementById('estado-select-apto').value = item.aptoF1;
-    document.getElementById('estado-creditos').value = item.creditos.split(' ')[0] || '220.0';
+    document.getElementById('estado-creditos').value = parseFloat(item.creditos) || '';
     document.getElementById('estado-fecha-bachiller').value = item.fechaBachiller || '';
     document.getElementById('estado-res-bachiller').value = item.resBachiller || '';
     document.getElementById('estado-fecha-titulo').value = item.fechaTitulo || '';
@@ -2726,7 +2748,7 @@
 
     const grado = document.getElementById('estado-select-grado').value;
     const apto = document.getElementById('estado-select-apto').value;
-    const creditos = parseFloat(document.getElementById('estado-creditos').value) || 220.0;
+    const creditos = parseFloat(document.getElementById('estado-creditos').value) || null;
     const fechaBachiller = document.getElementById('estado-fecha-bachiller').value;
     const resBachiller = document.getElementById('estado-res-bachiller').value;
     const fechaTitulo = document.getElementById('estado-fecha-titulo').value;
@@ -2763,7 +2785,7 @@
 
     item.grado = grado;
     item.aptoF1 = apto;
-    item.creditos = creditos + ' / 220.0 (Validados)';
+    item.creditos = creditos !== null ? creditos + ' créditos' : '—';
     item.fechaBachiller = fechaBachiller;
     item.resBachiller = resBachiller;
     item.fechaTitulo = fechaTitulo;
@@ -2906,9 +2928,53 @@
   // =========================================================================
   // GESTIÓN DE EXPEDIENTE ÚNICO (CRUD egresado con conexión viva a PostgreSQL)
   // =========================================================================
+  function abrirConfirmarEgreso() {
+    const id = document.getElementById('modal-expediente').getAttribute('data-active-id');
+    const item = padronData[id];
+    if (!item) return;
+    document.getElementById('modal-egreso-subtitulo').textContent = item.nombreCompleto + ' · Matrícula ' + item.codigo;
+    document.getElementById('egreso-fecha').value = '';
+    document.getElementById('egreso-fecha').max = new Date().toISOString().slice(0, 10);
+    document.getElementById('egreso-error').style.display = 'none';
+    document.getElementById('modal-confirmar-egreso').classList.add('is-open');
+  }
+
+  function cerrarConfirmarEgreso() {
+    document.getElementById('modal-confirmar-egreso').classList.remove('is-open');
+  }
+
+  async function guardarConfirmarEgreso() {
+    const id = document.getElementById('modal-expediente').getAttribute('data-active-id');
+    const fecha = document.getElementById('egreso-fecha').value;
+    const error = document.getElementById('egreso-error');
+    error.style.display = 'none';
+    if (!fecha) {
+      error.textContent = 'Indique la fecha real de egreso.';
+      error.style.display = 'block';
+      return;
+    }
+    try {
+      const resp = await fetch('{{ url('seguimiento-egresado/padron/egresado') }}/' + id + '/confirmar-egreso', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken(), 'Accept': 'application/json' },
+        body: JSON.stringify({ fecha_egreso: fecha })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        const detalle = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+        throw new Error(detalle || data.message || 'No se pudo confirmar el egreso.');
+      }
+      window.location.reload();
+    } catch (e) {
+      error.textContent = e.message;
+      error.style.display = 'block';
+    }
+  }
+
   async function abrirExpediente(id) {
     const egresado = padronData[id];
     if (!egresado) return;
+    document.getElementById('btn-confirmar-egreso').style.display = egresado.grado === 'PROXIMO' ? '' : 'none';
 
     document.getElementById('modal-expediente').setAttribute('data-active-id', id);
     document.getElementById('modal-exp-title').textContent = egresado.nombreCompleto;
@@ -2925,7 +2991,8 @@
     let gradoPill = '';
     if (egresado.grado === 'TITULADO') gradoPill = '<span class="sg-status-pill sg-pill-success">Titulado Profesional</span>';
     else if (egresado.grado === 'BACHILLER') gradoPill = '<span class="sg-status-pill sg-pill-primary">Bachiller</span>';
-    else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado Regular</span>';
+    else if (egresado.grado === 'PROXIMO') gradoPill = '<span class="sg-status-pill sg-pill-warning">Apto para egresar</span>';
+    else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado</span>';
     document.getElementById('exp-grado-badge').innerHTML = gradoPill;
 
     let aptoBadge = egresado.aptoF1 === 'APTO'
@@ -2939,7 +3006,7 @@
     document.getElementById('exp-correo-inst').textContent = egresado.correoInst;
     document.getElementById('exp-correo-pers').textContent = egresado.correoPers || 'No registrado';
     document.getElementById('exp-telefono').textContent = egresado.telefono || 'No registrado';
-    document.getElementById('exp-ciudad').textContent = egresado.ciudad || 'Trujillo, Perú';
+    document.getElementById('exp-ciudad').textContent = egresado.ciudad || '—';
 
     // Cargar historial de campañas en vivo desde PostgreSQL
     const timeline = document.getElementById('exp-timeline');
@@ -2952,7 +3019,7 @@
         if (live.contacto) {
           document.getElementById('exp-correo-pers').textContent = live.contacto.correo_personal || egresado.correoPers || 'No registrado';
           document.getElementById('exp-telefono').textContent = live.contacto.celular_whatsapp || egresado.telefono || 'No registrado';
-          document.getElementById('exp-ciudad').textContent = live.contacto.direccion || egresado.ciudad || 'Trujillo, Perú';
+          document.getElementById('exp-ciudad').textContent = live.contacto.direccion || egresado.ciudad || '—';
         }
         timeline.innerHTML = '';
         if (live.historial_seguimiento && live.historial_seguimiento.length > 0) {
@@ -3056,7 +3123,7 @@
     const per = document.getElementById('nuevo-periodo').value.trim();
     const grd = document.getElementById('nuevo-grado').value;
     const apt = document.getElementById('nuevo-apto').value;
-    const cor = document.getElementById('nuevo-correo-inst').value.trim() || (cod + '@unitru.edu.pe');
+    const cor = document.getElementById('nuevo-correo-inst').value.trim();
     const tel = document.getElementById('nuevo-telefono').value.trim();
 
     const nombreCompleto = `${pat} ${mat ? mat + ', ' : ', '}${nom}`;
@@ -3088,10 +3155,13 @@
       });
       const data = await resp.json();
       if (!resp.ok) {
-        throw new Error(data.message || 'Error al registrar el expediente');
+        const detalle = data.errors ? Object.values(data.errors).flat().join(' ') : '';
+        throw new Error(detalle || data.message || 'Error al registrar el expediente');
       }
     } catch (e) {
-      console.warn('Persistencia en base de datos:', e.message);
+      // Si el servidor no guardó el expediente no se muestra como guardado.
+      alert('No se guardó el expediente: ' + e.message);
+      return;
     }
 
     if (editId) {

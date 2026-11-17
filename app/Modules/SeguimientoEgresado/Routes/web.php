@@ -48,6 +48,7 @@ Route::prefix('seguimiento-egresado')
         Route::post('/padron/egresado', [PadronController::class, 'guardarEgresado'])->middleware($interna('padron.gestionar'))->name('padron.guardar-egresado');
         Route::post('/padron/cohorte', [PadronController::class, 'guardarCohorte'])->middleware($interna('padron.gestionar'))->name('padron.guardar-cohorte');
         Route::post('/padron/plan-curricular', [PadronController::class, 'guardarPlanCurricular'])->middleware($interna('padron.gestionar'))->name('padron.guardar-plan');
+        Route::post('/padron/egresado/{id}/confirmar-egreso', [PadronController::class, 'confirmarEgreso'])->whereNumber('id')->middleware($interna('padron.gestionar'))->name('padron.confirmar-egreso');
         Route::post('/padron/estado-academico', [PadronController::class, 'guardarEstadoAcademico'])->middleware($interna('padron.gestionar'))->name('padron.guardar-estado');
 
         // Contacto inicial: enlaces para que el egresado deje sus datos

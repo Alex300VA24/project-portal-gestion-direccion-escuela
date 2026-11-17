@@ -23,51 +23,152 @@ class PadronIntegrationTest extends TestCase
         $this->seed(DatosPruebaSeeder::class);
     }
 
-    public function test_padron_import_creates_records_and_detects_duplicates(): void
+    private function importar(string $csv): array
     {
-        $service = new PadronImportService;
+        $ruta = tempnam(sys_get_temp_dir(), 'csv_test_');
+        file_put_contents($ruta, $csv);
+        $resultado = (new PadronImportService)->importarArchivo($ruta);
+        @unlink($ruta);
 
-        // En modo atómico por defecto, un archivo limpio se importa completamente
-        $csv = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo,telefono,estado\n"
-             ."1021400998,DNI,79991111,Egresado Unitario,Perez,Gomez,2018,unitario@gmail.com,987654321,EGRESADO\n";
+        return $resultado;
+    }
 
-        $tempPath = tempnam(sys_get_temp_dir(), 'csv_test_');
-        file_put_contents($tempPath, $csv);
+    private const CABECERA = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo_institucional\n";
 
-        $res = $service->importarArchivo($tempPath);
-        @unlink($tempPath);
+    public function test_la_importacion_deja_alumnos_aptos_sin_inventar_datos_y_detecta_duplicados(): void
+    {
+        $res = $this->importar(self::CABECERA."1021400998,DNI,79991111,Alumno Unitario,Perez,Gomez,2018,unitario@correo.test\n");
 
-        $this->assertSame(1, $res['total_procesadas']);
         $this->assertSame(1, $res['aceptadas']);
         $this->assertSame(0, $res['rechazadas']);
+        $this->assertSame(1, ImportacionPadron::find($res['importacion_id'])->filas()->count());
 
-        $importacion = ImportacionPadron::find($res['importacion_id']);
-        $this->assertNotNull($importacion);
-        $this->assertSame(1, $importacion->filas()->count());
+        $alumno = Egresado::where('codigo_matricula', '1021400998')->first();
+        $this->assertNotNull($alumno);
+        // Apto para egresar, todavía no egresado.
+        $this->assertSame('PROXIMO', $alumno->estadoVigente->estadoAcademico->codigo);
+        $this->assertTrue((bool) $alumno->estadoVigente->apto_graduarse);
+        // Solo lo que trae el archivo: nada de fechas, créditos, resoluciones ni contacto inventados.
+        $this->assertSame('unitario@correo.test', $alumno->correo_institucional);
+        $this->assertNull($alumno->fecha_egreso);
+        $this->assertNull($alumno->fecha_ingreso);
+        $this->assertNull($alumno->periodo_egreso);
+        $this->assertNull($alumno->estadoVigente->creditos_aprobados);
+        $this->assertNull($alumno->estadoVigente->resolucion_bachiller);
+        $this->assertNull($alumno->contactoVigente, 'el contacto lo registra el alumno con su enlace');
 
-        $egresado = Egresado::where('codigo_matricula', '1021400998')->first();
-        $this->assertNotNull($egresado);
-        $this->assertNotNull($egresado->contactoVigente);
-        $this->assertNotNull($egresado->estadoVigente);
+        $res = $this->importar(self::CABECERA."1021400998,DNI,79991111,Alumno Duplicado,Perez,Gomez,2018,otro@correo.test\n");
+        $this->assertSame(0, $res['aceptadas']);
+        $this->assertSame(1, $res['rechazadas']);
+        $fila = ImportacionFila::where('id_importacion', $res['importacion_id'])->where('estado', 'RECHAZADA')->first();
+        $this->assertStringContainsString('ya se encuentra registrada en el padrón', $fila->detalle_error);
+    }
 
-        // Al intentar importar nuevamente con matrícula duplicada, se rechaza de forma atómica
-        $csvDuplicado = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo,telefono,estado\n"
-                      ."1021400998,DNI,79991111,Egresado Duplicado,Perez,Gomez,2018,unitario@gmail.com,987654321,EGRESADO\n";
-        $tempDup = tempnam(sys_get_temp_dir(), 'csv_dup_');
-        file_put_contents($tempDup, $csvDuplicado);
+    public function test_el_correo_institucional_es_obligatorio_y_valido(): void
+    {
+        $sin = $this->importar(self::CABECERA."1021400001,DNI,79990001,Sin Correo,Perez,Gomez,2018,\n");
+        $malo = $this->importar(self::CABECERA."1021400002,DNI,79990002,Correo Malo,Perez,Gomez,2018,no-es-un-correo\n");
 
-        $resDup = $service->importarArchivo($tempDup);
-        @unlink($tempDup);
+        foreach ([$sin, $malo] as $resultado) {
+            $this->assertSame(0, $resultado['aceptadas']);
+            $this->assertSame(1, $resultado['rechazadas']);
+        }
+        $this->assertFalse(Egresado::whereIn('codigo_matricula', ['1021400001', '1021400002'])->exists());
+        $this->assertStringContainsString('correo institucional', ImportacionFila::where('id_importacion', $sin['importacion_id'])->value('detalle_error'));
+    }
 
-        $this->assertSame(1, $resDup['total_procesadas']);
-        $this->assertSame(0, $resDup['aceptadas']);
-        $this->assertSame(1, $resDup['rechazadas']);
+    public function test_una_fecha_futura_o_invalida_en_el_archivo_se_rechaza(): void
+    {
+        $res = $this->importar("matricula,tipo_doc,numero_documento,nombres,apellido_paterno,cohorte,correo_institucional,fecha_egreso\n1021400003,DNI,79990003,Fecha Futura,Perez,2018,f@correo.test,2099-01-01\n");
 
-        $filaRechazada = ImportacionFila::where('id_importacion', $resDup['importacion_id'])
-            ->where('estado', 'RECHAZADA')
-            ->first();
-        $this->assertNotNull($filaRechazada);
-        $this->assertStringContainsString('ya se encuentra registrada en el padrón', $filaRechazada->detalle_error);
+        $this->assertSame(1, $res['rechazadas']);
+    }
+
+    public function test_el_contacto_solo_se_guarda_si_el_archivo_trae_correo_personal_y_celular(): void
+    {
+        $this->importar("matricula,tipo_doc,numero_documento,nombres,apellido_paterno,cohorte,correo_institucional,correo_personal,celular\n"
+            ."1021400004,DNI,79990004,Con Contacto,Perez,2018,c@correo.test,personal@correo.test,987654321\n");
+
+        $alumno = Egresado::where('codigo_matricula', '1021400004')->first();
+        $this->assertSame('personal@correo.test', $alumno->contactoVigente->correo_personal);
+        $this->assertSame('987654321', $alumno->contactoVigente->celular_whatsapp);
+    }
+
+    public function test_la_plantilla_no_trae_correos_personales_ni_datos_academicos_inventados(): void
+    {
+        $contenido = $this->get(route('seguimiento-egresado.padron.plantilla'))->streamedContent();
+
+        $this->assertStringContainsString('correo_institucional', $contenido);
+        $this->assertStringNotContainsString('gmail', $contenido);
+        $this->assertStringNotContainsString('TITULADO', $contenido);
+    }
+
+    private function alumnoApto(array $cambios = []): Egresado
+    {
+        $this->importar(self::CABECERA."1021400555,DNI,79995555,Alumno Apto,Quispe,Rojas,2018,apto@correo.test\n");
+        $alumno = Egresado::where('codigo_matricula', '1021400555')->first();
+        $alumno->update($cambios);
+
+        return $alumno;
+    }
+
+    public function test_confirmar_el_egreso_guarda_la_fecha_real_y_abre_la_etapa_de_egresado_conservando_el_contacto(): void
+    {
+        $alumno = $this->alumnoApto();
+        $alumno->contactos()->create(['correo_personal' => 'p@correo.test', 'celular_whatsapp' => '900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO']);
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])
+            ->assertOk()->assertJsonPath('success', true);
+
+        $alumno->refresh();
+        $this->assertSame('2025-07-18', substr((string) $alumno->fecha_egreso, 0, 10));
+        $this->assertSame('2025-I', $alumno->periodo_egreso);
+        $this->assertSame('EGRESADO', $alumno->estadoVigente->estadoAcademico->codigo);
+        $this->assertSame(['PROXIMO', 'EGRESADO'], $alumno->historialEstados()->reorder('vigente_desde')->get()->map(fn ($h) => $h->estadoAcademico->codigo)->all(), 'se conserva el historial');
+        $this->assertSame('p@correo.test', $alumno->contactoVigente->correo_personal);
+    }
+
+    public function test_el_periodo_de_egreso_se_calcula_de_la_fecha(): void
+    {
+        $alumno = $this->alumnoApto();
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-12-12'])->assertOk();
+
+        $this->assertSame('2025-II', $alumno->refresh()->periodo_egreso);
+    }
+
+    public function test_confirmar_el_egreso_exige_una_fecha_real(): void
+    {
+        $alumno = $this->alumnoApto();
+        $ruta = route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id);
+
+        $this->postJson($ruta, [])->assertStatus(422)->assertJsonValidationErrors('fecha_egreso');
+        $this->postJson($ruta, ['fecha_egreso' => '2999-01-01'])->assertStatus(422)->assertJsonValidationErrors('fecha_egreso');
+        $this->assertSame('PROXIMO', $alumno->refresh()->estadoVigente->estadoAcademico->codigo);
+        $this->assertNull($alumno->fecha_egreso);
+    }
+
+    public function test_la_fecha_de_egreso_no_puede_ser_anterior_al_ingreso(): void
+    {
+        $alumno = $this->alumnoApto(['fecha_ingreso' => '2020-03-16']);
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2019-01-01'])
+            ->assertStatus(422)->assertJsonValidationErrors('fecha_egreso');
+    }
+
+    public function test_solo_se_confirma_el_egreso_de_un_alumno_apto(): void
+    {
+        $yaEgresado = Egresado::whereHas('estadoVigente.estadoAcademico', fn ($q) => $q->where('codigo', 'EGRESADO'))->firstOrFail();
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $yaEgresado->id), ['fecha_egreso' => '2025-07-18'])
+            ->assertStatus(422)->assertJsonPath('success', false);
+    }
+
+    public function test_solo_la_secretaria_confirma_egresos(): void
+    {
+        $alumno = $this->alumnoApto();
+
+        $this->actingAs($this->director())->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])->assertForbidden();
     }
 
     public function test_cohorte_i1_calculation_denominador_oficial(): void
@@ -207,8 +308,8 @@ class PadronIntegrationTest extends TestCase
         // Cohorte 1975 no existe en la base de datos
         $this->assertFalse(Cohorte::where('anio_ingreso', 1975)->exists());
 
-        $csv = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo,telefono,estado\n"
-             ."1021499991,DNI,78881111,Egresado Prueba,Flores,Ruiz,1975,flores@gmail.com,987654321,EGRESADO\n";
+        $csv = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo_institucional\n"
+             ."1021499991,DNI,78881111,Alumno Prueba,Flores,Ruiz,1975,flores@correo.test\n";
 
         $tempPath = tempnam(sys_get_temp_dir(), 'csv_cohorte_');
         file_put_contents($tempPath, $csv);
@@ -266,8 +367,8 @@ class PadronIntegrationTest extends TestCase
         $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets><sheet name="Sheet1" sheetId="1" id="rId1"/></sheets></workbook>');
 
         $strings = [
-            'matricula', 'tipo_doc', 'numero_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 'cohorte', 'correo_personal', 'telefono', 'estado',
-            '1021477777', 'DNI', '76665555', 'Egresado', 'Excel', 'Unt', '2018', 'excel@unt.pe', '955444333', 'EGRESADO',
+            'matricula', 'tipo_doc', 'numero_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 'cohorte', 'correo_institucional', 'telefono', 'estado',
+            '1021477777', 'DNI', '76665555', 'Alumno', 'Excel', 'Unt', '2018', 'excel@correo.test', '955444333', 'PROXIMO',
         ];
 
         $sstXml = '<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
