@@ -397,7 +397,7 @@ Con Turnitin > 21 % el proyecto **no cambia de estado**: la entrega queda Observ
 | `RubricaSeeder` | Todos | Rúbrica única v1 con 26 criterios (18 aplican a Proyecto y 25 a Tesis). Idempotente |
 | `TipoSolicitudSeeder` | Todos | Designación de asesor, Designación de jurado, Programación de sustentación |
 | `DemoTesisSeeder` | Solo `local`/`testing` | Facultad, escuela, periodo, líneas, ambientes y cuentas `*@portal.local` (inserta en `core`, `seguridad` y `public`) |
-| `EscenariosTesisSeeder` | Solo `local`/`testing` | 11 proyectos `PT-DEMO-01…11` en cada punto del flujo, con PDF reales y avisos. Idempotente (ver [Manual de flujos](MANUAL_FLUJOS.md#escenarios-pt-demo)) |
+| `EscenariosTesisSeeder` | Solo `local`/`testing` | 11 proyectos `PT-DEMO-01…11` en cada punto del flujo, con PDF reales y avisos. Idempotente: además borra los proyectos de ensayo de las cuentas `nuevo@` y `est01…11@` y conserva los de otras cuentas (ver [Manual de flujos](MANUAL_FLUJOS.md#escenarios-pt-demo)) |
 
 ```bash
 # Rúbrica, tipos y demo

@@ -51,7 +51,10 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 
 **Reglas para repetir los casos**
 
-- El seeder es **idempotente**: borra solo los proyectos `PT-DEMO-*` (con sus PDF y avisos) y los vuelve a crear. Los demás proyectos no se tocan.
+- El seeder es **idempotente**. Cada vez que se ejecuta:
+  - borra los proyectos `PT-DEMO-*` y los proyectos de ensayo de las cuentas de los escenarios (`nuevo@`, `est01…11@`), con sus PDF y avisos; por ejemplo, el `PT-2026-002` que registró `nuevo@` durante un ensayo;
+  - vuelve a crear los `PT-DEMO-*`, así `nuevo@` queda otra vez sin proyecto;
+  - no toca los proyectos de las demás cuentas, como el `PT-2026-001` de `alumno@`.
 - Vuelve a sembrar **antes de cada caso** que cambie el estado de un escenario. Por ejemplo, después de F-04 el escenario PT-DEMO-05 ya no sirve para F-05.
 - Las fechas de las sustentaciones son relativas al día de la siembra: PT-DEMO-10 está programada **hoy** a las 09:00 y PT-DEMO-11 fue **ayer**. Si cambias de día, vuelve a sembrar.
 - Los tres jurados demo integran todos los jurados PT-DEMO. Por eso, al programar una sustentación de prueba **hoy**, evita el rango de 07:00 a 11:00, que choca con PT-DEMO-10. Usa, por ejemplo, las 15:00.
@@ -63,14 +66,26 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 |---|---|---|
 | `director@portal.local` | director_escuela | Director de Escuela |
 | `secretaria@portal.local` | secretaria | Secretaría de la Escuela |
-| `asesor@portal.local` | profesor | Asesor de todos los PT-DEMO (Mg. Carlos Medina Ruiz, `DOC-101`) |
-| `jurado1@portal.local` | profesor | Presidente (Dra. Ana Paredes Luna, `DOC-102`) |
-| `jurado2@portal.local` | profesor | Secretario (Ms. Jorge Castillo Ríos, `DOC-103`) |
-| `jurado3@portal.local` | profesor | Vocal (Dra. Rosa Huamán Díaz, `DOC-104`) |
-| `profesor@portal.local` | profesor | Docente sin asignaciones (Dra. Elena Vargas Soto, `DOC-105`) |
+| `asesor@portal.local` | profesor | Asesor de todos los PT-DEMO |
+| `jurado1@portal.local` | profesor | Presidente del jurado en los PT-DEMO |
+| `jurado2@portal.local` | profesor | Secretario del jurado en los PT-DEMO |
+| `jurado3@portal.local` | profesor | Vocal del jurado en los PT-DEMO |
+| `profesor@portal.local` | profesor | Docente sin asignaciones |
 | `nuevo@portal.local` | alumno | Estudiante sin proyecto |
 | `est01@` … `est11@portal.local` | alumno | Autor del escenario PT-DEMO-01 … PT-DEMO-11 |
 | `alumno3@portal.local` | alumno | Coautor de PT-DEMO-03 |
+
+### Docentes: cómo aparecen en las listas
+
+Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestran a cada docente como **grado + nombre completo**, sin el código, y en orden alfabético.
+
+| Cuenta | Código | Nombre en las listas | Elegir en la demo como |
+|---|---|---|---|
+| `asesor@portal.local` | `DOC-101` | Mg. Carlos Medina Ruiz | Asesor (no aparece en la lista del jurado de sus proyectos) |
+| `jurado1@portal.local` | `DOC-102` | Dra. Ana Paredes Luna | Presidente |
+| `jurado2@portal.local` | `DOC-103` | Ms. Jorge Castillo Ríos | Secretario |
+| `jurado3@portal.local` | `DOC-104` | Dra. Rosa Huamán Díaz | Vocal |
+| `profesor@portal.local` | `DOC-105` | Dra. Elena Vargas Soto | Reemplazo de un jurado (F-06) o docente ajeno (F-14) |
 
 ## Escenarios PT-DEMO
 
@@ -109,7 +124,7 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
    - Pulsa **Enviar solicitud al Decanato**.
 3. **secretaria@** → Resoluciones → elige la solicitud en «Solicitudes esperando resolución».
    - Completa el N.° de resolución, la fecha (hoy o anterior), el órgano emisor y «Dirigida a».
-   - En «Docente designado como asesor» elige **DOC-101 · Carlos Medina Ruiz**.
+   - En «Docente designado como asesor» elige **Mg. Carlos Medina Ruiz** (`asesor@`).
    - Completa el asunto, adjunta el PDF y pulsa **Registrar resolución**.
 4. **nuevo@** → Avances → semana 1, «Avance semanal o corrección», PDF → **Enviar entrega**.
 5. **asesor@** → Mis proyectos → **Revisar avance** → «Sin observaciones» → **Enviar revisión**.
@@ -120,7 +135,7 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
    - Adjunta el PDF del reporte y escribe `14` en «Similitud (%)».
    - Marca la conformidad y pulsa **Dar conformidad y enviar**.
 9. **director@** → Panel general → **Asignar**.
-   - Presidente `DOC-102`, Secretario `DOC-103`, Vocal `DOC-104`.
+   - Presidente **Dra. Ana Paredes Luna**, Secretario **Ms. Jorge Castillo Ríos**, Vocal **Dra. Rosa Huamán Díaz**.
    - Pulsa **Asignar jurado y notificar**.
 10. **jurado1@**, **jurado2@** y **jurado3@**: cada uno abre Proyectos asignados → **Revisar con la rúbrica**, marca los criterios como cumple y pulsa **Dar conformidad**.
 
@@ -290,17 +305,17 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 **Pasos**
 
 1. **director@** → Panel general → «Requieren tu acción» → **Asignar** en PT-DEMO-06.
-2. Abre la lista del Presidente: el asesor **Carlos Medina Ruiz (DOC-101) no aparece**.
-3. Elige `DOC-102` como Presidente: en las listas de Secretario y Vocal ese docente aparece desactivado.
-4. Completa Secretario `DOC-103` y Vocal `DOC-104` → **Asignar jurado y notificar**.
-5. En la misma pantalla, en «Reemplazar a un miembro», elige el cargo Vocal y como nuevo docente `DOC-105`. Escribe el motivo y pulsa **Reemplazar y notificar**.
-6. Intenta reemplazar de nuevo el Vocal por `DOC-104`, que ya integró ese jurado.
+2. Abre la lista del Presidente: el asesor **Mg. Carlos Medina Ruiz** (`asesor@`) **no aparece**.
+3. Elige **Dra. Ana Paredes Luna** como Presidente: en las listas de Secretario y Vocal esa docente aparece desactivada.
+4. Completa Secretario **Ms. Jorge Castillo Ríos** y Vocal **Dra. Rosa Huamán Díaz** → **Asignar jurado y notificar**.
+5. En la misma pantalla, en «Reemplazar a un miembro», elige el cargo Vocal y como nuevo docente **Dra. Elena Vargas Soto** (`profesor@`). Escribe el motivo y pulsa **Reemplazar y notificar**.
+6. Intenta reemplazar de nuevo el Vocal por **Dra. Rosa Huamán Díaz**, que ya integró ese jurado.
 7. Abre la pantalla de jurado de PT-DEMO-05, que está En desarrollo. La lista no ofrece el enlace en ese estado, así que copia la URL del paso 1 (`/tesis-proyecto-tesis/director/proyectos/{uuid}/jurado`) y cambia el uuid por el de PT-DEMO-05. Lo ves como asesor@ en Mis proyectos → PT-DEMO-05.
 
 **Resultado esperado**
 
 - Paso 4: el estado pasa a «En revisión del jurado». Cada docente recibe «Fuiste asignado como {cargo} del jurado · PT-DEMO-06».
-- Paso 5: el «Jurado vigente» muestra a `DOC-105` como Vocal. El historial guarda al anterior como «Reemplazado», con su motivo. El nuevo docente recibe «Fuiste asignado…» y el anterior «Dejaste de integrar el jurado · PT-DEMO-06».
+- Paso 5: el «Jurado vigente» muestra a Dra. Elena Vargas Soto como Vocal. El historial guarda al anterior como «Reemplazado», con su motivo. El nuevo docente recibe «Fuiste asignado…» y el anterior «Dejaste de integrar el jurado · PT-DEMO-06».
 - Paso 6: «Ese docente ya integra (o integró) este jurado.»
 - Paso 7: «El proyecto aún no tiene la conformidad del asesor (En desarrollo).» No hay formulario.
 - Reglas que el servidor aplica aunque se manipule el formulario (probadas automáticamente):
@@ -497,7 +512,7 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 
 **Resultado esperado:** las dos responden **403**. El menú de est01@ («Avances», «Observaciones») siempre lo lleva a su propio proyecto.
 
-**Pruebas automáticas:** `RegistroProyectoTest::test_alumno_solo_ve_su_propio_proyecto`, `AvancesRevisionTest::test_acceso_cruzado_alumno_y_asesor`, `BaseModuloTest::test_descarga_de_archivo_exige_relacion_con_el_proyecto`, `EscenariosNotificacionesTest::test_escenarios_idempotentes_con_estados_y_pdf_reales`.
+**Pruebas automáticas:** `RegistroProyectoTest::test_alumno_solo_ve_su_propio_proyecto`, `AvancesRevisionTest::test_acceso_cruzado_alumno_y_asesor`, `BaseModuloTest::test_descarga_de_archivo_exige_relacion_con_el_proyecto`, `EscenariosNotificacionesTest::test_escenarios_idempotentes_con_estados_y_pdf_reales`, `EscenariosNotificacionesTest::test_reiniciar_borra_proyectos_de_ensayo_de_las_cuentas_demo_y_conserva_los_demas`.
 
 ---
 
@@ -550,7 +565,7 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 ## Pruebas automáticas
 
 ```bash
-vendor/bin/phpunit --filter=TesisProyectoTesis           # 74 pruebas del módulo
+vendor/bin/phpunit --filter=TesisProyectoTesis           # 75 pruebas del módulo
 vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre módulos
 ```
 
