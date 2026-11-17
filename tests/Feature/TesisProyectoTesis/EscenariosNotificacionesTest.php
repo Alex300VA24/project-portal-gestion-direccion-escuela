@@ -127,6 +127,31 @@ final class EscenariosNotificacionesTest extends TesisTestCase
         $this->post(route('tesis-proyecto-tesis.notificaciones.abrir'), ['n' => $token])->assertRedirect('/login');
     }
 
+    public function test_reiniciar_borra_proyectos_de_ensayo_de_las_cuentas_demo_y_conserva_los_demas(): void
+    {
+        $this->seed(EscenariosTesisSeeder::class);
+        $archivos = DB::table('comun.archivo')->count();
+
+        // Ensayo: nuevo@ registra su proyecto y sube un avance (archivo + aviso); alumno@ tiene el suyo.
+        $ensayo = $this->proyecto(['nuevo@portal.local'], Estados::EN_DESARROLLO, asesor: 'asesor@portal.local');
+        $this->como('nuevo@portal.local')->post(route('tesis-proyecto-tesis.alumno.proyecto.avances.subir', $ensayo), [
+            'tipo' => 'Avance', 'numero_semana' => 3, 'comentario' => 'Ensayo', 'archivo' => $this->pdf('ensayo.pdf'),
+        ])->assertSessionHasNoErrors();
+        $ruta = (string) DB::table('comun.archivo')->orderByDesc('id_archivo')->value('ruta_almacenamiento');
+        $propio = $this->proyecto(['alumno@portal.local']);
+        $this->assertGreaterThan($archivos, DB::table('comun.archivo')->count());
+
+        $this->seed(EscenariosTesisSeeder::class);
+
+        $this->assertNull(Proyecto::query()->find($ensayo->id_proyecto), 'El proyecto de ensayo de nuevo@ se borra.');
+        $this->assertNotNull(Proyecto::query()->find($propio->id_proyecto), 'El proyecto de alumno@ se conserva.');
+        $this->assertSame(11, Proyecto::query()->where('codigo', 'like', 'PT-DEMO-%')->count());
+        $this->assertSame($archivos, DB::table('comun.archivo')->count(), 'Sin archivos huérfanos del ensayo.');
+        Storage::disk('local')->assertMissing($ruta);
+        $this->assertSame(0, DB::table('comun.notificacion')->where('referencia_tabla', 'tesis.proyecto_tesis')->where('referencia_id', $ensayo->id_proyecto)->count());
+        $this->como('nuevo@portal.local')->get(route('tesis-proyecto-tesis.alumno.panel'))->assertSee('Aún no registras tu proyecto de tesis');
+    }
+
     public function test_campana_muestra_avisos_como_formularios_post(): void
     {
         $p = $this->proyecto(['alumno@portal.local']);

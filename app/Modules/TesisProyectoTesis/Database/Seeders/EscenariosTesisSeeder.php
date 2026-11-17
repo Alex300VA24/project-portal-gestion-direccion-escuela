@@ -34,7 +34,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * SOLO DESARROLLO Y PRUEBAS. Deja once proyectos PT-DEMO-NN en distintos puntos del flujo,
  * cada uno con sus PDF de ejemplo reales y el aviso de la acción pendiente.
- * Idempotente: al volver a ejecutarlo borra los PT-DEMO-* (con sus archivos y avisos) y los recrea.
+ * Idempotente: al volver a ejecutarlo borra los PT-DEMO-* y los proyectos que las cuentas de los
+ * escenarios (nuevo@, est01…11@) crearon durante un ensayo, con sus archivos y avisos, y recrea los PT-DEMO-*.
+ * No toca los proyectos de las demás cuentas (p. ej. PT-2026-001 de alumno@portal.local).
  *
  * php artisan db:seed --class="App\Modules\TesisProyectoTesis\Database\Seeders\EscenariosTesisSeeder"
  */
@@ -99,10 +101,20 @@ final class EscenariosTesisSeeder extends Seeder
         });
     }
 
-    /** Borra los proyectos PT-DEMO-* con todo lo que cuelga de ellos (en orden por las FK RESTRICT). */
+    /**
+     * Borra los proyectos PT-DEMO-* y los de ensayo de las cuentas de los escenarios (cualquier proyecto
+     * con un integrante de self::ESTUDIANTES), con todo lo que cuelga de ellos (en orden por las FK RESTRICT).
+     */
     public function limpiar(): void
     {
-        $ids = Proyecto::query()->where('codigo', 'like', self::PREFIJO.'%')->pluck('id_proyecto')->all();
+        $idsEstudiante = DB::table('core.estudiante as e')
+            ->join('seguridad.usuario as u', 'u.id_persona', '=', 'e.id_persona')
+            ->whereIn(DB::raw('LOWER(u.correo_institucional)'), array_keys(self::ESTUDIANTES))
+            ->pluck('e.id_estudiante')->all();
+
+        $ids = Proyecto::query()->where('codigo', 'like', self::PREFIJO.'%')->pluck('id_proyecto')
+            ->merge(ProyectoEstudiante::query()->whereIn('id_estudiante', $idsEstudiante)->pluck('id_proyecto'))
+            ->map(fn ($v) => (int) $v)->unique()->values()->all();
         if ($ids === []) {
             return;
         }
