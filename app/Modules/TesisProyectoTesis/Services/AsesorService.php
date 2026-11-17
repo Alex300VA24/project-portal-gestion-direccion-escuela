@@ -38,10 +38,10 @@ final class AsesorService
 
         $filas = $proyectos->map(function ($p) use ($entregas, $estudiantes, $lineas) {
             $lista = $entregas->get($p->id_proyecto, collect())->where('etapa', $p->etapa);
-            $pendiente = $lista->firstWhere('estado', 'Pendiente');
+            $pendiente = $lista->first(fn ($e) => $e->estado === 'Pendiente' && $e->tipo === 'Avance');
             $ultima = $lista->first();
             $paraVerificar = in_array($p->estado, Estados::DESARROLLO, true)
-                && $ultima !== null && ($ultima->tipo === 'Final' || $ultima->estado === 'Culminada');
+                && $ultima !== null && (($ultima->tipo === 'Final' && $ultima->estado === 'Pendiente') || $ultima->estado === 'Culminada');
 
             return [
                 'proyecto' => $p,
@@ -49,7 +49,7 @@ final class AsesorService
                 'linea' => $lineas[$p->id_linea] ?? '—',
                 'ultima' => $ultima,
                 'pendiente' => $pendiente,
-                'porRevisar' => $lista->where('estado', 'Pendiente')->count(),
+                'porRevisar' => $lista->where('estado', 'Pendiente')->where('tipo', 'Avance')->count(),
                 'paraVerificar' => $paraVerificar,
             ];
         });

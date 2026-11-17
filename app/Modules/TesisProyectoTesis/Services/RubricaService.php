@@ -184,8 +184,10 @@ final class RubricaService
                 }
             }
 
-            if (! $cumpleTodo && $rol === 'Asesor') {
+            if ($rol === 'Asesor' && ! $cumpleTodo) {
                 $e->update(['estado' => 'Observada']);
+            } elseif ($rol === 'Asesor' && $conformidad && $e->estado === 'Pendiente') {
+                $e->update(['estado' => 'Culminada']);
             }
 
             $quien = $rol === 'Asesor' ? 'Tu asesor' : 'Un miembro del jurado';
