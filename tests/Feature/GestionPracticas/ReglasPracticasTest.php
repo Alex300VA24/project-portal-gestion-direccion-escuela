@@ -29,7 +29,7 @@ final class ReglasPracticasTest extends PracticasTestCase
 
         // Publicada pero con la fecha de cierre vencida: ya no admite postulaciones.
         Postulacion::query()->delete();
-        $convocatoria->update(['fecha_publicacion' => now()->subDays(10), 'fecha_cierre' => now()->subDay()->toDateString()]);
+        $convocatoria->update(['fecha_publicacion' => now()->subDays(10), 'fecha_cierre' => now('America/Lima')->subDay()->toDateString()]);
         $this->post(route('gestion-practicas.estudiante.convocatorias.postular', $convocatoria))->assertSessionHasErrors('convocatoria');
 
         // Cerrada: la política ni siquiera la muestra al estudiante.
@@ -70,7 +70,7 @@ final class ReglasPracticasTest extends PracticasTestCase
     {
         $convocatoria = Convocatoria::firstOrFail();
         $convocatoria->update(['estado' => Convocatoria::EN_REVISION, 'fecha_publicacion' => null, 'publicada_por' => null,
-            'fecha_cierre' => now()->subDay()->toDateString()]);
+            'fecha_cierre' => now('America/Lima')->subDay()->toDateString()]);
 
         $this->como('admin')->post(route('gestion-practicas.revision.convocatorias.aprobar', $convocatoria))->assertSessionHasErrors('estado');
         $this->assertSame(Convocatoria::EN_REVISION, $convocatoria->refresh()->estado);
