@@ -37,9 +37,33 @@ Una invitación `COMPLETADA` sigue permitiendo **consultar** el expediente hasta
 
 El estado `EXPIRADA` lo admite la BD y el módulo lo respeta, pero no lo asigna: considera vencida toda invitación cuya fecha de vencimiento ya pasó, aunque siga `PENDIENTE`. Una vencida no abre el expediente ni se puede responder.
 
+## Flujo 0 · De alumno apto a egresado
+
+El padrón se carga con alumnos **aptos para egresar** y solo después se confirma su egreso con la fecha real. El sistema no completa lo que el archivo no trae.
+
+```mermaid
+sequenceDiagram
+    actor S as Secretaría
+    participant M as Módulo
+    S->>M: Padrón → importar CSV/Excel (matrícula, documento, nombres, cohorte, correo institucional)
+    M->>M: egresado + historial «PROXIMO» (apto); sin fechas, créditos ni contacto
+    S->>M: Contacto inicial (flujo 1): el alumno deja su correo personal y celular
+    S->>M: Ficha del alumno → «Confirmar egreso» con la fecha real
+    M->>M: cierra «PROXIMO», abre «EGRESADO», guarda fecha y periodo
+```
+
+Reglas:
+
+- Correo institucional obligatorio y válido; matrícula única; la cohorte debe existir; las fechas del archivo no pueden ser futuras. Cada fila inválida se rechaza con su motivo y las demás se guardan.
+- Estado inicial `PROXIMO` (apto), salvo que el archivo traiga `estado` explícito. Créditos, resoluciones, fecha de egreso y periodo quedan vacíos; el contacto solo se guarda si el archivo trae correo personal **y** celular.
+- «Confirmar egreso» exige una fecha real (no futura, no anterior al ingreso si se conoce) y solo vale para quien está en `PROXIMO`. El periodo sale de la fecha (`I` hasta julio, `II` después). Se conservan el expediente, el historial y los contactos.
+- Las campañas de seguimiento solo convocan a quienes ya están en `EGRESADO`, `BACHILLER` o `TITULADO`.
+
+En la BD: `egresado` (`correo_institucional`, `fecha_egreso`, `periodo_egreso`), `historial_estado_academico` (una fila por etapa, con `vigente_desde`/`vigente_hasta`) e `importacion_padron` / `importacion_fila` (qué se aceptó y qué se rechazó, con el motivo).
+
 ## Flujo 1 · Contacto inicial
 
-Sirve para tener los datos de contacto antes de cualquier campaña.
+Sirve para tener los datos de contacto antes de cualquier campaña. El enlace llega al **correo institucional** del alumno.
 
 ```mermaid
 sequenceDiagram
@@ -82,6 +106,7 @@ sequenceDiagram
 
 Reglas:
 
+- Solo se convoca a **egresados confirmados** (flujo 0). El correo va al correo personal si el egresado ya lo dejó; si no, al institucional.
 - Emitir dos veces no duplica: quien ya tiene invitación en esa campaña se omite.
 - La encuesta tiene seis secciones: contacto, perfil profesional, situación laboral, desarrollo profesional continuo, satisfacción y habilidades, y contacto del empleador. Los campos con formato se validan en el navegador y todo se valida otra vez en el servidor.
 - Quien no trabaja no guarda datos de empleo.

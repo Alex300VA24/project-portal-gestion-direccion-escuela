@@ -1,0 +1,94 @@
+# Guion de demostración · Seguimiento al Egresado
+
+Recorrido completo, con datos ficticios que se guardan de verdad en PostgreSQL: **alumno apto → contacto inicial → egreso → campaña → encuesta → empleador → indicadores**. Una prueba automática lo ejecuta de punta a punta sobre una base vacía (`tests/Feature/SeguimientoEgresado/RecorridoCompletoTest.php`).
+
+## 1. Preparar el sistema
+
+### Con Docker (recomendado en el equipo del grupo)
+
+```bash
+git clone -b feature/modulo-seguimiento-egresado https://github.com/VakoCS/project-portal-gestion-direccion-escuela.git
+cd project-portal-gestion-direccion-escuela
+cp .env.example .env            # en Windows PowerShell: Copy-Item .env.example .env
+```
+
+En `.env` poner, para no escribir a nadie real: `SG_CORREO_REDIRIGIR_A=<tu correo>`. Luego:
+
+```bash
+docker compose build
+docker compose run --rm --no-deps app php artisan key:generate --show   # pegar el resultado en APP_KEY del .env
+docker compose up -d                                                    # aplica las migraciones solo
+docker compose exec app php artisan db:seed --force                     # cuentas del portal (secretaria y director)
+```
+
+Abrir http://localhost:8000/login.
+
+> **No ejecutar** el seeder de datos de demostración del módulo (`SeguimientoEgresadoSeeder`) para este recorrido: carga egresados y respuestas ficticias que se mezclarían con los resultados. Tampoco `migrate:fresh`.
+
+### Sin Docker
+
+Requisitos: PHP 8.3 o superior con `pdo_pgsql`, `zip` y `mbstring`, Composer, Node 22 y PostgreSQL 17. Seguir el README principal y luego:
+
+```bash
+php artisan module:migrate all --force
+php artisan db:seed --force
+php artisan serve
+```
+
+### Cuentas
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Secretaría | `secretaria@portal.local` | en `database/seeders/DatabaseSeeder.php` |
+| Dirección | `director@portal.local` | la misma |
+
+### Correo
+
+- `MAIL_MAILER=log` (por defecto): no sale ningún correo. El sistema lo dice («Ninguno se envió por correo») y muestra el enlace en pantalla para copiarlo. Sirve para la demostración.
+- Con **Mailpit** (local y gratuito): `MAIL_MAILER=smtp`, `MAIL_HOST=127.0.0.1` (en Docker, `host.docker.internal`), `MAIL_PORT=1025`; los correos se leen en http://localhost:8025.
+- Siempre con `SG_CORREO_REDIRIGIR_A` puesto mientras se usen datos de prueba.
+
+### Limitación de Docker
+
+La imagen del portal no incluye la extensión PHP `zip`: la **importación de `.xlsx`** y el **Excel de indicadores** no funcionan ahí. Usar **CSV** (la importación y el reporte CSV sí funcionan). Arreglarlo es agregar `zip` al `Dockerfile`, que es del proyecto principal.
+
+## 2. Recorrido (Secretaría)
+
+Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimiento-egresado`).
+
+| Paso | Qué se hace | Resultado esperado |
+|---|---|---|
+| 0 | **Padrón y cohortes** → pestaña de cohortes → «Registrar Nuevo Plan Curricular»: `Plan 2017`, vigente desde `2017-03-01`, estado VIGENTE. Luego «Registrar Nueva Cohorte»: año `2019`, total de ingresantes `6`, plan `Plan 2017`. | Plan y cohorte en la lista. |
+| 1 | Pestaña de importaciones → «Cargar Archivo de Padrón» → `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`. | «6 egresados registrados». Los 6 aparecen como **Apto para egresar**, sin fecha de egreso, sin créditos y sin contacto. |
+| 1b | Cargar el mismo archivo otra vez. | Se rechaza por matrícula duplicada; no se crea nada. |
+| 2 | **Padrón** → «Contacto inicial de egresados» → cohorte 2019 → «Invitar a la cohorte». | 6 enlaces personales, una sola vez, con botón «Copiar». Con correo conectado dice «Enviado por correo a… (redirigido)»; si no, «No enviado» y se entregan a mano. |
+| 3 | Abrir en otra ventana (modo incógnito) uno de los enlaces: es la vista del alumno. «Completar mi contacto»: correo personal y celular. | El alumno guarda su contacto. En «Contacto inicial de egresados» ese alumno pasa a **Completado**. |
+| 4 | **Padrón** → ficha de cada alumno → «Confirmar egreso» → fecha real (por ejemplo `2025-07-18`). | Pasa a **Egresado**, con fecha y periodo `2025-I`. Su historial conserva la etapa anterior y sus contactos. |
+| 5 | **Campañas e invitaciones** → «Registrar campaña»: tipo **MIXTA**, finalidad SEGUIMIENTO, periodo `2026-II`, fechas vigentes, estado ABIERTA, cohorte 2019 → «Emitir invitaciones por cohorte». | Un enlace por **egresado confirmado**. Quien ya dejó su contacto recibe el correo en su correo **personal**; los demás, en el institucional. Los alumnos que no se confirmaron no se convocan. |
+| 6 | Abrir un enlace de la campaña (ventana de alumno). Responder la encuesta: trabaja, **autoriza contactar a su empleador** y da el contacto del jefe. | «Gracias»; la respuesta queda en **Mi historial**. La invitación pasa a **COMPLETADA**; las demás siguen pendientes. |
+| 7 | Secretaría → **Encuesta empresarial** → «Generar enlace»: campaña MIXTA, tipo «Desempeño (cuenta para I5)», la promoción y el «Egresado evaluado» que respondió. Generar otro de tipo «Mercado general». | Se muestra cada enlace una sola vez. Solo se puede evaluar a quien **autorizó** contactar a su empresa. |
+| 8 | Abrir cada enlace de empresa sin iniciar sesión y responder. | La empresa responde sin cuenta; el enlace queda usado. |
+| 9 | **Indicadores I1 a I6**, **Encuesta empresarial** y **Reportes** (CSV). | Las cifras salen solo de lo respondido en el recorrido. Sin datos `[DEMO]`. |
+
+## 3. Qué demuestra y qué comprobar si algo falla
+
+- **Sin datos inventados:** el alumno apto no tiene fecha de egreso, créditos ni contacto hasta que alguien los registre.
+- **Enlaces seguros:** se ven una sola vez; en la BD solo queda su hash; «Enlace nuevo» anula el anterior.
+- **Estado del correo real:** nunca dice «enviado» si no salió. Si falla, el enlace sigue disponible en pantalla.
+- **Dos tipos de invitación:** `CONTACTO_INICIAL` (sin campaña) y `SEGUIMIENTO` (con campaña).
+- **Permisos:** Dirección consulta pero no genera enlaces ni confirma egresos (recibe 403). Sin iniciar sesión, las pantallas internas llevan al acceso del portal.
+
+| Síntoma | Causa y solución |
+|---|---|
+| «La cohorte no existe» al importar | Falta el paso 0 (registrar el plan y la cohorte). |
+| «No hay egresados confirmados» al emitir | Falta el paso 4 (confirmar egresos). |
+| «El egresado no ha autorizado el contacto» | El egresado no respondió la encuesta o respondió que no autoriza. |
+| Error de importación con `.xlsx` en Docker | Falta `zip` en la imagen; usar CSV. |
+| Pantalla de login sin estilos | Falta construir los assets del portal (`npm run build`; en Docker ya vienen). |
+
+## 4. Pendientes conocidos
+
+- El envío es síncrono; una campaña de más de unas decenas de egresados puede tardar o cortarse (ver `correo.md`).
+- Los enlaces de empresa se copian a mano: no se envían por correo.
+- No se usa `core.persona` ni `core.estudiante`: están vacías en el portal y crear estudiantes exigiría datos académicos que el padrón no tiene.
+- El módulo mantiene su propio personal interno, planes y archivos (`usuario_interno`, `plan_curricular`, `archivo_evidencia`).

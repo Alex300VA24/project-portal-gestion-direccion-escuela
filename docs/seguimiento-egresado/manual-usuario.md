@@ -12,9 +12,28 @@ Tiene dos partes: la de la **Secretaría**, que genera los enlaces, y la del **e
 
 Inicia sesión en el portal con tu cuenta de Secretaría y abre el módulo **Seguimiento al Egresado**. En la barra superior ves tu nombre y tu rol, y las opciones **Cambiar de módulo** y **Cerrar sesión**. La Dirección entra igual y ve las mismas pantallas, con permisos propios (por ejemplo, solo la Dirección registra la evaluación institucional).
 
+### Cargar los alumnos aptos para egresar
+
+El padrón se arma con los alumnos que ya cumplen para egresar. **Todavía no son egresados**: se registran como **Apto para egresar**, sin fecha de egreso, sin créditos y sin datos de contacto. Nada de eso se inventa: lo registra quien lo conoce.
+
+1. En **Padrón y cohortes** registra, si no existen, el **plan curricular** y la **cohorte** (año de ingreso). El archivo se rechaza si su cohorte no existe.
+2. En la pestaña de importaciones, pulsa **Cargar archivo de padrón** y elige un archivo **CSV** o Excel. Hay una plantilla descargable y un ejemplo en `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`.
+3. Columnas obligatorias: `matricula`, `tipo_doc`, `numero_documento`, `nombres`, `apellido_paterno`, `cohorte` y **`correo_institucional`** (válido). Opcionales: `apellido_materno`, `fecha_ingreso`, `fecha_egreso` (no puede ser futura) y, si ya se conocen, `correo_personal` y `celular`.
+4. Las filas con error (matrícula repetida, correo faltante o inválido, fecha futura, cohorte inexistente) se rechazan una por una y la pantalla dice el motivo. Las demás se guardan.
+
+### Confirmar el egreso
+
+Cuando el alumno egresó de verdad:
+
+1. En **Padrón** abre su ficha y pulsa **Confirmar egreso**.
+2. Escribe la **fecha real de egreso** (no puede ser futura ni anterior a su ingreso, si se conoce) y confirma.
+3. El alumno pasa a **Egresado**; el periodo (por ejemplo `2025-I`) se calcula con esa fecha. Su historial conserva la etapa anterior y sus contactos no se pierden.
+
+Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede confirmar a quien está como «Apto para egresar».
+
 ### Generar enlaces de contacto inicial
 
-El contacto inicial recoge los datos de contacto de los egresados antes de cualquier campaña.
+El contacto inicial recoge los datos de contacto de los alumnos aptos y de los egresados. El enlace llega a su **correo institucional**; el alumno deja ahí su correo personal y su celular, y eso queda en su mismo expediente. La tabla «Egresados» muestra quién ya completó su contacto.
 
 1. Entra a **Padrón y cohortes** y pulsa **Contacto inicial de egresados**.
 2. Elige cómo invitar:
@@ -54,7 +73,7 @@ Si el egresado perdió su enlace, o se compartió por error, pulsa **Enlace nuev
 ### Invitar a una campaña de seguimiento
 
 1. Entra a **Campañas e invitaciones** y elige la campaña.
-2. Pulsa **Emitir invitaciones por cohorte**. Se crea una invitación por cada egresado de las cohortes de la campaña (quien ya tiene invitación se omite).
+2. Pulsa **Emitir invitaciones por cohorte**. Se crea una invitación por cada **egresado confirmado** de las cohortes de la campaña (quien ya tiene invitación se omite). Los alumnos que siguen como «Apto para egresar» no se convocan: primero hay que confirmar su egreso. El correo va a su correo **personal** si ya lo dejó; si no, al institucional.
 3. El panel **Enlaces personales de las invitaciones** muestra el enlace de cada uno y el estado del correo. Cópialos antes de salir de la página.
 4. En la tabla de invitaciones, **Fecha envío** queda vacía hasta que el correo salga de verdad. «Envío fallido» indica que el servidor no lo aceptó.
 5. Para quien no respondió, **Reenviar recordatorio** genera un enlace nuevo, lo envía por correo y lo muestra una vez. El enlace anterior deja de funcionar.

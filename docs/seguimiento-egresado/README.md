@@ -6,6 +6,7 @@ Módulo `seguimiento-egresado` del portal (esquema PostgreSQL `seguimiento_egres
 
 | Documento | Para quién | Contenido |
 |---|---|---|
+| [guion-demostracion.md](guion-demostracion.md) | Presentación | Recorrido completo paso a paso, con datos, comandos y resultados esperados. |
 | [manual-usuario.md](manual-usuario.md) | Secretaría, Dirección, egresados | Cómo usar cada pantalla. |
 | [flujo.md](flujo.md) | Pruebas y revisión | Flujos del sistema con sus reglas y lo que queda en la BD. |
 | [arquitectura.md](arquitectura.md) | Desarrollo | Capas, archivos, decisiones y pruebas. |
@@ -22,13 +23,15 @@ Con la instalación del portal ya hecha (README principal):
 php artisan module:migrate seguimiento-egresado
 
 # 2. Cuentas de demostración del portal (roles `secretaria` y `director_escuela`)
-php artisan db:seed
+php artisan db:seed            # con APP_ENV=production (Docker) hay que agregar --force
 
-# 3. Datos de demostración del módulo (opcional)
+# 3. Datos de demostración del módulo (opcional; solo en un entorno local, no en production)
 php artisan db:seed --class="App\Modules\SeguimientoEgresado\Database\Seeders\SeguimientoEgresadoSeeder"
 ```
 
 Las cuentas son `secretaria@portal.local` y `director@portal.local`; su contraseña está en `database/seeders/DatabaseSeeder.php`.
+
+**Para el recorrido de demostración** (alumno apto → contacto → egreso → campaña → encuesta → empleador → indicadores) **no se ejecuta el paso 3**: ese seeder carga egresados y respuestas ficticias que se mezclan con los resultados. El recorrido parte de una base vacía con el CSV de `datos/alumnos-aptos-demo.csv`; ver [guion-demostracion.md](guion-demostracion.md). Si ya se cargó el paso 3, se vuelve a una base limpia con `php artisan module:migrate all --force` sobre una BD nueva (no usar `migrate:fresh`).
 
 El módulo vive en `/seguimiento-egresado`. La portada es pública; las pantallas del personal piden iniciar sesión en el portal.
 
