@@ -1,0 +1,79 @@
+<?php
+
+namespace Tests\Feature\SeguimientoEgresado\Invitaciones;
+
+use App\Modules\SeguimientoEgresado\Database\Seeders\DatosPruebaSeeder;
+use App\Modules\SeguimientoEgresado\Mail\InvitacionEgresadoMail;
+use App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento;
+use App\Modules\SeguimientoEgresado\Models\Cohorte;
+use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
+use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
+use Illuminate\Support\Facades\Mail;
+use Tests\Support\SeguimientoEgresado\ComoPersonal;
+use Tests\Support\SeguimientoEgresado\UsaBaseDeDatos;
+use Tests\TestCase;
+
+/** Las campañas envían el enlace por correo y la pantalla dice la verdad sobre lo enviado. */
+class CorreoCampaniaTest extends TestCase
+{
+    use ComoPersonal, UsaBaseDeDatos;
+
+    private CampaniaSeguimiento $campania;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAs($this->secretaria());
+        $this->seed(DatosPruebaSeeder::class);
+        config(['mail.default' => 'smtp', 'seguimiento-egresado.correo.enviar' => true, 'seguimiento-egresado.correo.redirigir_a' => null]);
+        Mail::fake();
+
+        $this->campania = CampaniaSeguimiento::create([
+            'nombre' => 'Encuesta Cohorte 2019', 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'periodo' => '2026-II',
+            'fecha_inicio' => '2026-10-05', 'fecha_fin' => '2026-12-31', 'estado' => 'ABIERTA', 'id_usuario_creacion' => UsuarioInterno::idActual(),
+        ]);
+        $this->campania->cohortes()->attach(Cohorte::where('anio_ingreso', 2019)->value('id'));
+    }
+
+    public function test_al_emitir_se_envia_un_correo_por_invitacion_y_se_marca_la_fecha_de_envio(): void
+    {
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $this->campania->id))->assertRedirect();
+
+        $enlaces = session('enlaces_emitidos');
+        $this->assertNotEmpty($enlaces);
+        Mail::assertSent(InvitacionEgresadoMail::class, count($enlaces));
+        foreach ($enlaces as $enlace) {
+            $this->assertSame('enviado', $enlace['correo']);
+            Mail::assertSent(InvitacionEgresadoMail::class, fn ($m) => $m->url === $enlace['url'] && $m->proposito === 'SEGUIMIENTO');
+        }
+        $this->assertSame(0, InvitacionEgresado::where('id_campania', $this->campania->id)->whereNull('enviado_en')->count());
+        $this->assertStringContainsString('Todas se enviaron por correo', session('success'));
+    }
+
+    public function test_sin_servidor_de_correo_no_se_marca_enviado_y_el_enlace_sigue_en_pantalla(): void
+    {
+        config(['mail.default' => 'log']);
+
+        $this->followingRedirects()->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $this->campania->id))
+            ->assertOk()
+            ->assertSee('Ninguna se envió por correo')
+            ->assertSee('/seguimiento-egresado/acceso/', false);
+
+        $this->assertGreaterThan(0, InvitacionEgresado::where('id_campania', $this->campania->id)->count());
+        $this->assertSame(0, InvitacionEgresado::where('id_campania', $this->campania->id)->whereNotNull('enviado_en')->count(), 'nada salió a un servidor de correo');
+    }
+
+    public function test_el_recordatorio_genera_un_enlace_nuevo_y_lo_envia(): void
+    {
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $this->campania->id));
+        $invitacion = InvitacionEgresado::where('id_campania', $this->campania->id)->orderBy('id')->firstOrFail();
+        $hashAnterior = $invitacion->token_hash;
+        Mail::fake();
+
+        $this->post(route('seguimiento-egresado.campanias.recordatorio', $invitacion->id))->assertRedirect();
+
+        $this->assertNotSame($hashAnterior, $invitacion->refresh()->token_hash);
+        Mail::assertSent(InvitacionEgresadoMail::class, 1);
+        $this->assertStringContainsString('enviado por correo', session('success'));
+    }
+}
