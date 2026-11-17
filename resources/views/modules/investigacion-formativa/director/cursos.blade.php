@@ -120,6 +120,7 @@
                             <th class="px-4 py-3" scope="col">Sección</th>
                             <th class="px-4 py-3" scope="col">Docente</th>
                             <th class="px-4 py-3" scope="col">Configuración</th>
+                            <th class="px-4 py-3" scope="col">Encuesta</th>
                             <th class="px-4 py-3" scope="col">Habilitación</th>
                         </tr>
                     </thead>
@@ -146,6 +147,14 @@
                                             {{ implode(', ', $seccion->faltantes) }}
                                         </p>
                                     @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    <a
+                                        class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                        href="{{ route('investigacion-formativa.director.encuestas.edit', $seccion->id_seccion) }}"
+                                    >
+                                        Gestionar encuesta
+                                    </a>
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex flex-col gap-2">

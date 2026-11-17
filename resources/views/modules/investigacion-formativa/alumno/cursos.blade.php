@@ -94,6 +94,13 @@
                                     @else
                                         <span class="text-xs text-gray-500">Disponible al completar la configuración</span>
                                     @endif
+
+                                    <a
+                                        class="mt-2 inline-flex rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                        href="{{ route('investigacion-formativa.alumno.encuestas.show', $seccion->id_seccion) }}"
+                                    >
+                                        Ver encuesta
+                                    </a>
                                 </td>
                             </tr>
                         @endforeach

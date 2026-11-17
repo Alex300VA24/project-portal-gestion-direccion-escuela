@@ -10,6 +10,10 @@ use App\Modules\GestionMatriculas\Models\Registro as GestionMatriculasRegistro;
 use App\Modules\GestionPracticas\Models\Registro as GestionPracticasRegistro;
 use App\Modules\InvestigacionFormativa\Models\CompetenciaSeccion as InvestigacionFormativaCompetenciaSeccion;
 use App\Modules\InvestigacionFormativa\Models\CriterioNivel as InvestigacionFormativaCriterioNivel;
+use App\Modules\InvestigacionFormativa\Models\Encuesta as InvestigacionFormativaEncuesta;
+use App\Modules\InvestigacionFormativa\Models\EncuestaPregunta as InvestigacionFormativaEncuestaPregunta;
+use App\Modules\InvestigacionFormativa\Models\EncuestaRespuesta as InvestigacionFormativaEncuestaRespuesta;
+use App\Modules\InvestigacionFormativa\Models\EncuestaRespuestaItem as InvestigacionFormativaEncuestaRespuestaItem;
 use App\Modules\InvestigacionFormativa\Models\Entrega as InvestigacionFormativaEntrega;
 use App\Modules\InvestigacionFormativa\Models\Evaluacion as InvestigacionFormativaEvaluacion;
 use App\Modules\InvestigacionFormativa\Models\EvaluacionCriterio as InvestigacionFormativaEvaluacionCriterio;
@@ -45,6 +49,10 @@ final class ModuleSchemaIsolationTest extends TestCase
             InvestigacionFormativaGrupo::class => 'investigacion_formativa.grupo',
             InvestigacionFormativaEntrega::class => 'investigacion_formativa.entrega',
             InvestigacionFormativaCriterioNivel::class => 'investigacion_formativa.criterio_nivel',
+            InvestigacionFormativaEncuesta::class => 'investigacion_formativa.encuesta',
+            InvestigacionFormativaEncuestaPregunta::class => 'investigacion_formativa.encuesta_pregunta',
+            InvestigacionFormativaEncuestaRespuesta::class => 'investigacion_formativa.encuesta_respuesta',
+            InvestigacionFormativaEncuestaRespuestaItem::class => 'investigacion_formativa.encuesta_respuesta_item',
             InvestigacionFormativaEvaluacion::class => 'investigacion_formativa.evaluacion',
             InvestigacionFormativaEvaluacionCriterio::class => 'investigacion_formativa.evaluacion_criterio',
             InvestigacionFormativaObservacion::class => 'investigacion_formativa.observacion',

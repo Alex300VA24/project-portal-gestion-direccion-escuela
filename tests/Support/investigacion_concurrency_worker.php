@@ -5,9 +5,11 @@ use App\Modules\InvestigacionFormativa\Exceptions\AccesoDenegado;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\RecursoBloqueado;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
+use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
+use App\Modules\InvestigacionFormativa\Services\EncuestaService;
 use App\Modules\InvestigacionFormativa\Services\EvaluacionService;
 use App\Modules\InvestigacionFormativa\Services\GrupoService;
 use Illuminate\Contracts\Console\Kernel;
@@ -99,6 +101,24 @@ try {
             9902,
             ['2027-01-01T12:00', '2027-02-01T12:00', '2027-03-01T12:00'],
             1,
+        );
+    } elseif ($mode === 'survey_response') {
+        $encuesta = Encuesta::query()->findOrFail((int) $argv[4]);
+        app(EncuestaService::class)->responder(
+            $actor,
+            $encuesta,
+            [[
+                'id_pregunta' => (int) $argv[5],
+                'valor' => 4,
+            ]],
+            'Respuesta concurrente.',
+        );
+    } elseif ($mode === 'survey_close') {
+        $encuesta = Encuesta::query()->findOrFail((int) $argv[4]);
+        app(EncuestaService::class)->cerrar(
+            $actor,
+            $encuesta,
+            (int) $argv[5],
         );
     } else {
         throw new InvalidArgumentException('Modo de concurrencia desconocido.');

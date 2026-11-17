@@ -3,6 +3,7 @@
 namespace App\Modules\InvestigacionFormativa\Models;
 
 use App\Shared\Models\ModuleModel;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Encuesta extends ModuleModel
 {
@@ -11,6 +12,8 @@ class Encuesta extends ModuleModel
     protected $primaryKey = 'id_encuesta';
 
     public $timestamps = false;
+
+    protected $guarded = ['*'];
 
     protected $fillable = [
         'id_seccion',
@@ -26,4 +29,15 @@ class Encuesta extends ModuleModel
         'cerrada_en' => 'datetime',
         'version' => 'integer',
     ];
+
+    public function preguntas(): HasMany
+    {
+        return $this->hasMany(EncuestaPregunta::class, 'id_encuesta', 'id_encuesta')
+            ->orderBy('orden');
+    }
+
+    public function respuestas(): HasMany
+    {
+        return $this->hasMany(EncuestaRespuesta::class, 'id_encuesta', 'id_encuesta');
+    }
 }

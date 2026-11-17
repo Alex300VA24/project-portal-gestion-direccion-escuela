@@ -3,6 +3,7 @@
 namespace Tests\Feature\InvestigacionFormativa;
 
 use App\Modules\InvestigacionFormativa\Exceptions\AccesoDenegado;
+use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosInvestigacion;
@@ -35,7 +36,7 @@ final class GrupoConcurrenciaTest extends TestCase
         $this->datos = $this->crearDatosInvestigacion();
     }
 
-    public function test_las_importaciones_y_las_mutaciones_respetan_el_bloqueo_de_seccion(): void
+    public function test_las_importaciones_las_mutaciones_y_la_encuesta_respetan_el_bloqueo_de_seccion(): void
     {
         $this->crearGruposInvestigacion();
         $this->crearTipoProducto();
@@ -165,6 +166,58 @@ final class GrupoConcurrenciaTest extends TestCase
             $this->assertSame(1, DB::table('investigacion_formativa.observacion')
                 ->where('id_entrega', $idEntrega)
                 ->count());
+
+            $idEncuesta = DB::table('investigacion_formativa.encuesta')->insertGetId([
+                'id_seccion' => 9901,
+                'estado' => 'publicada',
+                'creada_por' => $this->datos['users']['director']->id,
+                'publicada_en' => now('UTC'),
+                'version' => 2,
+            ], 'id_encuesta');
+            $idPreguntaEncuesta = DB::table('investigacion_formativa.encuesta_pregunta')->insertGetId([
+                'id_encuesta' => $idEncuesta,
+                'texto' => 'Pregunta de la carrera concurrente.',
+                'orden' => 1,
+            ], 'id_pregunta');
+
+            $resultadosEncuesta = $this->ejecutarCarreraDeEncuesta(
+                $idEncuesta,
+                $idPreguntaEncuesta,
+            );
+
+            $this->assertTrue($resultadosEncuesta['cierre']['mutated']);
+            $this->assertSame(
+                'cerrada',
+                DB::table('investigacion_formativa.encuesta')
+                    ->where('id_encuesta', $idEncuesta)
+                    ->value('estado'),
+            );
+            $this->assertSame(
+                3,
+                (int) DB::table('investigacion_formativa.encuesta')
+                    ->where('id_encuesta', $idEncuesta)
+                    ->value('version'),
+            );
+
+            if ($resultadosEncuesta['respuesta']['mutated']) {
+                $this->assertSame(1, DB::table('investigacion_formativa.encuesta_respuesta')
+                    ->where('id_encuesta', $idEncuesta)
+                    ->count());
+                $this->assertSame(1, DB::table('investigacion_formativa.encuesta_respuesta_item')
+                    ->where('id_encuesta', $idEncuesta)
+                    ->count());
+            } else {
+                $this->assertSame(
+                    EstadoInvalido::class,
+                    $resultadosEncuesta['respuesta']['exception'] ?? null,
+                );
+                $this->assertSame(0, DB::table('investigacion_formativa.encuesta_respuesta')
+                    ->where('id_encuesta', $idEncuesta)
+                    ->count());
+                $this->assertSame(0, DB::table('investigacion_formativa.encuesta_respuesta_item')
+                    ->where('id_encuesta', $idEncuesta)
+                    ->count());
+            }
         } finally {
             unlink($csvRoster);
             unlink($csvCompetencias);
@@ -356,6 +409,54 @@ final class GrupoConcurrenciaTest extends TestCase
     }
 
     /**
+     * @return array{respuesta: array{mutated: bool, exception?: string}, cierre: array{mutated: bool, exception?: string}}
+     */
+    private function ejecutarCarreraDeEncuesta(int $idEncuesta, int $idPregunta): array
+    {
+        $responseProcess = null;
+        $responsePipes = [];
+        $closeProcess = null;
+        $closePipes = [];
+
+        DB::beginTransaction();
+
+        try {
+            DB::table('investigacion_formativa.seccion_configuracion')
+                ->where('id_seccion', 9901)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            [$responseProcess, $responsePipes] = $this->iniciarWorker(
+                'survey_response',
+                $this->datos['users']['alumno_b']->id,
+                (string) $idEncuesta,
+                (string) $idPregunta,
+            );
+            [$closeProcess, $closePipes] = $this->iniciarWorker(
+                'survey_close',
+                $this->datos['users']['director']->id,
+                (string) $idEncuesta,
+                '2',
+            );
+
+            $this->esperarBloqueosEncuesta();
+            DB::commit();
+
+            return [
+                'respuesta' => $this->esperarProceso($responseProcess, $responsePipes),
+                'cierre' => $this->esperarProceso($closeProcess, $closePipes),
+            ];
+        } finally {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            $this->cerrarProceso($responseProcess, $responsePipes);
+            $this->cerrarProceso($closeProcess, $closePipes);
+        }
+    }
+
+    /**
      * @return array{0: resource, 1: array<int, resource>}
      */
     private function iniciarWorker(
@@ -420,6 +521,31 @@ final class GrupoConcurrenciaTest extends TestCase
         }
 
         $this->fail("No se alcanzó la barrera de bloqueo para {$applicationName}.");
+    }
+
+    private function esperarBloqueosEncuesta(): void
+    {
+        for ($intento = 0; $intento < 200; $intento++) {
+            DB::select('SELECT pg_stat_clear_snapshot()');
+            $bloqueados = DB::selectOne(
+                "SELECT count(*) AS total
+                FROM pg_stat_activity
+                WHERE application_name IN (
+                    'if_concurrency_survey_response',
+                    'if_concurrency_survey_close'
+                )
+                AND datname = current_database()
+                AND wait_event_type = 'Lock'",
+            );
+
+            if ((int) ($bloqueados->total ?? 0) >= 2) {
+                return;
+            }
+
+            usleep(50000);
+        }
+
+        $this->fail('No se alcanzó la barrera de bloqueo para la carrera de encuesta.');
     }
 
     /**

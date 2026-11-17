@@ -2,6 +2,7 @@
 
 use App\Modules\InvestigacionFormativa\Controllers\ConfiguracionController;
 use App\Modules\InvestigacionFormativa\Controllers\DirectorController;
+use App\Modules\InvestigacionFormativa\Controllers\EncuestaController;
 use App\Modules\InvestigacionFormativa\Controllers\EvaluacionController;
 use App\Modules\InvestigacionFormativa\Controllers\GrupoController;
 use App\Modules\InvestigacionFormativa\Controllers\InvestigacionFormativaController;
@@ -23,6 +24,17 @@ Route::prefix('investigacion-formativa')
 
                 Route::patch('/director/secciones/{seccion}/habilitacion', [DirectorController::class, 'habilitacion'])
                     ->name('director.secciones.habilitacion');
+            });
+
+            Route::middleware('permission:investigacion-formativa.surveys.manage')->group(function () {
+                Route::get('/director/secciones/{seccion}/encuesta', [EncuestaController::class, 'editar'])
+                    ->name('director.encuestas.edit');
+                Route::put('/director/secciones/{seccion}/encuesta', [EncuestaController::class, 'actualizar'])
+                    ->name('director.encuestas.update');
+                Route::post('/director/secciones/{seccion}/encuesta/publicar', [EncuestaController::class, 'publicar'])
+                    ->name('director.encuestas.publicar');
+                Route::post('/director/secciones/{seccion}/encuesta/cerrar', [EncuestaController::class, 'cerrar'])
+                    ->name('director.encuestas.cerrar');
             });
 
             Route::get('/docente/cursos', [ConfiguracionController::class, 'cursos'])
@@ -70,6 +82,13 @@ Route::prefix('investigacion-formativa')
 
                 Route::post('/alumno/secciones/{seccion}/grupo', [GrupoController::class, 'store'])
                     ->name('alumno.grupos.store');
+            });
+
+            Route::middleware('permission:investigacion-formativa.surveys.respond')->group(function () {
+                Route::get('/alumno/secciones/{seccion}/encuesta', [EncuestaController::class, 'mostrarEstudiante'])
+                    ->name('alumno.encuestas.show');
+                Route::post('/alumno/secciones/{seccion}/encuesta', [EncuestaController::class, 'responder'])
+                    ->name('alumno.encuestas.store');
             });
 
             Route::get('/alumno/cursos', [GrupoController::class, 'cursos'])
