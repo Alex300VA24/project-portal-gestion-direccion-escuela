@@ -13,7 +13,7 @@ final class SeguimientoEgresadoController extends ModuleController
 
     protected const SCHEMA = 'seguimiento_egresado';
 
-    protected const VIEW = 'modules.seguimiento-egresado.index';
+    protected const VIEW = 'modules.seguimiento-egresado.inicio';
 
     public function store(SeguimientoEgresadoRequest $request, SeguimientoEgresadoService $service): RedirectResponse
     {
