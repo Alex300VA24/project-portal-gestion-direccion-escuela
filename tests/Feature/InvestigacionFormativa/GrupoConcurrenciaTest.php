@@ -81,6 +81,27 @@ final class GrupoConcurrenciaTest extends TestCase
                     ->value('estado'),
             );
 
+            $idEntrega = $this->crearEntregaEvaluable($proyecto);
+            $idCriterio = (int) DB::table('investigacion_formativa.criterio')
+                ->where('id_rubrica', DB::table('investigacion_formativa.seccion_configuracion')
+                    ->where('id_seccion', 9901)
+                    ->value('id_rubrica'))
+                ->orderBy('orden')
+                ->value('id_criterio');
+            $idEvaluacion = DB::table('investigacion_formativa.evaluacion')->insertGetId([
+                'id_entrega' => $idEntrega,
+                'id_docente_evaluador' => 9801,
+                'comentario' => 'Evaluación inicial.',
+                'version' => 1,
+                'sin_observaciones' => false,
+            ], 'id_evaluacion');
+            DB::table('investigacion_formativa.evaluacion_criterio')->insert([
+                'id_evaluacion' => $idEvaluacion,
+                'id_criterio' => $idCriterio,
+                'nivel' => 3,
+                'puntaje' => 3,
+            ]);
+
             $resultadosGrupo = $this->ejecutarCarreraDeCreacion();
 
             $this->assertCount(2, $resultadosGrupo);
@@ -122,6 +143,28 @@ final class GrupoConcurrenciaTest extends TestCase
             $this->assertSame(2, (int) DB::table('investigacion_formativa.seccion_configuracion')
                 ->where('id_seccion', 9902)
                 ->value('version'));
+
+            $resultadosEvaluacion = $this->ejecutarCarreraDeEvaluacion($idEntrega);
+
+            $this->assertCount(2, $resultadosEvaluacion);
+            $this->assertSame(1, count(array_filter(
+                $resultadosEvaluacion,
+                static fn (array $resultado): bool => $resultado['mutated'],
+            )));
+            $this->assertSame(1, count(array_filter(
+                $resultadosEvaluacion,
+                static fn (array $resultado): bool => ! $resultado['mutated'],
+            )));
+            $this->assertSame(
+                VersionDesactualizada::class,
+                $resultadosEvaluacion[0]['exception'] ?? $resultadosEvaluacion[1]['exception'] ?? null,
+            );
+            $this->assertSame(2, (int) DB::table('investigacion_formativa.evaluacion')
+                ->where('id_entrega', $idEntrega)
+                ->value('version'));
+            $this->assertSame(1, DB::table('investigacion_formativa.observacion')
+                ->where('id_entrega', $idEntrega)
+                ->count());
         } finally {
             unlink($csvRoster);
             unlink($csvCompetencias);
@@ -218,6 +261,52 @@ final class GrupoConcurrenciaTest extends TestCase
     /**
      * @return list<array{mutated: bool, exception?: string}>
      */
+    private function ejecutarCarreraDeEvaluacion(int $idEntrega): array
+    {
+        $processes = [];
+        $pipes = [];
+
+        DB::beginTransaction();
+
+        try {
+            DB::table('investigacion_formativa.seccion_configuracion')
+                ->where('id_seccion', 9901)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            for ($indice = 0; $indice < 2; $indice++) {
+                [$processes[$indice], $pipes[$indice]] = $this->iniciarWorker(
+                    'evaluation',
+                    $this->datos['users']['docente_a']->id,
+                    (string) $idEntrega,
+                    '1',
+                );
+            }
+
+            $this->esperarBloqueos('if_concurrency_evaluation', 2);
+            DB::commit();
+
+            $resultados = [];
+
+            foreach ($processes as $indice => $process) {
+                $resultados[] = $this->esperarProceso($process, $pipes[$indice]);
+            }
+
+            return $resultados;
+        } finally {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            foreach ($processes as $indice => $process) {
+                $this->cerrarProceso($process, $pipes[$indice]);
+            }
+        }
+    }
+
+    /**
+     * @return list<array{mutated: bool, exception?: string}>
+     */
     private function ejecutarCarreraDeCreacion(): array
     {
         DB::table('investigacion_formativa.grupo_estudiante')
@@ -269,8 +358,12 @@ final class GrupoConcurrenciaTest extends TestCase
     /**
      * @return array{0: resource, 1: array<int, resource>}
      */
-    private function iniciarWorker(string $mode, int $idUsuario, ?string $argumentoExtra = null): array
-    {
+    private function iniciarWorker(
+        string $mode,
+        int $idUsuario,
+        ?string $argumentoExtra = null,
+        ?string $argumentoAdicional = null,
+    ): array {
         $argumentos = [
             PHP_BINARY,
             base_path('tests/Support/investigacion_concurrency_worker.php'),
@@ -281,6 +374,10 @@ final class GrupoConcurrenciaTest extends TestCase
 
         if ($argumentoExtra !== null) {
             $argumentos[] = $argumentoExtra;
+        }
+
+        if ($argumentoAdicional !== null) {
+            $argumentos[] = $argumentoAdicional;
         }
 
         $process = proc_open(
@@ -380,6 +477,33 @@ final class GrupoConcurrenciaTest extends TestCase
         if (is_resource($process)) {
             proc_close($process);
         }
+    }
+
+    private function crearEntregaEvaluable(int $idProyecto): int
+    {
+        $idEntregable = DB::table('investigacion_formativa.entregable')
+            ->where('id_seccion', 9901)
+            ->orderBy('orden')
+            ->value('id_entregable');
+        $idModulo = DB::table('seguridad.modulo_sistema')
+            ->where('codigo', 'investigacion_formativa')
+            ->value('id_modulo');
+        $idArchivo = DB::table('comun.archivo')->insertGetId([
+            'id_modulo' => $idModulo,
+            'nombre_original' => 'avance-concurrente.pdf',
+            'ruta_almacenamiento' => 'investigacion-formativa/test/avance-concurrente.pdf',
+            'tipo_mime' => 'application/pdf',
+            'tamano_bytes' => 10,
+            'hash_sha256' => str_repeat('c', 64),
+            'subido_por' => 8802,
+        ], 'id_archivo');
+
+        return DB::table('investigacion_formativa.entrega')->insertGetId([
+            'id_proyecto' => $idProyecto,
+            'id_entregable' => (int) $idEntregable,
+            'version' => 1,
+            'id_archivo' => $idArchivo,
+        ], 'id_entrega');
     }
 
     /**

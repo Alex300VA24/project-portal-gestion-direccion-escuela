@@ -9,9 +9,13 @@ use App\Modules\GestionHorarios\Models\Registro as GestionHorariosRegistro;
 use App\Modules\GestionMatriculas\Models\Registro as GestionMatriculasRegistro;
 use App\Modules\GestionPracticas\Models\Registro as GestionPracticasRegistro;
 use App\Modules\InvestigacionFormativa\Models\CompetenciaSeccion as InvestigacionFormativaCompetenciaSeccion;
+use App\Modules\InvestigacionFormativa\Models\CriterioNivel as InvestigacionFormativaCriterioNivel;
 use App\Modules\InvestigacionFormativa\Models\Entrega as InvestigacionFormativaEntrega;
+use App\Modules\InvestigacionFormativa\Models\Evaluacion as InvestigacionFormativaEvaluacion;
+use App\Modules\InvestigacionFormativa\Models\EvaluacionCriterio as InvestigacionFormativaEvaluacionCriterio;
 use App\Modules\InvestigacionFormativa\Models\Grupo as InvestigacionFormativaGrupo;
 use App\Modules\InvestigacionFormativa\Models\IdentidadUsuario as InvestigacionFormativaIdentidadUsuario;
+use App\Modules\InvestigacionFormativa\Models\Observacion as InvestigacionFormativaObservacion;
 use App\Modules\InvestigacionFormativa\Models\Registro as InvestigacionFormativaRegistro;
 use App\Modules\InvestigacionFormativa\Models\SeccionConfiguracion as InvestigacionFormativaSeccionConfiguracion;
 use App\Modules\PreMatricula\Models\Registro as PreMatriculaRegistro;
@@ -40,6 +44,10 @@ final class ModuleSchemaIsolationTest extends TestCase
             InvestigacionFormativaCompetenciaSeccion::class => 'investigacion_formativa.competencia_seccion',
             InvestigacionFormativaGrupo::class => 'investigacion_formativa.grupo',
             InvestigacionFormativaEntrega::class => 'investigacion_formativa.entrega',
+            InvestigacionFormativaCriterioNivel::class => 'investigacion_formativa.criterio_nivel',
+            InvestigacionFormativaEvaluacion::class => 'investigacion_formativa.evaluacion',
+            InvestigacionFormativaEvaluacionCriterio::class => 'investigacion_formativa.evaluacion_criterio',
+            InvestigacionFormativaObservacion::class => 'investigacion_formativa.observacion',
         ];
 
         foreach ($models as $model => $table) {

@@ -2,6 +2,7 @@
 
 use App\Modules\InvestigacionFormativa\Controllers\ConfiguracionController;
 use App\Modules\InvestigacionFormativa\Controllers\DirectorController;
+use App\Modules\InvestigacionFormativa\Controllers\EvaluacionController;
 use App\Modules\InvestigacionFormativa\Controllers\GrupoController;
 use App\Modules\InvestigacionFormativa\Controllers\InvestigacionFormativaController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,13 @@ Route::prefix('investigacion-formativa')
                     ->name('docente.cronograma.edit');
                 Route::put('/docente/secciones/{seccion}/cronograma', [ConfiguracionController::class, 'actualizarCronograma'])
                     ->name('docente.cronograma.update');
+            });
+
+            Route::middleware('permission:investigacion-formativa.evaluations.manage')->group(function () {
+                Route::put(
+                    '/docente/secciones/{seccion}/grupos/{grupo}/entregas/{entrega}/evaluacion',
+                    [EvaluacionController::class, 'update'],
+                )->name('docente.evaluaciones.update');
             });
 
             Route::middleware('permission:investigacion-formativa.groups.review')->group(function () {

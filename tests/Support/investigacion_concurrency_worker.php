@@ -5,8 +5,10 @@ use App\Modules\InvestigacionFormativa\Exceptions\AccesoDenegado;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\RecursoBloqueado;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
+use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
+use App\Modules\InvestigacionFormativa\Services\EvaluacionService;
 use App\Modules\InvestigacionFormativa\Services\GrupoService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
@@ -67,6 +69,30 @@ try {
             'id_linea' => 9802,
             'id_tipo_producto' => 9981,
         ]);
+    } elseif ($mode === 'evaluation') {
+        $entrega = Entrega::query()->findOrFail((int) $argv[4]);
+        $idRubrica = DB::table('investigacion_formativa.entregable')
+            ->where('id_entregable', (int) $entrega->id_entregable)
+            ->value('id_rubrica');
+        $criterios = DB::table('investigacion_formativa.criterio')
+            ->where('id_rubrica', (int) $idRubrica)
+            ->orderBy('orden')
+            ->get()
+            ->map(static fn (object $criterio): array => [
+                'id_criterio' => (int) $criterio->id_criterio,
+                'nivel' => 4,
+            ])
+            ->all();
+
+        app(EvaluacionService::class)->guardar(
+            $actor,
+            $entrega,
+            $criterios,
+            'Corrección concurrente.',
+            false,
+            ['Observación de la corrección concurrente.'],
+            (int) ($argv[5] ?? 1),
+        );
     } elseif ($mode === 'config') {
         app(ConfiguracionService::class)->guardarCronograma(
             $actor,

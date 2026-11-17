@@ -15,6 +15,7 @@ use App\Modules\InvestigacionFormativa\Requests\RevisarTituloRequest;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
 use App\Modules\InvestigacionFormativa\Services\DatosAcademicosService;
+use App\Modules\InvestigacionFormativa\Services\EvaluacionService;
 use App\Modules\InvestigacionFormativa\Services\GrupoService;
 use App\Modules\InvestigacionFormativa\Support\ActorInvestigacion;
 use App\Shared\Models\Core\Seccion;
@@ -30,6 +31,7 @@ final class GrupoController extends Controller
         private readonly AccesoInvestigacionService $acceso,
         private readonly ConfiguracionService $configuracion,
         private readonly DatosAcademicosService $datos,
+        private readonly EvaluacionService $evaluaciones,
         private readonly GrupoService $grupos,
     ) {}
 
@@ -290,6 +292,7 @@ final class GrupoController extends Controller
             'seccion' => $seccion,
             'grupo' => $grupo,
             'detalle' => $this->grupos->detalleGrupo((int) $grupo->id_grupo),
+            'evaluaciones' => $this->evaluaciones->detalleEntregasDeGrupo((int) $grupo->id_grupo),
             'conflicto' => $conflicto,
         ], $status);
     }
