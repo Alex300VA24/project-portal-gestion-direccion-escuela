@@ -8,7 +8,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Persona del personal de la Escuela que figura como autora de registros (campañas, estados académicos, mejoras...).
- * Se enlaza con la cuenta del portal por id_usuario_portal; la contraseña y los roles los administra el portal.
+ * Se enlaza con la cuenta del portal por el correo (correo_institucional = email de la cuenta); la contraseña y los
+ * roles los administra el portal.
  */
 class UsuarioInterno extends ModuleModel
 {
@@ -18,7 +19,6 @@ class UsuarioInterno extends ModuleModel
 
     protected $fillable = [
         'id_rol',
-        'id_usuario_portal',
         'nombre_completo',
         'correo_institucional',
         'password_hash',
@@ -36,7 +36,7 @@ class UsuarioInterno extends ModuleModel
     /** Fila del módulo que corresponde a un usuario del portal; se crea la primera vez que lo usa. */
     public static function delPortal(Authenticatable $usuario, Perfil $perfil): self
     {
-        $existente = static::where('id_usuario_portal', $usuario->getAuthIdentifier())->first();
+        $existente = static::whereRaw('lower(correo_institucional) = ?', [mb_strtolower($usuario->email)])->first();
 
         if ($existente !== null) {
             return $existente;
@@ -44,7 +44,6 @@ class UsuarioInterno extends ModuleModel
 
         return static::create([
             'id_rol' => RolInterno::where('codigo', $perfil->value)->value('id'),
-            'id_usuario_portal' => $usuario->getAuthIdentifier(),
             'nombre_completo' => $usuario->name ?? $usuario->email,
             'correo_institucional' => $usuario->email,
             'password_hash' => '!portal',

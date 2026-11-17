@@ -57,7 +57,7 @@ $sesion->iniciarEgresado($resultado);   // al abrir un enlace válido
 $identidad->puede('padron.gestionar');  // bool
 ```
 
-La identidad interna enlaza al usuario del portal con una fila de `seguimiento_egresado.usuario_interno` (campo `id_usuario_portal`, creada la primera vez). Esa fila da autoría a los registros: quién creó la campaña, quién cambió un estado académico, etc. (`UsuarioInterno::idActual()`).
+La identidad interna enlaza al usuario del portal con una fila de `seguimiento_egresado.usuario_interno` (se busca por el correo de la cuenta y se crea la primera vez). Esa fila da autoría a los registros: quién creó la campaña, quién cambió un estado académico, etc. (`UsuarioInterno::idActual()`).
 
 ## Middleware `RequiereCapacidad`
 

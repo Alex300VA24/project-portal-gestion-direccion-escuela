@@ -52,7 +52,7 @@ class IdentidadDelPortalTest extends TestCase
         $this->assertNull(SesionAcceso::desde($this->peticion(null))->interna());
     }
 
-    public function test_el_primer_uso_crea_el_usuario_interno_enlazado_y_no_se_duplica(): void
+    public function test_el_primer_uso_crea_el_usuario_interno_con_el_correo_de_la_cuenta_y_no_se_duplica(): void
     {
         $usuario = $this->secretaria();
 
@@ -60,7 +60,7 @@ class IdentidadDelPortalTest extends TestCase
         $segunda = SesionAcceso::desde($this->peticion($usuario))->interna();
 
         $this->assertSame($primera->usuarioId, $segunda->usuarioId);
-        $fila = DB::table('seguimiento_egresado.usuario_interno')->where('id_usuario_portal', $usuario->id)->get();
+        $fila = DB::table('seguimiento_egresado.usuario_interno')->where('correo_institucional', $usuario->email)->get();
         $this->assertCount(1, $fila);
         $this->assertSame($usuario->email, $fila->first()->correo_institucional);
         $this->assertSame(
@@ -85,7 +85,7 @@ class IdentidadDelPortalTest extends TestCase
 
         $id = UsuarioInterno::idActual();
 
-        $this->assertSame((int) $id, (int) DB::table('seguimiento_egresado.usuario_interno')->where('id_usuario_portal', $usuario->id)->value('id'));
+        $this->assertSame((int) $id, (int) DB::table('seguimiento_egresado.usuario_interno')->where('correo_institucional', $usuario->email)->value('id'));
     }
 
     public function test_sin_sesion_del_portal_la_autoria_cae_en_el_primer_usuario_activo_del_modulo(): void
