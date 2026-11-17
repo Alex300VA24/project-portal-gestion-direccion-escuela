@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+"""Run: IF_DEMO_MANIFEST=... IF_DEMO_PASSWORD=... python3 tests/Browser/investigacion_formativa.py.
+
+Requires a running local application, geckodriver, and a fresh demo dataset.
+The script changes only demo data through the normal browser forms.
+"""
+
+import base64
+import json
+import os
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+
+class Browser:
+    def __init__(self):
+        self.endpoint = os.environ.get("WEBDRIVER_URL", "http://127.0.0.1:4449")
+        self.app = os.environ.get("IF_DEMO_URL", "http://127.0.0.1:8059").rstrip("/")
+        if not self.app.startswith(("http://127.0.0.1:", "http://localhost:")):
+            raise ValueError("Use a local disposable demo application.")
+        self.manifest = json.loads(Path(os.environ["IF_DEMO_MANIFEST"]).read_text())
+        self.password = os.environ["IF_DEMO_PASSWORD"]
+        self.accounts = {row["nombre"]: row["email"] for row in self.manifest["cuentas"]}
+        self.output = Path(os.environ["IF_BROWSER_OUTPUT"])
+        self.output.mkdir(parents=True, exist_ok=False)
+        self.prefix = ""
+        self.checks = []
+        session = self.call("POST", "/session", {
+            "capabilities": {"alwaysMatch": {
+                "browserName": "firefox",
+                "moz:firefoxOptions": {
+                    "binary": os.environ.get("FIREFOX_BINARY", "/usr/bin/firefox"),
+                    "args": ["-headless"],
+                },
+            }},
+        })
+        self.prefix = "/session/" + session["sessionId"]
+        self.version = session["capabilities"]["browserVersion"]
+
+    def call(self, method, path, data=None):
+        request = urllib.request.Request(
+            self.endpoint + self.prefix + path,
+            data=None if data is None else json.dumps(data).encode(),
+            headers={"Content-Type": "application/json"}, method=method,
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=40) as response:
+                value = json.load(response)["value"]
+        except urllib.error.HTTPError as error:
+            raise RuntimeError(error.read().decode()) from error
+        if isinstance(value, dict) and "error" in value:
+            raise RuntimeError(value)
+        return value
+
+    def js(self, script, *args):
+        return self.call("POST", "/execute/sync", {"script": script, "args": list(args)})
+
+    def wait(self, condition):
+        for _ in range(100):
+            if condition():
+                return
+            time.sleep(0.1)
+        raise AssertionError("Browser condition did not become true.")
+
+    def visit(self, path):
+        self.call("POST", "/url", {"url": self.app + path})
+        self.wait(lambda: self.js("return document.readyState") == "complete")
+
+    def section(self, workspace, screen, name="completa"):
+        section_id = self.manifest["secciones"][name]
+        self.visit(f"/investigacion-formativa/{workspace}/secciones/{section_id}/{screen}")
+
+    def element(self, selector):
+        return self.call("POST", "/element", {
+            "using": "css selector", "value": selector,
+        })["element-6066-11e4-a52e-4f735466cecf"]
+
+    def fill(self, selector, value):
+        element_id = self.element(selector)
+        self.call("POST", f"/element/{element_id}/clear", {})
+        self.call("POST", f"/element/{element_id}/value", {"text": value})
+
+    def click(self, selector):
+        self.call("POST", f"/element/{self.element(selector)}/click", {})
+
+    def button(self, label):
+        element = self.js(
+            "return [...document.querySelectorAll('main button')].find(e=>e.textContent.trim()===arguments[0])",
+            label,
+        )
+        assert element, label
+        self.call("POST", "/element/" + element["element-6066-11e4-a52e-4f735466cecf"] + "/click", {})
+
+    def text(self):
+        return self.js("return document.body.innerText")
+
+    def check(self, name, condition):
+        assert condition(), name
+        self.checks.append(name)
+        print("PASS", name, flush=True)
+
+    def capture(self, name):
+        (self.output / f"{name}.html").write_text(self.call("GET", "/source"))
+        for width in (1280, 390):
+            self.call("POST", "/window/rect", {"width": width, "height": 950})
+            time.sleep(0.15)
+            self.check(f"{name}: body width {width}", lambda: self.js(
+                "return document.documentElement.scrollWidth <= window.innerWidth+1",
+            ))
+            (self.output / f"{name}-{width}.png").write_bytes(
+                base64.b64decode(self.call("GET", "/screenshot")),
+            )
+        self.call("POST", "/window/rect", {"width": 1280, "height": 950})
+
+    def login(self, name):
+        self.call("DELETE", "/cookie")
+        self.visit("/login")
+        self.fill("#email", self.accounts[name])
+        self.fill("#password", self.password)
+        self.click("button.auth-submit")
+        self.wait(lambda: "/login" not in self.call("GET", "/url"))
+        self.visit("/investigacion-formativa")
+        self.check(f"{name}: login", lambda: "Investigación Formativa" in self.text())
+
+    def logout(self):
+        self.js("document.querySelector('form[action$=\"/logout\"]').requestSubmit()")
+        self.wait(lambda: self.call("GET", "/url") == self.app + "/")
+        self.visit("/login")
+
+    def run(self):
+        self.login("coordinador")
+        self.capture("alumno-cursos")
+        self.section("alumno", "grupo/crear")
+        self.capture("grupo-crear")
+        self.click("main button[type=submit]")
+        self.check("Required group fields", lambda: self.js(
+            'return document.querySelectorAll("main :invalid").length',
+        ) > 0)
+        self.fill("#grupo-nombre", "Grupo de demostración")
+        self.fill("#grupo-titulo", "Estudio de procesos académicos")
+        self.js("""
+            const label = [...document.querySelectorAll('main label')]
+                .find(e=>e.textContent.includes('Demo integrante'));
+            label.querySelector('input').click();
+            for (const id of ['grupo-linea', 'grupo-tipo-producto']) {
+                const select = document.getElementById(id);
+                select.selectedIndex = 1;
+                select.dispatchEvent(new Event('change', {bubbles:true}));
+            }
+        """)
+        self.click("main button[type=submit]")
+        self.wait(lambda: "mi-grupo" in self.call("GET", "/url"))
+        self.check("Group creation", lambda: "Grupo de demostración" in self.text())
+        self.capture("alumno-grupo")
+        self.logout()
+        self.login("coordinador")
+        self.section("alumno", "mi-grupo")
+        self.check("Group persists after login", lambda: "Estudio de procesos académicos" in self.text())
+        self.call("POST", "/refresh", {})
+        self.check("Group persists after refresh", lambda: "Estudio de procesos académicos" in self.text())
+
+        self.login("docente-a")
+        self.capture("docente-cursos")
+        for screen in ("competencias", "rubrica", "cronograma"):
+            self.section("docente", screen)
+            self.capture("docente-" + screen)
+        self.section("docente", "grupos")
+        self.capture("docente-grupos")
+        href = self.js("""
+            return [...document.querySelectorAll('main a')]
+                .map(e=>e.getAttribute('href')).find(s=>/grupos\\/\\d+$/.test(s));
+        """)
+        assert href
+        self.visit(href.removeprefix(self.app))
+        self.capture("docente-grupo")
+        self.click("input[name=estado][value=Aceptado]")
+        self.button("Registrar revisión")
+        self.wait(lambda: "Aceptado" in self.text())
+        self.check("Teacher title review", lambda: "Aceptado" in self.text())
+
+        self.login("director-a")
+        self.capture("director-resumen")
+        self.visit("/investigacion-formativa/director/cursos")
+        self.capture("director-cursos")
+        self.section("director", "encuesta")
+        self.capture("director-encuesta-vacia")
+        self.fill('textarea[name="preguntas[0]"]', "¿El trabajo fortalece la investigación?")
+        self.button("Agregar pregunta")
+        self.fill('textarea[name="preguntas[1]"]', "¿La orientación fue clara?")
+        self.button("Guardar borrador")
+        self.wait(lambda: "Publicar encuesta" in self.text())
+        self.capture("director-encuesta-borrador")
+        self.button("Publicar encuesta")
+        self.wait(lambda: "Cerrar encuesta" in self.text())
+        self.capture("director-encuesta-publicada")
+        self.check("Published survey", lambda: "¿La orientación fue clara?" in self.text())
+
+        self.login("integrante")
+        self.section("alumno", "mi-grupo")
+        self.check("Member reads reviewed title", lambda: "Aceptado" in self.text())
+        self.section("alumno", "encuesta")
+        self.capture("alumno-encuesta")
+        self.js("""
+            for (const name of ['respuestas[0][valor]', 'respuestas[1][valor]']) {
+                document.querySelector('input[name="'+name+'"][value="5"]').click();
+            }
+        """)
+        self.fill("textarea[name=comentario]", "El trabajo permitió organizar el proceso de investigación.")
+        self.click("main button[type=submit]")
+        self.wait(lambda: "Respuesta registrada" in self.text())
+        self.capture("alumno-encuesta-confirmada")
+        self.logout()
+        self.login("integrante")
+        self.section("alumno", "encuesta")
+        self.check("Survey persists after login", lambda: "Respuesta registrada" in self.text())
+
+        self.login("director-a")
+        self.section("director", "resultados")
+        self.capture("director-resultados")
+        self.check("Survey report", lambda: "5.00" in self.text() and "Comentarios confidenciales" in self.text())
+        self.check("Report omits respondent name", lambda: "Demo integrante" not in self.text())
+        self.section("director", "resultados", "historica")
+        self.capture("director-historial")
+        self.check("Closed history", lambda: "Cerrada" in self.text())
+        self.login("multirrol")
+        self.capture("selector-multirrol")
+        self.check("Workspace selector", lambda: "Docencia" in self.text() and "Estudiante" in self.text())
+
+
+if __name__ == "__main__":
+    browser = Browser()
+    try:
+        browser.run()
+        result = {
+            "browser": "Firefox " + browser.version, "passed": len(browser.checks),
+            "checks": browser.checks, "upload_download": "BLOCKED G4",
+            "evaluation_browser": "BLOCKED G4: no production delivery writer",
+        }
+        (browser.output / "results.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
+    except Exception:
+        (browser.output / "failure.html").write_text(browser.call("GET", "/source"))
+        (browser.output / "failure.png").write_bytes(base64.b64decode(browser.call("GET", "/screenshot")))
+        raise
+    finally:
+        browser.call("DELETE", "", None)
