@@ -10,59 +10,15 @@ use App\Modules\SeguimientoEgresado\Support\Esquema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\View\View;
 
 /**
- * Contacto inicial desde el padrón: la Secretaría genera el enlace con el que el alumno deja sus datos de contacto.
+ * Pasos 3 y 4 de cada promoción: la Secretaría envía a los alumnos el enlace con el que dejan sus datos de contacto.
  * El enlace se muestra una sola vez y, si el correo está configurado, también se envía al alumno.
- * Dejar el contacto es obligatorio para poder confirmar su egreso.
+ * Se actúa desde la página de la promoción (PromocionController@show); aquí solo se generan los enlaces.
  */
 final class ContactoInicialController extends Controller
 {
-    /** Filas máximas que se listan; el filtro por promoción o búsqueda acota el resto. */
-    private const LIMITE = 100;
-
     public function __construct(private readonly ContactoInicialService $contactoInicial) {}
-
-    public function index(Request $request): View
-    {
-        $filtros = $request->validate([
-            'cohorte' => ['nullable', 'integer', 'exists:'.Esquema::validar('cohorte').',id'],
-            'q' => ['nullable', 'string', 'max:80'],
-            'estado' => ['nullable', 'in:todos,sin_contacto,vencido,con_contacto'],
-        ]);
-        $estado = $filtros['estado'] ?? 'sin_contacto';
-
-        $consulta = Egresado::query()
-            ->with(['cohorte', 'contactoVigente'])
-            ->buscar($filtros['q'] ?? null)
-            ->porCohorte($filtros['cohorte'] ?? null);
-
-        if ($estado === 'sin_contacto') {
-            $consulta->whereDoesntHave('contactoVigente');
-        } elseif ($estado === 'con_contacto') {
-            $consulta->whereHas('contactoVigente');
-        } elseif ($estado === 'vencido') {
-            // Con enlace de contacto inicial que ya pasó su fecha límite y sin contacto registrado.
-            $consulta->whereDoesntHave('contactoVigente')->whereHas('invitaciones', fn ($q) => $q
-                ->where('proposito', 'CONTACTO_INICIAL')->whereIn('estado', ['PENDIENTE', 'EXPIRADA'])->where('expira_en', '<', now()));
-        }
-
-        $total = (clone $consulta)->count();
-        $egresados = $consulta->orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->limit(self::LIMITE)->get();
-
-        return view('modules.seguimiento-egresado.paginas.contacto-inicial', [
-            'egresados' => $egresados,
-            'total' => $total,
-            'limite' => self::LIMITE,
-            'invitaciones' => $this->contactoInicial->ultimasInvitaciones($egresados->pluck('id')->all()),
-            'cohortes' => Cohorte::orderByDesc('anio_ingreso')->orderBy('codigo_promocion')->get(),
-            'seguimiento' => $this->seguimientoPorPromocion(),
-            'fechaLimiteSugerida' => now()->addDays(max(1, (int) config('seguimiento-egresado.correo.dias_contacto_inicial')))->toDateString(),
-            'filtros' => ['cohorte' => $filtros['cohorte'] ?? '', 'q' => $filtros['q'] ?? '', 'estado' => $estado],
-        ]);
-    }
 
     public function invitar(Egresado $egresado): RedirectResponse
     {
@@ -74,7 +30,7 @@ final class ContactoInicialController extends Controller
 
         $enlace = $this->contactoInicial->invitar($egresado, $limite);
 
-        return redirect()->route('seguimiento-egresado.padron.contacto-inicial', request()->only('cohorte', 'q', 'estado'))
+        return redirect()->to(route('seguimiento-egresado.padron.promocion', array_merge(['promocion' => $egresado->id_cohorte], request()->only('q', 'estado'))).'#paso-4')
             ->with('enlaces_contacto', [$enlace])
             ->with('success', $this->resumen([$enlace]));
     }
@@ -107,7 +63,7 @@ final class ContactoInicialController extends Controller
             $resumen .= " Se omitieron {$resultado['con_enlace']} que ya tienen un enlace pendiente (usa «Enlace nuevo» si lo perdieron).";
         }
 
-        return redirect()->route('seguimiento-egresado.padron.contacto-inicial', ['cohorte' => $datos['cohorte']])
+        return redirect()->to(route('seguimiento-egresado.padron.promocion', ['promocion' => $datos['cohorte']]).'#paso-4')
             ->with('enlaces_contacto', $resultado['enlaces'])
             ->with('success', $resumen);
     }
@@ -127,47 +83,5 @@ final class ContactoInicialController extends Controller
             : ($enviados === $total ? ' Todos se enviaron por correo.' : " {$enviados} se enviaron por correo; para el resto usa los enlaces de abajo.");
 
         return $texto;
-    }
-
-    /**
-     * Por cada promoción: cuántos alumnos ya dejaron su contacto, cuántos siguen pendientes dentro de plazo, cuántos
-     * dejaron vencer su enlace sin completarlo y cuántos aún no tienen enlace. Es lo que mira la Secretaría al llegar la fecha límite.
-     *
-     * @return Collection<int, array<string, mixed>>
-     */
-    private function seguimientoPorPromocion(): Collection
-    {
-        $egresados = Egresado::with('contactoVigente')->get(['id', 'id_cohorte']);
-        $invitaciones = $this->contactoInicial->ultimasInvitaciones($egresados->pluck('id')->all());
-        $promociones = Cohorte::all()->keyBy('id');
-
-        return $egresados->groupBy('id_cohorte')->map(function (Collection $grupo, int $idPromocion) use ($invitaciones, $promociones) {
-            $fila = ['promocion' => $promociones->get($idPromocion), 'total' => $grupo->count(), 'completaron' => 0, 'pendientes' => 0, 'vencidos' => 0, 'sin_enlace' => 0, 'fecha_limite' => null];
-
-            foreach ($grupo as $egresado) {
-                if ($egresado->contactoVigente !== null) {
-                    $fila['completaron']++;
-
-                    continue;
-                }
-
-                $invitacion = $invitaciones->get($egresado->id);
-                if ($invitacion === null || $invitacion->estado === 'ANULADA') {
-                    $fila['sin_enlace']++;
-
-                    continue;
-                }
-
-                $vence = Carbon::parse($invitacion->expira_en);
-                $fila[$invitacion->estado === 'PENDIENTE' && $vence->isFuture() ? 'pendientes' : 'vencidos']++;
-                if ($fila['fecha_limite'] === null || $vence->greaterThan($fila['fecha_limite'])) {
-                    $fila['fecha_limite'] = $vence;
-                }
-            }
-
-            return $fila;
-        })->filter(fn (array $fila) => $fila['promocion'] !== null)
-            ->sortByDesc(fn (array $fila) => $fila['promocion']->anio_ingreso)
-            ->values();
     }
 }

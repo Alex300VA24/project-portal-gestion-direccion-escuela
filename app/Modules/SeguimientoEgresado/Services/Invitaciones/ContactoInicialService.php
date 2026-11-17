@@ -8,6 +8,7 @@ use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Services\Accesos\EnlaceInvitacion;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -116,5 +117,59 @@ final class ContactoInicialService
             ->whereIn('id_egresado', $egresadoIds)
             ->pluck('id_egresado')
             ->all();
+    }
+
+    /**
+     * Estado del contacto inicial de un alumno: «completo» si ya dejó su contacto; si no, según su último enlace:
+     * «pendiente» (vigente), «vencido» (pasó la fecha límite) o «sin_enlace».
+     */
+    public function estadoDe(Egresado $egresado, ?InvitacionEgresado $invitacion): string
+    {
+        if ($egresado->contactoVigente !== null) {
+            return 'completo';
+        }
+        if ($invitacion === null || $invitacion->estado === 'ANULADA') {
+            return 'sin_enlace';
+        }
+
+        return $invitacion->estado === 'PENDIENTE' && Carbon::parse($invitacion->expira_en)->isFuture() ? 'pendiente' : 'vencido';
+    }
+
+    /**
+     * Avance de cada promoción por los cuatro pasos (promoción, alumnos, enlaces, contacto): cuántos alumnos tiene, cuántos ya
+     * dejaron su contacto, cuántos siguen en plazo, cuántos dejaron vencer su enlace y cuántos no tienen enlace.
+     * «paso» es el que toca hacer: 2 (cargar alumnos), 3 (enviar enlaces) o 4 (seguimiento del contacto);
+     * «con_avance» dice si ya hay algún alumno con enlace o contacto, es decir, si hay algo que seguir.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function avancePorPromocion(?int $promocionId = null): Collection
+    {
+        $promociones = Cohorte::with('planCurricular')->when($promocionId, fn ($q) => $q->where('id', $promocionId))->get();
+        $egresados = Egresado::with('contactoVigente')->whereIn('id_cohorte', $promociones->pluck('id'))->get(['id', 'id_cohorte'])->groupBy('id_cohorte');
+        $invitaciones = $this->ultimasInvitaciones($egresados->flatten()->pluck('id')->all());
+
+        return $promociones->map(function (Cohorte $promocion) use ($egresados, $invitaciones) {
+            $fila = ['promocion' => $promocion, 'total' => 0, 'completaron' => 0, 'pendientes' => 0, 'vencidos' => 0, 'sin_enlace' => 0, 'fecha_limite' => null];
+
+            foreach ($egresados->get($promocion->id, collect()) as $egresado) {
+                $invitacion = $invitaciones->get($egresado->id);
+                $estado = $this->estadoDe($egresado, $invitacion);
+                $fila['total']++;
+                $fila[['completo' => 'completaron', 'pendiente' => 'pendientes', 'vencido' => 'vencidos', 'sin_enlace' => 'sin_enlace'][$estado]]++;
+
+                if (in_array($estado, ['pendiente', 'vencido'], true)) {
+                    $vence = Carbon::parse($invitacion->expira_en);
+                    $fila['fecha_limite'] = $fila['fecha_limite'] === null || $vence->greaterThan($fila['fecha_limite']) ? $vence : $fila['fecha_limite'];
+                }
+            }
+
+            // Si quedan alumnos sin enlace (por ejemplo, se cargaron más después), toca volver a enviar enlaces.
+            $fila['con_avance'] = ($fila['completaron'] + $fila['pendientes'] + $fila['vencidos']) > 0;
+            $fila['paso'] = $fila['total'] === 0 ? 2 : ($fila['sin_enlace'] > 0 ? 3 : 4);
+            $fila['terminada'] = $fila['total'] > 0 && $fila['completaron'] === $fila['total'];
+
+            return $fila;
+        })->sortByDesc(fn (array $fila) => $fila['promocion']->anio_ingreso)->values();
     }
 }

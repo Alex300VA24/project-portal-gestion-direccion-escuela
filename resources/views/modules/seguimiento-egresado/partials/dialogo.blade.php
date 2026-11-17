@@ -84,6 +84,14 @@
     @if($aviso)
       abrir();
     @endif
+    // Aviso pendiente de una acción que recargó la página (por ejemplo, guardar una promoción).
+    try {
+      const pendiente = sessionStorage.getItem('sgAviso');
+      if (pendiente) {
+        sessionStorage.removeItem('sgAviso');
+        window.sgDialogo({ tipo: /^Aviso|Aviso:/.test(pendiente) ? 'warning' : 'success', mensaje: pendiente });
+      }
+    } catch (_) {}
   })();
 
   // Confirmación sobria para acciones que no se pueden deshacer: <form data-sg-confirmar="¿Seguro?"> o window.sgConfirmar().

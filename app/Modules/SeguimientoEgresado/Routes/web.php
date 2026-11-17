@@ -12,6 +12,7 @@ use App\Modules\SeguimientoEgresado\Controllers\Indicadores\IndicadoresControlle
 use App\Modules\SeguimientoEgresado\Controllers\InstitucionalController;
 use App\Modules\SeguimientoEgresado\Controllers\Invitaciones\ContactoInicialController;
 use App\Modules\SeguimientoEgresado\Controllers\PadronController;
+use App\Modules\SeguimientoEgresado\Controllers\PromocionController;
 use App\Modules\SeguimientoEgresado\Controllers\ReportesController;
 use App\Modules\SeguimientoEgresado\Controllers\SeguimientoEgresadoController;
 use App\Modules\SeguimientoEgresado\Middleware\RequiereCapacidad;
@@ -41,7 +42,9 @@ Route::prefix('seguimiento-egresado')
         Route::post('/', [SeguimientoEgresadoController::class, 'store'])->name('store');
 
         // Padrón oficial, cohortes e importación
-        Route::get('/padron', [PadronController::class, 'index'])->middleware($interna('padron.consultar'))->name('padron');
+        Route::get('/padron', [PromocionController::class, 'index'])->middleware($interna('padron.consultar'))->name('padron');
+        Route::get('/padron/promocion/{promocion}', [PromocionController::class, 'show'])->whereNumber('promocion')->middleware($interna('padron.consultar'))->name('padron.promocion');
+        Route::get('/padron/consulta', [PadronController::class, 'index'])->middleware($interna('padron.consultar'))->name('padron.consulta');
         Route::get('/padron/egresado/{id}', [PadronController::class, 'fichaEgresado'])->middleware($interna('padron.consultar'))->name('padron.ficha');
         Route::get('/padron/plantilla', [PadronController::class, 'descargarPlantilla'])->middleware($interna('padron.consultar'))->name('padron.plantilla');
         Route::post('/padron/importar', [PadronController::class, 'importar'])->middleware($interna('padron.gestionar'))->name('padron.importar');
@@ -53,7 +56,6 @@ Route::prefix('seguimiento-egresado')
 
         // Contacto inicial: enlaces para que el egresado deje sus datos
         Route::prefix('padron/contacto-inicial')->group(function () use ($interna) {
-            Route::get('/', [ContactoInicialController::class, 'index'])->middleware($interna('padron.consultar'))->name('padron.contacto-inicial');
             Route::post('/cohorte', [ContactoInicialController::class, 'invitarCohorte'])->middleware($interna('padron.gestionar'))->name('padron.contacto-inicial.cohorte');
             Route::post('/egresado/{egresado}', [ContactoInicialController::class, 'invitar'])->whereNumber('egresado')->middleware($interna('padron.gestionar'))->name('padron.contacto-inicial.egresado');
         });

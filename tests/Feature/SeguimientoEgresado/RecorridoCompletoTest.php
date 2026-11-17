@@ -70,12 +70,11 @@ class RecorridoCompletoTest extends TestCase
             ->assertRedirect(route('seguimiento-egresado.egresado.inicio'));
         $luciaId = (int) DB::table('seguimiento_egresado.egresado')->where('codigo_matricula', '2019100001')->value('id');
         $this->assertSame('lucia.personal@correo.test', DB::table('seguimiento_egresado.contacto_egresado')->where('id_egresado', $luciaId)->value('correo_personal'));
-        $this->get(route('seguimiento-egresado.padron.contacto-inicial', ['estado' => 'todos']))->assertOk()->assertSee('Completó su contacto');
+        $this->get(route('seguimiento-egresado.padron.promocion', ['promocion' => $cohorte, 'estado' => 'todos']))->assertOk()->assertSee('Contacto completado');
 
         // 4. Egreso: Secretaría confirma la fecha real; el expediente y el contacto se conservan
-        // Quien no dejó su contacto no puede egresar todavía: el contacto inicial es obligatorio.
-        $sinContacto = (int) DB::table('seguimiento_egresado.egresado')->where('id', '!=', $luciaId)->value('id');
-        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $sinContacto), ['fecha_egreso' => '2025-07-18'])->assertStatus(422);
+        // Quien no dejó su contacto aparece en el seguimiento como «Aún no debería egresar».
+        $this->get(route('seguimiento-egresado.padron.promocion', ['promocion' => $cohorte, 'estado' => 'todos']))->assertSee('Aún no debería egresar');
         foreach (DB::table('seguimiento_egresado.egresado')->where('id', '!=', $luciaId)->pluck('id') as $id) {
             DB::table('seguimiento_egresado.contacto_egresado')->insert(['id_egresado' => $id, 'correo_personal' => "contacto{$id}@correo.test", 'celular_whatsapp' => '+51 900 000 00'.$id, 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO']);
         }

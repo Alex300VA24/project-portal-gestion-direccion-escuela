@@ -33,8 +33,8 @@
           ['indicadores', 'Indicadores I1 a I6', 'chart'],
           ['institucional', 'Evaluación institucional', 'clipboard'],
         ] as [$route, $label, $icon])
-          <a class="sg-nav-link {{ request()->routeIs('seguimiento-egresado.'.$route) ? 'sg-active' : '' }}"
-             href="{{ route('seguimiento-egresado.'.$route) }}" @if(request()->routeIs('seguimiento-egresado.'.$route)) aria-current="page" @endif>
+          <a class="sg-nav-link {{ request()->routeIs('seguimiento-egresado.'.$route, 'seguimiento-egresado.'.$route.'.*') ? 'sg-active' : '' }}"
+             href="{{ route('seguimiento-egresado.'.$route) }}" @if(request()->routeIs('seguimiento-egresado.'.$route, 'seguimiento-egresado.'.$route.'.*')) aria-current="page" @endif>
             @include('modules.seguimiento-egresado.partials.icon', ['name' => $icon])
             <span>{{ $label }}</span>
           </a>

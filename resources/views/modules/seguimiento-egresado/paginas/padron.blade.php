@@ -1,6 +1,6 @@
 @extends('modules.seguimiento-egresado.layout')
-@section('title', 'Padrón y promociones')
-@section('section_name', 'Padrón y promociones')
+@section('title', 'Consultar alumnos')
+@section('section_name', 'Consultar alumnos')
 
 @push('styles')
 <style>
@@ -679,14 +679,9 @@
 @section('content')
 <!-- Encabezado Institucional de Página -->
 <section class="sg-heading">
-  <h1>Padrón y promociones</h1>
-  <p style="max-width: 100%;">Sigue estos pasos en orden: registra la promoción, carga a los alumnos aptos para egresar, invítalos a dejar su contacto y, cuando egresen, confirma su egreso.</p>
-  <div style="margin-top: 12px;">
-    <a class="sg-button sg-button-secondary" style="padding: 4px 10px; min-height: 28px; font-size: 12px;" href="{{ route('seguimiento-egresado.padron.contacto-inicial') }}">
-      @include('modules.seguimiento-egresado.partials.icon', ['name' => 'mail'])
-      <span>Ir al contacto inicial</span>
-    </a>
-  </div>
+  <div class="sg-kicker"><a class="sg-link" href="{{ route('seguimiento-egresado.padron') }}">← Todas las promociones</a></div>
+  <h1>Consultar alumnos y grados</h1>
+  <p style="max-width: 100%;">Busca a cualquier alumno, revisa su ficha y su grado, y confirma su egreso. Para cargar alumnos o enviar enlaces de contacto, entra a la promoción desde la lista.</p>
 </section>
 
 @if($errors->any())
@@ -739,21 +734,17 @@
 <!-- ========================================================================= -->
 <!-- NAVEGACIÓN PRINCIPAL DEL MÓDULO (4 PESTAÑAS) -->
 <!-- ========================================================================= -->
-<nav class="sg-module-tabs" role="tablist" aria-label="Secciones del módulo">
-  <button type="button" class="sg-module-tab" id="btn-tab-cohortes" role="tab" aria-selected="false" aria-controls="panel-cohortes" onclick="activarModuloTab('cohortes')">
-    1. Promociones
-  </button>
-
-  <button type="button" class="sg-module-tab" id="btn-tab-importaciones" role="tab" aria-selected="false" aria-controls="panel-importaciones" onclick="activarModuloTab('importaciones')">
-    2. Cargar alumnos
-  </button>
-
+<nav class="sg-module-tabs" role="tablist" aria-label="Secciones de la consulta">
   <button type="button" class="sg-module-tab is-active" id="btn-tab-egresados" role="tab" aria-selected="true" aria-controls="panel-egresados" onclick="activarModuloTab('egresados')">
-    3. Alumnos
+    Alumnos
   </button>
 
   <button type="button" class="sg-module-tab" id="btn-tab-acreditacion" role="tab" aria-selected="false" aria-controls="panel-acreditacion" onclick="activarModuloTab('acreditacion')">
     Grados y títulos
+  </button>
+
+  <button type="button" class="sg-module-tab" id="btn-tab-importaciones" role="tab" aria-selected="false" aria-controls="panel-importaciones" onclick="activarModuloTab('importaciones')">
+    Historial de cargas
   </button>
 </nav>
 
@@ -926,84 +917,11 @@
     <p class="sg-empty-desc">Inicie el registro ingresando un nuevo egresado de forma individual o cargue el archivo oficial emitido por Secretaría Académica.</p>
     <div class="sg-empty-actions">
       <button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">+ Registrar un alumno</button>
-      <button type="button" class="sg-button sg-button-secondary" onclick="activarModuloTab('importaciones')">Cargar lista de alumnos (CSV o Excel)</button>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.padron') }}">Ir a las promociones</a>
     </div>
   </div>
 </section>
 
-<!-- ========================================================================= -->
-<!-- PESTAÑA 2: GESTIÓN DE COHORTES Y PLANES CURRICULARES (1998, 2017, 2027) -->
-<!-- ========================================================================= -->
-<section id="panel-cohortes" role="tabpanel" aria-labelledby="btn-tab-cohortes" style="display: none;">
-  <div class="sg-alert" style="margin-bottom: var(--sg-space-5); border-left-color: var(--sg-accent); background: var(--sg-soft);">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'chart'])
-    <p style="margin: 0; font-size: 13px; color: var(--sg-text); line-height: 1.5;">Una <strong>promoción</strong> es el grupo de alumnos que ingresó el mismo año. Su <strong>total de ingresantes</strong> sirve para calcular qué porcentaje llegó a egresar, así que regístralo antes de cargar a los alumnos.</p>
-  </div>
-
-  <div class="sg-section-title">
-    <div>
-      <h2 style="font-size: 18px; margin: 0;">Promociones</h2>
-      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Cada promoción tiene su año de ingreso, su plan de estudios y su total de ingresantes.</p>
-    </div>
-    <div class="sg-actions">
-      <button type="button" class="sg-button" onclick="abrirModalNuevaCohorte()">
-        <span>+ Registrar promoción</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de promociones">
-    <table class="sg-table" id="tabla-cohortes">
-      <caption>Promociones registradas y porcentaje de cada una que egresó</caption>
-      <thead>
-        <tr>
-          <th scope="col">Año de ingreso</th>
-          <th scope="col">Promoción</th>
-          <th scope="col">Plan de estudios</th>
-          <th scope="col" class="sg-numeric">Total de ingresantes</th>
-          <th scope="col" class="sg-numeric">Egresados</th>
-          <th scope="col" class="sg-numeric">Tasa de graduación</th>
-          <th scope="col" class="sg-numeric">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-cohortes">
-        <!-- Renderizado dinámico de cohortes -->
-      </tbody>
-    </table>
-  </div>
-
-  <!-- SECCIÓN ADICIONAL: CATÁLOGO DE PLANES CURRICULARES (1998, 2017, 2027) -->
-  <div class="sg-section-title" style="margin-top: var(--sg-space-8);">
-    <div>
-      <h2 style="font-size: 18px; margin: 0;">Planes de estudio</h2>
-      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Los planes de estudio a los que pertenecen las promociones.</p>
-    </div>
-    <div class="sg-actions">
-      <button type="button" class="sg-button" onclick="abrirModalNuevoPlan()">
-        <span>+ Registrar plan de estudios</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de planes de estudio">
-    <table class="sg-table" id="tabla-planes">
-      <caption>Planes de estudio y su vigencia</caption>
-      <thead>
-        <tr>
-          <th scope="col">Plan</th>
-          <th scope="col">Vigente desde</th>
-          <th scope="col">Vigente hasta</th>
-          <th scope="col">Estado</th>
-          <th scope="col" class="sg-numeric">Promociones</th>
-          <th scope="col" class="sg-numeric">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-planes">
-        <!-- Renderizado dinámico de planes -->
-      </tbody>
-    </table>
-  </div>
-</section>
 
 <!-- ========================================================================= -->
 <!-- PESTAÑA 3: ACREDITACIÓN Y ESTADOS ACADÉMICOS (historial_estado_academico) -->
@@ -1065,23 +983,6 @@
 <!-- PESTAÑA 4: CARGAS MASIVAS DE SECRETARÍA -->
 <!-- ========================================================================= -->
 <section id="panel-importaciones" role="tabpanel" aria-labelledby="btn-tab-importaciones" style="display: none;">
-  <div class="sg-dropzone">
-    <div style="font-size: 32px; color: var(--sg-accent); margin-bottom: 8px;">📑</div>
-    <h2 style="font-size: 17px; margin: 0 0 6px; color: var(--sg-navy);">Cargar alumnos aptos para egresar</h2>
-    <p style="max-width: 68ch; margin: 0 auto 16px; font-size: 13px; color: var(--sg-muted); line-height: 1.5;">
-      Elige la promoción y el archivo (CSV o Excel) con los alumnos que ya cumplen para egresar. Si una sola fila tiene un problema, no se guarda ninguna y te decimos cuál es para que la corrijas.
-    </p>
-
-    <div class="sg-actions" style="justify-content: center; gap: 12px;">
-      <button type="button" class="sg-button" onclick="abrirModalImportacion()">
-        <span>+ Cargar alumnos</span>
-      </button>
-      <a href="{{ route('seguimiento-egresado.padron.plantilla') }}" class="sg-button sg-button-secondary">
-        <span>📥 Descargar el formato modelo (CSV)</span>
-      </a>
-    </div>
-  </div>
-
   <div class="sg-section-title">
     <div>
       <h2 style="font-size: 18px; margin: 0;">Historial de cargas</h2>
@@ -1363,65 +1264,6 @@
   </div>
 </div>
 
-<!-- MODAL 3: CREAR / EDITAR COHORTE ACADÉMICA (CRUD cohorte) -->
-<div id="modal-cohorte" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-cohorte-title">
-  <div class="sg-modal-dialog" style="max-width: 650px;">
-    <div class="sg-modal-head">
-      <div>
-        <h2 id="modal-cohorte-title">Registrar promoción</h2>
-        <p>Año de ingreso y total de ingresantes de la promoción</p>
-      </div>
-      <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalCohorte()">✕</button>
-    </div>
-
-    <form id="form-cohorte" onsubmit="event.preventDefault(); guardarCohorteForm();">
-      <input type="hidden" id="cohorte-edit-id" value="">
-      <div class="sg-modal-body">
-        <div class="sg-form-grid">
-          <div class="sg-field">
-            <label class="sg-label" for="cohorte-anio">Año de ingreso *</label>
-            <input class="sg-input" id="cohorte-anio" type="number" required min="1990" max="2035" placeholder="Ej. 2022">
-          </div>
-
-          <div class="sg-field">
-            <label class="sg-label" for="cohorte-ingresantes">Total de ingresantes *</label>
-            <input class="sg-input" id="cohorte-ingresantes" type="number" required min="1" max="500" placeholder="Ej. 50">
-          </div>
-
-          <div class="sg-field" style="grid-column: 1 / -1;">
-            <label class="sg-label" for="cohorte-nombre">Nombre de la promoción *</label>
-            <input class="sg-input" id="cohorte-nombre" type="text" required placeholder="Ej. Promoción 2022">
-          </div>
-
-          <div class="sg-field">
-            <label class="sg-label" for="cohorte-plan">Plan de estudios *</label>
-            <select class="sg-select" id="cohorte-plan" required>
-              <option value="Plan 2017">Plan 2017 (Vigente)</option>
-              <option value="Plan 1998">Plan 1998 (Cerrado)</option>
-              <option value="Plan 2027">Plan 2027 (Borrador)</option>
-            </select>
-          </div>
-
-          <div class="sg-field">
-            <label class="sg-label" for="cohorte-duracion">Duración de la carrera (años)</label>
-            <input class="sg-input" id="cohorte-duracion" type="number" value="5" min="3" max="8">
-          </div>
-
-          <div class="sg-field" style="grid-column: 1 / -1;">
-            <label class="sg-label" for="cohorte-obs">Observaciones (opcional)</label>
-            <textarea class="sg-textarea" id="cohorte-obs" style="min-height: 80px;" placeholder="Cualquier nota útil sobre esta promoción."></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="sg-modal-foot">
-        <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalCohorte()">Cancelar</button>
-        <button type="submit" class="sg-button" id="btn-submit-cohorte">Guardar promoción</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- MODAL 4: ACTUALIZACIÓN DE ESTADO ACADÉMICO / ACREDITACIÓN F1 (historial_estado_academico) -->
 <div id="modal-estado-academico" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-estado-title">
   <div class="sg-modal-dialog" style="max-width: 640px;">
@@ -1489,62 +1331,6 @@
   </div>
 </div>
 
-<!-- MODAL 5: IMPORTACIÓN MASIVA DE NÓMINA (importacion_padron) -->
-<div id="modal-importacion" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-import-title">
-  <div class="sg-modal-dialog" style="max-width: 600px;">
-    <form action="{{ route('seguimiento-egresado.padron.importar') }}" method="POST" enctype="multipart/form-data" id="form-importacion-padron">
-      @csrf
-      <div class="sg-modal-head">
-        <div>
-          <h2 id="modal-import-title">Cargar alumnos aptos para egresar</h2>
-          <p>Todos los alumnos del archivo se unen a la promoción que elijas</p>
-        </div>
-        <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalImportacion()">✕</button>
-      </div>
-
-      <div class="sg-modal-body">
-        <div class="sg-field" style="margin-bottom: var(--sg-space-4);">
-          <label class="sg-label" for="import-promocion">1. ¿A qué promoción pertenecen? *</label>
-          <select class="sg-select" id="import-promocion" name="promocion" required>
-            <option value="">Elige la promoción…</option>
-            @foreach($cohortes ?? [] as $promocion)
-              <option value="{{ $promocion->id }}" @selected((string) old('promocion') === (string) $promocion->id)>Promoción {{ $promocion->anio_ingreso }} · {{ $promocion->total_ingresantes }} ingresantes</option>
-            @endforeach
-          </select>
-          @if(count($cohortes ?? []) === 0)
-            <p class="sg-help">Aún no hay promociones. Primero regístrala en la pestaña «1. Promociones».</p>
-          @endif
-        </div>
-
-        <div class="sg-dropzone">
-          <h3 style="font-size: 15px; margin: 0 0 6px; color: var(--sg-navy);">2. Elige el archivo con los alumnos</h3>
-          <p style="font-size: 13px; color: var(--sg-muted); margin: 0 0 14px;">CSV o Excel. Cada alumno necesita matrícula, documento, nombres, apellido paterno y correo institucional.</p>
-          <input type="file" name="archivo_padron" id="archivo-padron" accept=".csv,.txt,.xlsx" required style="font-size: 13px;">
-          <div style="margin-top: 14px;">
-            <a href="{{ route('seguimiento-egresado.padron.plantilla') }}" class="sg-button sg-button-secondary" style="font-size: 12px; padding: 6px 12px;">
-              <span>📥 Descargar el formato modelo (CSV)</span>
-            </a>
-          </div>
-        </div>
-
-        <div class="sg-panel">
-          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 8px; color: var(--sg-muted);">Antes de cargar</h4>
-          <ul style="font-size: 13px; color: var(--sg-text); padding-left: 18px; margin: 0; line-height: 1.6;">
-            <li>Si una fila tiene un error (matrícula repetida, correo faltante…), <strong>no se guarda ninguna</strong>. Te diremos cuál es para que corrijas el archivo.</li>
-            <li>Los alumnos se registran como «aptos para egresar». La fecha de egreso se confirma después, cuando egresan.</li>
-            <li>Si el archivo trae una columna de promoción, debe coincidir con la que elegiste.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="sg-modal-foot">
-        <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalImportacion()">Cancelar</button>
-        <button type="submit" class="sg-button">Cargar alumnos</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- MODAL 6: DETALLE DE AUDITORÍA DE IMPORTACIÓN (importacion_fila) -->
 <div id="modal-detalle-importacion" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-det-imp-title">
   <div class="sg-modal-dialog" style="max-width: 780px;">
@@ -1601,56 +1387,6 @@
   </div>
 </div>
 
-<!-- MODAL 7: REGISTRAR / EDITAR PLAN CURRICULAR (plan_curricular) -->
-<div id="modal-plan-curricular" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-plan-title">
-  <div class="sg-modal-dialog" style="max-width: 600px;">
-    <div class="sg-modal-head">
-      <div>
-        <h2 id="modal-plan-title">Registrar plan de estudios</h2>
-        <p>Definición del plan de estudios y periodo de vigencia institucional</p>
-      </div>
-      <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalPlan()">✕</button>
-    </div>
-
-    <form id="form-plan-curricular" onsubmit="event.preventDefault(); guardarPlanCurricularForm();">
-      <input type="hidden" id="plan-edit-id" value="">
-      <div class="sg-modal-body">
-        <div class="sg-form-grid">
-          <div class="sg-field" style="grid-column: 1 / -1;">
-            <label class="sg-label" for="plan-codigo">Código o Versión del Plan *</label>
-            <input class="sg-input" id="plan-codigo" type="text" required placeholder="Ej. Plan 1998, Plan 2017, Plan 2027">
-            <p class="sg-help">Planes oficiales: Plan 1998, Plan 2017, Plan 2027.</p>
-          </div>
-
-          <div class="sg-field">
-            <label class="sg-label" for="plan-desde">Vigencia Desde *</label>
-            <input class="sg-input" id="plan-desde" type="date" required>
-          </div>
-
-          <div class="sg-field">
-            <label class="sg-label" for="plan-hasta">Vigencia Hasta</label>
-            <input class="sg-input" id="plan-hasta" type="date">
-            <p class="sg-help">Dejar vacío si el plan sigue vigente o es el actual.</p>
-          </div>
-
-          <div class="sg-field" style="grid-column: 1 / -1;">
-            <label class="sg-label" for="plan-estado">Estado Curricular *</label>
-            <select class="sg-select" id="plan-estado" required>
-              <option value="VIGENTE">VIGENTE — En ejecución académica</option>
-              <option value="BORRADOR">BORRADOR — En diseño o formulación</option>
-              <option value="CERRADO">CERRADO — Plan histórico culminado</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="sg-modal-foot">
-        <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalPlan()">Cancelar</button>
-        <button type="submit" class="sg-button" id="btn-submit-plan">Guardar Plan Curricular</button>
-      </div>
-    </form>
-  </div>
-</div>
 @endsection
 
 @push('scripts')
@@ -1885,7 +1621,7 @@
   // CONTROL DE PESTAÑAS PRINCIPALES DEL MÓDULO M1
   // =========================================================================
   function activarModuloTab(tabName) {
-    const tabs = ['egresados', 'cohortes', 'acreditacion', 'importaciones'];
+    const tabs = ['egresados', 'acreditacion', 'importaciones'];
     tabs.forEach(t => {
       const btn = document.getElementById('btn-tab-' + t);
       const panel = document.getElementById('panel-' + t);
@@ -1902,10 +1638,6 @@
       }
     });
 
-    if (tabName === 'cohortes') {
-      renderizarTablaCohortes();
-      renderizarTablaPlanes();
-    }
     if (tabName === 'acreditacion') renderizarTablaAcreditacion();
     if (tabName === 'importaciones') renderizarTablaImportaciones();
   }
@@ -2078,7 +1810,7 @@
     if (cohortesLista.length > 4) {
       const restantes = cohortesLista.length - 4;
       html += `
-        <div class="sg-cohort-card sg-cohort-card-more" onclick="activarModuloTab('cohortes')" role="button" tabindex="0" title="Ver todas las promociones">
+        <div class="sg-cohort-card sg-cohort-card-more" onclick="window.location.href='{{ route('seguimiento-egresado.padron') }}'" role="button" tabindex="0" title="Ver todas las promociones">
           <div class="sg-cohort-header">
             <span class="sg-cohort-code">Histórico</span>
             <span class="sg-status-pill sg-pill-neutral">+${restantes} más</span>
@@ -2283,65 +2015,6 @@
   // =========================================================================
   // GESTIÓN DE COHORTES (CRUD cohorte)
   // =========================================================================
-  function renderizarTablaCohortes() {
-    const tbody = document.getElementById('tbody-cohortes');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    if (Object.keys(cohortesData).length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--sg-muted); padding: 32px;">Aún no hay promociones registradas. Usa «+ Registrar promoción» para crear la primera.</td></tr>';
-      const badgeCohortes = document.getElementById('badge-total-cohortes');
-      if (badgeCohortes) badgeCohortes.textContent = '0';
-      const kpiCohortes = document.getElementById('kpi-total-cohortes');
-      if (kpiCohortes) kpiCohortes.textContent = '0';
-      actualizarSelectorCohortesForm();
-      return;
-    }
-
-    Object.values(cohortesData).forEach(c => {
-      const tr = document.createElement('tr');
-      const tasa = c.ingresantes > 0 ? ((c.egresados / c.ingresantes) * 100).toFixed(1) : '0.0';
-
-      tr.innerHTML = `
-        <td><strong style="color: var(--sg-navy);">Promoción ${c.anio}</strong></td>
-        <td>
-          <div style="font-weight: 600; color: var(--sg-text);">${c.nombre}</div>
-          <small style="color: var(--sg-muted); font-size: 12px;">${c.obs ? c.obs.substring(0, 65) + '...' : 'Sin observaciones'}</small>
-        </td>
-        <td><strong>${c.plan}</strong></td>
-        <td class="sg-numeric"><strong>${c.ingresantes}</strong> ingresantes</td>
-        <td class="sg-numeric" style="color: var(--sg-success); font-weight: 600;">${c.egresados}</td>
-        <td class="sg-numeric">
-          <span style="font-weight: 700; color: var(--sg-navy);">${tasa}%</span>
-        </td>
-        <td class="sg-numeric">
-          <div class="sg-actions" style="justify-content: flex-end; gap: 6px;">
-            <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirEditarCohorte('${c.anio}')">
-              Editar
-            </button>
-            <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="filtrarCohorteDesdeTabla('${c.anio}')" title="Ver los alumnos de esta promoción">
-              Ver alumnos
-            </button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    const badgeCohortes = document.getElementById('badge-total-cohortes');
-    if (badgeCohortes) badgeCohortes.textContent = Object.keys(cohortesData).length;
-
-    const kpiCohortes = document.getElementById('kpi-total-cohortes');
-    if (kpiCohortes) kpiCohortes.textContent = Object.keys(cohortesData).length;
-
-    actualizarSelectorCohortesForm();
-  }
-
-  function filtrarCohorteDesdeTabla(anio) {
-    activarModuloTab('egresados');
-    filtrarCohorteRapido(anio);
-  }
-
   function actualizarSelectorCohortesForm() {
     const selects = ['nuevo-cohorte', 'filtro-cohorte'];
     selects.forEach(sId => {
@@ -2361,225 +2034,6 @@
       });
       if (valorPrevio) select.value = valorPrevio;
     });
-  }
-
-  function abrirModalNuevaCohorte() {
-    document.getElementById('modal-cohorte-title').textContent = 'Registrar promoción';
-    document.getElementById('form-cohorte').reset();
-    document.getElementById('cohorte-edit-id').value = '';
-    actualizarSelectorPlanesEnCohorte();
-    document.getElementById('btn-submit-cohorte').textContent = 'Guardar promoción';
-    document.getElementById('modal-cohorte').classList.add('is-open');
-    document.getElementById('cohorte-anio').focus();
-  }
-
-  function abrirEditarCohorte(anio) {
-    const c = cohortesData[anio];
-    if (!c) return;
-    document.getElementById('modal-cohorte-title').textContent = 'Editar promoción ' + anio;
-    document.getElementById('cohorte-edit-id').value = anio;
-    document.getElementById('cohorte-anio').value = c.anio;
-    document.getElementById('cohorte-ingresantes').value = c.ingresantes;
-    document.getElementById('cohorte-nombre').value = c.nombre;
-    actualizarSelectorPlanesEnCohorte();
-    document.getElementById('cohorte-plan').value = c.plan;
-    document.getElementById('cohorte-duracion').value = c.duracion;
-    document.getElementById('cohorte-obs').value = c.obs || '';
-    document.getElementById('btn-submit-cohorte').textContent = 'Guardar cambios';
-    document.getElementById('modal-cohorte').classList.add('is-open');
-  }
-
-  function cerrarModalCohorte() {
-    document.getElementById('modal-cohorte').classList.remove('is-open');
-  }
-
-  async function guardarCohorteForm() {
-    const editId = document.getElementById('cohorte-edit-id').value;
-    const anio = document.getElementById('cohorte-anio').value;
-    const ingresantes = parseInt(document.getElementById('cohorte-ingresantes').value, 10);
-    const nombre = document.getElementById('cohorte-nombre').value;
-    const plan = document.getElementById('cohorte-plan').value;
-    const duracion = parseInt(document.getElementById('cohorte-duracion').value, 10) || 5;
-    const obs = document.getElementById('cohorte-obs').value;
-
-    const payload = {
-      id: editId || null,
-      anio_ingreso: parseInt(anio, 10),
-      total_ingresantes: ingresantes,
-      codigo_promocion: `PROM-${anio}`,
-      id_plan_curricular: plan,
-      duracion_esperada_anios: duracion,
-      observacion: nombre + (obs ? '. ' + obs : '')
-    };
-
-    try {
-      const resp = await fetch('{{ route('seguimiento-egresado.padron.guardar-cohorte') }}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': getCsrfToken(),
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        throw new Error(data.message || 'No se pudo guardar la promoción');
-      }
-    } catch (e) {
-      console.warn('Persistencia en base de datos:', e.message);
-    }
-
-    const clave = editId || anio;
-    cohortesData[clave] = {
-      id: editId ? cohortesData[editId].id : Object.keys(cohortesData).length + 1,
-      anio: parseInt(anio, 10),
-      nombre: nombre,
-      ingresantes: ingresantes,
-      egresados: editId ? cohortesData[editId].egresados : 0,
-      tasaI1: editId ? cohortesData[editId].tasaI1 : 0,
-      duracion: duracion,
-      plan: plan,
-      estado: editId ? cohortesData[editId].estado : 'En Registro',
-      obs: obs
-    };
-
-    cerrarModalCohorte();
-    renderizarCardsCohortes();
-    renderizarTablaCohortes();
-    mostrarToast(editId ? `La promoción ${anio} se actualizó.` : `La promoción ${anio} quedó registrada.`);
-  }
-
-  // =========================================================================
-  // GESTIÓN DE PLANES CURRICULARES (1998, 2017, 2027)
-  // =========================================================================
-  function renderizarTablaPlanes() {
-    const tbody = document.getElementById('tbody-planes');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    if (Object.keys(planesData).length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--sg-muted); padding: 32px;">No hay planes curriculares registrados. Utilice "+ Nuevo Plan Curricular" para definir una versión.</td></tr>';
-      actualizarSelectorPlanesEnCohorte();
-      return;
-    }
-
-    Object.values(planesData).forEach(p => {
-      const tr = document.createElement('tr');
-      let estadoPill = '';
-      if (p.estado === 'VIGENTE') estadoPill = '<span class="sg-status-pill sg-pill-success">Vigente</span>';
-      else if (p.estado === 'BORRADOR') estadoPill = '<span class="sg-status-pill sg-pill-warning">Borrador</span>';
-      else estadoPill = '<span class="sg-status-pill sg-pill-neutral">Cerrado</span>';
-
-      tr.innerHTML = `
-        <td><strong style="color: var(--sg-navy); font-size: 15px;">${p.codigo}</strong></td>
-        <td>${p.desde || 'Sin fecha'}</td>
-        <td>${p.hasta || 'Vigente / Sin término'}</td>
-        <td>${estadoPill}</td>
-        <td class="sg-numeric"><strong>${p.cohortesCount || 0}</strong> promociones</td>
-        <td class="sg-numeric">
-          <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirEditarPlan(${p.id})">
-            Editar
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-    actualizarSelectorPlanesEnCohorte();
-  }
-
-  function actualizarSelectorPlanesEnCohorte() {
-    const sel = document.getElementById('cohorte-plan');
-    if (!sel) return;
-    const prev = sel.value;
-    sel.innerHTML = '';
-    Object.values(planesData).forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.codigo;
-      opt.textContent = `${p.codigo} (${p.estado})`;
-      sel.appendChild(opt);
-    });
-    if (prev && sel.querySelector(`option[value="${prev}"]`)) {
-      sel.value = prev;
-    } else if (sel.options.length > 0) {
-      sel.value = 'Plan 2017';
-    }
-  }
-
-  function abrirModalNuevoPlan() {
-    document.getElementById('modal-plan-title').textContent = 'Registrar Nuevo Plan Curricular';
-    document.getElementById('form-plan-curricular').reset();
-    document.getElementById('plan-edit-id').value = '';
-    document.getElementById('btn-submit-plan').textContent = 'Guardar Plan Curricular';
-    document.getElementById('modal-plan-curricular').classList.add('is-open');
-    document.getElementById('plan-codigo').focus();
-  }
-
-  function abrirEditarPlan(id) {
-    const p = planesData[id];
-    if (!p) return;
-    document.getElementById('modal-plan-title').textContent = 'Editar Plan Curricular ' + p.codigo;
-    document.getElementById('plan-edit-id').value = id;
-    document.getElementById('plan-codigo').value = p.codigo;
-    document.getElementById('plan-desde').value = p.desdeRaw || '';
-    document.getElementById('plan-hasta').value = p.hastaRaw || '';
-    document.getElementById('plan-estado').value = p.estado;
-    document.getElementById('btn-submit-plan').textContent = 'Actualizar Plan';
-    document.getElementById('modal-plan-curricular').classList.add('is-open');
-  }
-
-  function cerrarModalPlan() {
-    document.getElementById('modal-plan-curricular').classList.remove('is-open');
-  }
-
-  async function guardarPlanCurricularForm() {
-    const editId = document.getElementById('plan-edit-id').value;
-    const codigo = document.getElementById('plan-codigo').value.trim();
-    const desde = document.getElementById('plan-desde').value;
-    const hasta = document.getElementById('plan-hasta').value || null;
-    const estado = document.getElementById('plan-estado').value;
-
-    const payload = {
-      id: editId || null,
-      codigo_version: codigo,
-      vigencia_desde: desde,
-      vigencia_hasta: hasta,
-      estado: estado,
-    };
-
-    try {
-      const resp = await fetch('{{ route('seguimiento-egresado.padron.guardar-plan') }}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': getCsrfToken(),
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await resp.json();
-      if (!resp.ok) {
-        throw new Error(data.message || 'Error al guardar el plan curricular');
-      }
-    } catch (e) {
-      console.warn('Persistencia en base de datos:', e.message);
-    }
-
-    const idKey = editId ? parseInt(editId, 10) : Object.keys(planesData).length + 1;
-    planesData[idKey] = {
-      id: idKey,
-      codigo: codigo,
-      desde: desde ? new Date(desde + 'T00:00:00').toLocaleDateString('es-PE') : '',
-      desdeRaw: desde,
-      hasta: hasta ? new Date(hasta + 'T00:00:00').toLocaleDateString('es-PE') : 'Vigente / Sin término',
-      hastaRaw: hasta,
-      estado: estado,
-      cohortesCount: editId ? (planesData[idKey]?.cohortesCount || 0) : 0,
-    };
-
-    cerrarModalPlan();
-    renderizarTablaPlanes();
-    mostrarToast(`El plan de estudios ${codigo} quedó guardado.`);
   }
 
   // =========================================================================
@@ -2874,14 +2328,6 @@
 
   function cerrarModalDetalleImportacion() {
     document.getElementById('modal-detalle-importacion').classList.remove('is-open');
-  }
-
-  function abrirModalImportacion() {
-    document.getElementById('modal-importacion').classList.add('is-open');
-  }
-
-  function cerrarModalImportacion() {
-    document.getElementById('modal-importacion').classList.remove('is-open');
   }
 
   // =========================================================================
@@ -3190,10 +2636,7 @@
     if (e.key === 'Escape') {
       cerrarModalExpediente();
       cerrarModalNuevoExpediente();
-      cerrarModalCohorte();
-      cerrarModalPlan();
       cerrarModalEstado();
-      cerrarModalImportacion();
       cerrarModalDetalleImportacion();
     }
   });
@@ -3212,14 +2655,12 @@
     actualizarFranjaMetricaCohorte('');
     actualizarSelectorCohortesForm();
     renderizarTablaPadron();
-    renderizarTablaCohortes();
-    renderizarTablaPlanes();
     renderizarTablaAcreditacion();
     renderizarTablaImportaciones();
 
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['egresados', 'cohortes', 'acreditacion', 'importaciones'].includes(tab)) {
+    if (tab && ['egresados', 'acreditacion', 'importaciones'].includes(tab)) {
       activarModuloTab(tab);
     }
   });

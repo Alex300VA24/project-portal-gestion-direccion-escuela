@@ -70,9 +70,9 @@ class ContactoInicialTest extends TestCase
 
         // La página lo muestra una vez y después solo queda el estado.
         $this->comoSecretaria()->followingRedirects()->post(route('seguimiento-egresado.padron.contacto-inicial.egresado', $egresado->id))
-            ->assertSee('Enlaces personales de contacto inicial')->assertSee('/seguimiento-egresado/acceso/', false);
-        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial'))
-            ->assertOk()->assertDontSee('Enlaces personales de contacto inicial')->assertSee('Enlace nuevo')->assertSee('Correo enviado');
+            ->assertSee('Enlaces personales recién generados')->assertSee('/seguimiento-egresado/acceso/', false);
+        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.promocion', $egresado->id_cohorte))
+            ->assertOk()->assertDontSee('Enlaces personales recién generados')->assertSee('Enlace nuevo')->assertSee('Correo enviado');
     }
 
     public function test_sin_servidor_de_correo_el_enlace_sale_en_pantalla_y_no_se_dice_enviado(): void
@@ -139,27 +139,27 @@ class ContactoInicialTest extends TestCase
         $this->assertSame('nuevo@correo.test', ContactoEgresado::where('id_egresado', $egresado->id)->whereNull('vigente_hasta')->value('correo_personal'));
         $this->assertSame('COMPLETADA', InvitacionEgresado::where('proposito', 'CONTACTO_INICIAL')->where('id_egresado', $egresado->id)->value('estado'));
 
-        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial', ['estado' => 'todos']))->assertOk()->assertSee('Completó su contacto');
+        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.promocion', ['promocion' => $egresado->id_cohorte, 'estado' => 'todos']))->assertOk()->assertSee('Contacto completado');
     }
 
-    public function test_el_listado_filtra_por_contacto_y_cohorte(): void
+    public function test_el_seguimiento_de_la_promocion_filtra_por_estado(): void
     {
         $egresado = $this->egresado();
         ContactoEgresado::create([
             'id_egresado' => $egresado->id, 'correo_personal' => 'ya@correo.test', 'celular_whatsapp' => '+51900111222',
             'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO',
         ]);
+        $otro = $this->cohorte->egresados()->where('id', '!=', $egresado->id)->firstOrFail();
+        $ruta = fn (array $q) => route('seguimiento-egresado.padron.promocion', ['promocion' => $this->cohorte->id] + $q);
 
-        $sin = $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial', ['cohorte' => $this->cohorte->id]))->assertOk();
-        $sin->assertDontSee($egresado->codigo_matricula)->assertSee($this->cohorte->egresados()->where('id', '!=', $egresado->id)->value('codigo_matricula'));
-
-        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial', ['cohorte' => $this->cohorte->id, 'estado' => 'con_contacto']))
-            ->assertOk()->assertSee($egresado->codigo_matricula);
+        $this->comoSecretaria()->get($ruta(['estado' => 'sin_enlace']))->assertOk()->assertDontSee($egresado->codigo_matricula)->assertSee($otro->codigo_matricula);
+        $this->comoSecretaria()->get($ruta(['estado' => 'completaron']))->assertOk()->assertSee($egresado->codigo_matricula)->assertDontSee($otro->codigo_matricula);
+        $this->comoSecretaria()->get($ruta(['estado' => 'todos']))->assertOk()->assertSee($egresado->codigo_matricula)->assertSee($otro->codigo_matricula);
     }
 
     public function test_un_filtro_invalido_se_rechaza(): void
     {
-        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial', ['cohorte' => 'abc']))->assertSessionHasErrors('cohorte');
+        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.promocion', ['promocion' => $this->cohorte->id, 'estado' => 'abc']))->assertSessionHasErrors('estado');
         $this->comoSecretaria()->post(route('seguimiento-egresado.padron.contacto-inicial.cohorte'), [])->assertSessionHasErrors(['cohorte', 'fecha_limite']);
         $this->comoSecretaria()->post(route('seguimiento-egresado.padron.contacto-inicial.cohorte'), ['cohorte' => 999999, 'fecha_limite' => now()->addDay()->toDateString()])->assertSessionHasErrors('cohorte');
     }
@@ -204,12 +204,13 @@ class ContactoInicialTest extends TestCase
         InvitacionEgresado::where('id_egresado', $egresados[1]->id)->update(['expira_en' => now()->subDays(2)]);
         app(ContactoInicialService::class)->invitar($egresados[2]);
 
-        $pagina = $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial', ['estado' => 'todos']));
-        $pagina->assertOk()->assertSee('2. Quién ya completó su contacto')->assertSee('Completó su contacto')->assertSee('sin completar')->assertSee('Pendiente · hasta el');
-        $pagina->assertSee('de '.$egresados->count());
+        $ruta = fn (string $estado) => route('seguimiento-egresado.padron.promocion', ['promocion' => $this->cohorte->id, 'estado' => $estado]);
+        $pagina = $this->comoSecretaria()->get($ruta('todos'));
+        $pagina->assertOk()->assertSee('Quién completó su contacto')->assertSee('COMPLETADA')->assertSee('VENCIDA')->assertSee('PENDIENTE')->assertSee('Aún no debería egresar');
+        $pagina->assertSee(($egresados->count() - 1).' alumnos no completaron')->assertSee('1 completaron');
 
-        $this->comoSecretaria()->get(route('seguimiento-egresado.padron.contacto-inicial', ['estado' => 'vencido']))
-            ->assertOk()->assertSee($egresados[1]->nombre_completo)->assertDontSee($egresados[0]->nombre_completo)->assertDontSee($egresados[2]->nombre_completo);
+        $this->comoSecretaria()->get($ruta('vencidos'))
+            ->assertOk()->assertSee($egresados[1]->codigo_matricula)->assertDontSee($egresados[0]->codigo_matricula)->assertDontSee($egresados[2]->codigo_matricula);
         $this->assertNotEmpty($vencida['url']);
     }
 
@@ -234,7 +235,7 @@ class ContactoInicialTest extends TestCase
 
         $this->postJson($ruta)->assertUnauthorized();
         $this->actingAs($this->director())->post($ruta)->assertForbidden();
-        $this->actingAs($this->director())->get(route('seguimiento-egresado.padron.contacto-inicial'))->assertOk();
+        $this->actingAs($this->director())->get(route('seguimiento-egresado.padron.promocion', $this->cohorte->id))->assertOk();
         $this->assertSame(0, InvitacionEgresado::where('proposito', 'CONTACTO_INICIAL')->count());
     }
 }

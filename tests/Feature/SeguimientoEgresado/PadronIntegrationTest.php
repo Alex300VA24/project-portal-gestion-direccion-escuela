@@ -129,17 +129,24 @@ class PadronIntegrationTest extends TestCase
         $this->assertSame('p@correo.test', $alumno->contactoVigente->correo_personal);
     }
 
-    public function test_sin_contacto_inicial_no_se_puede_confirmar_el_egreso(): void
+    public function test_sin_contacto_inicial_el_egreso_se_confirma_pero_se_avisa(): void
     {
         $alumno = $this->alumnoApto();
 
-        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])
-            ->assertStatus(422)->assertJsonPath('success', false)
-            ->assertJsonFragment(['message' => 'Este alumno todavía no completó su contacto inicial, que es obligatorio para egresar. Envíale el enlace desde «Contacto inicial» y vuelve a intentarlo cuando lo complete.']);
+        $respuesta = $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])
+            ->assertOk()->assertJsonPath('success', true)->assertJsonPath('aviso', true);
+        $this->assertStringContainsString('Aviso: todavía no completó su contacto inicial', $respuesta->json('message'));
 
-        $alumno->refresh();
-        $this->assertNull($alumno->fecha_egreso);
-        $this->assertSame('PROXIMO', $alumno->estadoVigente->estadoAcademico->codigo);
+        $this->assertSame('EGRESADO', $alumno->refresh()->estadoVigente->estadoAcademico->codigo);
+    }
+
+    public function test_con_contacto_inicial_el_egreso_se_confirma_sin_aviso(): void
+    {
+        $alumno = $this->alumnoApto();
+        $alumno->contactos()->create(['correo_personal' => 'p3@correo.test', 'celular_whatsapp' => '900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO']);
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])
+            ->assertOk()->assertJsonPath('aviso', false)->assertJsonMissing(['message' => 'Aviso']);
     }
 
     public function test_la_carga_une_a_todos_los_alumnos_a_la_promocion_elegida_aunque_el_archivo_no_la_traiga(): void

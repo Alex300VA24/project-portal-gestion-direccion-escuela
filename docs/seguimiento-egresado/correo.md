@@ -10,7 +10,7 @@ El módulo envía por correo el **enlace personal** de cada invitación. Este do
 |---|---|---|
 | Emitir invitaciones de una campaña | Campañas e invitaciones | `SEGUIMIENTO` (encuesta) |
 | Reenviar recordatorio | Campañas e invitaciones | `SEGUIMIENTO`, con un enlace nuevo |
-| Generar enlace de contacto inicial (un egresado o una cohorte) | Padrón → Contacto inicial de egresados | `CONTACTO_INICIAL` (datos de contacto) |
+| Generar enlace de contacto inicial (un alumno o toda la promoción) | Padrón → página de la promoción (pasos 3 y 4) | `CONTACTO_INICIAL` (datos de contacto) |
 
 El mensaje (`App\Modules\SeguimientoEgresado\Mail\InvitacionEgresadoMail`) lleva el nombre del egresado, un botón y el enlace en texto, y la fecha en que vence. Se envía en HTML y en texto plano. Las vistas están en `resources/views/modules/seguimiento-egresado/emails/`.
 
@@ -73,7 +73,7 @@ MAIL_FROM_NAME="Seguimiento al Egresado"
 SG_CORREO_REDIRIGIR_A=<tu correo, para recibir las pruebas>
 ```
 
-3. Comprobar: Padrón → Contacto inicial de egresados → «Generar enlace» en un egresado. Debe decir «Enviado por correo a … (redirigido)» y llegar el mensaje.
+3. Comprobar: Padrón → una promoción → paso 4 → «Generar enlace» en un alumno. Debe decir «Enviado por correo a … (redirigido)» y llegar el mensaje.
 
 Gmail reescribe el remitente con la cuenta autenticada y limita los envíos diarios (del orden de 500 destinatarios en cuentas personales; el límite lo fija Google). Sirve para demostrar, no para producción.
 

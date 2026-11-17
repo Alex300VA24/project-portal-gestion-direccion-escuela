@@ -65,12 +65,12 @@ Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimie
 
 | Paso | Qué se hace | Resultado esperado |
 |---|---|---|
-| 0 | **Padrón y promociones** → pestaña **1. Promociones** → «Registrar plan de estudios»: `Plan 2017`, vigente desde `2017-03-01`, estado VIGENTE. Luego «Registrar promoción»: año `2019`, total de ingresantes `6`, plan `Plan 2017`. | El cuadro «Listo» y la promoción en la lista. |
-| 1 | Pestaña **2. Cargar alumnos** → «Cargar alumnos» → elegir **Promoción 2019** y el archivo `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`. | Cuadro «Se cargaron 6 alumnos en la Promoción 2019». Los 6 aparecen como **Apto para egresar**, sin fecha de egreso, sin créditos y sin contacto. |
+| 0 | **Padrón y promociones** → «+ Nueva promoción»: año `2019`, total de ingresantes `6`; si falta el plan, «+ Otro plan»: `Plan 2017`, vigente desde `2017-03-01`, estado Vigente. | El cuadro «Listo» y la página de la promoción en el paso 2. |
+| 1 | Paso **2. Cargar a los alumnos** de la misma página → elegir `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`. | Cuadro «Se cargaron 6 alumnos en la Promoción 2019» y el paso 3 «Te toca». Los 6 aparecen como **Apto para egresar**, sin fecha de egreso, sin créditos y sin contacto. |
 | 1b | Cargar el mismo archivo otra vez. | Cuadro «No se cargó ningún alumno» con las filas y el motivo (matrícula repetida); no se crea nada. |
-| 2 | **Padrón** → «Ir al contacto inicial» → promoción 2019, con su **fecha límite** → «Enviar a la promoción» → «Continuar». | 6 enlaces personales, una sola vez, con botón «Copiar». Con correo conectado dice «Enviado por correo a… (redirigido)»; si no, «No enviado» y se entregan a mano. |
-| 3 | Abrir en otra ventana (modo incógnito) uno de los enlaces: es la vista del alumno. «Completar mi contacto»: correo personal y celular. | El alumno guarda su contacto. En «Contacto inicial» ese alumno pasa a **✓ Completó su contacto** (verde) y el cuadro «Quién ya completó su contacto» lo cuenta. |
-| 4 | **Padrón** → ficha de cada alumno → «Confirmar egreso» → fecha real (por ejemplo `2025-07-18`). | Pasa a **Egresado**, con fecha y periodo `2025-I`. Su historial conserva la etapa anterior y sus contactos. |
+| 2 | Paso **3. Enviar el enlace de contacto** → elegir la **fecha límite** → «Enviar enlaces» → «Continuar». | 6 enlaces personales, una sola vez, con botón «Copiar». Con correo conectado dice «Enviado por correo a… (redirigido)»; si no, «No enviado» y se entregan a mano. |
+| 3 | Abrir en otra ventana (modo incógnito) uno de los enlaces: es la vista del alumno. «Completar mi contacto»: correo personal y celular. | El alumno guarda su contacto. En el paso **4. Quién completó su contacto** ese alumno pasa a **COMPLETADA** (verde) y el resumen lo cuenta; quien no completó muestra «Aún no debería egresar». |
+| 4 | **Padrón** → «Consultar alumnos y grados» → ficha de cada alumno → «Confirmar egreso» → fecha real (por ejemplo `2025-07-18`). | Pasa a **Egresado**, con fecha y periodo `2025-I`. Su historial conserva la etapa anterior y sus contactos. |
 | 5 | **Campañas e invitaciones** → «Registrar campaña»: tipo **MIXTA**, finalidad SEGUIMIENTO, periodo `2026-II`, fechas vigentes, estado ABIERTA, cohorte 2019 → «Emitir invitaciones por cohorte». | Un enlace por **egresado confirmado**. Quien ya dejó su contacto recibe el correo en su correo **personal**; los demás, en el institucional. Los alumnos que no se confirmaron no se convocan. |
 | 6 | Abrir un enlace de la campaña (ventana de alumno). Responder la encuesta: trabaja, **autoriza contactar a su empleador** y da el contacto del jefe. | «Gracias»; la respuesta queda en **Mi historial**. La invitación pasa a **COMPLETADA**; las demás siguen pendientes. |
 | 7 | Secretaría → **Encuesta empresarial** → «Generar enlace»: campaña MIXTA, tipo «Desempeño (cuenta para I5)», la promoción y el «Egresado evaluado» que respondió. Generar otro de tipo «Mercado general». | Se muestra cada enlace una sola vez. Solo se puede evaluar a quien **autorizó** contactar a su empresa. |
@@ -88,7 +88,7 @@ Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimie
 | Síntoma | Causa y solución |
 |---|---|
 | «La promoción … no está registrada» | Falta el paso 0 (registrar el plan de estudios y la promoción). |
-| «Este alumno todavía no completó su contacto inicial» al confirmar el egreso | Falta el paso 3: el contacto inicial es obligatorio para egresar. |
+| Aviso «todavía no completó su contacto inicial» al confirmar el egreso | El egreso se confirma igual, pero conviene que el alumno complete su contacto (paso 4 de su promoción). |
 | «No hay egresados confirmados» al emitir | Falta el paso 4 (confirmar egresos). |
 | «El egresado no ha autorizado el contacto» | El egresado no respondió la encuesta o respondió que no autoriza. |
 | Importación con `.xlsx` en Docker: «No se pudo leer el archivo» | Falta `zip` en la imagen; usar CSV. |

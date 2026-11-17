@@ -42,7 +42,8 @@ class PostgresIntegrationTest extends TestCase
         $this->get(route('seguimiento-egresado.padron'))
             ->assertOk()
             ->assertSee('Padrón y promociones')
-            ->assertSee('1. Promociones')
-            ->assertSee('2. Cargar alumnos');
+            ->assertSee('+ Nueva promoción')
+            ->assertSee('Consultar alumnos y grados');
+        $this->get(route('seguimiento-egresado.padron.consulta'))->assertOk()->assertSee('Consultar alumnos y grados')->assertDontSee('Ir al contacto inicial');
     }
 }

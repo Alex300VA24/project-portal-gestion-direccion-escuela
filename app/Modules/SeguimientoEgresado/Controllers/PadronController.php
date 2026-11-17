@@ -135,16 +135,16 @@ class PadronController extends Controller
                 ."\n".$problemas->take(5)->implode("\n")
                 .($problemas->count() > 5 ? "\ny ".($problemas->count() - 5).' más (míralas en el historial de cargas).' : '');
 
-            return redirect()->route('seguimiento-egresado.padron', ['tab' => 'importaciones'])
+            return redirect()->to(route('seguimiento-egresado.padron.promocion', $promocion->id).'#paso-2')
                 ->with('import_resumen', $resultado)
                 ->with('error', $mensaje);
         }
 
         $n = $resultado['aceptadas'];
         $mensaje = ($n === 1 ? 'Se cargó 1 alumno' : "Se cargaron {$n} alumnos")." en la Promoción {$promocion->anio_ingreso}. "
-            .'Siguiente paso: enviarles el contacto inicial.';
+            .'Siguiente paso: enviarles el enlace de contacto.';
 
-        return redirect()->route('seguimiento-egresado.padron', ['tab' => 'importaciones'])
+        return redirect()->to(route('seguimiento-egresado.padron.promocion', $promocion->id).'#paso-3')
             ->with('import_resumen', $resultado)
             ->with('success', $mensaje);
     }
@@ -334,7 +334,7 @@ class PadronController extends Controller
             if ($existe) {
                 return response()->json([
                     'success' => false,
-                    'message' => "La cohorte del año {$request->anio_ingreso} ya se encuentra registrada.",
+                    'message' => "Ya existe la promoción del año {$request->anio_ingreso}.",
                 ], 422);
             }
             $cohorte = new Cohorte;
@@ -362,7 +362,7 @@ class PadronController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Cohorte {$cohorte->anio_ingreso} registrada correctamente.",
+            'message' => "La promoción {$cohorte->anio_ingreso} quedó guardada.",
             'cohorte' => $cohorte->fresh(['planCurricular']),
         ]);
     }
@@ -388,7 +388,7 @@ class PadronController extends Controller
             if ($existe) {
                 return response()->json([
                     'success' => false,
-                    'message' => "El plan curricular '{$request->codigo_version}' ya se encuentra registrado.",
+                    'message' => "Ya existe el plan de estudios {$request->codigo_version}.",
                 ], 422);
             }
             $plan = new PlanCurricular;
@@ -402,7 +402,7 @@ class PadronController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Plan curricular '{$plan->codigo_version}' guardado exitosamente.",
+            'message' => "El plan de estudios {$plan->codigo_version} quedó guardado.",
             'plan' => $plan->loadCount('cohortes'),
         ]);
     }
@@ -476,17 +476,12 @@ class PadronController extends Controller
             return response()->json(['success' => false, 'message' => 'Solo se puede confirmar el egreso de un alumno apto para egresar.'], 422);
         }
 
-        // Dejar el contacto inicial es obligatorio para egresar: sin él no hay a dónde enviarle las campañas.
-        if (! $egresado->contactoVigente()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este alumno todavía no completó su contacto inicial, que es obligatorio para egresar. Envíale el enlace desde «Contacto inicial» y vuelve a intentarlo cuando lo complete.',
-            ], 422);
-        }
+        // El contacto inicial es obligatorio para egresar, pero no se bloquea: se avisa a la Secretaría.
+        $sinContacto = ! $egresado->contactoVigente()->exists();
 
         $fecha = Carbon::parse($request->fecha_egreso);
 
-        return DB::transaction(function () use ($egresado, $actual, $fecha) {
+        return DB::transaction(function () use ($egresado, $actual, $fecha, $sinContacto) {
             $actual->vigente_hasta = $this->cierreDeVigencia($actual->vigente_desde);
             $actual->save();
 
@@ -506,7 +501,9 @@ class PadronController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Se confirmó el egreso de {$egresado->nombre_completo}.",
+                'aviso' => $sinContacto,
+                'message' => "Se confirmó el egreso de {$egresado->nombre_completo}."
+                    .($sinContacto ? ' Aviso: todavía no completó su contacto inicial, que es obligatorio para egresar. Pídele que lo complete desde su promoción.' : ''),
                 'egresado' => $egresado->fresh(['cohorte', 'contactoVigente', 'estadoVigente.estadoAcademico']),
             ]);
         });

@@ -45,7 +45,7 @@ El padrón se carga con alumnos **aptos para egresar** y solo después se confir
 sequenceDiagram
     actor S as Secretaría
     participant M as Módulo
-    S->>M: Padrón → Cargar alumnos: elige la promoción y el CSV/Excel (matrícula, documento, nombres, correo institucional)
+    S->>M: Promoción → paso 2: carga el CSV/Excel (matrícula, documento, nombres, correo institucional); los alumnos quedan unidos a esa promoción
     M->>M: egresado + historial «PROXIMO» (apto); sin fechas, créditos ni contacto
     S->>M: Contacto inicial (flujo 1): el alumno deja su correo personal y celular
     S->>M: Ficha del alumno → «Confirmar egreso» con la fecha real
@@ -54,7 +54,7 @@ sequenceDiagram
 
 Reglas:
 
-- La promoción se elige antes de cargar y debe existir; todos los alumnos del archivo se unen a ella (si el archivo trae una columna `cohorte`, debe coincidir). Correo institucional obligatorio y válido; matrícula única; las fechas del archivo no pueden ser futuras. La carga es todo o nada: una fila inválida cancela el archivo y cada fila queda registrada con su motivo en `importacion_fila`.
+- La carga se hace dentro de la promoción, así que todos los alumnos del archivo se unen a ella (si el archivo trae una columna `cohorte`, debe coincidir). Correo institucional obligatorio y válido; matrícula única; las fechas del archivo no pueden ser futuras. La carga es todo o nada: una fila inválida cancela el archivo y cada fila queda registrada con su motivo en `importacion_fila`.
 - Estado inicial `PROXIMO` (apto), salvo que el archivo traiga `estado` explícito. Créditos, resoluciones, fecha de egreso y periodo quedan vacíos; el contacto solo se guarda si el archivo trae correo personal **y** celular.
 - «Confirmar egreso» exige una fecha real (no futura, no anterior al ingreso si se conoce) y solo vale para quien está en `PROXIMO`. El periodo sale de la fecha (`I` hasta julio, `II` después). Se conservan el expediente, el historial y los contactos.
 - Las campañas de seguimiento solo convocan a quienes ya están en `EGRESADO`, `BACHILLER` o `TITULADO`.
@@ -70,7 +70,7 @@ sequenceDiagram
     actor S as Secretaría
     participant M as Módulo
     actor E as Egresado
-    S->>M: Padrón → Contacto inicial → «Generar enlace» o «Enviar a la promoción» con una fecha límite
+    S->>M: Promoción → paso 3 «Enviar enlaces» con una fecha límite (o «Enlace nuevo» por alumno en el paso 4)
     M->>M: crea invitación CONTACTO_INICIAL y guarda el hash
     M-->>S: muestra el enlace una vez y dice si se envió el correo
     M-->>E: correo con el enlace (si está configurado)
@@ -82,9 +82,9 @@ sequenceDiagram
 
 Reglas:
 
-- «Enviar a la promoción» pide una **fecha límite** (por defecto 30 días desde hoy; máximo un año): `expira_en` es el final de ese día. Genera un enlace por cada alumno que **aún no dejó su contacto** y no tiene un enlace pendiente vigente, e informa cuántos se omitieron y por qué.
-- **El contacto es obligatorio para egresar.** El correo y el formulario lo dicen, y «Confirmar egreso» se rechaza si el alumno no completó su contacto.
-- El paso «Quién ya completó su contacto» resume por promoción cuántos completaron, cuántos siguen en plazo, cuántos vencieron y cuántos no tienen enlace; al abrir su enlace ya completado, el alumno ve «Ya completaste esta invitación» en verde.
+- «Enviar enlaces» pide una **fecha límite** (por defecto 30 días desde hoy; máximo un año): `expira_en` es el final de ese día. Genera un enlace por cada alumno que **aún no dejó su contacto** y no tiene un enlace pendiente vigente, e informa cuántos se omitieron y por qué.
+- **El contacto es obligatorio para egresar.** El correo y el formulario lo dicen; «Confirmar egreso» no se bloquea, pero avisa si el alumno no completó su contacto.
+- El paso 4 «Quién completó su contacto» resume la promoción cuántos completaron, cuántos siguen en plazo, cuántos vencieron y cuántos no tienen enlace; al abrir su enlace ya completado, el alumno ve «Ya completaste esta invitación» en verde.
 - «Enlace nuevo» anula el enlace pendiente anterior y genera otro con la misma fecha límite: el viejo deja de funcionar. Sirve si se perdió o se compartió por error.
 - El contacto **se versiona**: cada cambio cierra la versión vigente (`vigente_hasta`) y crea otra. Nada se sobrescribe y el egresado ve sus datos anteriores.
 
