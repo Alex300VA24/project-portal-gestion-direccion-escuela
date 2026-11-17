@@ -424,7 +424,7 @@ class CampaniasController extends Controller
             $mensaje = "Se emitieron {$nuevasEmitidas} invitaciones de seguimiento exitosamente.";
             if ($nuevasEmitidas > 0) {
                 $mensaje .= $enviados === 0
-                    ? ' Ninguna se envió por correo: entrega los enlaces de abajo a cada egresado.'
+                    ? ' Entrega a cada egresado su enlace de abajo.'
                     : ($enviados === $nuevasEmitidas
                         ? ' Todas se enviaron por correo.'
                         : " {$enviados} se enviaron por correo; para el resto usa los enlaces de abajo.");
@@ -487,7 +487,7 @@ class CampaniasController extends Controller
 
         $mensaje = $resultado->enviado()
             ? "Recordatorio #{$invitacion->recordatorios_enviados} enviado por correo a {$nombreCompleto}."
-            : "Recordatorio #{$invitacion->recordatorios_enviados} generado para {$nombreCompleto}. No se envió por correo: entrega el enlace de abajo.";
+            : "Recordatorio #{$invitacion->recordatorios_enviados} generado para {$nombreCompleto}. Entrega el enlace de abajo al egresado.";
 
         return redirect()->back()
             ->with('success', $mensaje)

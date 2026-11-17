@@ -19,7 +19,7 @@ El padrón se arma con los alumnos que ya cumplen para egresar. **Todavía no so
 1. En **Padrón y cohortes** registra, si no existen, el **plan curricular** y la **cohorte** (año de ingreso). El archivo se rechaza si su cohorte no existe.
 2. En la pestaña de importaciones, pulsa **Cargar archivo de padrón** y elige un archivo **CSV** o Excel. Hay una plantilla descargable y un ejemplo en `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`.
 3. Columnas obligatorias: `matricula`, `tipo_doc`, `numero_documento`, `nombres`, `apellido_paterno`, `cohorte` y **`correo_institucional`** (válido). Opcionales: `apellido_materno`, `fecha_ingreso`, `fecha_egreso` (no puede ser futura) y, si ya se conocen, `correo_personal` y `celular`.
-4. Las filas con error (matrícula repetida, correo faltante o inválido, fecha futura, cohorte inexistente) se rechazan una por una y la pantalla dice el motivo. Las demás se guardan.
+4. La carga es **todo o nada**: si una fila tiene error (matrícula repetida, correo faltante o inválido, fecha futura, cohorte inexistente), no se guarda ninguna del archivo. En la pestaña de importaciones, «Ver Log» indica la fila y el motivo; se corrige el archivo y se vuelve a cargar.
 
 ### Confirmar el egreso
 
@@ -49,7 +49,7 @@ El contacto inicial recoge los datos de contacto de los alumnos aptos y de los e
 | Lo que dice | Qué hacer |
 |---|---|
 | Enviado por correo a … | Nada: el egresado ya lo recibió. Si dice «(redirigido)», el correo fue a una dirección de pruebas, no al egresado. |
-| No enviado (modo de prueba) o (envío desactivado) | Entrega el enlace por otro medio (WhatsApp, por ejemplo). |
+| Enlace listo para entregar | El correo no está conectado: entrega el enlace por otro medio (WhatsApp, por ejemplo). |
 | Sin correo registrado | El egresado no tiene correo: entrega el enlace por otro medio. |
 | Falló el envío | Entrega el enlace por otro medio y avisa al responsable del correo. |
 

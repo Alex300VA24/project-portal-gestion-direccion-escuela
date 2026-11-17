@@ -239,10 +239,10 @@ class CampaniasInstitucionalReportesTest extends TestCase
         // En los datos semilla existen 4 egresados convocados con respuesta laboral
         $response = $this->get(route('seguimiento-egresado.campanias'));
 
+        // La nota explicativa se quitó de la pantalla; la cobertura se sigue mostrando.
         $response->assertOk()
-            ->assertSee('Criterio metodológico fundamental')
-            ->assertSee('La falta de respuesta o persona pendiente NO debe confundirse con desempleo')
-            ->assertSee('cobertura = respuestas recibidas ÷ total de invitaciones');
+            ->assertDontSee('Criterio metodológico fundamental')
+            ->assertSee('Tasa de Cobertura');
     }
 
     // =========================================================================

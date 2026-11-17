@@ -54,7 +54,7 @@ sequenceDiagram
 
 Reglas:
 
-- Correo institucional obligatorio y válido; matrícula única; la cohorte debe existir; las fechas del archivo no pueden ser futuras. Cada fila inválida se rechaza con su motivo y las demás se guardan.
+- Correo institucional obligatorio y válido; matrícula única; la cohorte debe existir; las fechas del archivo no pueden ser futuras. La carga es todo o nada: una fila inválida cancela el archivo y cada fila queda registrada con su motivo en `importacion_fila`.
 - Estado inicial `PROXIMO` (apto), salvo que el archivo traiga `estado` explícito. Créditos, resoluciones, fecha de egreso y periodo quedan vacíos; el contacto solo se guarda si el archivo trae correo personal **y** celular.
 - «Confirmar egreso» exige una fecha real (no futura, no anterior al ingreso si se conoce) y solo vale para quien está en `PROXIMO`. El periodo sale de la fecha (`I` hasta julio, `II` después). Se conservan el expediente, el historial y los contactos.
 - Las campañas de seguimiento solo convocan a quienes ya están en `EGRESADO`, `BACHILLER` o `TITULADO`.

@@ -24,6 +24,8 @@ docker compose exec app php artisan db:seed --force                     # cuenta
 Abrir http://localhost:8000/login.
 
 > **No ejecutar** el seeder de datos de demostración del módulo (`SeguimientoEgresadoSeeder`) para este recorrido: carga egresados y respuestas ficticias que se mezclarían con los resultados. Tampoco `migrate:fresh`.
+>
+> **Para ver las pantallas con datos ya cargados** (indicadores, gráficos, campañas, enlaces de ejemplo) sin hacer el recorrido, en una base aparte y solo en un entorno local (no en `production`): `php artisan db:seed --class="App\Modules\SeguimientoEgresado\Database\Seeders\SeguimientoEgresadoSeeder"`. Los enlaces de ejemplo están en el README del módulo. Si el recorrido ya se hizo, ese seeder se mezcla con sus datos: usar una base nueva.
 
 ### Sin Docker
 
@@ -44,7 +46,7 @@ php artisan serve
 
 ### Correo
 
-- `MAIL_MAILER=log` (por defecto): no sale ningún correo. El sistema lo dice («Ninguno se envió por correo») y muestra el enlace en pantalla para copiarlo. Sirve para la demostración.
+- `MAIL_MAILER=log` (por defecto): no sale ningún correo. El sistema no dice «enviado»: marca «Enlace listo para entregar» y muestra el enlace en pantalla para copiarlo. Para que la demostración muestre «Enviado por correo a…», usar Mailpit (más abajo) o un SMTP real.
 - Con **Mailpit** (local y gratuito; probado con Docker): es un buzón que captura los correos sin entregarlos a nadie. Se levanta con
   ```bash
   docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit

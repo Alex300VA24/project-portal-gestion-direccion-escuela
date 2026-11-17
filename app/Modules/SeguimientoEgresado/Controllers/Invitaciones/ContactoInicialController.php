@@ -97,7 +97,7 @@ final class ContactoInicialController extends Controller
         $enviados = count(array_filter($enlaces, fn (array $e) => $e['correo'] === 'enviado'));
         $texto = $total === 1 ? 'Se generó 1 enlace personal.' : "Se generaron {$total} enlaces personales.";
         $texto .= $enviados === 0
-            ? ' Ninguno se envió por correo: entrégalos con los enlaces de abajo.'
+            ? ' Entrega a cada egresado su enlace de abajo.'
             : ($enviados === $total ? ' Todos se enviaron por correo.' : " {$enviados} se enviaron por correo; para el resto usa los enlaces de abajo.");
 
         return $texto;

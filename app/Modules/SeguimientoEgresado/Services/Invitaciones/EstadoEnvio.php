@@ -24,8 +24,8 @@ enum EstadoEnvio: string
     {
         return match ($this) {
             self::Enviado => 'Enviado por correo',
-            self::Simulado => 'No enviado (modo de prueba)',
-            self::Desactivado => 'No enviado (envío desactivado)',
+            self::Simulado => 'Enlace listo para entregar',
+            self::Desactivado => 'Enlace listo para entregar',
             self::SinCorreo => 'Sin correo registrado',
             self::Fallido => 'Falló el envío',
         };

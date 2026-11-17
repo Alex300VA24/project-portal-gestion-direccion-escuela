@@ -56,7 +56,8 @@ class CorreoCampaniaTest extends TestCase
 
         $this->followingRedirects()->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $this->campania->id))
             ->assertOk()
-            ->assertSee('Ninguna se envió por correo')
+            ->assertSee('Entrega a cada egresado su enlace de abajo.')
+            ->assertDontSee('Enviado por correo a')
             ->assertSee('/seguimiento-egresado/acceso/', false);
 
         $this->assertGreaterThan(0, InvitacionEgresado::where('id_campania', $this->campania->id)->count());

@@ -83,7 +83,8 @@ class ContactoInicialTest extends TestCase
         $this->comoSecretaria()->followingRedirects()->post(route('seguimiento-egresado.padron.contacto-inicial.egresado', $egresado->id))
             ->assertOk()
             ->assertSee('/seguimiento-egresado/acceso/', false)
-            ->assertSee('Ninguno se envió por correo')
+            ->assertSee('Entrega a cada egresado su enlace de abajo.')
+            ->assertDontSee('Enviado por correo a')
             ->assertDontSee('Todos se enviaron');
 
         $this->assertNull(InvitacionEgresado::where('proposito', 'CONTACTO_INICIAL')->where('id_egresado', $egresado->id)->value('enviado_en'));

@@ -27,8 +27,7 @@ Estados que ve la Secretaría (`App\Modules\SeguimientoEgresado\Services\Invitac
 | Estado | Significa |
 |---|---|
 | Enviado por correo a … | El servidor lo aceptó. Si hay redirección, dice «(redirigido)». |
-| No enviado (modo de prueba) | `MAIL_MAILER` es `log` o `array`. |
-| No enviado (envío desactivado) | `SG_CORREO_ENVIAR=false`. |
+| Enlace listo para entregar (sin envío por correo) | `MAIL_MAILER` es `log` o `array`, o `SG_CORREO_ENVIAR=false`. El enlace no se envió: se entrega a mano. |
 | Sin correo registrado | El egresado no tiene correo. |
 | Falló el envío | El servidor rechazó el mensaje o no se pudo conectar. Queda en `storage/logs` (sin el enlace). |
 
