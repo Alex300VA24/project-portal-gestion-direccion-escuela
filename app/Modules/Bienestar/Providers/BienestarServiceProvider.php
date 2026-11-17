@@ -25,6 +25,9 @@ final class BienestarServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Registrar vista personalizada para errores de autorización (403)
+        $this->loadViewsFrom(resource_path('views/modules/bienestar/errors'), 'errors');
+
         // Registrar Gates para aceptar indistintamente el permiso o su rol Spatie equivalente
         foreach (BienestarPermissions::MAP as $permission => $role) {
             Gate::define($permission, function ($user) use ($permission) {
