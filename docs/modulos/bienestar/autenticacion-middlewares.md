@@ -54,14 +54,29 @@ flowchart LR
 
 ## 4. Protección de Rutas y Middlewares
 
-Todas las rutas del módulo (`app/Modules/Bienestar/Routes/web.php`) aplican middlewares acordes al principio de mínimo privilegio:
+Todas las rutas del módulo (`app/Modules/Bienestar/Routes/web.php`) aplican middlewares y políticas acordes al principio de mínimo privilegio, soportando indistintamente el rol Spatie o el permiso mediante el middleware `role_or_permission`:
+
+- **Mapeo canónico único (`BienestarPermissions::MAP`):**
+  * `bienestar.solicitar` $\leftrightarrow$ `alumno`
+  * `bienestar.reportar` $\leftrightarrow$ `profesor`
+  * `bienestar.gestionar` $\leftrightarrow$ `secretaria`
+  * `bienestar.estadisticas` $\leftrightarrow$ `director_escuela`
 
 - **Rutas Públicas:**
   * `/bienestar/informacion` y `/bienestar/informacion/{articulo}` (libres de autenticación).
+- **Rutas de Alumno:**
+  * Middleware: `['auth', BienestarPermissions::roleOrPermission(BienestarPermissions::SOLICITAR)]` (`role_or_permission:alumno|bienestar.solicitar`).
 - **Rutas Docentes:**
-  * Middleware: `['auth', 'can:bienestar.reportar']`.
+  * Middleware: `['auth', BienestarPermissions::roleOrPermission(BienestarPermissions::REPORTAR)]` (`role_or_permission:profesor|bienestar.reportar`).
 - **Rutas de Gestión de Bienestar:**
-  * Middleware: `['auth', 'can:bienestar.gestionar']`.
+  * Middleware: `['auth', BienestarPermissions::roleOrPermission(BienestarPermissions::GESTIONAR)]` (`role_or_permission:secretaria|bienestar.gestionar`).
 - **Rutas de Dirección de Escuela:**
-  * Middleware: `['auth', 'can:bienestar.estadisticas']`.
+  * Middleware: `['auth', BienestarPermissions::roleOrPermission(BienestarPermissions::ESTADISTICAS)]` (`role_or_permission:director_escuela|bienestar.estadisticas`).
   * Filtro de mutaciones: Cualquier verbo `POST`, `PUT`, `PATCH`, `DELETE` invoca `DirectorEstadisticasController::mutacionBloqueada()`, devolviendo `403 Forbidden`.
+
+---
+
+## 5. Manejo Preventivo ante Falta de Datos Demo (`FaltanDatosDemoException`)
+
+Si un usuario autenticado accede a una sección operativa pero su cuenta aún no cuenta con los registros correspondientes en `seguridad.usuario`, `core.estudiante` o `core.docente` (por ejemplo, si no se ejecutó el seeder demo de Bienestar), `ActorBienestarResolver` intercepta la situación y renderiza una vista explicativa limpia (`FaltanDatosDemoException`) con código HTTP 200, **nunca un error 500**:
+> *"Faltan datos de demostración: ejecute php artisan db:seed --class=\"App\Modules\Bienestar\Database\Seeders\BienestarDemoSeeder\""*
