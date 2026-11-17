@@ -135,13 +135,14 @@ class EgresadosDemoSeederTest extends TestCase
         $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania));
 
         $enlaces = collect(session('enlaces_emitidos'));
-        // Los tres sin invitar y Valeria (solo tenía la de contacto inicial); Renzo y Camila ya estaban invitados.
+        // Los tres egresados sin invitar. Valeria sigue como alumna apta (PROXIMO): no se la convoca hasta confirmar su egreso;
+        // Renzo y Camila ya estaban invitados.
         $this->assertEqualsCanonicalizing(
-            ['2019100142', '2019100158', '2019100203', '2019100231'],
+            ['2019100142', '2019100158', '2019100203'],
             $enlaces->pluck('matricula')->all(),
         );
         $this->assertEqualsCanonicalizing(
-            ['Joaquín Rojas Castañeda', 'Fiorella Mendoza Aguilar', 'Luis Alberto Cabrera Neyra', 'Valeria Quispe Mendoza'],
+            ['Joaquín Rojas Castañeda', 'Fiorella Mendoza Aguilar', 'Luis Alberto Cabrera Neyra'],
             $enlaces->pluck('egresado')->all(),
         );
     }

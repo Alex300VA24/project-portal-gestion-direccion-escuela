@@ -343,11 +343,14 @@ class CampaniasController extends Controller
         $cohortesIds = $campania->cohortes->pluck('id');
 
         // Buscar egresados de estas cohortes
-        $egresados = Egresado::whereIn('id_cohorte', $cohortesIds)->get();
+        // Solo se convoca a quienes ya egresaron (el egreso lo confirma la Secretaría); los alumnos aptos todavía no.
+        $egresados = Egresado::whereIn('id_cohorte', $cohortesIds)
+            ->whereHas('estadoVigente.estadoAcademico', fn ($q) => $q->whereIn('codigo', ['EGRESADO', 'BACHILLER', 'TITULADO']))
+            ->get();
 
         if ($egresados->isEmpty()) {
             return redirect()->back()->withErrors([
-                'general' => 'No existen egresados registrados en el padrón para las cohortes convocadas.',
+                'general' => 'No hay egresados confirmados en las cohortes convocadas. Confirme el egreso de los alumnos aptos desde el padrón.',
             ]);
         }
 

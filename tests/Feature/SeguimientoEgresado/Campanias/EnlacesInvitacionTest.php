@@ -5,9 +5,11 @@ namespace Tests\Feature\SeguimientoEgresado\Campanias;
 use App\Modules\SeguimientoEgresado\Database\Seeders\DatosPruebaSeeder;
 use App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento;
 use App\Modules\SeguimientoEgresado\Models\Cohorte;
+use App\Modules\SeguimientoEgresado\Models\Egresado;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
 use App\Modules\SeguimientoEgresado\Services\Accesos\EnlaceInvitacion;
+use App\Modules\SeguimientoEgresado\Services\PadronImportService;
 use Tests\Support\SeguimientoEgresado\ComoPersonal;
 use Tests\Support\SeguimientoEgresado\UsaBaseDeDatos;
 use Tests\TestCase;
@@ -79,5 +81,27 @@ class EnlacesInvitacionTest extends TestCase
 
         $this->assertSame($total, InvitacionEgresado::where('id_campania', $campania->id)->count());
         $this->assertSame([], session('enlaces_emitidos'), 'ya estaban convocados: no hay enlaces nuevos');
+    }
+
+    public function test_la_campania_no_convoca_a_alumnos_aptos_hasta_confirmar_su_egreso(): void
+    {
+        $campania = $this->campaniaDeLa2019();
+        $cohorte = Cohorte::where('anio_ingreso', 2019)->first();
+        $ruta = tempnam(sys_get_temp_dir(), 'apto_');
+        file_put_contents($ruta, 'matricula,tipo_doc,numero_documento,nombres,apellido_paterno,cohorte,correo_institucional
+1021900777,DNI,70007777,Alumno Apto,Quispe,2019,apto.campania@correo.test
+');
+        (new PadronImportService)->importarArchivo($ruta);
+        @unlink($ruta);
+        $apto = Egresado::where('codigo_matricula', '1021900777')->firstOrFail();
+        $this->assertSame($cohorte->id, $apto->id_cohorte);
+
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
+        $this->assertFalse(InvitacionEgresado::where('id_campania', $campania->id)->where('id_egresado', $apto->id)->exists(), 'un alumno apto todavía no es egresado');
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $apto->id), ['fecha_egreso' => '2025-07-18'])->assertOk();
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
+
+        $this->assertTrue(InvitacionEgresado::where('id_campania', $campania->id)->where('id_egresado', $apto->id)->exists());
     }
 }

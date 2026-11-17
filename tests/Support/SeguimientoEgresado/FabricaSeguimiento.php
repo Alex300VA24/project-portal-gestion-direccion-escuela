@@ -44,6 +44,17 @@ trait FabricaSeguimiento
         ], $cambios));
     }
 
+    /** Deja al egresado con la etapa EGRESADO vigente (las campañas solo convocan a quienes ya egresaron). */
+    protected function darPorEgresado(int $egresadoId): void
+    {
+        DB::table('seguimiento_egresado.historial_estado_academico')->insert([
+            'id_egresado' => $egresadoId,
+            'id_estado_academico' => DB::table('seguimiento_egresado.cat_estado_academico')->where('codigo', 'EGRESADO')->value('id'),
+            'apto_graduarse' => true,
+            'id_usuario_registro' => $this->crearUsuarioInterno(),
+        ]);
+    }
+
     protected function crearCampania(array $cambios = []): int
     {
         return DB::table('seguimiento_egresado.campania_seguimiento')->insertGetId(array_merge([

@@ -33,6 +33,7 @@ class FlujoCompletoPostgresTest extends TestCase
     public function test_desde_la_emision_hasta_el_historial_del_egresado(): void
     {
         $egresado = $this->crearEgresado(['nombres' => 'Marisol', 'apellido_paterno' => 'Torres', 'apellido_materno' => 'Linares']);
+        $this->darPorEgresado($egresado);
         $cohorte = (int) DB::table('seguimiento_egresado.egresado')->where('id', $egresado)->value('id_cohorte');
         $campania = $this->crearCampania(['fecha_inicio' => now()->subDays(5)->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString()]);
         DB::table('seguimiento_egresado.campania_cohorte')->insert(['id_campania' => $campania, 'id_cohorte' => $cohorte]);
@@ -76,6 +77,7 @@ class FlujoCompletoPostgresTest extends TestCase
     {
         Mail::fake();
         $egresado = $this->crearEgresado(['nombres' => 'Elena', 'apellido_paterno' => 'Quispe', 'apellido_materno' => 'Rojas']);
+        $this->darPorEgresado($egresado);
         $cohorte = (int) DB::table('seguimiento_egresado.egresado')->where('id', $egresado)->value('id_cohorte');
         $campania = $this->crearCampania(['fecha_inicio' => now()->subDays(5)->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString()]);
         DB::table('seguimiento_egresado.campania_cohorte')->insert(['id_campania' => $campania, 'id_cohorte' => $cohorte]);
