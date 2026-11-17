@@ -40,6 +40,13 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
    docker compose exec app php artisan module:migrate tesis-proyecto-tesis
    ```
 
+   > **Nota:** si `docker compose up -d --build app` termina con `failed to execute bake`, construye la imagen aparte y luego levanta el servicio:
+   >
+   > ```bash
+   > docker build -t portal-gestion-direccion:latest .
+   > docker compose up -d app
+   > ```
+
 2. Siembra los escenarios **dentro** del contenedor `app` y como `www-data`, para que los PDF de ejemplo queden en el disco del portal. El seeder también siembra la rúbrica, los tipos de solicitud y las cuentas demo.
 
    ```bash

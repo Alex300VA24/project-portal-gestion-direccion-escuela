@@ -17,6 +17,8 @@ docker compose exec -u www-data -e APP_ENV=local app php artisan db:seed --force
   --class="App\Modules\TesisProyectoTesis\Database\Seeders\EscenariosTesisSeeder"
 ```
 
+> **Nota:** si `docker compose up -d --build app` termina con `failed to execute bake`, usa `docker build -t portal-gestion-direccion:latest .` y después `docker compose up -d app`.
+
 1. Entra en `http://localhost:8000/login` con cualquier cuenta demo, por ejemplo `director@portal.local`. La contraseña demo está en el [Manual de flujos](MANUAL_FLUJOS.md#preparación).
 2. Abre `/tesis-proyecto-tesis`.
 
