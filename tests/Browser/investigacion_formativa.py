@@ -8,10 +8,13 @@ The script changes only demo data through the normal browser forms.
 import base64
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 class Browser:
@@ -30,6 +33,8 @@ class Browser:
         session = self.call("POST", "/session", {
             "capabilities": {"alwaysMatch": {
                 "browserName": "firefox",
+                "pageLoadStrategy": "eager",
+                "timeouts": {"pageLoad": 20000, "script": 10000, "implicit": 0},
                 "moz:firefoxOptions": {
                     "binary": os.environ.get("FIREFOX_BINARY", "/usr/bin/firefox"),
                     "args": ["-headless"],
@@ -39,14 +44,14 @@ class Browser:
         self.prefix = "/session/" + session["sessionId"]
         self.version = session["capabilities"]["browserVersion"]
 
-    def call(self, method, path, data=None):
+    def call(self, method, path, data=None, timeout=40):
         request = urllib.request.Request(
             self.endpoint + self.prefix + path,
             data=None if data is None else json.dumps(data).encode(),
             headers={"Content-Type": "application/json"}, method=method,
         )
         try:
-            with urllib.request.urlopen(request, timeout=40) as response:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
                 value = json.load(response)["value"]
         except urllib.error.HTTPError as error:
             raise RuntimeError(error.read().decode()) from error
@@ -66,7 +71,7 @@ class Browser:
 
     def visit(self, path):
         self.call("POST", "/url", {"url": self.app + path})
-        self.wait(lambda: self.js("return document.readyState") == "complete")
+        self.wait(lambda: self.js("return document.readyState") != "loading")
 
     def section(self, workspace, screen, name="completa"):
         section_id = self.manifest["secciones"][name]
@@ -129,6 +134,83 @@ class Browser:
         self.wait(lambda: self.call("GET", "/url") == self.app + "/")
         self.visit("/login")
 
+    def configure_section(self):
+        self.section("docente", "competencias", "incompleta")
+        self.click('input[name="competencia_ids[]"]')
+        self.button("Guardar competencias")
+        self.wait(lambda: "Competencias guardadas." in self.text())
+        self.section("docente", "competencias", "incompleta")
+        self.check("Competency selection persists", lambda: self.js(
+            'return document.querySelector(\'input[name="competencia_ids[]"]\').checked',
+        ))
+        self.capture("competencias-guardadas")
+
+        self.section("docente", "rubrica", "incompleta")
+        self.fill("#rubrica-nombre", "Rúbrica creada en navegador")
+        self.fill("#criterio-0-descripcion", "Justificación del problema")
+        for position in range(4):
+            self.fill(f"#nivel-0-{position}-descripcion", f"Descripción del nivel {position + 1}")
+            self.fill(f"#nivel-0-{position}-puntaje", str(position + 1))
+        self.button("Guardar rúbrica")
+        self.wait(lambda: "Rúbrica guardada." in self.text())
+        self.section("docente", "rubrica", "incompleta")
+        self.check("Rubric persists", lambda: self.js(
+            'return document.getElementById("rubrica-nombre").value',
+        ) == "Rúbrica creada en navegador")
+        self.capture("rubrica-guardada")
+
+        self.section("docente", "cronograma", "incompleta")
+        now = datetime.now(ZoneInfo("America/Lima"))
+        dates = [(now + timedelta(days=days)).strftime("%Y-%m-%dT12:00") for days in (30, 60, 90)]
+        set_dates = """
+            for (let i = 0; i < arguments[0].length; i++) {
+                const input = document.getElementById('fecha-' + i);
+                input.value = arguments[0][i];
+                input.dispatchEvent(new Event('input', {bubbles:true}));
+                input.dispatchEvent(new Event('change', {bubbles:true}));
+            }
+        """
+        self.js(set_dates, list(reversed(dates)))
+        self.button("Guardar cronograma")
+        self.wait(lambda: "Las fechas deben respetar el orden" in self.text())
+        self.check("Schedule rejects reversed dates", lambda: "Las fechas deben respetar el orden" in self.text())
+        self.js(set_dates, dates)
+        self.button("Guardar cronograma")
+        self.wait(lambda: "Cronograma guardado." in self.text())
+        self.section("docente", "cronograma", "incompleta")
+        self.check("Schedule preserves Lima input", lambda: self.js(
+            'return [0,1,2].map(i=>document.getElementById("fecha-"+i).value)',
+        ) == dates)
+        self.check("Configuration is complete", lambda: "La configuración de la sección está completa." in self.text())
+        self.capture("cronograma-guardado")
+        self.logout()
+        self.login("docente-a")
+        self.section("docente", "rubrica", "incompleta")
+        self.check("Configuration persists after login", lambda: self.js(
+            'return document.getElementById("rubrica-nombre").value',
+        ) == "Rúbrica creada en navegador")
+
+    def toggle_section(self):
+        self.visit("/investigacion-formativa/director/cursos")
+        section_id = self.manifest["secciones"]["deshabilitada"]
+        selector = f'form[action$="/{section_id}/habilitacion"]'
+        for before, after in (("1", "0"), ("0", "1")):
+            self.check("Section toggle initial state " + before, lambda: self.js(
+                'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
+                selector,
+            ) == before)
+            self.click(selector + " button")
+            self.wait(lambda: self.js(
+                'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
+                selector,
+            ) == after)
+            self.visit("/investigacion-formativa/director")
+            self.visit("/investigacion-formativa/director/cursos")
+            self.check("Section toggle persists " + after, lambda: self.js(
+                'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
+                selector,
+            ) == after)
+
     def run(self):
         self.login("coordinador")
         self.capture("alumno-cursos")
@@ -163,6 +245,7 @@ class Browser:
 
         self.login("docente-a")
         self.capture("docente-cursos")
+        self.configure_section()
         for screen in ("competencias", "rubrica", "cronograma"):
             self.section("docente", screen)
             self.capture("docente-" + screen)
@@ -184,6 +267,7 @@ class Browser:
         self.capture("director-resumen")
         self.visit("/investigacion-formativa/director/cursos")
         self.capture("director-cursos")
+        self.toggle_section()
         self.section("director", "encuesta")
         self.capture("director-encuesta-vacia")
         self.fill('textarea[name="preguntas[0]"]', "¿El trabajo fortalece la investigación?")
@@ -221,6 +305,25 @@ class Browser:
         self.capture("director-resultados")
         self.check("Survey report", lambda: "5.00" in self.text() and "Comentarios confidenciales" in self.text())
         self.check("Report omits respondent name", lambda: "Demo integrante" not in self.text())
+        self.section("director", "encuesta")
+        self.button("Cerrar encuesta")
+        self.wait(lambda: "La encuesta se cerró" in self.text())
+        self.section("director", "encuesta")
+        self.check("Survey remains closed", lambda: "Cerrar encuesta" not in self.text() and "Publicar encuesta" not in self.text())
+        self.capture("director-encuesta-cerrada")
+        self.login("integrante")
+        self.section("alumno", "encuesta")
+        self.check("Saved response survives closure", lambda: "Respuesta registrada" in self.text())
+        self.login("director-a")
+        self.js("""
+            const select = document.getElementById('filtro-periodo');
+            select.selectedIndex = select.options.length - 1;
+            select.dispatchEvent(new Event('change', {bubbles:true}));
+        """)
+        self.button("Filtrar")
+        self.wait(lambda: "periodo=" in self.call("GET", "/url"))
+        self.check("History period filter", lambda: "IFD-historica" in self.text() and "IFD-completa" not in self.text())
+        self.capture("director-historial-filtrado")
         self.section("director", "resultados", "historica")
         self.capture("director-historial")
         self.check("Closed history", lambda: "Cerrada" in self.text())
@@ -240,8 +343,17 @@ if __name__ == "__main__":
         }
         (browser.output / "results.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
     except Exception:
-        (browser.output / "failure.html").write_text(browser.call("GET", "/source"))
-        (browser.output / "failure.png").write_bytes(base64.b64decode(browser.call("GET", "/screenshot")))
+        try:
+            (browser.output / "failure.html").write_text(browser.call("GET", "/source", timeout=5))
+            (browser.output / "failure.png").write_bytes(base64.b64decode(browser.call("GET", "/screenshot", timeout=5)))
+        except (OSError, RuntimeError) as capture_error:
+            print("Could not capture browser failure:", capture_error, file=sys.stderr)
         raise
     finally:
-        browser.call("DELETE", "", None)
+        failed = sys.exc_info()[0] is not None
+        try:
+            browser.call("DELETE", "", None, timeout=5)
+        except (OSError, RuntimeError) as close_error:
+            if not failed:
+                raise
+            print("Could not close failed browser session:", close_error, file=sys.stderr)

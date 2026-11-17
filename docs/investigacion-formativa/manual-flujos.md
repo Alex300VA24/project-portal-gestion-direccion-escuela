@@ -24,7 +24,7 @@ export IF_DEMO_PASSWORD
 export IF_DEMO_EXPORT_DIR="/tmp/if-demo-exports"
 php artisan db:seed --class='App\Modules\InvestigacionFormativa\Database\Seeders\InvestigacionDemoSeeder'
 npm run build
-php artisan serve --host=127.0.0.1 --port=8059 --no-reload
+PHP_CLI_SERVER_WORKERS=4 php artisan serve --host=127.0.0.1 --port=8059 --no-reload
 ```
 
 El servidor PostgreSQL y las credenciales de estos ejemplos corresponden a la verificación local. Adapte el puerto y el usuario a su entorno. La base debe contener `_test_demo_` en su nombre. El seeder solo funciona en `local` o `testing`. No imprime la contraseña. Crea cuentas nuevas; no cambia contraseñas ni roles de cuentas existentes.
@@ -148,4 +148,4 @@ export IF_BROWSER_OUTPUT=/ruta/nueva/para/evidencia
 python3 tests/Browser/investigacion_formativa.py
 ```
 
-Use un lote sin grupos ni encuestas previas. El destino de evidencia debe ser nuevo y quedar fuera de los archivos versionados. Se guardan HTML, capturas y `results.json`. El recorrido usa formularios reales, comprueba persistencia y compara anchos de 1280 y 390 píxeles. No comprueba carga, descarga ni evaluación en navegador mientras falte G4. Un resultado de este script no equivale a aceptación completa ni a una auditoría de accesibilidad.
+Use un lote sin grupos ni encuestas previas. El destino de evidencia debe ser nuevo y quedar fuera de los archivos versionados. Se guardan HTML, capturas y `results.json`. El recorrido guarda competencias, rúbrica y cronograma, comprueba fechas fuera de orden, habilita y deshabilita una sección, forma un grupo, revisa su título, publica y cierra una encuesta, registra una respuesta y filtra el historial. Comprueba persistencia mediante páginas nuevas, recarga de la ficha del grupo e inicio de sesión. Compara anchos de 1280 y 390 píxeles. No comprueba carga, descarga ni evaluación en navegador mientras falte G4. Un resultado de este script no equivale a aceptación completa ni a una auditoría de accesibilidad.

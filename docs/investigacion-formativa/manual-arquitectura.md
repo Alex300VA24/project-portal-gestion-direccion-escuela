@@ -137,7 +137,7 @@ git diff --check
 
 En bases exclusivas con `_test_demo_` también se ejecutan las pruebas del seeder. La prueba de concurrencia necesita otra base nueva con `_test_concurrency_`, todas las migraciones y `RUN_CONCURRENCY_TESTS=1`. No la ejecute sobre datos que quiera conservar. Consulte [manual-flujos.md](manual-flujos.md) para generar datos y ejecutar Firefox.
 
-El Dockerfile crea dependencias sin paquetes de desarrollo, compila Vite y sirve `public` con PHP/Apache. El contenedor de ejecución no es el entorno de PHPUnit. No se verificó la construcción de la imagen en esta entrega porque no hay Docker ni Podman disponibles en el entorno de trabajo. Las verificaciones locales no sustituyen esa comprobación de despliegue.
+El Dockerfile crea dependencias sin paquetes de desarrollo, compila Vite y sirve `public` con PHP/Apache. El contenedor de ejecución no es el entorno de PHPUnit. Se intentó construir la imagen con Podman temporal y sin privilegios. El motor pudo iniciar, pero la construcción se bloqueó antes de ejecutar el Dockerfile porque falta el archivo de configuración del host `policy.json`. No se cambió la configuración del sistema. La imagen de producción sigue sin verificar. Las verificaciones locales no sustituyen esa comprobación de despliegue.
 
 ## Reglas implementadas y límites de aceptación
 
