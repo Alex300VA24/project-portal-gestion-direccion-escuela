@@ -64,7 +64,6 @@
       </nav>
     </header>
     <main class="sg-main" id="contenido" tabindex="-1">
-      @include('modules.seguimiento-egresado.egresado._avisos')
       @yield('content')
     </main>
     <footer class="sg-footer"><div class="sg-container sg-footer-inner"><span>Universidad Nacional de Trujillo</span></div></footer>
@@ -103,6 +102,7 @@
     });
   })();
 </script>
+@include('modules.seguimiento-egresado.partials.dialogo')
 @stack('scripts')
 </body>
 </html>

@@ -61,7 +61,7 @@ final class ContactoInicialController extends Controller
 
         return redirect()->route('seguimiento-egresado.padron.contacto-inicial', request()->only('cohorte', 'q', 'estado'))
             ->with('enlaces_contacto', [$enlace])
-            ->with('resumen_contacto', $this->resumen([$enlace]));
+            ->with('success', $this->resumen([$enlace]));
     }
 
     public function invitarCohorte(Request $request): RedirectResponse
@@ -83,7 +83,7 @@ final class ContactoInicialController extends Controller
 
         return redirect()->route('seguimiento-egresado.padron.contacto-inicial', ['cohorte' => $datos['cohorte']])
             ->with('enlaces_contacto', $resultado['enlaces'])
-            ->with('resumen_contacto', $resumen);
+            ->with('success', $resumen);
     }
 
     /** Dice la verdad sobre el correo: cuántos salieron de verdad y cuántos quedan para entregar a mano. */

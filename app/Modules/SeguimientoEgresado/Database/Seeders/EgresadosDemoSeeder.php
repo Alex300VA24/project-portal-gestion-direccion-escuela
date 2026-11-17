@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  *   3. Todo completo ................. Camila Sánchez Ulloa        demo-historial-camila-6B9X2D7R
  *
  * Además: tres egresados con contacto y sin invitación (Joaquín, Fiorella y Luis Alberto, en la cohorte de la campaña) y
- * tres sin contacto de otra cohorte, DEMO-2020-I (Daniela, Sebastián y Marisol), para mostrar el contacto inicial por cohorte.
+ * tres sin contacto de otra cohorte, PROM-2020-I (Daniela, Sebastián y Marisol), para mostrar el contacto inicial por cohorte.
  *
  * En la BD solo se guarda el SHA-256 de cada token. Se puede ejecutar más de una vez sin duplicar datos.
  * Requiere los catálogos (vienen en la migración del módulo).
@@ -37,8 +37,8 @@ class EgresadosDemoSeeder extends Seeder
             $cohorte = $this->cohorte();
 
             $valeria = $this->egresado($cohorte, '2019100231', '72145830', 'Valeria', 'Quispe', 'Mendoza', 'vquispe@unitru.edu.pe', null, null);
-            $renzo = $this->egresado($cohorte, '2019100187', '73920415', 'Renzo', 'Paredes', 'Villanueva', 'rparedes@unitru.edu.pe', '2024-07-19', '2024-I');
-            $camila = $this->egresado($cohorte, '2019100094', '70388261', 'Camila', 'Sánchez', 'Ulloa', 'csanchez@unitru.edu.pe', '2023-12-15', '2023-II');
+            $renzo = $this->egresado($cohorte, '2019100187', '73920415', 'Renzo', 'Paredes', 'Villanueva', 'acortegana@unitru.edu.pe', '2024-07-19', '2024-I');
+            $camila = $this->egresado($cohorte, '2019100094', '70388261', 'Camila', 'Sánchez', 'Ulloa', 'agamboaa@unitru.edu.pe', '2023-12-15', '2023-II');
 
             // Valeria está por egresar (si el catálogo no trae «PROXIMO», queda como egresada).
             $this->estadoAcademico($valeria, $this->idDe('cat_estado_academico', 'PROXIMO') ?? $this->idDe('cat_estado_academico', 'EGRESADO'), false, $usuario);
@@ -77,16 +77,16 @@ class EgresadosDemoSeeder extends Seeder
 
         return $id !== null ? (int) $id : (int) DB::table('seguimiento_egresado.usuario_interno')->insertGetId([
             'id_rol' => $this->idDe('rol_interno', 'SECRETARIA'),
-            'nombre_completo' => 'Secretaría Académica (demostración)',
+            'nombre_completo' => 'Secretaría Académica',
             'correo_institucional' => 'secretaria.demo@unitru.edu.pe',
             'password_hash' => '!sin-acceso',
         ]);
     }
 
-    private function cohorte(string $codigo = 'DEMO-2019-I', int $anio = 2019): int
+    private function cohorte(string $codigo = 'PROM-2019-I', int $anio = 2019): int
     {
-        $plan = DB::table('seguimiento_egresado.plan_curricular')->where('codigo_version', 'PC-DEMO-2018')->value('id')
-            ?? DB::table('seguimiento_egresado.plan_curricular')->insertGetId(['codigo_version' => 'PC-DEMO-2018', 'vigencia_desde' => '2018-01-01', 'estado' => 'VIGENTE']);
+        $plan = DB::table('seguimiento_egresado.plan_curricular')->where('codigo_version', 'PC-2018')->value('id')
+            ?? DB::table('seguimiento_egresado.plan_curricular')->insertGetId(['codigo_version' => 'PC-2018', 'vigencia_desde' => '2018-01-01', 'estado' => 'VIGENTE']);
 
         $existente = DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', $codigo)->where('anio_ingreso', $anio)->value('id');
 
@@ -143,12 +143,12 @@ class EgresadosDemoSeeder extends Seeder
     }
 
     /**
-     * Tres egresados de otra cohorte (DEMO-2020-I, que ninguna campaña convoca) sin contacto y sin enlace: en
+     * Tres egresados de otra cohorte (PROM-2020-I, que ninguna campaña convoca) sin contacto y sin enlace: en
      * Padrón → «Contacto inicial de egresados», «Invitar a la cohorte» genera un enlace personal para cada uno.
      */
     private function egresadosSinContacto(int $usuario): void
     {
-        $cohorte = $this->cohorte('DEMO-2020-I', 2020);
+        $cohorte = $this->cohorte('PROM-2020-I', 2020);
 
         foreach ([
             ['2020100031', '76402815', 'Daniela', 'Vásquez', 'Lozano', 'dvasquez@unitru.edu.pe', '2025-07-18', '2025-I'],
@@ -164,7 +164,7 @@ class EgresadosDemoSeeder extends Seeder
     {
         if (! DB::table('seguimiento_egresado.contacto_egresado')->where('id_egresado', $egresado)->exists()) {
             DB::table('seguimiento_egresado.contacto_egresado')->insert([
-                'id_egresado' => $egresado, 'correo_personal' => 'renzo.paredes92@gmail.com', 'celular_whatsapp' => '+51 944 120 387',
+                'id_egresado' => $egresado, 'correo_personal' => 'alvaroenrique080199@gmail.com', 'celular_whatsapp' => '+51 944 120 387',
                 'telefono_fijo' => null, 'direccion' => 'Jr. Pizarro 540, Trujillo', 'vigente_desde' => '2024-08-05 09:30:00-05:00', 'origen_registro' => 'SECRETARIA',
             ]);
         }
@@ -183,7 +183,7 @@ class EgresadosDemoSeeder extends Seeder
             'vigente_desde' => '2024-01-10 11:00:00-05:00', 'vigente_hasta' => '2026-10-12 08:45:00-05:00', 'origen_registro' => 'FORMULARIO',
         ]);
         DB::table('seguimiento_egresado.contacto_egresado')->insert([
-            'id_egresado' => $egresado, 'correo_personal' => 'camila.sanchez.u@gmail.com', 'celular_whatsapp' => '+51 987 654 321',
+            'id_egresado' => $egresado, 'correo_personal' => 'arimanuelg544@gmail.com', 'celular_whatsapp' => '+51 987 654 321',
             'telefono_fijo' => '044 245817', 'direccion' => 'Calle Los Cedros 275, Urb. San Andrés, Trujillo',
             'vigente_desde' => '2026-10-12 08:45:00-05:00', 'vigente_hasta' => null, 'origen_registro' => 'FORMULARIO',
         ]);
@@ -192,7 +192,7 @@ class EgresadosDemoSeeder extends Seeder
     private function campania(string $nombre, string $periodo, string $inicio, string $fin, string $estado, int $usuario, int $cohorte): int
     {
         $id = DB::table('seguimiento_egresado.campania_seguimiento')->where('nombre', $nombre)->value('id') ?? DB::table('seguimiento_egresado.campania_seguimiento')->insertGetId([
-            'nombre' => $nombre, 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'horizonte_anios' => 3, 'descripcion' => 'Campaña de demostración',
+            'nombre' => $nombre, 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'horizonte_anios' => 3, 'descripcion' => 'Seguimiento a egresados',
             'periodo' => $periodo, 'fecha_inicio' => $inicio, 'fecha_fin' => $fin, 'estado' => $estado, 'id_usuario_creacion' => $usuario,
         ]);
 

@@ -3,13 +3,6 @@
 @section('section_name', 'Contacto inicial')
 
 @section('content')
-@php
-  $mailer = config('mail.default');
-  $correoActivo = config('seguimiento-egresado.correo.enviar');
-  $redirigidoA = config('seguimiento-egresado.correo.redirigir_a');
-  $sinEntregaReal = in_array($mailer, ['log', 'array'], true);
-@endphp
-
 <section class="sg-heading" aria-labelledby="sg-contacto-inicial-title">
   <div class="sg-kicker">MÓDULO DE SEGUIMIENTO AL EGRESADO · PADRÓN OFICIAL</div>
   <h1 id="sg-contacto-inicial-title">Contacto inicial de egresados</h1>
@@ -22,13 +15,6 @@
   </div>
 </section>
 
-@if(session('resumen_contacto'))
-  <div class="sg-alert" role="status" style="margin-bottom: var(--sg-space-4); border-left-color: var(--sg-success); background: #e7f7f0;">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
-    <p>{{ session('resumen_contacto') }}</p>
-  </div>
-@endif
-
 @if($errors->any())
   <div class="sg-alert sg-alert-danger" role="alert" style="margin-bottom: var(--sg-space-4);">
     @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
@@ -40,22 +26,6 @@
         @endforeach
       </ul>
     </div>
-  </div>
-@endif
-
-@if(! $correoActivo || $sinEntregaReal || $redirigidoA)
-  <div class="sg-alert sg-alert-warning" role="note" style="margin-bottom: var(--sg-space-4);">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'mail'])
-    <p>
-      @if(! $correoActivo)
-        El envío por correo está desactivado: los enlaces solo se muestran aquí.
-      @elseif($sinEntregaReal)
-        El correo no está conectado a un servidor de envío: los enlaces solo se muestran aquí y hay que entregarlos por otro medio.
-      @endif
-      @if($redirigidoA)
-        Todos los correos se redirigen a <strong>{{ $redirigidoA }}</strong>, no llegan a los egresados.
-      @endif
-    </p>
   </div>
 @endif
 

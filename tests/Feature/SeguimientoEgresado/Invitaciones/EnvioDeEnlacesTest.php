@@ -63,6 +63,25 @@ class EnvioDeEnlacesTest extends TestCase
         );
     }
 
+    public function test_con_lista_de_permitidos_solo_se_envia_a_esas_direcciones(): void
+    {
+        Mail::fake();
+        config(['seguimiento-egresado.correo.permitidos' => ['otro.permitido@correo.test']]);
+        $invitacion = $this->invitacion();
+
+        $resultado = app(EnvioDeEnlaces::class)->enviar($invitacion, 'token-de-prueba');
+
+        $this->assertSame(EstadoEnvio::Desactivado, $resultado->estado);
+        Mail::assertNothingSent();
+        $this->assertNull($invitacion->refresh()->enviado_en);
+
+        config(['seguimiento-egresado.correo.permitidos' => ['egresado.prueba@unitru.edu.pe']]);
+        $resultado = app(EnvioDeEnlaces::class)->enviar($invitacion, 'token-de-prueba');
+
+        $this->assertSame(EstadoEnvio::Enviado, $resultado->estado);
+        Mail::assertSent(InvitacionEgresadoMail::class, 1);
+    }
+
     public function test_si_ya_dejo_su_contacto_el_correo_va_al_personal(): void
     {
         Mail::fake();

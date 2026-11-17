@@ -40,6 +40,11 @@ final class EnvioDeEnlaces
             return new ResultadoEnvio(EstadoEnvio::SinCorreo);
         }
 
+        // Lista de correos permitidos: se revisa la dirección real del egresado, no la de redirección.
+        if (! $this->estaPermitido($direccion)) {
+            return new ResultadoEnvio(EstadoEnvio::Desactivado);
+        }
+
         $correo = new InvitacionEgresadoMail(
             nombre: $egresado->nombres,
             url: url('seguimiento-egresado/acceso/'.$tokenPlano),
@@ -69,6 +74,14 @@ final class EnvioDeEnlaces
         ]);
 
         return new ResultadoEnvio(EstadoEnvio::Enviado, $destino, $redirigidoA !== null);
+    }
+
+    /** Sin lista configurada se puede enviar a cualquiera; con lista, solo a las direcciones que figuran en ella. */
+    private function estaPermitido(?string $direccion): bool
+    {
+        $permitidos = config('seguimiento-egresado.correo.permitidos', []);
+
+        return $permitidos === [] || ($direccion !== null && in_array(mb_strtolower(trim($direccion)), $permitidos, true));
     }
 
     /**

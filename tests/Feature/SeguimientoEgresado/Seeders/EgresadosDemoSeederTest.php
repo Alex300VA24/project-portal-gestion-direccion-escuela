@@ -61,7 +61,7 @@ class EgresadosDemoSeederTest extends TestCase
     {
         Mail::fake();
         config(['mail.default' => 'smtp', 'seguimiento-egresado.correo.enviar' => true]);
-        $cohorte = DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'DEMO-2020-I')->value('id');
+        $cohorte = DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'PROM-2020-I')->value('id');
         $this->assertSame(3, DB::table('seguimiento_egresado.egresado')->where('id_cohorte', $cohorte)->count());
 
         $this->actingAs($this->secretaria())

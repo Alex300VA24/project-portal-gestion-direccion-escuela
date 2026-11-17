@@ -41,6 +41,7 @@ Estados que ve la Secretaría (`App\Modules\SeguimientoEgresado\Services\Invitac
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | `hello@example.com` | Remitente. En producción debe ser una dirección del dominio oficial. |
 | `SG_CORREO_ENVIAR` | `true` | `false` apaga el envío; los enlaces siguen saliendo en pantalla. |
 | `SG_CORREO_REDIRIGIR_A` | vacío | Si tiene un correo, **todo** el correo va a esa dirección. Obligatorio con datos de prueba. En producción se deja vacío. |
+| `SG_CORREO_PERMITIDOS` | vacío | Lista de direcciones separadas por comas. Si tiene valores, **solo** se envía a esas direcciones; a cualquier otra no sale nada y su enlace queda para entregarlo a mano («Enlace listo para entregar»). Vacío = sin límite. |
 | `SG_DIAS_CONTACTO_INICIAL` | `30` | Días de vigencia del enlace de contacto inicial. El de campaña vence con la campaña. |
 
 Después de cambiar el `.env`, con la configuración en caché: `php artisan config:clear`.

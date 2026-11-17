@@ -689,14 +689,6 @@
   </div>
 </section>
 
-<!-- Notificaciones de Sesión -->
-@if(session('success'))
-  <div class="sg-alert" role="status" style="margin-bottom: var(--sg-space-5); border-left-color: var(--sg-success); background: var(--sg-success-soft);">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
-    <p><strong>Operación exitosa:</strong> {{ session('success') }}</p>
-  </div>
-@endif
-
 @if($errors->any())
   <div class="sg-alert sg-alert-danger" role="alert" style="margin-bottom: var(--sg-space-5);">
     @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])

@@ -105,6 +105,7 @@
     });
   })();
 </script>
+@include('modules.seguimiento-egresado.partials.dialogo')
 @stack('scripts')
 </body>
 </html>

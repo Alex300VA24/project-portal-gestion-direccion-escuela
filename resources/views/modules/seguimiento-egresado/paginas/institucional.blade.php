@@ -23,16 +23,6 @@
 </section>
 
 {{-- MENSAJES DE ESTADO / ALERTAS --}}
-@if(session('success'))
-  <div class="sg-alert" role="status" style="margin-bottom: var(--sg-space-4); border-left-color: var(--sg-success); background: #e7f7f0;">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
-    <div>
-      <strong>Acción de Dirección procesada:</strong>
-      <p>{{ session('success') }}</p>
-    </div>
-  </div>
-@endif
-
 @if($errors->any())
   <div class="sg-alert sg-alert-danger" role="alert" style="margin-bottom: var(--sg-space-4);">
     @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])

@@ -19,16 +19,6 @@
 </section>
 
 {{-- MENSAJES DE ESTADO / ALERTAS --}}
-@if(session('success'))
-  <div class="sg-alert" role="status" style="margin-bottom: var(--sg-space-4); border-left-color: var(--sg-success); background: #e7f7f0;">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
-    <div>
-      <strong>Operación exitosa:</strong>
-      <p>{{ session('success') }}</p>
-    </div>
-  </div>
-@endif
-
 @if(session('enlaces_emitidos'))
   <section class="sg-panel" style="margin-bottom: var(--sg-space-4);" aria-labelledby="sg-enlaces-emitidos-titulo">
     <h2 class="sg-section-title" id="sg-enlaces-emitidos-titulo">Enlaces personales de las invitaciones</h2>

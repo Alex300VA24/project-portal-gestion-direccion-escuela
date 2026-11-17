@@ -121,8 +121,8 @@ class ContactoInicialTest extends TestCase
         $enlaces = session('enlaces_contacto');
         $this->assertCount($egresados->count() - 2, $enlaces);
         $this->assertSame($previos + count($enlaces), InvitacionEgresado::where('proposito', 'CONTACTO_INICIAL')->count());
-        $this->assertStringContainsString('Se omitieron 1 que ya dejaron su contacto', session('resumen_contacto'));
-        $this->assertStringContainsString('Se omitieron 1 que ya tienen un enlace pendiente', session('resumen_contacto'));
+        $this->assertStringContainsString('Se omitieron 1 que ya dejaron su contacto', session('success'));
+        $this->assertStringContainsString('Se omitieron 1 que ya tienen un enlace pendiente', session('success'));
     }
 
     public function test_el_egresado_abre_su_enlace_deja_su_contacto_y_la_invitacion_queda_completada(): void
