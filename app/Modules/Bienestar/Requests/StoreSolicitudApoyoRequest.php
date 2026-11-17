@@ -11,7 +11,7 @@ final class StoreSolicitudApoyoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(BienestarPermissions::SOLICITAR) ?? false;
+        return BienestarPermissions::check($this->user(), BienestarPermissions::SOLICITAR);
     }
 
     public function rules(): array

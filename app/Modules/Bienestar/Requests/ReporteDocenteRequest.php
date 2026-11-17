@@ -11,7 +11,7 @@ final class ReporteDocenteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(BienestarPermissions::REPORTAR) ?? false;
+        return BienestarPermissions::check($this->user(), BienestarPermissions::REPORTAR);
     }
 
     public function rules(): array

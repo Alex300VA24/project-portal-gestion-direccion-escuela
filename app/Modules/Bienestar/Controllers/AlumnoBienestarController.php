@@ -21,9 +21,7 @@ final class AlumnoBienestarController extends Controller
         Gate::authorize(BienestarPermissions::SOLICITAR);
 
         $actor = ActorBienestarResolver::resolve($request->user());
-        if (! $actor->idEstudiante) {
-            abort(403, 'Su cuenta no tiene un perfil de estudiante vinculado.');
-        }
+        ActorBienestarResolver::ensureEstudiante($actor);
 
         $solicitudes = SolicitudApoyo::query()
             ->where('id_estudiante', $actor->idEstudiante)
@@ -37,9 +35,12 @@ final class AlumnoBienestarController extends Controller
         ]);
     }
 
-    public function crearSolicitud(): View
+    public function crearSolicitud(Request $request): View
     {
         Gate::authorize(BienestarPermissions::SOLICITAR);
+
+        $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureEstudiante($actor);
 
         $beneficios = Beneficio::where('activo', true)->get();
 
@@ -51,9 +52,7 @@ final class AlumnoBienestarController extends Controller
     public function guardarSolicitud(StoreSolicitudApoyoRequest $request): RedirectResponse
     {
         $actor = ActorBienestarResolver::resolve($request->user());
-        if (! $actor->idEstudiante) {
-            abort(403, 'Su cuenta no tiene un perfil de estudiante vinculado.');
-        }
+        ActorBienestarResolver::ensureEstudiante($actor);
 
         SolicitudApoyo::create([
             'id_estudiante' => $actor->idEstudiante,
@@ -73,9 +72,7 @@ final class AlumnoBienestarController extends Controller
         Gate::authorize(BienestarPermissions::SOLICITAR);
 
         $actor = ActorBienestarResolver::resolve($request->user());
-        if (! $actor->idEstudiante) {
-            abort(403, 'Su cuenta no tiene un perfil de estudiante vinculado.');
-        }
+        ActorBienestarResolver::ensureEstudiante($actor);
 
         $citas = Cita::query()
             ->whereHas('caso', function ($q) use ($actor) {

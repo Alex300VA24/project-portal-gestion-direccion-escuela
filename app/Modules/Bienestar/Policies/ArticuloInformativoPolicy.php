@@ -19,21 +19,21 @@ final class ArticuloInformativoPolicy
             return true;
         }
 
-        return $user !== null && $user->can(BienestarPermissions::GESTIONAR);
+        return $user !== null && BienestarPermissions::check($user, BienestarPermissions::GESTIONAR);
     }
 
     public function create(User $user): bool
     {
-        return $user->can(BienestarPermissions::GESTIONAR);
+        return BienestarPermissions::check($user, BienestarPermissions::GESTIONAR);
     }
 
     public function update(User $user, ArticuloInformativo $articulo): bool
     {
-        return $user->can(BienestarPermissions::GESTIONAR);
+        return BienestarPermissions::check($user, BienestarPermissions::GESTIONAR);
     }
 
     public function delete(User $user, ArticuloInformativo $articulo): bool
     {
-        return $user->can(BienestarPermissions::GESTIONAR);
+        return BienestarPermissions::check($user, BienestarPermissions::GESTIONAR);
     }
 }

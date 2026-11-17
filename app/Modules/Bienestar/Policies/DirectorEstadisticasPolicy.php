@@ -9,7 +9,7 @@ final class DirectorEstadisticasPolicy
 {
     public function view(User $user): bool
     {
-        return $user->can(BienestarPermissions::ESTADISTICAS);
+        return BienestarPermissions::check($user, BienestarPermissions::ESTADISTICAS);
     }
 
     public function mutate(User $user): bool

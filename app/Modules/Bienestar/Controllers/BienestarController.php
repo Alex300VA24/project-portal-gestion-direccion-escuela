@@ -38,7 +38,7 @@ final class BienestarController extends ModuleController
     public function informacion(Request $request): View
     {
         $actor = ActorBienestarResolver::resolve($request->user());
-        $puedeGestionar = $request->user()?->can(BienestarPermissions::GESTIONAR) ?? false;
+        $puedeGestionar = BienestarPermissions::check($request->user(), BienestarPermissions::GESTIONAR);
 
         $query = ArticuloInformativo::query()->orderBy('fecha_ultima_revision', 'desc');
 
@@ -57,7 +57,7 @@ final class BienestarController extends ModuleController
 
     public function showArticulo(Request $request, ArticuloInformativo $articulo): View
     {
-        $puedeGestionar = $request->user()?->can(BienestarPermissions::GESTIONAR) ?? false;
+        $puedeGestionar = BienestarPermissions::check($request->user(), BienestarPermissions::GESTIONAR);
 
         if ($articulo->estado === 'borrador' && ! $puedeGestionar) {
             abort(404, 'Artículo no disponible.');

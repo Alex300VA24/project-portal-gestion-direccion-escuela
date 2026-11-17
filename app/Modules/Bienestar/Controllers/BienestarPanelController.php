@@ -34,6 +34,9 @@ final class BienestarPanelController extends Controller
     {
         Gate::authorize(BienestarPermissions::GESTIONAR);
 
+        $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
+
         $query = AlertaRiesgo::query()
             ->with(['estudiante.persona', 'docente.persona', 'caso'])
             ->orderByRaw("CASE WHEN prioridad = 'alta' THEN 1 WHEN prioridad = 'media' THEN 2 ELSE 3 END")
@@ -81,9 +84,12 @@ final class BienestarPanelController extends Controller
         ]);
     }
 
-    public function atender(AlertaRiesgo $alerta): View
+    public function atender(Request $request, AlertaRiesgo $alerta): View
     {
         Gate::authorize(BienestarPermissions::GESTIONAR);
+
+        $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
 
         $alerta->load(['estudiante.persona', 'docente.persona', 'caso.historial', 'caso.citas', 'caso.derivaciones']);
         $tiposCaso = TipoCaso::all();
@@ -97,6 +103,8 @@ final class BienestarPanelController extends Controller
     public function guardarAtencion(AtenderAlertaRequest $request, AlertaRiesgo $alerta): RedirectResponse
     {
         $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
+
         $accion = $request->input('accion');
 
         DB::transaction(function () use ($request, $alerta, $actor, $accion) {
@@ -254,9 +262,12 @@ final class BienestarPanelController extends Controller
             ->with('status', 'Informe del especialista registrado.');
     }
 
-    public function createAlertaManual(): View
+    public function createAlertaManual(Request $request): View
     {
         Gate::authorize(BienestarPermissions::GESTIONAR);
+
+        $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
 
         return view('modules.bienestar.panel.crear_alerta_manual');
     }
@@ -264,6 +275,8 @@ final class BienestarPanelController extends Controller
     public function storeAlertaManual(StoreAlertaManualRequest $request): RedirectResponse
     {
         $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
+
         $estudiante = Estudiante::where('codigo_universitario', $request->codigo_estudiante)->firstOrFail();
 
         AlertaRiesgo::create([
@@ -288,6 +301,9 @@ final class BienestarPanelController extends Controller
     public function solicitudes(Request $request): View
     {
         Gate::authorize(BienestarPermissions::GESTIONAR);
+
+        $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
 
         $query = SolicitudApoyo::query()
             ->with(['estudiante.persona', 'beneficio'])
@@ -314,6 +330,8 @@ final class BienestarPanelController extends Controller
     public function evaluarSolicitud(EvaluarSolicitudApoyoRequest $request, SolicitudApoyo $solicitud): RedirectResponse
     {
         $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureUsuario($actor);
+
         $nuevoEstado = $request->input('estado');
 
         DB::transaction(function () use ($solicitud, $nuevoEstado) {

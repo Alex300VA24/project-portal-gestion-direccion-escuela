@@ -3,6 +3,7 @@
 namespace App\Modules\Bienestar\Support;
 
 use App\Models\User;
+use App\Modules\Bienestar\Exceptions\FaltanDatosDemoException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -76,5 +77,30 @@ final class ActorBienestarResolver
             nombreCompleto: (string) ($currentUser->name ?? 'Usuario'),
             email: $email,
         );
+    }
+
+    public static function ensureUsuario(ActorContext $actor): void
+    {
+        if ($actor->idUsuario === null) {
+            throw new FaltanDatosDemoException('No se encontró el registro del usuario en seguridad.usuario');
+        }
+    }
+
+    public static function ensureEstudiante(ActorContext $actor): void
+    {
+        self::ensureUsuario($actor);
+
+        if ($actor->idEstudiante === null) {
+            throw new FaltanDatosDemoException('No se encontró el perfil de estudiante en core.estudiante');
+        }
+    }
+
+    public static function ensureDocente(ActorContext $actor): void
+    {
+        self::ensureUsuario($actor);
+
+        if ($actor->idDocente === null) {
+            throw new FaltanDatosDemoException('No se encontró el perfil de docente en core.docente');
+        }
     }
 }

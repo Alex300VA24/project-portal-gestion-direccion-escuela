@@ -28,6 +28,7 @@ final class ProfesorReporteController extends Controller
         Gate::authorize(BienestarPermissions::REPORTAR);
 
         $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureDocente($actor);
 
         $reportes = AlertaRiesgo::query()
             ->docentes()
@@ -47,6 +48,8 @@ final class ProfesorReporteController extends Controller
         Gate::authorize(BienestarPermissions::REPORTAR);
 
         $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureDocente($actor);
+
         $codigoDocente = $actor->codigoDocente ?? 'DOC-PRF-001';
 
         $estudiantesAsignados = $this->fuenteAcademica->obtenerEstudiantesDocente($codigoDocente, '2026-I');
@@ -88,6 +91,7 @@ final class ProfesorReporteController extends Controller
     public function store(ReporteDocenteRequest $request): RedirectResponse
     {
         $actor = ActorBienestarResolver::resolve($request->user());
+        ActorBienestarResolver::ensureDocente($actor);
 
         $estudiante = Estudiante::where('codigo_universitario', $request->codigo_estudiante)->firstOrFail();
 

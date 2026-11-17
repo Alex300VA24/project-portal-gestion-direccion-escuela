@@ -10,7 +10,7 @@ final class StoreArticuloRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(BienestarPermissions::GESTIONAR) ?? false;
+        return BienestarPermissions::check($this->user(), BienestarPermissions::GESTIONAR);
     }
 
     public function rules(): array

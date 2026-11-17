@@ -306,4 +306,58 @@ final class BienestarAuthRolesTest extends TestCase
         $this->get(route('bienestar.panel.index'))->assertStatus(403);
         $this->get(route('bienestar.profesor.index'))->assertStatus(403);
     }
+
+    public function test_routes_and_policies_accept_spatie_role_equivalent_without_explicit_permission(): void
+    {
+        // 1. Usuario con solo rol 'alumno' accede a rutas de alumno
+        $userAlumno = User::factory()->create();
+        $userAlumno->assignRole('alumno');
+        $this->actingAs($userAlumno);
+        // Aunque no tenga el perfil en core, la ruta pasa el middleware role_or_permission y llega al aviso limpio (200, no 403 ni 500)
+        $this->get(route('bienestar.alumno.solicitudes.index'))->assertStatus(200);
+
+        // 2. Usuario con solo rol 'profesor' accede a rutas de docente
+        $userProfesor = User::factory()->create();
+        $userProfesor->assignRole('profesor');
+        $this->actingAs($userProfesor);
+        $this->get(route('bienestar.profesor.index'))->assertStatus(200);
+
+        // 3. Usuario con solo rol 'secretaria' accede a panel de bienestar
+        $userSecretaria = User::factory()->create();
+        $userSecretaria->assignRole('secretaria');
+        $this->actingAs($userSecretaria);
+        $this->get(route('bienestar.panel.index'))->assertStatus(200);
+
+        // 4. Usuario con solo rol 'director_escuela' accede a métricas
+        $userDirector = User::factory()->create();
+        $userDirector->assignRole('director_escuela');
+        $this->actingAs($userDirector);
+        $this->get(route('bienestar.director.index'))->assertStatus(200);
+    }
+
+    public function test_actor_resolver_displays_clear_warning_when_demo_data_is_missing_never_500(): void
+    {
+        $avisoEsperado = 'Faltan datos de demostración: ejecute php artisan db:seed --class="App\Modules\Bienestar\Database\Seeders\BienestarDemoSeeder"';
+
+        // Caso A: Alumno sin registro en core.estudiante
+        $userAlumno = User::factory()->create(['email' => 'alumno_sin_datos@portal.local']);
+        $userAlumno->assignRole('alumno');
+        $responseAlumno = $this->actingAs($userAlumno)->get(route('bienestar.alumno.solicitudes.index'));
+        $responseAlumno->assertStatus(200);
+        $responseAlumno->assertSee($avisoEsperado, false);
+
+        // Caso B: Profesor sin registro en core.docente
+        $userProfesor = User::factory()->create(['email' => 'profesor_sin_datos@portal.local']);
+        $userProfesor->assignRole('profesor');
+        $responseProfesor = $this->actingAs($userProfesor)->get(route('bienestar.profesor.index'));
+        $responseProfesor->assertStatus(200);
+        $responseProfesor->assertSee($avisoEsperado, false);
+
+        // Caso C: Secretaría sin registro en seguridad.usuario
+        $userSecretaria = User::factory()->create(['email' => 'secretaria_sin_datos@portal.local']);
+        $userSecretaria->assignRole('secretaria');
+        $responseSecretaria = $this->actingAs($userSecretaria)->get(route('bienestar.panel.index'));
+        $responseSecretaria->assertStatus(200);
+        $responseSecretaria->assertSee($avisoEsperado, false);
+    }
 }
