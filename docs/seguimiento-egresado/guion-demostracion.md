@@ -45,12 +45,17 @@ php artisan serve
 ### Correo
 
 - `MAIL_MAILER=log` (por defecto): no sale ningún correo. El sistema lo dice («Ninguno se envió por correo») y muestra el enlace en pantalla para copiarlo. Sirve para la demostración.
-- Con **Mailpit** (local y gratuito): `MAIL_MAILER=smtp`, `MAIL_HOST=127.0.0.1` (en Docker, `host.docker.internal`), `MAIL_PORT=1025`; los correos se leen en http://localhost:8025.
-- Siempre con `SG_CORREO_REDIRIGIR_A` puesto mientras se usen datos de prueba.
+- Con **Mailpit** (local y gratuito; probado con Docker): es un buzón que captura los correos sin entregarlos a nadie. Se levanta con
+  ```bash
+  docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
+  ```
+  y en el `.env`: `MAIL_MAILER=smtp`, `MAIL_HOST=host.docker.internal` (sin Docker, `127.0.0.1`), `MAIL_PORT=1025`. Después de cambiar el `.env`, recrear el contenedor: `docker compose up -d --force-recreate app`. Los correos se leen en http://localhost:8025.
+- Siempre con `SG_CORREO_REDIRIGIR_A` puesto mientras se usen datos de prueba y un correo real.
+- Si el 8000 o el 5433 ya están ocupados en tu equipo, en el `.env`: `APP_HTTP_PORT=8080` y `POSTGRES_HOST_PORT=5434` (el portal queda en http://localhost:8080).
 
 ### Limitación de Docker
 
-La imagen del portal no incluye la extensión PHP `zip`: la **importación de `.xlsx`** y el **Excel de indicadores** no funcionan ahí. Usar **CSV** (la importación y el reporte CSV sí funcionan). Arreglarlo es agregar `zip` al `Dockerfile`, que es del proyecto principal.
+La imagen del portal no incluye la extensión PHP `zip`: la **importación de `.xlsx`** no funciona ahí (la fila se rechaza con «No se pudo leer el archivo»; no rompe nada) y el Excel de indicadores se entrega como CSV. Usar **CSV** para importar. Arreglarlo es agregar `zip` al `Dockerfile`, que es del proyecto principal.
 
 ## 2. Recorrido (Secretaría)
 
@@ -83,7 +88,8 @@ Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimie
 | «La cohorte no existe» al importar | Falta el paso 0 (registrar el plan y la cohorte). |
 | «No hay egresados confirmados» al emitir | Falta el paso 4 (confirmar egresos). |
 | «El egresado no ha autorizado el contacto» | El egresado no respondió la encuesta o respondió que no autoriza. |
-| Error de importación con `.xlsx` en Docker | Falta `zip` en la imagen; usar CSV. |
+| Importación con `.xlsx` en Docker: «No se pudo leer el archivo» | Falta `zip` en la imagen; usar CSV. |
+| Los correos siguen sin salir tras cambiar el `.env` | Recrear el contenedor: `docker compose up -d --force-recreate app`. |
 | Pantalla de login sin estilos | Falta construir los assets del portal (`npm run build`; en Docker ya vienen). |
 
 ## 4. Pendientes conocidos
