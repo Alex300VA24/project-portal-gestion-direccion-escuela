@@ -30,6 +30,12 @@
                 <a href="{{ route('bienestar.informacion.create') }}" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm transition">+ Nuevo Artículo</a>
                 <a href="{{ route('bienestar.informacion.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Artículos Públicos</a>
                 <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver</a>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
+                        Cerrar Sesión
+                    </button>
+                </form>
             </div>
         </div>
     </header>

@@ -20,7 +20,15 @@
                 <span class="text-indigo-400">/</span>
                 <span class="text-sm text-indigo-200 font-medium">Estadísticas Agregadas de Bienestar</span>
             </div>
-            <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver al Módulo</a>
+            <div class="flex items-center space-x-3">
+                <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver al Módulo</a>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
+                        Cerrar Sesión
+                    </button>
+                </form>
+            </div>
         </div>
     </header>
 

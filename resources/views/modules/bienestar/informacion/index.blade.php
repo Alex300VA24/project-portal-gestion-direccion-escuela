@@ -28,6 +28,14 @@
                     </a>
                 @endif
                 <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver al Módulo</a>
+                @auth
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
+                            Cerrar Sesión
+                        </button>
+                    </form>
+                @endauth
             </div>
         </div>
     </header>
