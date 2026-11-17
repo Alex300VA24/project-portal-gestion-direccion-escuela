@@ -18,7 +18,7 @@ final class ModularDatabaseStructureTest extends TestCase
         'bienestar' => 18,
         'investigacion_formativa' => 11,
         'seguimiento_estudiante' => 23,
-        'seguimiento_egresado' => 40,
+        'seguimiento_egresado' => 45,
     ];
 
     private const PUBLIC_SURFACE_COUNTS = [
