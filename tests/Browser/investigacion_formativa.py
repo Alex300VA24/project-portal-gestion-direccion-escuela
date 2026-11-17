@@ -134,18 +134,18 @@ class Browser:
         self.wait(lambda: self.call("GET", "/url") == self.app + "/")
         self.visit("/login")
 
-    def configure_section(self):
-        self.section("docente", "competencias", "incompleta")
+    def configure_section(self, name="incompleta"):
+        self.section("docente", "competencias", name)
         self.click('input[name="competencia_ids[]"]')
         self.button("Guardar competencias")
         self.wait(lambda: "Competencias guardadas." in self.text())
-        self.section("docente", "competencias", "incompleta")
+        self.section("docente", "competencias", name)
         self.check("Competency selection persists", lambda: self.js(
             'return document.querySelector(\'input[name="competencia_ids[]"]\').checked',
         ))
-        self.capture("competencias-guardadas")
+        self.capture("competencias-guardadas-" + name)
 
-        self.section("docente", "rubrica", "incompleta")
+        self.section("docente", "rubrica", name)
         self.fill("#rubrica-nombre", "Rúbrica creada en navegador")
         self.fill("#criterio-0-descripcion", "Justificación del problema")
         for position in range(4):
@@ -153,13 +153,13 @@ class Browser:
             self.fill(f"#nivel-0-{position}-puntaje", str(position + 1))
         self.button("Guardar rúbrica")
         self.wait(lambda: "Rúbrica guardada." in self.text())
-        self.section("docente", "rubrica", "incompleta")
+        self.section("docente", "rubrica", name)
         self.check("Rubric persists", lambda: self.js(
             'return document.getElementById("rubrica-nombre").value',
         ) == "Rúbrica creada en navegador")
-        self.capture("rubrica-guardada")
+        self.capture("rubrica-guardada-" + name)
 
-        self.section("docente", "cronograma", "incompleta")
+        self.section("docente", "cronograma", name)
         now = datetime.now(ZoneInfo("America/Lima"))
         dates = [(now + timedelta(days=days)).strftime("%Y-%m-%dT12:00") for days in (30, 60, 90)]
         set_dates = """
@@ -177,15 +177,15 @@ class Browser:
         self.js(set_dates, dates)
         self.button("Guardar cronograma")
         self.wait(lambda: "Cronograma guardado." in self.text())
-        self.section("docente", "cronograma", "incompleta")
+        self.section("docente", "cronograma", name)
         self.check("Schedule preserves Lima input", lambda: self.js(
             'return [0,1,2].map(i=>document.getElementById("fecha-"+i).value)',
         ) == dates)
         self.check("Configuration is complete", lambda: "La configuración de la sección está completa." in self.text())
-        self.capture("cronograma-guardado")
+        self.capture("cronograma-guardado-" + name)
         self.logout()
         self.login("docente-a")
-        self.section("docente", "rubrica", "incompleta")
+        self.section("docente", "rubrica", name)
         self.check("Configuration persists after login", lambda: self.js(
             'return document.getElementById("rubrica-nombre").value',
         ) == "Rúbrica creada en navegador")
@@ -194,7 +194,12 @@ class Browser:
         self.visit("/investigacion-formativa/director/cursos")
         section_id = self.manifest["secciones"]["deshabilitada"]
         selector = f'form[action$="/{section_id}/habilitacion"]'
-        for before, after in (("1", "0"), ("0", "1")):
+        initial = self.js(
+            'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
+            selector,
+        )
+        opposite = "0" if initial == "1" else "1"
+        for before, after in ((initial, opposite), (opposite, initial)):
             self.check("Section toggle initial state " + before, lambda: self.js(
                 'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
                 selector,
@@ -211,7 +216,84 @@ class Browser:
                 selector,
             ) == after)
 
+    def prepare_presentation(self):
+        self.login("director-a")
+        self.visit("/investigacion-formativa/director/cursos")
+        section_id = self.manifest["secciones"]["deshabilitada"]
+        selector = f'form[action$="/{section_id}/habilitacion"]'
+        self.check("Presentation starts with disabled section", lambda: self.js(
+            'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
+            selector,
+        ) == "1")
+        self.click(selector + " button")
+        self.wait(lambda: self.js(
+            'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
+            selector,
+        ) == "0")
+        self.check("Director enables presentation section", lambda: "quedó habilitada" in self.text())
+        self.login("docente-a")
+        self.configure_section("deshabilitada")
+        self.manifest["secciones"]["completa"] = section_id
+
+    def current_title(self):
+        return self.js(
+            'return document.querySelector("section[aria-labelledby=titulo-propuesta] > p").textContent.trim()',
+        )
+
+    def review_title(self, href):
+        reason = "Delimitar el estudio a los procesos de matrícula."
+        corrected = "Estudio de procesos de matrícula en la escuela"
+        self.click('input[name=estado][value="Cambio solicitado"]')
+        self.fill("#motivo-revision", reason)
+        self.button("Registrar revisión")
+        self.wait(lambda: "Cambio solicitado" in self.text() and reason in self.text())
+        self.check("Teacher requests title correction with reason", lambda: reason in self.text())
+        self.capture("docente-cambio-solicitado")
+
+        self.login("integrante")
+        self.section("alumno", "mi-grupo")
+        self.check("Member sees correction request", lambda: "Cambio solicitado" in self.text() and reason in self.text())
+        self.check("Member has no title editor", lambda: self.js(
+            'return document.querySelector("#titulo-propuesto") === null && document.querySelector(\'main form[action$="/titulo"]\') === null',
+        ))
+        self.capture("integrante-solo-lectura")
+
+        self.login("coordinador")
+        self.section("alumno", "mi-grupo")
+        self.check("Coordinator sees correction reason", lambda: reason in self.text())
+        self.fill("#titulo-propuesto", corrected)
+        self.button("Guardar título")
+        self.wait(lambda: self.current_title() == corrected)
+        self.check("Corrected title returns to registered state", lambda: self.js(
+            'return document.querySelector("section[aria-labelledby=titulo-propuesta] > div span").textContent.includes("Registrado")',
+        ))
+        self.check("Correction keeps earlier feedback", lambda: reason in self.text() and "Estudio de procesos académicos" in self.text())
+        self.capture("coordinador-titulo-corregido")
+        self.logout()
+        self.login("coordinador")
+        self.section("alumno", "mi-grupo")
+        self.check("Corrected title persists after login", lambda: self.current_title() == corrected)
+
+        self.login("docente-a")
+        self.visit(href.removeprefix(self.app))
+        self.check("Teacher sees corrected current title", lambda: self.current_title() == corrected)
+        self.click("input[name=estado][value=Aceptado]")
+        self.button("Registrar revisión")
+        self.wait(lambda: "Aceptado" in self.text())
+        self.check("Teacher accepts corrected title", lambda: self.current_title() == corrected and "Aceptado" in self.text())
+        self.capture("docente-correccion-aceptada")
+
+        self.login("integrante")
+        self.section("alumno", "mi-grupo")
+        self.check("Member sees accepted corrected title", lambda: self.current_title() == corrected and "Aceptado" in self.text())
+        self.check("Accepted title remains read-only for member", lambda: self.js(
+            'return document.querySelector("#titulo-propuesto") === null && document.querySelector(\'main form[action$="/titulo"]\') === null',
+        ))
+        self.check("Member sees full title review history", lambda: reason in self.text() and "Estudio de procesos académicos" in self.text() and "Historial de revisiones" in self.text())
+        self.capture("integrante-titulo-aceptado")
+
     def run(self):
+        self.prepare_presentation()
         self.login("coordinador")
         self.capture("alumno-cursos")
         self.section("alumno", "grupo/crear")
@@ -258,10 +340,7 @@ class Browser:
         assert href
         self.visit(href.removeprefix(self.app))
         self.capture("docente-grupo")
-        self.click("input[name=estado][value=Aceptado]")
-        self.button("Registrar revisión")
-        self.wait(lambda: "Aceptado" in self.text())
-        self.check("Teacher title review", lambda: "Aceptado" in self.text())
+        self.review_title(href)
 
         self.login("director-a")
         self.capture("director-resumen")

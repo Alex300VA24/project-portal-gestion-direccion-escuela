@@ -17,15 +17,19 @@ Fecha: 17 de noviembre de 2026. Este registro distingue funciones verificadas, c
 | Generador de demostración | 2 aprobadas, 28 aserciones | Topología, conservación de cuentas, contraseña local y cuatro CSV válidos en modo de validación. |
 | Reportes | 12 aprobadas, 79 aserciones | Última versión, notas parciales, empates, redondeo, conteos, retiros, historial y consultas por lote. Incluidas en la suite completa. |
 | Concurrencia exclusiva de P08 | 1 aprobada, 68 aserciones | Ejecutada por separado en `portal_gestion_direccion_test_concurrency_p08_20261117124600`. La lógica concurrente del dominio no cambió después. |
-| Firefox 153.7.0 con geckodriver 0.37.1 | 84 comprobaciones aprobadas | Formularios reales; persistencia tras recarga e inicio de sesión; 24 capturas de página en dos anchos. |
-| HTML de navegador | 24 páginas, 118 IDs, 84 etiquetas, 217 controles | Etiquetas cerradas, IDs únicos, destinos de etiquetas y referencias ARIA. |
-| JavaScript incluido | 26 scripts con sintaxis válida | Extraídos del HTML capturado y revisados con `node --check`. |
+| Firefox 153.7.0 con geckodriver 0.37.1 | 127 comprobaciones aprobadas | Formularios reales; persistencia tras recarga e inicio de sesión; 32 capturas de página en dos anchos. |
+| HTML de navegador | 32 páginas, 166 IDs, 115 etiquetas, 290 controles | Etiquetas cerradas, IDs únicos, destinos de etiquetas y referencias ARIA. |
+| JavaScript incluido | 35 scripts con sintaxis válida | Extraídos del HTML capturado y revisados con `node --check`. |
 | Compilación y formato | Vite, Pint y sintaxis PHP aprobados | Solo archivos PHP nuevos; sin cambios de formato en otros módulos. |
 | Cachés y estructura | Blade, rutas y prueba SQL aprobados | Las cachés se limpiaron tras verificar; `modular_database_smoke: OK`. |
 | Manuales | Ortografía, enlaces y referencias revisados | Cinco documentos, cuatro capturas y diez enlaces locales comprobados. |
 | PDF de muestra | Una página A4, 601 bytes | `pdfinfo`, extracción de texto y hash coincidente. No es evidencia de una carga. |
 
 La prueba omitida en la suite requiere una base exclusiva de concurrencia. Su resultado separado se indica sin sumarlo a la suite. Las comprobaciones de ancho verifican ausencia de desplazamiento horizontal de toda la página a 1280 y 390 píxeles. No equivalen a una auditoría completa de accesibilidad, lectores de pantalla o todos los navegadores. La ficha de grupo incluye una recarga explícita; los formularios de configuración se vuelven a abrir mediante peticiones nuevas y cambio de sesión. En intentos de recarga adicionales, la espera de navegación de Firefox agotó su tiempo aunque la página mostraba los datos guardados; esos intentos no se contaron como aprobados.
+
+La última ejecución recorre una misma sección desde su habilitación y configuración hasta la creación del grupo, solicitud de cambios, corrección del coordinador, aceptación, consulta del integrante, encuesta y resultados. La base conserva las cuatro revisiones del título: `Registrado → Cambio solicitado → Registrado → Aceptado`, con versión final 4 y el motivo original. La corrección persiste después de volver a iniciar sesión. El integrante consulta el contenido y el historial sin controles para editar el título.
+
+Esta ampliación modifica el recorrido de navegador y su documentación. La lógica PHP de la aplicación no cambió; los resultados de la suite completa indicados arriba corresponden a la ejecución previamente registrada.
 
 ## Trazabilidad de las 14 pantallas
 
@@ -42,10 +46,10 @@ Las páginas de origen corresponden al informe de interfaces. Las rutas Blade so
 | Página 9 | Rúbrica | `docente/rubrica.blade.php`; `ConfiguracionService::guardarRubrica` | Guardado de los cuatro niveles y persistencia en Firefox; validaciones en pruebas funcionales. |
 | Página 10 | Cronograma | `docente/cronograma.blade.php`; `ConfiguracionService::guardarCronograma` | Guardado, persistencia en hora de Lima y rechazo de fechas fuera de orden en Firefox y pruebas funcionales. |
 | Página 11 | Grupos del docente | `docente/grupos.blade.php` | Firefox y pruebas de pertenencia. |
-| Página 12 | Revisar grupo y evaluar | `docente/grupo.blade.php`; `GrupoService::revisarTitulo`; `EvaluacionService::guardar` | Revisión de título en Firefox. Evaluación con entregas de prueba aprobada; recorrido real de entrega/evaluación pendiente de G4. |
+| Página 12 | Revisar grupo y evaluar | `docente/grupo.blade.php`; `GrupoService::revisarTitulo`; `EvaluacionService::guardar` | Solicitud de cambio, motivo, corrección del coordinador y aceptación final verificados en Firefox. Evaluación con entregas de prueba aprobada; recorrido real de entrega/evaluación pendiente de G4. |
 | Página 13 | Cursos del estudiante | `alumno/cursos.blade.php` | Firefox y pruebas de configuración incompleta. |
 | Página 14 | Crear grupo | `alumno/grupo-crear.blade.php`; `GrupoService::crear` | Creación, validación de campos y persistencia en Firefox; atomicidad en pruebas. |
-| Página 15 | Trabajo del estudiante | `alumno/grupo.blade.php` | Grupo, título e historial disponibles. Carga y descarga pendientes; pantalla parcialmente cubierta. |
+| Página 15 | Trabajo del estudiante | `alumno/grupo.blade.php` | Título corregido, historial y ausencia de controles de edición para el integrante verificados en Firefox. Carga y descarga pendientes; pantalla parcialmente cubierta. |
 | Página 16 | Encuesta individual | `alumno/encuesta.blade.php`; `EncuestaService::responder` | Envío y persistencia en Firefox; validaciones, duplicados y transacción en pruebas. |
 
 ## Trazabilidad de reglas
