@@ -1,24 +1,11 @@
+{{-- Etiqueta de estado del diseño del portal (docs/DESIGN.md §4): .quality-status con is-success | is-warning | is-danger | is-neutral. --}}
 @php
-    $colores = [
-        'borrador' => 'bg-gray-100 text-gray-700',
-        'registrada' => 'bg-gray-100 text-gray-700',
-        'postulado' => 'bg-blue-100 text-blue-800',
-        'en_revision' => 'bg-amber-100 text-amber-800',
-        'pendiente' => 'bg-amber-100 text-amber-800',
-        'observada' => 'bg-red-100 text-red-800',
-        'observado' => 'bg-red-100 text-red-800',
-        'no_seleccionado' => 'bg-red-100 text-red-800',
-        'publicada' => 'bg-emerald-100 text-emerald-800',
-        'aprobado' => 'bg-emerald-100 text-emerald-800',
-        'aprobada' => 'bg-emerald-100 text-emerald-800',
-        'seleccionado' => 'bg-emerald-100 text-emerald-800',
-        'en_curso' => 'bg-blue-100 text-blue-800',
-        'finalizada' => 'bg-slate-200 text-slate-800',
-        'cerrada' => 'bg-slate-200 text-slate-800',
-        'activo' => 'bg-emerald-100 text-emerald-800',
-        'inactivo' => 'bg-gray-200 text-gray-700',
+    $tonos = [
+        'publicada' => 'is-success', 'aprobada' => 'is-success', 'aprobado' => 'is-success', 'seleccionado' => 'is-success',
+        'en_curso' => 'is-success', 'activo' => 'is-success', 'subsanada' => 'is-success',
+        'en_revision' => 'is-warning', 'pendiente' => 'is-warning',
+        'observada' => 'is-danger', 'observado' => 'is-danger', 'no_seleccionado' => 'is-danger', 'anulada' => 'is-danger',
     ];
+    $tono = $tonos[mb_strtolower($estado)] ?? 'is-neutral';
 @endphp
-<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $colores[mb_strtolower($estado)] ?? 'bg-gray-100 text-gray-700' }}">
-    {{ str_replace('_', ' ', $estado) }}
-</span>
+<span class="quality-status {{ $tono }}">{{ str_replace('_', ' ', $estado) }}</span>

@@ -1,26 +1,26 @@
 @php
     $editando = $practica->exists;
-    $campo = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600';
+    $campo = 'mt-1 block w-full rounded-[10px] border-[#bbc2ce] focus:border-[color:var(--portal-green)] focus:ring-[3px] focus:ring-[rgba(13,122,80,.15)]';
 @endphp
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $editando ? 'Corregir datos de la práctica' : 'Registrar mi práctica' }}</h2>
+        <h2 class="font-['Fira_Sans'] font-bold text-xl text-[color:var(--portal-ink)] leading-tight">{{ $editando ? 'Corregir datos de la práctica' : 'Registrar mi práctica' }}</h2>
     </x-slot>
 
-    <div class="py-8">
+    <div class="py-8 min-h-[calc(100vh-8.75rem)] bg-[color:var(--portal-canvas)] font-['Fira_Sans']">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @include('modules.gestion-practicas.partials.menu')
             @include('modules.gestion-practicas.partials.mensajes')
 
             @if ($convocatoria)
-                <div class="bg-white shadow-sm sm:rounded-lg p-4 text-sm text-gray-700">
+                <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-4 text-sm text-[color:var(--portal-muted)]">
                     Convocatoria: <strong>{{ $convocatoria->titulo }}</strong>
                 </div>
             @endif
 
             <form method="POST" enctype="multipart/form-data"
                   action="{{ $editando ? route('gestion-practicas.estudiante.practicas.update', $practica) : route('gestion-practicas.estudiante.practicas.store', $postulacion) }}"
-                  class="bg-white shadow-sm sm:rounded-lg p-6 grid gap-4 sm:grid-cols-2">
+                  class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6 grid gap-4 sm:grid-cols-2">
                 @csrf
                 @if ($editando) @method('PUT') @endif
 
@@ -45,7 +45,7 @@
 
                 <div class="sm:col-span-2 flex items-center gap-3">
                     <x-primary-button>{{ $editando ? 'Guardar cambios' : 'Registrar práctica' }}</x-primary-button>
-                    <a href="{{ route('gestion-practicas.estudiante.practicas.index') }}" class="text-sm text-gray-600 hover:underline">Cancelar</a>
+                    <a href="{{ route('gestion-practicas.estudiante.practicas.index') }}" class="text-sm text-[color:var(--portal-muted)] hover:underline">Cancelar</a>
                 </div>
             </form>
         </div>

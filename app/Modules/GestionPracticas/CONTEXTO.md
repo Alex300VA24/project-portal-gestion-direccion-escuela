@@ -98,6 +98,25 @@ tests/Feature/GestionPracticas/              Pruebas del módulo
   JSON, porque pruebas existentes del proyecto base lo exigen. El trabajo real está bajo `/gestion-practicas/panel/...`.
 - **Archivos.** Se guardan en `storage/app/private/gestion-practicas/` (disco `local`) y se registran en `comun.archivo`.
 
+### Diseño visual (`docs/DESIGN.md`)
+
+Las vistas usan `<x-app-layout>` (lo que pide `GUIA_MODULOS.md`) con Tailwind, pero con la paleta y los componentes
+del portal en lugar de los colores genéricos de Breeze:
+
+- **Color:** valores arbitrarios de Tailwind que apuntan a los tokens `--portal-*` de `portal.css`
+  (`text-[color:var(--portal-ink)]`, `bg-[color:var(--portal-green)]`, `border-[color:var(--portal-border)]`…). Acción principal
+  en verde `#0d7a50` (hover `#09613f`), selección activa en navy `#17224d`, error `#a11d12`/`#8e1a11`, bordes de campo `#bbc2ce`.
+  No se modificó `tailwind.config.js` ni `portal.css`.
+- **Tipografía:** Fira Sans (y Fira Code disponible) cargada desde Bunny Fonts, igual que `layouts/calidad` y `guest`;
+  títulos y botones en peso 700.
+- **Forma:** radio 10 px en botones, campos y avisos; 14 px en paneles; paneles con borde de 1 px y sin sombra;
+  foco de campo con borde verde y halo `rgba(13,122,80,.15)`. El anillo de foco global (`--portal-focus`) viene de `portal.css`.
+- **Estados:** etiqueta `.quality-status` con `is-success | is-warning | is-danger | is-neutral` (componente del diseño).
+  Avisos con `#e3f3ea`/`#0a5f3f` (correcto) y `#fde9e7`/`#721c16` (error).
+- **Límites:** el marco superior (barra de navegación) lo pone `layouts/app` y no se modificó; por eso no hay tema oscuro,
+  alto contraste ni tamaño de texto (esas preferencias solo las implementa `layouts/calidad`). Las clases `--quality-*`
+  solo existen dentro de `.quality-body`, así que no se usan fuera de ese layout.
+
 ## 4. Pruebas
 
 `tests/Feature/GestionPracticas/`:
