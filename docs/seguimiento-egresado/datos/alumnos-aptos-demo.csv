@@ -1,7 +1,7 @@
-matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo_institucional
-2019100001,DNI,70000001,Lucía Fernanda,Vega,Salazar,2019,lucia.vega@correo.test
-2019100002,DNI,70000002,Mateo Andrés,Rojas,Paredes,2019,mateo.rojas@correo.test
-2019100003,DNI,70000003,Camila Rosa,Torres,Llamo,2019,camila.torres@correo.test
-2019100004,DNI,70000004,Diego Alonso,Castillo,Neyra,2019,diego.castillo@correo.test
-2019100005,DNI,70000005,Valentina Isabel,Mendoza,Ruiz,2019,valentina.mendoza@correo.test
-2019100006,DNI,70000006,Joaquín Elías,Salas,Becerra,2019,joaquin.salas@correo.test
+matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,correo_institucional
+2019100001,DNI,70000001,Lucía Fernanda,Vega,Salazar,lucia.vega@correo.test
+2019100002,DNI,70000002,Mateo Andrés,Rojas,Paredes,mateo.rojas@correo.test
+2019100003,DNI,70000003,Camila Rosa,Torres,Llamo,camila.torres@correo.test
+2019100004,DNI,70000004,Diego Alonso,Castillo,Neyra,diego.castillo@correo.test
+2019100005,DNI,70000005,Valentina Isabel,Mendoza,Ruiz,valentina.mendoza@correo.test
+2019100006,DNI,70000006,Joaquín Elías,Salas,Becerra,joaquin.salas@correo.test

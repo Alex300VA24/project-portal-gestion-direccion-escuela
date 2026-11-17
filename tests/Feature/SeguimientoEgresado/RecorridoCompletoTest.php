@@ -49,14 +49,14 @@ class RecorridoCompletoTest extends TestCase
         $cohorte = (int) DB::table('seguimiento_egresado.cohorte')->value('id');
 
         // 1. Alumnos aptos: importación de un archivo, sin egresados todavía y sin datos inventados
-        $this->post(route('seguimiento-egresado.padron.importar'), ['archivo_padron' => UploadedFile::fake()->createWithContent('aptos.csv', self::CSV)])->assertRedirect();
+        $this->post(route('seguimiento-egresado.padron.importar'), ['promocion' => $cohorte, 'archivo_padron' => UploadedFile::fake()->createWithContent('aptos.csv', self::CSV)])->assertRedirect();
         $this->assertSame(3, DB::table('seguimiento_egresado.egresado')->count());
         $this->assertSame(0, DB::table('seguimiento_egresado.contacto_egresado')->count());
         $this->assertSame(0, DB::table('seguimiento_egresado.egresado')->whereNotNull('fecha_egreso')->count());
         $this->assertSame(['PROXIMO'], DB::table('seguimiento_egresado.historial_estado_academico as h')->join('seguimiento_egresado.cat_estado_academico as c', 'c.id', '=', 'h.id_estado_academico')->distinct()->pluck('c.codigo')->all());
 
         // 2. Contacto inicial: un enlace por alumno, enviado a su correo institucional
-        $this->post(route('seguimiento-egresado.padron.contacto-inicial.cohorte'), ['cohorte' => $cohorte])->assertRedirect();
+        $this->post(route('seguimiento-egresado.padron.contacto-inicial.cohorte'), ['cohorte' => $cohorte, 'fecha_limite' => now()->addDays(30)->toDateString()])->assertRedirect();
         $enlaces = session('enlaces_contacto');
         $this->assertCount(3, $enlaces);
         Mail::assertSent(CorreoDeInvitacion::class, 3);
@@ -70,9 +70,15 @@ class RecorridoCompletoTest extends TestCase
             ->assertRedirect(route('seguimiento-egresado.egresado.inicio'));
         $luciaId = (int) DB::table('seguimiento_egresado.egresado')->where('codigo_matricula', '2019100001')->value('id');
         $this->assertSame('lucia.personal@correo.test', DB::table('seguimiento_egresado.contacto_egresado')->where('id_egresado', $luciaId)->value('correo_personal'));
-        $this->get(route('seguimiento-egresado.padron.contacto-inicial', ['estado' => 'todos']))->assertOk()->assertSee('Completado');
+        $this->get(route('seguimiento-egresado.padron.contacto-inicial', ['estado' => 'todos']))->assertOk()->assertSee('Completó su contacto');
 
         // 4. Egreso: Secretaría confirma la fecha real; el expediente y el contacto se conservan
+        // Quien no dejó su contacto no puede egresar todavía: el contacto inicial es obligatorio.
+        $sinContacto = (int) DB::table('seguimiento_egresado.egresado')->where('id', '!=', $luciaId)->value('id');
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $sinContacto), ['fecha_egreso' => '2025-07-18'])->assertStatus(422);
+        foreach (DB::table('seguimiento_egresado.egresado')->where('id', '!=', $luciaId)->pluck('id') as $id) {
+            DB::table('seguimiento_egresado.contacto_egresado')->insert(['id_egresado' => $id, 'correo_personal' => "contacto{$id}@correo.test", 'celular_whatsapp' => '+51 900 000 00'.$id, 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO']);
+        }
         foreach (DB::table('seguimiento_egresado.egresado')->pluck('id') as $id) {
             $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $id), ['fecha_egreso' => '2025-07-18'])->assertOk();
         }
@@ -89,9 +95,12 @@ class RecorridoCompletoTest extends TestCase
         Mail::fake();
         $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania))->assertRedirect();
         $this->assertCount(3, session('enlaces_emitidos'));
-        // A quien ya dejó su contacto el correo va a su correo personal; a los demás, al institucional.
+        // Todos dejaron su contacto antes de egresar, así que cada correo va a su correo personal.
+        Mail::assertSent(CorreoDeInvitacion::class, 3);
         Mail::assertSent(CorreoDeInvitacion::class, fn ($m) => $m->hasTo('lucia.personal@correo.test') && $m->proposito === 'SEGUIMIENTO');
-        Mail::assertSent(CorreoDeInvitacion::class, fn ($m) => $m->hasTo('mateo.rojas@correo.test'));
+        foreach (DB::table('seguimiento_egresado.egresado')->where('id', '!=', $luciaId)->pluck('id') as $id) {
+            Mail::assertSent(CorreoDeInvitacion::class, fn ($m) => $m->hasTo("contacto{$id}@correo.test"));
+        }
 
         // 6. La egresada responde la encuesta: trabaja y autoriza contactar a su empleador
         $enlaceLucia = collect(session('enlaces_emitidos'))->firstWhere('matricula', '2019100001');

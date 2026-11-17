@@ -1,6 +1,6 @@
 @extends('modules.seguimiento-egresado.layout')
-@section('title', 'Padrón y Cohortes')
-@section('section_name', 'Padrón y cohortes')
+@section('title', 'Padrón y promociones')
+@section('section_name', 'Padrón y promociones')
 
 @push('styles')
 <style>
@@ -679,12 +679,12 @@
 @section('content')
 <!-- Encabezado Institucional de Página -->
 <section class="sg-heading">
-  <h1>Padrón Oficial y Cohortes Académicas</h1>
-  <p style="max-width: 100%;">Nómina oficial de egresados de Ingeniería Informática, registro de cohortes de ingresantes, planes curriculares y trazabilidad de grados académicos.</p>
+  <h1>Padrón y promociones</h1>
+  <p style="max-width: 100%;">Sigue estos pasos en orden: registra la promoción, carga a los alumnos aptos para egresar, invítalos a dejar su contacto y, cuando egresen, confirma su egreso.</p>
   <div style="margin-top: 12px;">
     <a class="sg-button sg-button-secondary" style="padding: 4px 10px; min-height: 28px; font-size: 12px;" href="{{ route('seguimiento-egresado.padron.contacto-inicial') }}">
       @include('modules.seguimiento-egresado.partials.icon', ['name' => 'mail'])
-      <span>Contacto inicial de egresados</span>
+      <span>Ir al contacto inicial</span>
     </a>
   </div>
 </section>
@@ -703,63 +703,57 @@
   </div>
 @endif
 
-<!-- Toast Dinámico para Interacciones AJAX -->
-<div id="sg-toast-notificacion" class="sg-alert sg-toast" role="status" aria-live="polite">
-  <span id="sg-toast-icon"></span>
-  <p id="sg-toast-mensaje" style="font-weight: 500;"></p>
-</div>
-
 <!-- ========================================================================= -->
 <!-- FRANJA DE RESUMEN OPERATIVO (4 CARDS DE DATOS) -->
 <!-- ========================================================================= -->
 <section class="sg-stat-strip" aria-label="Resumen operativo del módulo">
   <div class="sg-stat-card">
-    <span class="sg-stat-kicker">Expedientes</span>
+    <span class="sg-stat-kicker">Alumnos</span>
     <span class="sg-stat-val" id="kpi-total-egresados">{{ $totalEgresados ?? 6 }}</span>
-    <span class="sg-stat-lbl">Expedientes Registrados</span>
+    <span class="sg-stat-lbl">Alumnos registrados</span>
     <p class="sg-stat-sub">Ingeniería Informática · Sede Trujillo</p>
   </div>
 
   <div class="sg-stat-card" style="border-left-color: var(--sg-navy);">
-    <span class="sg-stat-kicker" style="color: var(--sg-navy);">Cohortes</span>
+    <span class="sg-stat-kicker" style="color: var(--sg-navy);">Promociones</span>
     <span class="sg-stat-val" id="kpi-total-cohortes">{{ $totalCohortes ?? 4 }}</span>
-    <span class="sg-stat-lbl">Cohortes Académicas</span>
-    <p class="sg-stat-sub">Ingresantes oficiales en seguimiento</p>
+    <span class="sg-stat-lbl">Promociones registradas</span>
+    <p class="sg-stat-sub">Cada una con su total de ingresantes</p>
   </div>
 
   <div class="sg-stat-card" style="border-left-color: var(--sg-success);">
     <span class="sg-stat-kicker" style="color: var(--sg-success);">Titulación</span>
     <span class="sg-stat-val" style="color: var(--sg-success);" id="kpi-total-acreditados">{{ $totalAcreditados ?? 6 }}</span>
-    <span class="sg-stat-lbl">Graduados y Titulados</span>
-    <p class="sg-stat-sub">Cumplen perfil y créditos validados</p>
+    <span class="sg-stat-lbl">Bachilleres y titulados</span>
+    <p class="sg-stat-sub">Con grado académico registrado</p>
   </div>
 
   <div class="sg-stat-card" style="border-left-color: var(--sg-warning);">
     <span class="sg-stat-kicker" style="color: var(--sg-warning);">Cargas</span>
     <span class="sg-stat-val" id="kpi-total-importaciones">{{ $totalImportaciones ?? 2 }}</span>
-    <span class="sg-stat-lbl">Nóminas Sincronizadas</span>
-    <p class="sg-stat-sub">Verificadas con huella SHA-256</p>
+    <span class="sg-stat-lbl">Archivos cargados</span>
+    <p class="sg-stat-sub">Listas de alumnos procesadas</p>
   </div>
 </section>
 
 <!-- ========================================================================= -->
 <!-- NAVEGACIÓN PRINCIPAL DEL MÓDULO (4 PESTAÑAS) -->
 <!-- ========================================================================= -->
-<nav class="sg-module-tabs" role="tablist" aria-label="Secciones del Módulo">
-  <button type="button" class="sg-module-tab is-active" id="btn-tab-egresados" role="tab" aria-selected="true" aria-controls="panel-egresados" onclick="activarModuloTab('egresados')">
-    Padrón de Egresados
-  </button>
-
+<nav class="sg-module-tabs" role="tablist" aria-label="Secciones del módulo">
   <button type="button" class="sg-module-tab" id="btn-tab-cohortes" role="tab" aria-selected="false" aria-controls="panel-cohortes" onclick="activarModuloTab('cohortes')">
-    Cohortes y Denominador I1
-  </button>
-
-  <button type="button" class="sg-module-tab" id="btn-tab-acreditacion" role="tab" aria-selected="false" aria-controls="panel-acreditacion" onclick="activarModuloTab('acreditacion')">
-    Acreditación y Grados
+    1. Promociones
   </button>
 
   <button type="button" class="sg-module-tab" id="btn-tab-importaciones" role="tab" aria-selected="false" aria-controls="panel-importaciones" onclick="activarModuloTab('importaciones')">
-    Cargas de Secretaría
+    2. Cargar alumnos
+  </button>
+
+  <button type="button" class="sg-module-tab is-active" id="btn-tab-egresados" role="tab" aria-selected="true" aria-controls="panel-egresados" onclick="activarModuloTab('egresados')">
+    3. Alumnos
+  </button>
+
+  <button type="button" class="sg-module-tab" id="btn-tab-acreditacion" role="tab" aria-selected="false" aria-controls="panel-acreditacion" onclick="activarModuloTab('acreditacion')">
+    Grados y títulos
   </button>
 </nav>
 
@@ -770,19 +764,19 @@
   <!-- Selector Rápido de Cohortes (Fila Única / Últimas Cohortes) -->
   <div class="sg-cohort-strip-wrapper" id="bloque-tarjetas-cohortes">
     <div class="sg-cohort-strip-header">
-      <span style="font-weight: 600; color: var(--sg-navy);">Cohortes Activas en Seguimiento</span>
+      <span style="font-weight: 600; color: var(--sg-navy);">Promociones en seguimiento</span>
       <button type="button" class="sg-button sg-button-secondary" id="btn-toggle-cohort-cards" onclick="toggleTarjetasCohortes()" style="min-height: 28px; padding: 2px 10px; font-size: 12px;">
         Ocultar tarjetas
       </button>
     </div>
-    <div class="sg-cohort-grid" id="contenedor-cards-cohortes" role="region" aria-label="Filtro rápido por cohorte de ingresantes">
+    <div class="sg-cohort-grid" id="contenedor-cards-cohortes" role="region" aria-label="Filtro rápido por promoción">
       <div class="sg-cohort-card is-active" id="card-cohorte-todas" onclick="filtrarCohorteRapido('TODAS')" tabindex="0" role="button" aria-pressed="true">
         <div class="sg-cohort-header">
           <span class="sg-cohort-code">Vista Global</span>
           <span class="sg-status-pill sg-pill-neutral">Todas</span>
         </div>
         <h3 class="sg-cohort-name">Padrón Consolidado</h3>
-        <p class="sg-stat-sub">Todas las cohortes registradas</p>
+        <p class="sg-stat-sub">Todas las promociones registradas</p>
         <div class="sg-cohort-stats">
           <div>
             <div class="sg-cohort-stat-val" id="card-val-ingresantes-todas">--</div>
@@ -790,7 +784,7 @@
           </div>
           <div>
             <div class="sg-cohort-stat-val" style="color: var(--sg-success);" id="card-val-egresados-todas">{{ $totalEgresados ?? 0 }}</div>
-            <div class="sg-cohort-stat-lbl">Acreditados</div>
+            <div class="sg-cohort-stat-lbl">Con grado</div>
           </div>
         </div>
       </div>
@@ -806,9 +800,9 @@
       </div>
 
       <div class="sg-field">
-        <label class="sg-label" for="filtro-cohorte">Cohorte</label>
+        <label class="sg-label" for="filtro-cohorte">Promoción</label>
         <select class="sg-select" id="filtro-cohorte" onchange="aplicarFiltros()">
-          <option value="">Todas las cohortes</option>
+          <option value="">Todas las promociones</option>
         </select>
       </div>
 
@@ -828,7 +822,7 @@
         <select class="sg-select" id="filtro-aptitud" onchange="aplicarFiltros()">
           <option value="">Todas las condiciones</option>
           <option value="APTO">Apto para Graduación</option>
-          <option value="PENDIENTE">Trámite Documentario</option>
+          <option value="PENDIENTE">Trámite pendiente</option>
         </select>
       </div>
 
@@ -841,39 +835,39 @@
 
     <div class="sg-toolbar-meta">
       <div>
-        Mostrando <strong id="total-registros">0</strong> expedientes de <strong id="total-general">0</strong> registrados.
+        Mostrando <strong id="total-registros">0</strong> alumnos de <strong id="total-general">0</strong> registrados.
       </div>
     </div>
   </section>
 
   <!-- Franja Dinámica de Métricas de la Cohorte Seleccionada -->
-  <div id="franja-metrica-cohorte" class="sg-cohort-metric-banner" role="region" aria-label="Métricas de la cohorte seleccionada">
+  <div id="franja-metrica-cohorte" class="sg-cohort-metric-banner" role="region" aria-label="Métricas de la promoción seleccionada">
     <!-- Se actualiza reactivamente mediante actualizarFranjaMetricaCohorte() -->
   </div>
 
   <!-- Nómina de Expedientes Únicos -->
   <div class="sg-section-title">
     <div>
-      <h2 style="font-size: 18px; margin: 0;">Nómina Oficial de Expedientes Únicos</h2>
-      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Expediente de egresados de Ingeniería Informática y trazabilidad de su historial formativo y profesional.</p>
+      <h2 style="font-size: 18px; margin: 0;">Lista de alumnos</h2>
+      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Alumnos aptos para egresar y egresados de Ingeniería Informática. Desde aquí se confirma el egreso de cada alumno.</p>
     </div>
     <div class="sg-actions">
       <button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">
-        <span>+ Nuevo Expediente Individual</span>
+        <span>+ Registrar un alumno</span>
       </button>
     </div>
   </div>
 
   <div class="sg-table-wrap" id="tabla-padron-wrap" tabindex="0" role="region" aria-label="Tabla de egresados">
     <table class="sg-table" id="tabla-padron">
-      <caption>Nómina oficial de expedientes de egresados de Ingeniería Informática UNT</caption>
+      <caption>Alumnos de Ingeniería Informática UNT</caption>
       <thead>
         <tr>
           <th scope="col">Matrícula</th>
           <th scope="col">Apellidos y Nombres</th>
-          <th scope="col">Cohorte / Periodo</th>
+          <th scope="col">Promoción / Periodo</th>
           <th scope="col">Grado Académico</th>
-          <th scope="col">Condición F1</th>
+          <th scope="col">Condición</th>
           <th scope="col">Contacto Vigente</th>
           <th scope="col" class="sg-numeric">Acciones</th>
         </tr>
@@ -885,9 +879,9 @@
   </div>
 
   <!-- Barra de Paginación del Padrón -->
-  <nav class="sg-pagination-bar" id="paginacion-padron" aria-label="Paginación de expedientes del padrón">
+  <nav class="sg-pagination-bar" id="paginacion-padron" aria-label="Paginación de alumnos">
     <div class="sg-pagination-info">
-      <span>Mostrando <strong id="padron-desde">1</strong> - <strong id="padron-hasta">10</strong> de <strong id="padron-total">24</strong> expedientes</span>
+      <span>Mostrando <strong id="padron-desde">1</strong> - <strong id="padron-hasta">10</strong> de <strong id="padron-total">24</strong> alumnos</span>
       <label style="display: inline-flex; align-items: center; gap: 6px; margin-left: 10px;">
         <span>Filas:</span>
         <select class="sg-page-size-select" id="padron-por-pagina" onchange="cambiarFilasPorPaginaPadron(this.value)" aria-label="Cantidad de filas por página">
@@ -912,7 +906,7 @@
       </svg>
     </div>
     <h3 class="sg-empty-title">Sin resultados para los filtros seleccionados</h3>
-    <p class="sg-empty-desc">No se encontraron expedientes que coincidan con los criterios de búsqueda actuales. Intente restablecer los filtros para volver a ver la nómina completa.</p>
+    <p class="sg-empty-desc">No hay alumnos que coincidan con la búsqueda. Prueba quitando los filtros para ver la lista completa.</p>
     <div class="sg-empty-actions">
       <button type="button" class="sg-button sg-button-secondary" onclick="restablecerFiltros()">Restablecer filtros</button>
     </div>
@@ -928,11 +922,11 @@
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
     </div>
-    <h3 class="sg-empty-title">Aún no hay expedientes registrados en el padrón</h3>
+    <h3 class="sg-empty-title">Aún no hay alumnos registrados</h3>
     <p class="sg-empty-desc">Inicie el registro ingresando un nuevo egresado de forma individual o cargue el archivo oficial emitido por Secretaría Académica.</p>
     <div class="sg-empty-actions">
-      <button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">+ Nuevo Expediente Individual</button>
-      <button type="button" class="sg-button sg-button-secondary" onclick="activarModuloTab('importaciones')">Cargar Nómina Oficial (CSV/XLSX)</button>
+      <button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">+ Registrar un alumno</button>
+      <button type="button" class="sg-button sg-button-secondary" onclick="activarModuloTab('importaciones')">Cargar lista de alumnos (CSV o Excel)</button>
     </div>
   </div>
 </section>
@@ -941,42 +935,34 @@
 <!-- PESTAÑA 2: GESTIÓN DE COHORTES Y PLANES CURRICULARES (1998, 2017, 2027) -->
 <!-- ========================================================================= -->
 <section id="panel-cohortes" role="tabpanel" aria-labelledby="btn-tab-cohortes" style="display: none;">
-  <!-- Nota Institucional de Medición de Graduación -->
   <div class="sg-alert" style="margin-bottom: var(--sg-space-5); border-left-color: var(--sg-accent); background: var(--sg-soft);">
     @include('modules.seguimiento-egresado.partials.icon', ['name' => 'chart'])
-    <div>
-      <p style="margin: 0; font-weight: 600; color: var(--sg-navy);">Criterio de Cálculo · Indicador I1 (Tasa de Graduación)</p>
-      <p style="margin: 4px 0 0; font-size: 13px; color: var(--sg-text); line-height: 1.5;">
-        Conforme a la metodología institucional, el <strong>denominador oficial</strong> del indicador I1 corresponde al total de ingresantes registrados de la cohorte para evaluar la tasa longitudinal de titulación.
-      </p>
-    </div>
+    <p style="margin: 0; font-size: 13px; color: var(--sg-text); line-height: 1.5;">Una <strong>promoción</strong> es el grupo de alumnos que ingresó el mismo año. Su <strong>total de ingresantes</strong> sirve para calcular qué porcentaje llegó a egresar, así que regístralo antes de cargar a los alumnos.</p>
   </div>
 
   <div class="sg-section-title">
     <div>
-      <h2 style="font-size: 18px; margin: 0;">Catálogo de Cohortes Académicas</h2>
-      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Control de promociones de ingreso, vinculación al plan curricular y medición longitudinal de titulación.</p>
+      <h2 style="font-size: 18px; margin: 0;">Promociones</h2>
+      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Cada promoción tiene su año de ingreso, su plan de estudios y su total de ingresantes.</p>
     </div>
     <div class="sg-actions">
       <button type="button" class="sg-button" onclick="abrirModalNuevaCohorte()">
-        <span>+ Registrar Nueva Cohorte</span>
+        <span>+ Registrar promoción</span>
       </button>
     </div>
   </div>
 
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de cohortes">
+  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de promociones">
     <table class="sg-table" id="tabla-cohortes">
-      <caption>Catálogo oficial de cohortes de ingresantes y avance del Indicador I1</caption>
+      <caption>Promociones registradas y porcentaje de cada una que egresó</caption>
       <thead>
         <tr>
-          <th scope="col">Año Ingreso</th>
-          <th scope="col">Denominación Oficial de Promoción</th>
-          <th scope="col">Plan Curricular</th>
-          <th scope="col" class="sg-numeric">Ingresantes (Denom. I1)</th>
-          <th scope="col" class="sg-numeric">Egresados Acreditados</th>
-          <th scope="col" class="sg-numeric">Tasa I1 (%)</th>
-          <th scope="col">Duración Ref.</th>
-          <th scope="col">Etapa de Evaluación</th>
+          <th scope="col">Año de ingreso</th>
+          <th scope="col">Promoción</th>
+          <th scope="col">Plan de estudios</th>
+          <th scope="col" class="sg-numeric">Total de ingresantes</th>
+          <th scope="col" class="sg-numeric">Egresados</th>
+          <th scope="col" class="sg-numeric">Tasa de graduación</th>
           <th scope="col" class="sg-numeric">Acciones</th>
         </tr>
       </thead>
@@ -989,26 +975,26 @@
   <!-- SECCIÓN ADICIONAL: CATÁLOGO DE PLANES CURRICULARES (1998, 2017, 2027) -->
   <div class="sg-section-title" style="margin-top: var(--sg-space-8);">
     <div>
-      <h2 style="font-size: 18px; margin: 0;">Catálogo de Planes Curriculares</h2>
-      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Planes de estudio de Ingeniería Informática UNT: Plan 1998, Plan 2017 y Plan 2027.</p>
+      <h2 style="font-size: 18px; margin: 0;">Planes de estudio</h2>
+      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Los planes de estudio a los que pertenecen las promociones.</p>
     </div>
     <div class="sg-actions">
       <button type="button" class="sg-button" onclick="abrirModalNuevoPlan()">
-        <span>+ Registrar Nuevo Plan Curricular</span>
+        <span>+ Registrar plan de estudios</span>
       </button>
     </div>
   </div>
 
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de planes curriculares">
+  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de planes de estudio">
     <table class="sg-table" id="tabla-planes">
-      <caption>Catálogo de planes curriculares y vigencias de la Escuela de Ingeniería Informática</caption>
+      <caption>Planes de estudio y su vigencia</caption>
       <thead>
         <tr>
-          <th scope="col">Código / Versión</th>
-          <th scope="col">Vigencia Desde</th>
-          <th scope="col">Vigencia Hasta</th>
+          <th scope="col">Plan</th>
+          <th scope="col">Vigente desde</th>
+          <th scope="col">Vigente hasta</th>
           <th scope="col">Estado</th>
-          <th scope="col" class="sg-numeric">Cohortes Asignadas</th>
+          <th scope="col" class="sg-numeric">Promociones</th>
           <th scope="col" class="sg-numeric">Acciones</th>
         </tr>
       </thead>
@@ -1026,27 +1012,27 @@
   <div class="sg-panel" style="margin-bottom: var(--sg-space-5);">
     <div class="sg-section-title" style="margin-bottom: 8px;">
       <div>
-        <h2 style="font-size: 17px; margin: 0;">Control de Acreditación y Grados Académicos (F1 / F4)</h2>
+        <h2 style="font-size: 17px; margin: 0;">Grados y títulos</h2>
         <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">
-          Verificación de créditos aprobados, condición de apto para colación y registro oficial de resoluciones decanales y rectorales.
+          Grado académico de cada alumno, si está apto para graduarse y las resoluciones que lo respaldan.
         </p>
       </div>
     </div>
   </div>
 
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de acreditación">
+  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de grados y títulos">
     <table class="sg-table" id="tabla-acreditacion">
-      <caption>Nómina de grados académicos y resoluciones de colación institucional</caption>
+      <caption>Grados académicos y resoluciones de cada alumno</caption>
       <thead>
         <tr>
           <th scope="col">Matrícula</th>
-          <th scope="col">Egresado Titular</th>
-          <th scope="col">Grado Vigente</th>
-          <th scope="col">Créditos Validados</th>
-          <th scope="col">Condición F1</th>
+          <th scope="col">Alumno</th>
+          <th scope="col">Grado actual</th>
+          <th scope="col">Créditos</th>
+          <th scope="col">Condición</th>
           <th scope="col">Resolución Bachiller</th>
           <th scope="col">Resolución Título</th>
-          <th scope="col">Operador Responsable</th>
+          <th scope="col">Registrado por</th>
           <th scope="col" class="sg-numeric">Acciones</th>
         </tr>
       </thead>
@@ -1057,7 +1043,7 @@
   </div>
 
   <!-- Barra de Paginación de Acreditación -->
-  <nav class="sg-pagination-bar" id="paginacion-acreditacion" aria-label="Paginación de acreditación y grados">
+  <nav class="sg-pagination-bar" id="paginacion-acreditacion" aria-label="Paginación de grados y títulos">
     <div class="sg-pagination-info">
       <span>Mostrando <strong id="acred-desde">1</strong> - <strong id="acred-hasta">10</strong> de <strong id="acred-total">24</strong> registros</span>
       <label style="display: inline-flex; align-items: center; gap: 6px; margin-left: 10px;">
@@ -1079,45 +1065,41 @@
 <!-- PESTAÑA 4: CARGAS MASIVAS DE SECRETARÍA -->
 <!-- ========================================================================= -->
 <section id="panel-importaciones" role="tabpanel" aria-labelledby="btn-tab-importaciones" style="display: none;">
-  <!-- Zona de Carga Oficial Directa -->
   <div class="sg-dropzone">
     <div style="font-size: 32px; color: var(--sg-accent); margin-bottom: 8px;">📑</div>
-    <h2 style="font-size: 17px; margin: 0 0 6px; color: var(--sg-navy);">Carga Masiva de Nómina Oficial emitida por Secretaría</h2>
+    <h2 style="font-size: 17px; margin: 0 0 6px; color: var(--sg-navy);">Cargar alumnos aptos para egresar</h2>
     <p style="max-width: 68ch; margin: 0 auto 16px; font-size: 13px; color: var(--sg-muted); line-height: 1.5;">
-      Procesamiento automatizado de archivos CSV o XLSX. El sistema verifica duplicados estrictos en matrícula y DNI, calcula la firma criptográfica SHA-256 e inserta bajo transacción atómica y segura.
+      Elige la promoción y el archivo (CSV o Excel) con los alumnos que ya cumplen para egresar. Si una sola fila tiene un problema, no se guarda ninguna y te decimos cuál es para que la corrijas.
     </p>
 
     <div class="sg-actions" style="justify-content: center; gap: 12px;">
       <button type="button" class="sg-button" onclick="abrirModalImportacion()">
-        <span>+ Cargar Archivo de Padrón</span>
+        <span>+ Cargar alumnos</span>
       </button>
       <a href="{{ route('seguimiento-egresado.padron.plantilla') }}" class="sg-button sg-button-secondary">
-        <span>📥 Descargar Formato Modelo (CSV)</span>
+        <span>📥 Descargar el formato modelo (CSV)</span>
       </a>
     </div>
   </div>
 
   <div class="sg-section-title">
     <div>
-      <h2 style="font-size: 18px; margin: 0;">Auditoría de Cargas Procesadas</h2>
-      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Historial de importaciones con verificación SHA-256 y trazabilidad de registros procesados.</p>
+      <h2 style="font-size: 18px; margin: 0;">Historial de cargas</h2>
+      <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Los archivos que ya se cargaron y cómo salió cada uno.</p>
     </div>
   </div>
 
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de auditoría de importaciones">
+  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Historial de cargas">
     <table class="sg-table" id="tabla-importaciones">
-      <caption>Registro histórico de cargas masivas de nómina institucional</caption>
+      <caption>Archivos cargados con alumnos y su resultado</caption>
       <thead>
         <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Archivo Recibido</th>
-          <th scope="col">Firma Criptográfica SHA-256</th>
-          <th scope="col">Origen</th>
-          <th scope="col">Fecha de Proceso</th>
-          <th scope="col">Operador Responsable</th>
-          <th scope="col">Balance de Filas</th>
-          <th scope="col">Estado</th>
-          <th scope="col" class="sg-numeric">Acciones</th>
+          <th scope="col">Archivo</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Registrada por</th>
+          <th scope="col">Filas</th>
+          <th scope="col">Resultado</th>
+          <th scope="col" class="sg-numeric">Detalle</th>
         </tr>
       </thead>
       <tbody id="tbody-importaciones">
@@ -1127,9 +1109,9 @@
   </div>
 
   <!-- Barra de Paginación de Importaciones -->
-  <nav class="sg-pagination-bar" id="paginacion-importaciones" aria-label="Paginación de auditoría de importaciones">
+  <nav class="sg-pagination-bar" id="paginacion-importaciones" aria-label="Paginación del historial de cargas">
     <div class="sg-pagination-info">
-      <span>Mostrando <strong id="imp-desde">1</strong> - <strong id="imp-hasta">10</strong> de <strong id="imp-total">0</strong> cargas de secretaría</span>
+      <span>Mostrando <strong id="imp-desde">1</strong> - <strong id="imp-hasta">10</strong> de <strong id="imp-total">0</strong> cargas</span>
     </div>
     <div class="sg-pagination-controls" id="imp-paginas-controles">
       <!-- Generado dinámicamente -->
@@ -1146,14 +1128,14 @@
   <div class="sg-modal-dialog">
     <div class="sg-modal-head">
       <div>
-        <h2 id="modal-exp-title">Expediente Oficial de Egresado</h2>
+        <h2 id="modal-exp-title">Ficha del alumno</h2>
         <p id="modal-exp-subtitulo">Matrícula: — | Escuela de Ingeniería Informática UNT</p>
       </div>
       <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalExpediente()">✕</button>
     </div>
 
     <div class="sg-modal-body">
-      <div class="sg-subtabs" role="tablist" aria-label="Secciones del expediente">
+      <div class="sg-subtabs" role="tablist" aria-label="Secciones de la ficha">
         <button type="button" class="sg-subtab-btn is-active" id="subtab-btn-academico" role="tab" aria-selected="true" onclick="cambiarSubpestana('academico')">
           Trayectoria Académica
         </button>
@@ -1178,7 +1160,7 @@
               <span class="sg-info-val" id="exp-dni">—</span>
             </div>
             <div class="sg-info-block">
-              <span class="sg-info-label">Cohorte de Ingreso</span>
+              <span class="sg-info-label">Promoción</span>
               <span class="sg-info-val" id="exp-cohorte">—</span>
             </div>
             <div class="sg-info-block">
@@ -1241,7 +1223,7 @@
               <span class="sg-info-val" id="exp-ciudad">—</span>
             </div>
             <div class="sg-info-block">
-              <span class="sg-info-label">Operador Responsable</span>
+              <span class="sg-info-label">Registrado por</span>
               <span class="sg-info-val" id="exp-contacto-fecha">Secretaría Académica</span>
             </div>
           </div>
@@ -1282,7 +1264,7 @@
       <div class="sg-field">
         <label class="sg-label" for="egreso-fecha">Fecha real de egreso *</label>
         <input class="sg-input" id="egreso-fecha" type="date" required>
-        <p class="sg-help">El expediente y los contactos registrados se conservan. El periodo se calcula con esta fecha.</p>
+        <p class="sg-help">Sus datos y contactos registrados se conservan. El periodo se calcula con esta fecha.</p>
       </div>
       <p class="sg-field-error" id="egreso-error" role="alert" style="display: none;"></p>
     </div>
@@ -1298,7 +1280,7 @@
   <div class="sg-modal-dialog" style="max-width: 720px;">
     <div class="sg-modal-head">
       <div>
-        <h2 id="modal-nuevo-title">Registro de Expediente de Egresado</h2>
+        <h2 id="modal-nuevo-title">Registrar un alumno</h2>
         <p>Incorporación oficial al padrón de Ingeniería Informática UNT</p>
       </div>
       <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalNuevoExpediente()">✕</button>
@@ -1334,7 +1316,7 @@
           </div>
 
           <div class="sg-field">
-            <label class="sg-label" for="nuevo-cohorte">Cohorte de Ingresantes *</label>
+            <label class="sg-label" for="nuevo-cohorte">Promoción *</label>
             <select class="sg-select" id="nuevo-cohorte" required></select>
           </div>
 
@@ -1357,7 +1339,7 @@
             <label class="sg-label" for="nuevo-apto">Condición Apto F1 *</label>
             <select class="sg-select" id="nuevo-apto" required>
               <option value="APTO">Apto Verificado</option>
-              <option value="PENDIENTE">Trámite Documentario</option>
+              <option value="PENDIENTE">Trámite pendiente</option>
             </select>
           </div>
 
@@ -1375,7 +1357,7 @@
 
       <div class="sg-modal-foot">
         <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalNuevoExpediente()">Cancelar</button>
-        <button type="submit" class="sg-button" id="btn-submit-expediente">Registrar en Padrón</button>
+        <button type="submit" class="sg-button" id="btn-submit-expediente">Registrar alumno</button>
       </div>
     </form>
   </div>
@@ -1386,8 +1368,8 @@
   <div class="sg-modal-dialog" style="max-width: 650px;">
     <div class="sg-modal-head">
       <div>
-        <h2 id="modal-cohorte-title">Registrar Nueva Cohorte de Ingresantes</h2>
-        <p>Definición del denominador oficial para indicadores institucionales (I1)</p>
+        <h2 id="modal-cohorte-title">Registrar promoción</h2>
+        <p>Año de ingreso y total de ingresantes de la promoción</p>
       </div>
       <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalCohorte()">✕</button>
     </div>
@@ -1397,22 +1379,22 @@
       <div class="sg-modal-body">
         <div class="sg-form-grid">
           <div class="sg-field">
-            <label class="sg-label" for="cohorte-anio">Año de Ingreso *</label>
+            <label class="sg-label" for="cohorte-anio">Año de ingreso *</label>
             <input class="sg-input" id="cohorte-anio" type="number" required min="1990" max="2035" placeholder="Ej. 2022">
           </div>
 
           <div class="sg-field">
-            <label class="sg-label" for="cohorte-ingresantes">Total Ingresantes Oficiales (Denominador I1) *</label>
+            <label class="sg-label" for="cohorte-ingresantes">Total de ingresantes *</label>
             <input class="sg-input" id="cohorte-ingresantes" type="number" required min="1" max="500" placeholder="Ej. 50">
           </div>
 
           <div class="sg-field" style="grid-column: 1 / -1;">
-            <label class="sg-label" for="cohorte-nombre">Denominación de Promoción *</label>
-            <input class="sg-input" id="cohorte-nombre" type="text" required placeholder="Ej. Promoción 2022 — Grace Hopper">
+            <label class="sg-label" for="cohorte-nombre">Nombre de la promoción *</label>
+            <input class="sg-input" id="cohorte-nombre" type="text" required placeholder="Ej. Promoción 2022">
           </div>
 
           <div class="sg-field">
-            <label class="sg-label" for="cohorte-plan">Plan Curricular *</label>
+            <label class="sg-label" for="cohorte-plan">Plan de estudios *</label>
             <select class="sg-select" id="cohorte-plan" required>
               <option value="Plan 2017">Plan 2017 (Vigente)</option>
               <option value="Plan 1998">Plan 1998 (Cerrado)</option>
@@ -1421,20 +1403,20 @@
           </div>
 
           <div class="sg-field">
-            <label class="sg-label" for="cohorte-duracion">Duración Esperada (Años)</label>
+            <label class="sg-label" for="cohorte-duracion">Duración de la carrera (años)</label>
             <input class="sg-input" id="cohorte-duracion" type="number" value="5" min="3" max="8">
           </div>
 
           <div class="sg-field" style="grid-column: 1 / -1;">
-            <label class="sg-label" for="cohorte-obs">Observación Administrativa</label>
-            <textarea class="sg-textarea" id="cohorte-obs" style="min-height: 80px;" placeholder="Detalles de resolución de admisión, número de vacantes o notas de Secretaría."></textarea>
+            <label class="sg-label" for="cohorte-obs">Observaciones (opcional)</label>
+            <textarea class="sg-textarea" id="cohorte-obs" style="min-height: 80px;" placeholder="Cualquier nota útil sobre esta promoción."></textarea>
           </div>
         </div>
       </div>
 
       <div class="sg-modal-foot">
         <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalCohorte()">Cancelar</button>
-        <button type="submit" class="sg-button" id="btn-submit-cohorte">Guardar Cohorte</button>
+        <button type="submit" class="sg-button" id="btn-submit-cohorte">Guardar promoción</button>
       </div>
     </form>
   </div>
@@ -1468,7 +1450,7 @@
             <label class="sg-label" for="estado-select-apto">Condición de Apto *</label>
             <select class="sg-select" id="estado-select-apto" required>
               <option value="APTO">Apto para Graduación Verificado</option>
-              <option value="PENDIENTE">Trámite Documentario Pendiente</option>
+              <option value="PENDIENTE">Trámite pendiente</option>
             </select>
           </div>
 
@@ -1509,49 +1491,55 @@
 
 <!-- MODAL 5: IMPORTACIÓN MASIVA DE NÓMINA (importacion_padron) -->
 <div id="modal-importacion" class="sg-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-import-title">
-  <div class="sg-modal-dialog" style="max-width: 650px;">
+  <div class="sg-modal-dialog" style="max-width: 600px;">
     <form action="{{ route('seguimiento-egresado.padron.importar') }}" method="POST" enctype="multipart/form-data" id="form-importacion-padron">
       @csrf
       <div class="sg-modal-head">
         <div>
-          <h2 id="modal-import-title">Carga de Nómina Oficial de Secretaría</h2>
-          <p>Procesamiento automatizado de padrón con verificación criptográfica SHA-256</p>
+          <h2 id="modal-import-title">Cargar alumnos aptos para egresar</h2>
+          <p>Todos los alumnos del archivo se unen a la promoción que elijas</p>
         </div>
         <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalImportacion()">✕</button>
       </div>
 
       <div class="sg-modal-body">
+        <div class="sg-field" style="margin-bottom: var(--sg-space-4);">
+          <label class="sg-label" for="import-promocion">1. ¿A qué promoción pertenecen? *</label>
+          <select class="sg-select" id="import-promocion" name="promocion" required>
+            <option value="">Elige la promoción…</option>
+            @foreach($cohortes ?? [] as $promocion)
+              <option value="{{ $promocion->id }}" @selected((string) old('promocion') === (string) $promocion->id)>Promoción {{ $promocion->anio_ingreso }} · {{ $promocion->total_ingresantes }} ingresantes</option>
+            @endforeach
+          </select>
+          @if(count($cohortes ?? []) === 0)
+            <p class="sg-help">Aún no hay promociones. Primero regístrala en la pestaña «1. Promociones».</p>
+          @endif
+        </div>
+
         <div class="sg-dropzone">
-          <div style="font-size: 32px; color: var(--sg-accent); margin-bottom: 8px;">📂</div>
-          <h3 style="font-size: 16px; margin: 0 0 6px; color: var(--sg-navy);">Seleccione el archivo emitido por Secretaría</h3>
-          <p style="font-size: 13px; color: var(--sg-muted); margin: 0 0 16px;">
-            Formatos compatibles: CSV o XLSX. Detecta automáticamente duplicados por matrícula o DNI y registra trazabilidad por fila.
-          </p>
-          <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
-            <input type="file" name="archivo_padron" id="archivo-padron" accept=".csv,.txt,.xlsx" required style="font-size: 13px;">
-          </div>
+          <h3 style="font-size: 15px; margin: 0 0 6px; color: var(--sg-navy);">2. Elige el archivo con los alumnos</h3>
+          <p style="font-size: 13px; color: var(--sg-muted); margin: 0 0 14px;">CSV o Excel. Cada alumno necesita matrícula, documento, nombres, apellido paterno y correo institucional.</p>
+          <input type="file" name="archivo_padron" id="archivo-padron" accept=".csv,.txt,.xlsx" required style="font-size: 13px;">
           <div style="margin-top: 14px;">
             <a href="{{ route('seguimiento-egresado.padron.plantilla') }}" class="sg-button sg-button-secondary" style="font-size: 12px; padding: 6px 12px;">
-              <span>📥 Descargar Formato Modelo (CSV)</span>
+              <span>📥 Descargar el formato modelo (CSV)</span>
             </a>
           </div>
         </div>
 
         <div class="sg-panel">
-          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 8px; color: var(--sg-muted);">Reglas de Control de Integridad (Procesamiento Atómico)</h4>
+          <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 8px; color: var(--sg-muted);">Antes de cargar</h4>
           <ul style="font-size: 13px; color: var(--sg-text); padding-left: 18px; margin: 0; line-height: 1.6;">
-            <li>Carga atómica oficial (Todo o Nada): si se detecta cualquier inconsistencia, se cancela la importación para evitar registros parciales.</li>
-            <li>Soporte nativo para libros de cálculo <strong>XLSX</strong> y archivos delimitados <strong>CSV</strong>.</li>
-            <li>Validación obligatoria de existencia de la <strong>Cohorte</strong> en catálogo institucional (no se admiten cohortes inexistentes).</li>
-            <li>Detección inmediata de duplicados en matrícula universitaria o documento de identidad.</li>
-            <li>Generación de firma de control SHA-256 para auditoría de integridad del archivo.</li>
+            <li>Si una fila tiene un error (matrícula repetida, correo faltante…), <strong>no se guarda ninguna</strong>. Te diremos cuál es para que corrijas el archivo.</li>
+            <li>Los alumnos se registran como «aptos para egresar». La fecha de egreso se confirma después, cuando egresan.</li>
+            <li>Si el archivo trae una columna de promoción, debe coincidir con la que elegiste.</li>
           </ul>
         </div>
       </div>
 
       <div class="sg-modal-foot">
-        <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalImportacion()">Cerrar</button>
-        <button type="submit" class="sg-button">Procesar Importación Oficial</button>
+        <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalImportacion()">Cancelar</button>
+        <button type="submit" class="sg-button">Cargar alumnos</button>
       </div>
     </form>
   </div>
@@ -1562,8 +1550,8 @@
   <div class="sg-modal-dialog" style="max-width: 780px;">
     <div class="sg-modal-head">
       <div>
-        <h2 id="modal-det-imp-title">Detalle de Ejecución de Carga</h2>
-        <p id="modal-det-imp-subtitulo">Archivo: — | Operador: Secretaría Académica</p>
+        <h2 id="modal-det-imp-title">Detalle de la carga</h2>
+        <p id="modal-det-imp-subtitulo">Archivo: —</p>
       </div>
       <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalDetalleImportacion()">✕</button>
     </div>
@@ -1572,11 +1560,11 @@
       <div class="sg-panel" style="margin-bottom: 16px;">
         <div class="sg-info-grid">
           <div class="sg-info-block">
-            <span class="sg-info-label">Estado de Carga</span>
+            <span class="sg-info-label">Resultado</span>
             <span class="sg-info-val" id="det-imp-estado">—</span>
           </div>
           <div class="sg-info-block">
-            <span class="sg-info-label">Filas Procesadas</span>
+            <span class="sg-info-label">Filas revisadas</span>
             <span class="sg-info-val" id="det-imp-total">0 registros</span>
           </div>
           <div class="sg-info-block">
@@ -1584,22 +1572,22 @@
             <span class="sg-info-val" style="color: var(--sg-success);" id="det-imp-aceptadas">0 registros</span>
           </div>
           <div class="sg-info-block">
-            <span class="sg-info-label">Rechazadas / Conflictos</span>
+            <span class="sg-info-label">Con problemas</span>
             <span class="sg-info-val" style="color: var(--sg-danger);" id="det-imp-rechazadas">0 registros</span>
           </div>
         </div>
       </div>
 
-      <h3 style="font-size: 14px; margin: 0 0 10px; color: var(--sg-navy);">Registro de Filas con Observación</h3>
+      <h3 style="font-size: 14px; margin: 0 0 10px; color: var(--sg-navy);">Filas con problemas</h3>
       <div class="sg-table-wrap">
         <table class="sg-table">
-          <caption>Detalle de filas rechazadas por duplicidad o formato en la importación</caption>
+          <caption>Filas que no se pudieron cargar y el motivo</caption>
           <thead>
             <tr>
-              <th scope="col">Fila #</th>
-              <th scope="col">Datos de Entrada</th>
+              <th scope="col">Fila</th>
+              <th scope="col">Datos de la fila</th>
               <th scope="col">Estado</th>
-              <th scope="col">Detalle / Causa de Observación</th>
+              <th scope="col">Qué pasó</th>
             </tr>
           </thead>
           <tbody id="tbody-detalle-filas"></tbody>
@@ -1618,7 +1606,7 @@
   <div class="sg-modal-dialog" style="max-width: 600px;">
     <div class="sg-modal-head">
       <div>
-        <h2 id="modal-plan-title">Registrar Plan Curricular</h2>
+        <h2 id="modal-plan-title">Registrar plan de estudios</h2>
         <p>Definición del plan de estudios y periodo de vigencia institucional</p>
       </div>
       <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarModalPlan()">✕</button>
@@ -1741,7 +1729,8 @@
   $importacionesJs = [];
   if (isset($importaciones) && count($importaciones) > 0) {
       foreach ($importaciones as $imp) {
-          $filasRechazadas = $imp->filas->where('estado', 'RECHAZADA');
+          $filasRechazadas = $imp->filas->where('estado', 'RECHAZADA')
+              ->reject(fn ($fila) => $fila->detalle_error === \App\Modules\SeguimientoEgresado\Services\PadronImportService::MENSAJE_FILA_SIN_ERROR);
           $filasDetalle = [];
           foreach ($filasRechazadas as $fr) {
               $filasDetalle[] = [
@@ -1885,26 +1874,11 @@
   // Helper CSRF Token
   const getCsrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
 
-  // Sistema de Toasts Institucionales
+  // Avisos de resultado: usan el diálogo único del módulo (partials/dialogo.blade.php).
   function mostrarToast(mensaje, tipo = 'success') {
-    const toast = document.getElementById('sg-toast-notificacion');
-    const msg = document.getElementById('sg-toast-mensaje');
-    if (!toast || !msg) return;
-
-    msg.textContent = mensaje;
-    if (tipo === 'success') {
-      toast.style.borderLeftColor = 'var(--sg-success)';
-      toast.style.background = 'var(--sg-success-soft)';
-      toast.style.color = 'var(--sg-text)';
-    } else {
-      toast.style.borderLeftColor = 'var(--sg-danger)';
-      toast.style.background = 'var(--sg-danger-soft)';
-      toast.style.color = 'var(--sg-text)';
+    if (typeof window.sgDialogo === 'function') {
+      window.sgDialogo({ tipo: tipo === 'error' ? 'error' : 'success', mensaje });
     }
-    toast.classList.add('is-open');
-    setTimeout(() => {
-      toast.classList.remove('is-open');
-    }, 4500);
   }
 
   // =========================================================================
@@ -1969,9 +1943,9 @@
         <div class="sg-cmb-info">
           <div style="display:flex; align-items:center; gap:8px;">
             <h3 class="sg-cmb-title">Padrón Consolidado · Vista Global</h3>
-            <span class="sg-status-pill sg-pill-neutral">Todas las cohortes</span>
+            <span class="sg-status-pill sg-pill-neutral">Todas las promociones</span>
           </div>
-          <p class="sg-cmb-desc">Nómina unificada de egresados de Ingeniería Informática UNT en todas sus cohortes académicas registradas.</p>
+          <p class="sg-cmb-desc">Lista unificada de alumnos de Ingeniería Informática UNT en todas sus promociones registradas.</p>
         </div>
         <div class="sg-cmb-metrics">
           <div class="sg-cmb-stat">
@@ -1980,7 +1954,7 @@
           </div>
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val" style="color: var(--sg-navy);">${totalGen}</span>
-            <span class="sg-cmb-stat-lbl">Expedientes</span>
+            <span class="sg-cmb-stat-lbl">Alumnos</span>
           </div>
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val" style="color: var(--sg-success);">${totalAcred}</span>
@@ -1988,7 +1962,7 @@
           </div>
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val">${numCohortes}</span>
-            <span class="sg-cmb-stat-lbl">Cohortes Activas</span>
+            <span class="sg-cmb-stat-lbl">Promociones</span>
           </div>
         </div>
       `;
@@ -2007,23 +1981,22 @@
       banner.innerHTML = `
         <div class="sg-cmb-info">
           <div style="display:flex; align-items:center; gap:8px;">
-            <h3 class="sg-cmb-title">Cohorte ${c.anio} · ${c.nombre}</h3>
-            <span class="sg-status-pill ${pillClass}">${c.estado}</span>
+            <h3 class="sg-cmb-title">Promoción ${c.anio} · ${c.nombre}</h3>
           </div>
-          <p class="sg-cmb-desc">${c.plan} · Duración programada: ${c.duracion} años · ${c.obs || 'Sin observaciones registradas'}</p>
+          <p class="sg-cmb-desc">${c.plan} · Carrera de ${c.duracion} años</p>
         </div>
         <div class="sg-cmb-metrics">
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val" style="color: var(--sg-navy);">${c.ingresantes}</span>
-            <span class="sg-cmb-stat-lbl">Ingresantes (Denom. I1)</span>
+            <span class="sg-cmb-stat-lbl">Total de ingresantes</span>
           </div>
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val" style="color: var(--sg-success);">${c.egresados}</span>
-            <span class="sg-cmb-stat-lbl">Egresados Acreditados</span>
+            <span class="sg-cmb-stat-lbl">Egresados</span>
           </div>
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val" style="color: var(--sg-navy);">${tasa}%</span>
-            <span class="sg-cmb-stat-lbl">Tasa Titulación (I1)</span>
+            <span class="sg-cmb-stat-lbl">Tasa de graduación</span>
           </div>
           <div class="sg-cmb-stat">
             <span class="sg-cmb-stat-val">${c.plan}</span>
@@ -2057,7 +2030,7 @@
           <span class="sg-status-pill sg-pill-neutral">Todas</span>
         </div>
         <h3 class="sg-cohort-name">Padrón Consolidado</h3>
-        <p class="sg-stat-sub">Todas las cohortes registradas</p>
+        <p class="sg-stat-sub">Todas las promociones registradas</p>
         <div class="sg-cohort-stats">
           <div>
             <div class="sg-cohort-stat-val">${totalIngresantesGlobal}</div>
@@ -2065,7 +2038,7 @@
           </div>
           <div>
             <div class="sg-cohort-stat-val" style="color: var(--sg-success);">${totalEgresadosGlobal}</div>
-            <div class="sg-cohort-stat-lbl">Acreditados</div>
+            <div class="sg-cohort-stat-lbl">Con grado</div>
           </div>
         </div>
       </div>
@@ -2081,22 +2054,21 @@
       html += `
         <div class="sg-cohort-card" id="card-cohorte-${c.anio}" onclick="filtrarCohorteRapido('${c.anio}')" tabindex="0" role="button" aria-pressed="false">
           <div class="sg-cohort-header">
-            <span class="sg-cohort-code">Cohorte ${c.anio}</span>
-            <span class="sg-status-pill ${pillClass}">${c.estado}</span>
+            <span class="sg-cohort-code">Promoción ${c.anio}</span>
           </div>
           <h3 class="sg-cohort-name">${c.nombre}</h3>
-          <p class="sg-stat-sub">${c.plan} · Ref. ${c.duracion} años</p>
+          <p class="sg-stat-sub">${c.plan}</p>
           <div class="sg-cohort-stats">
             <div>
               <div class="sg-cohort-stat-val">${c.ingresantes}</div>
-              <div class="sg-cohort-stat-lbl">Ingresantes (I1)</div>
+              <div class="sg-cohort-stat-lbl">Ingresantes</div>
             </div>
             <div>
               <div class="sg-cohort-stat-val" style="color: var(--sg-success);">${c.egresados}</div>
-              <div class="sg-cohort-stat-lbl">Acreditados</div>
+              <div class="sg-cohort-stat-lbl">Con grado</div>
             </div>
           </div>
-          <div class="sg-progress-bar" title="Tasa de titulación I1: ${tasa}%">
+          <div class="sg-progress-bar" title="Tasa de graduación: ${tasa}%">
             <div class="sg-progress-fill" style="width: ${Math.min(tasa, 100)}%;"></div>
           </div>
         </div>
@@ -2106,15 +2078,15 @@
     if (cohortesLista.length > 4) {
       const restantes = cohortesLista.length - 4;
       html += `
-        <div class="sg-cohort-card sg-cohort-card-more" onclick="activarModuloTab('cohortes')" role="button" tabindex="0" title="Ver archivo histórico completo en pestaña Cohortes">
+        <div class="sg-cohort-card sg-cohort-card-more" onclick="activarModuloTab('cohortes')" role="button" tabindex="0" title="Ver todas las promociones">
           <div class="sg-cohort-header">
             <span class="sg-cohort-code">Histórico</span>
             <span class="sg-status-pill sg-pill-neutral">+${restantes} más</span>
           </div>
-          <h3 class="sg-cohort-name">Todas las Cohortes</h3>
-          <p class="sg-stat-sub">Consulte el archivo histórico institucional completo.</p>
+          <h3 class="sg-cohort-name">Todas las promociones</h3>
+          <p class="sg-stat-sub">Mira todas las promociones registradas.</p>
           <div style="font-size: 12px; font-weight: 600; color: var(--sg-accent); margin-top: auto; padding-top: 6px;">
-            Ver en pestaña Cohortes →
+            Ver promociones →
           </div>
         </div>
       `;
@@ -2187,7 +2159,7 @@
           <small style="color: var(--sg-muted); font-size: 12px;">DNI: ${item.dni} · Trujillo</small>
         </td>
         <td>
-          <div style="font-weight: 500;">Cohorte ${item.cohorte}</div>
+          <div style="font-weight: 500;">Promoción ${item.cohorte}</div>
           <small style="color: var(--sg-muted); font-size: 12px;">Plan: ${item.plan} · Egreso: ${item.egreso}</small>
         </td>
         <td>${gradoPill}</td>
@@ -2317,7 +2289,7 @@
     tbody.innerHTML = '';
 
     if (Object.keys(cohortesData).length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--sg-muted); padding: 32px;">No hay cohortes registradas. Utilice "+ Registrar Nueva Cohorte" para definir una cohorte y su denominador I1.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--sg-muted); padding: 32px;">Aún no hay promociones registradas. Usa «+ Registrar promoción» para crear la primera.</td></tr>';
       const badgeCohortes = document.getElementById('badge-total-cohortes');
       if (badgeCohortes) badgeCohortes.textContent = '0';
       const kpiCohortes = document.getElementById('kpi-total-cohortes');
@@ -2331,7 +2303,7 @@
       const tasa = c.ingresantes > 0 ? ((c.egresados / c.ingresantes) * 100).toFixed(1) : '0.0';
 
       tr.innerHTML = `
-        <td><strong style="color: var(--sg-navy);">Cohorte ${c.anio}</strong></td>
+        <td><strong style="color: var(--sg-navy);">Promoción ${c.anio}</strong></td>
         <td>
           <div style="font-weight: 600; color: var(--sg-text);">${c.nombre}</div>
           <small style="color: var(--sg-muted); font-size: 12px;">${c.obs ? c.obs.substring(0, 65) + '...' : 'Sin observaciones'}</small>
@@ -2342,15 +2314,13 @@
         <td class="sg-numeric">
           <span style="font-weight: 700; color: var(--sg-navy);">${tasa}%</span>
         </td>
-        <td>${c.duracion} años</td>
-        <td><span class="sg-status-pill sg-pill-primary">${c.estado}</span></td>
         <td class="sg-numeric">
           <div class="sg-actions" style="justify-content: flex-end; gap: 6px;">
             <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirEditarCohorte('${c.anio}')">
               Editar
             </button>
-            <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="filtrarCohorteDesdeTabla('${c.anio}')" title="Ver egresados de esta cohorte">
-              Ver Nómina
+            <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="filtrarCohorteDesdeTabla('${c.anio}')" title="Ver los alumnos de esta promoción">
+              Ver alumnos
             </button>
           </div>
         </td>
@@ -2379,14 +2349,14 @@
       if (!select) return;
       const valorPrevio = select.value;
       if (sId === 'filtro-cohorte') {
-        select.innerHTML = '<option value="">Todas las cohortes</option>';
+        select.innerHTML = '<option value="">Todas las promociones</option>';
       } else {
         select.innerHTML = '';
       }
       Object.values(cohortesData).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.anio;
-        opt.textContent = `Cohorte ${c.anio} (${c.nombre})`;
+        opt.textContent = `Promoción ${c.anio} (${c.nombre})`;
         select.appendChild(opt);
       });
       if (valorPrevio) select.value = valorPrevio;
@@ -2394,11 +2364,11 @@
   }
 
   function abrirModalNuevaCohorte() {
-    document.getElementById('modal-cohorte-title').textContent = 'Registrar Nueva Cohorte de Ingresantes';
+    document.getElementById('modal-cohorte-title').textContent = 'Registrar promoción';
     document.getElementById('form-cohorte').reset();
     document.getElementById('cohorte-edit-id').value = '';
     actualizarSelectorPlanesEnCohorte();
-    document.getElementById('btn-submit-cohorte').textContent = 'Guardar Cohorte';
+    document.getElementById('btn-submit-cohorte').textContent = 'Guardar promoción';
     document.getElementById('modal-cohorte').classList.add('is-open');
     document.getElementById('cohorte-anio').focus();
   }
@@ -2406,7 +2376,7 @@
   function abrirEditarCohorte(anio) {
     const c = cohortesData[anio];
     if (!c) return;
-    document.getElementById('modal-cohorte-title').textContent = 'Editar Cohorte Académica ' + anio;
+    document.getElementById('modal-cohorte-title').textContent = 'Editar promoción ' + anio;
     document.getElementById('cohorte-edit-id').value = anio;
     document.getElementById('cohorte-anio').value = c.anio;
     document.getElementById('cohorte-ingresantes').value = c.ingresantes;
@@ -2415,7 +2385,7 @@
     document.getElementById('cohorte-plan').value = c.plan;
     document.getElementById('cohorte-duracion').value = c.duracion;
     document.getElementById('cohorte-obs').value = c.obs || '';
-    document.getElementById('btn-submit-cohorte').textContent = 'Actualizar Cohorte';
+    document.getElementById('btn-submit-cohorte').textContent = 'Guardar cambios';
     document.getElementById('modal-cohorte').classList.add('is-open');
   }
 
@@ -2454,7 +2424,7 @@
       });
       const data = await resp.json();
       if (!resp.ok) {
-        throw new Error(data.message || 'Error al guardar la cohorte');
+        throw new Error(data.message || 'No se pudo guardar la promoción');
       }
     } catch (e) {
       console.warn('Persistencia en base de datos:', e.message);
@@ -2477,7 +2447,7 @@
     cerrarModalCohorte();
     renderizarCardsCohortes();
     renderizarTablaCohortes();
-    mostrarToast(`Cohorte ${anio} guardada exitosamente.`);
+    mostrarToast(editId ? `La promoción ${anio} se actualizó.` : `La promoción ${anio} quedó registrada.`);
   }
 
   // =========================================================================
@@ -2506,7 +2476,7 @@
         <td>${p.desde || 'Sin fecha'}</td>
         <td>${p.hasta || 'Vigente / Sin término'}</td>
         <td>${estadoPill}</td>
-        <td class="sg-numeric"><strong>${p.cohortesCount || 0}</strong> cohortes</td>
+        <td class="sg-numeric"><strong>${p.cohortesCount || 0}</strong> promociones</td>
         <td class="sg-numeric">
           <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirEditarPlan(${p.id})">
             Editar
@@ -2609,7 +2579,7 @@
 
     cerrarModalPlan();
     renderizarTablaPlanes();
-    mostrarToast(`Plan curricular '${codigo}' guardado exitosamente.`);
+    mostrarToast(`El plan de estudios ${codigo} quedó guardado.`);
   }
 
   // =========================================================================
@@ -2625,7 +2595,7 @@
     const totalFiltrados = data.length;
 
     if (totalFiltrados === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--sg-muted); padding: 32px;">No se encontraron registros de egresados para acreditar en el padrón.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--sg-muted); padding: 32px;">Aún no hay alumnos con grado o título registrado.</td></tr>';
       crearControlesPaginacion({
         contenedorId: 'acred-paginas-controles',
         totalFilas: 0,
@@ -2656,7 +2626,7 @@
       else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado</span>';
 
       let aptoBadge = item.aptoF1 === 'APTO'
-        ? '<span class="sg-status-pill sg-pill-success">Apto Acreditado</span>'
+        ? '<span class="sg-status-pill sg-pill-success">Apto</span>'
         : '<span class="sg-status-pill sg-pill-warning">Trámite Pendiente</span>';
 
       tr.innerHTML = `
@@ -2712,7 +2682,7 @@
     if (!item) return;
     document.getElementById('estado-egresado-id').value = id;
     document.getElementById('modal-estado-title').textContent = 'Actualizar Estado: ' + item.nombreCompleto;
-    document.getElementById('modal-estado-subtitulo').textContent = 'Matrícula: ' + item.codigo + ' | Expediente Nº ' + id;
+    document.getElementById('modal-estado-subtitulo').textContent = 'Matrícula: ' + item.codigo;
     document.getElementById('estado-select-grado').value = item.grado;
     document.getElementById('estado-select-apto').value = item.aptoF1;
     document.getElementById('estado-creditos').value = parseFloat(item.creditos) || '';
@@ -2786,12 +2756,15 @@
     cerrarModalEstado();
     renderizarTablaPadron();
     renderizarTablaAcreditacion();
-    mostrarToast(`Acreditación actualizada para ${item.nombreCompleto}.`);
+    mostrarToast(`Se actualizó el grado de ${item.nombreCompleto}.`);
   }
 
   // =========================================================================
   // GESTIÓN DE CARGAS DE SECRETARÍA (importacion_padron e importacion_fila)
   // =========================================================================
+  const etiquetaCarga = (e) => ({ VALIDADA: 'Cargada', CON_ERRORES: 'Con errores', EN_PROCESO: 'En proceso' }[e] || e);
+  const claseCarga = (e) => (e === 'VALIDADA' ? 'sg-pill-success' : (e === 'CON_ERRORES' ? 'sg-pill-danger' : 'sg-pill-neutral'));
+
   function renderizarTablaImportaciones() {
     const tbody = document.getElementById('tbody-importaciones');
     if (!tbody) return;
@@ -2801,7 +2774,7 @@
     const totalFiltrados = data.length;
 
     if (totalFiltrados === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--sg-muted); padding: 32px;">Aún no se han registrado importaciones masivas de nóminas oficiales.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--sg-muted); padding: 32px;">Todavía no se ha cargado ninguna lista de alumnos.</td></tr>';
       crearControlesPaginacion({
         contenedorId: 'imp-paginas-controles',
         totalFilas: 0,
@@ -2826,27 +2799,21 @@
     filasPagina.forEach(imp => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>#${imp.id}</strong></td>
         <td>
           <div style="font-weight: 600; color: var(--sg-navy);">${imp.archivo}</div>
-          <small style="color: var(--sg-muted); font-size: 12px;">${imp.totalFilas} registros procesados</small>
         </td>
-        <td>
-          <code style="font-size: 11px; background: var(--sg-hover); padding: 3px 6px; border-radius: var(--sg-radius-sm); border: 1px solid var(--sg-border); font-family: var(--sg-font-code);">${imp.hash.substring(0, 16)}...</code>
-        </td>
-        <td><span class="sg-badge">${imp.origen}</span></td>
         <td>${imp.fecha}</td>
         <td style="font-size: 13px;">${imp.operador}</td>
         <td>
           <div style="font-size: 13px; font-variant-numeric: tabular-nums;">
             <span style="color: var(--sg-success); font-weight: 600;">${imp.filasAceptadas} aceptadas</span>
-            ${imp.filasRechazadas > 0 ? `· <span style="color: var(--sg-danger); font-weight: 600;">${imp.filasRechazadas} observadas</span>` : ''}
+            ${imp.filasRechazadas > 0 ? `· <span style="color: var(--sg-danger); font-weight: 600;">${imp.filasRechazadas} con problemas</span>` : ''}
           </div>
         </td>
-        <td><span class="sg-status-pill sg-pill-success">${imp.estado}</span></td>
+        <td><span class="sg-status-pill ${claseCarga(imp.estado)}">${etiquetaCarga(imp.estado)}</span></td>
         <td class="sg-numeric">
           <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="verDetalleImportacion(${imp.id})">
-            Ver Log
+            Ver detalle
           </button>
         </td>
       `;
@@ -2875,9 +2842,9 @@
     const imp = importacionesData.find(i => i.id === id);
     if (!imp) return;
 
-    document.getElementById('modal-det-imp-title').textContent = 'Ejecución de Carga #' + imp.id + ' — ' + imp.archivo;
-    document.getElementById('modal-det-imp-subtitulo').textContent = 'Fecha: ' + imp.fecha + ' | Operador: ' + imp.operador;
-    document.getElementById('det-imp-estado').innerHTML = '<span class="sg-status-pill sg-pill-success">' + imp.estado + '</span>';
+    document.getElementById('modal-det-imp-title').textContent = 'Carga: ' + imp.archivo;
+    document.getElementById('modal-det-imp-subtitulo').textContent = 'Fecha: ' + imp.fecha + ' | Registrada por: ' + imp.operador;
+    document.getElementById('det-imp-estado').innerHTML = '<span class="sg-status-pill ' + claseCarga(imp.estado) + '">' + etiquetaCarga(imp.estado) + '</span>';
     document.getElementById('det-imp-total').textContent = imp.totalFilas + ' registros';
     document.getElementById('det-imp-aceptadas').textContent = imp.filasAceptadas + ' registros';
     document.getElementById('det-imp-rechazadas').textContent = imp.filasRechazadas + ' registros';
@@ -2887,7 +2854,7 @@
 
     if (!imp.filasDetalle || imp.filasDetalle.length === 0) {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="4" style="text-align: center; color: var(--sg-muted); padding: 18px;">Todas las filas fueron aceptadas y validadas sin conflictos de integridad.</td>';
+      tr.innerHTML = '<td colspan="4" style="text-align: center; color: var(--sg-muted); padding: 18px;">Todas las filas se aceptaron sin problemas.</td>';
       tbody.appendChild(tr);
     } else {
       imp.filasDetalle.forEach(f => {
@@ -2895,7 +2862,7 @@
         tr.innerHTML = `
           <td><strong>${f.fila}</strong></td>
           <td><code style="font-size: 11px; font-family: var(--sg-font-code);">${f.datos}</code></td>
-          <td><span class="sg-status-pill sg-pill-danger">${f.estado}</span></td>
+          <td><span class="sg-status-pill sg-pill-danger">Con problema</span></td>
           <td style="color: var(--sg-danger); font-size: 13px;">${f.causa}</td>
         `;
         tbody.appendChild(tr);
@@ -2956,6 +2923,7 @@
         const detalle = data.errors ? Object.values(data.errors).flat().join(' ') : '';
         throw new Error(detalle || data.message || 'No se pudo confirmar el egreso.');
       }
+      try { sessionStorage.setItem('sgAviso', data.message || 'Se confirmó el egreso.'); } catch (_) {}
       window.location.reload();
     } catch (e) {
       error.textContent = e.message;
@@ -2975,7 +2943,7 @@
     document.getElementById('exp-dni').textContent = egresado.dni;
     const cohorteInfo = cohortesData[egresado.cohorte];
     const descCohorte = cohorteInfo?.nombre ? ` · ${cohorteInfo.nombre}` : '';
-    document.getElementById('exp-cohorte').textContent = `Cohorte ${egresado.cohorte}${descCohorte}`;
+    document.getElementById('exp-cohorte').textContent = `Promoción ${egresado.cohorte}${descCohorte}`;
     document.getElementById('exp-egreso').textContent = `${egresado.egreso} · ${egresado.fechaEgreso}`;
     document.getElementById('exp-plan').textContent = egresado.plan;
     document.getElementById('exp-creditos').textContent = egresado.creditos;
@@ -2988,7 +2956,7 @@
     document.getElementById('exp-grado-badge').innerHTML = gradoPill;
 
     let aptoBadge = egresado.aptoF1 === 'APTO'
-      ? '<span class="sg-status-pill sg-pill-success">Apto Acreditado</span>'
+      ? '<span class="sg-status-pill sg-pill-success">Apto</span>'
       : '<span class="sg-status-pill sg-pill-warning">Trámite Pendiente</span>';
     document.getElementById('exp-apto-f1').innerHTML = aptoBadge;
 
@@ -3034,7 +3002,7 @@
             timeline.appendChild(node);
           });
         } else {
-          timeline.innerHTML = '<p style="color:var(--sg-muted); font-size:13px;">Sin historial de campañas registradas aún para este expediente.</p>';
+          timeline.innerHTML = '<p style="color:var(--sg-muted); font-size:13px;">Este alumno todavía no tiene campañas registradas.</p>';
         }
       }
     } catch (e) {
@@ -3152,7 +3120,7 @@
       }
     } catch (e) {
       // Si el servidor no guardó el expediente no se muestra como guardado.
-      alert('No se guardó el expediente: ' + e.message);
+      mostrarToast('No se pudo registrar al alumno. ' + e.message, 'error');
       return;
     }
 
@@ -3212,7 +3180,7 @@
     renderizarCardsCohortes();
     renderizarTablaPadron();
     renderizarTablaAcreditacion();
-    mostrarToast(`Expediente ${cod} guardado exitosamente en el padrón.`);
+    mostrarToast(`El alumno con matrícula ${cod} quedó registrado.`);
   }
 
   // =========================================================================
@@ -3255,5 +3223,11 @@
       activarModuloTab(tab);
     }
   });
+
+  // Aviso pendiente de una acción que recargó la página (por ejemplo, confirmar un egreso).
+  try {
+    const avisoPendiente = sessionStorage.getItem('sgAviso');
+    if (avisoPendiente) { sessionStorage.removeItem('sgAviso'); mostrarToast(avisoPendiente); }
+  } catch (_) {}
 </script>
 @endpush

@@ -27,7 +27,7 @@
       <div class="sg-nav">
         @foreach ([
           ['index', 'Inicio', 'home'],
-          ['padron', 'Padrón y cohortes', 'users'],
+          ['padron', 'Padrón y promociones', 'users'],
           ['campanias', 'Campañas e invitaciones', 'mail'],
           ['empresas', 'Encuesta empresarial', 'building'],
           ['indicadores', 'Indicadores I1 a I6', 'chart'],

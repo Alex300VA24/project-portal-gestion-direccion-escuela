@@ -36,12 +36,14 @@ class EgresadosDemoSeeder extends Seeder
             $usuario = $this->usuarioInterno();
             $cohorte = $this->cohorte();
 
-            $valeria = $this->egresado($cohorte, '2019100231', '72145830', 'Valeria', 'Quispe', 'Mendoza', 'vquispe@unitru.edu.pe', null, null);
-            $renzo = $this->egresado($cohorte, '2019100187', '73920415', 'Renzo', 'Paredes', 'Villanueva', 'acortegana@unitru.edu.pe', '2024-07-19', '2024-I');
-            $camila = $this->egresado($cohorte, '2019100094', '70388261', 'Camila', 'Sánchez', 'Ulloa', 'agamboaa@unitru.edu.pe', '2023-12-15', '2023-II');
+            $valeria = $this->egresado($cohorte, '2019100231', '72145830', 'Valeria', 'Quispe', 'Mendoza', 'acortegana@unitru.edu.pe', null, null);
+            $andres = $this->egresado($cohorte, '2019100264', '73641850', 'Andrés', 'Torres', 'Vega', 'agamboaa@unitru.edu.pe', null, null);
+            $renzo = $this->egresado($cohorte, '2019100187', '73920415', 'Renzo', 'Paredes', 'Villanueva', 'rparedes@unitru.edu.pe', '2024-07-19', '2024-I');
+            $camila = $this->egresado($cohorte, '2019100094', '70388261', 'Camila', 'Sánchez', 'Ulloa', 'csanchez@unitru.edu.pe', '2023-12-15', '2023-II');
 
             // Valeria está por egresar (si el catálogo no trae «PROXIMO», queda como egresada).
             $this->estadoAcademico($valeria, $this->idDe('cat_estado_academico', 'PROXIMO') ?? $this->idDe('cat_estado_academico', 'EGRESADO'), false, $usuario);
+            $this->estadoAcademico($andres, $this->idDe('cat_estado_academico', 'PROXIMO') ?? $this->idDe('cat_estado_academico', 'EGRESADO'), false, $usuario);
             $this->estadoAcademico($renzo, $this->idDe('cat_estado_academico', 'EGRESADO'), true, $usuario);
             $this->estadoAcademico($camila, $this->idDe('cat_estado_academico', 'TITULADO'), true, $usuario);
 
@@ -83,16 +85,21 @@ class EgresadosDemoSeeder extends Seeder
         ]);
     }
 
+    /** La promoción de ese año: si ya existe (por ejemplo la de los datos base) se reutiliza, para no repetir promociones. */
     private function cohorte(string $codigo = 'PROM-2019-I', int $anio = 2019): int
     {
-        $plan = DB::table('seguimiento_egresado.plan_curricular')->where('codigo_version', 'PC-2018')->value('id')
-            ?? DB::table('seguimiento_egresado.plan_curricular')->insertGetId(['codigo_version' => 'PC-2018', 'vigencia_desde' => '2018-01-01', 'estado' => 'VIGENTE']);
+        $existente = DB::table('seguimiento_egresado.cohorte')->where('anio_ingreso', $anio)->orderBy('id')->value('id');
+        if ($existente !== null) {
+            return (int) $existente;
+        }
 
-        $existente = DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', $codigo)->where('anio_ingreso', $anio)->value('id');
+        $plan = DB::table('seguimiento_egresado.plan_curricular')->orderBy('id')->value('id')
+            ?? DB::table('seguimiento_egresado.plan_curricular')->insertGetId(['codigo_version' => 'Plan 2017', 'vigencia_desde' => '2017-03-01', 'estado' => 'VIGENTE']);
 
-        return (int) ($existente ?? DB::table('seguimiento_egresado.cohorte')->insertGetId([
+        return (int) DB::table('seguimiento_egresado.cohorte')->insertGetId([
             'codigo_promocion' => $codigo, 'anio_ingreso' => $anio, 'semestre_ingreso' => 'I', 'total_ingresantes' => 60, 'id_plan_curricular' => $plan,
-        ]));
+            'observacion' => "Promoción {$anio}.",
+        ]);
     }
 
     private function egresado(int $cohorte, string $matricula, string $dni, string $nombres, string $paterno, string $materno, string $correo, ?string $egreso, ?string $periodo): int

@@ -99,6 +99,7 @@ class EnlacesInvitacionTest extends TestCase
         $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
         $this->assertFalse(InvitacionEgresado::where('id_campania', $campania->id)->where('id_egresado', $apto->id)->exists(), 'un alumno apto todavía no es egresado');
 
+        $apto->contactos()->create(['correo_personal' => 'apto.personal@correo.test', 'celular_whatsapp' => '900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO']);
         $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $apto->id), ['fecha_egreso' => '2025-07-18'])->assertOk();
         $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
 

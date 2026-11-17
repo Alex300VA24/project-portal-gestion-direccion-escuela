@@ -16,29 +16,31 @@ Inicia sesión en el portal con tu cuenta de Secretaría y abre el módulo **Seg
 
 El padrón se arma con los alumnos que ya cumplen para egresar. **Todavía no son egresados**: se registran como **Apto para egresar**, sin fecha de egreso, sin créditos y sin datos de contacto. Nada de eso se inventa: lo registra quien lo conoce.
 
-1. En **Padrón y cohortes** registra, si no existen, el **plan curricular** y la **cohorte** (año de ingreso). El archivo se rechaza si su cohorte no existe.
-2. En la pestaña de importaciones, pulsa **Cargar archivo de padrón** y elige un archivo **CSV** o Excel. Hay una plantilla descargable y un ejemplo en `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`.
-3. Columnas obligatorias: `matricula`, `tipo_doc`, `numero_documento`, `nombres`, `apellido_paterno`, `cohorte` y **`correo_institucional`** (válido). Opcionales: `apellido_materno`, `fecha_ingreso`, `fecha_egreso` (no puede ser futura) y, si ya se conocen, `correo_personal` y `celular`.
-4. La carga es **todo o nada**: si una fila tiene error (matrícula repetida, correo faltante o inválido, fecha futura, cohorte inexistente), no se guarda ninguna del archivo. En la pestaña de importaciones, «Ver Log» indica la fila y el motivo; se corrige el archivo y se vuelve a cargar.
+La pantalla **Padrón y promociones** sigue el orden de trabajo, en pestañas numeradas: **1. Promociones → 2. Cargar alumnos → 3. Alumnos**. Una **promoción** es el grupo de alumnos que ingresó el mismo año.
+
+1. En **1. Promociones** registra, si no existen, el **plan de estudios** y la **promoción** con su año de ingreso y su **total de ingresantes** (con ese total se calcula qué porcentaje de la promoción llegó a egresar).
+2. En **2. Cargar alumnos** pulsa **Cargar alumnos**. Primero **elige la promoción** a la que pertenecen y después el archivo **CSV** o Excel: todos los alumnos del archivo se unen a esa promoción, así ninguno queda sin promoción. Hay un formato modelo descargable y un ejemplo en `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`.
+3. Columnas obligatorias: `matricula`, `tipo_doc`, `numero_documento`, `nombres`, `apellido_paterno` y **`correo_institucional`** (válido). Opcionales: `apellido_materno`, `fecha_ingreso`, `fecha_egreso` (no puede ser futura) y, si ya se conocen, `correo_personal` y `celular`. Si el archivo trae una columna `cohorte` (año), debe coincidir con la promoción elegida.
+4. La carga es **todo o nada**: si una fila tiene un problema (matrícula repetida, correo faltante o inválido, fecha futura, promoción distinta), no se guarda ninguna del archivo. Un cuadro te dice cuáles son las filas con problema y qué corregir; también queda en **Historial de cargas → Ver detalle**. Corrige el archivo y vuelve a cargarlo. Si todo sale bien, el cuadro dice cuántos alumnos se cargaron.
 
 ### Confirmar el egreso
 
 Cuando el alumno egresó de verdad:
 
-1. En **Padrón** abre su ficha y pulsa **Confirmar egreso**.
+1. En **3. Alumnos** abre su ficha y pulsa **Confirmar egreso**.
 2. Escribe la **fecha real de egreso** (no puede ser futura ni anterior a su ingreso, si se conoce) y confirma.
 3. El alumno pasa a **Egresado**; el periodo (por ejemplo `2025-I`) se calcula con esa fecha. Su historial conserva la etapa anterior y sus contactos no se pierden.
 
-Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede confirmar a quien está como «Apto para egresar».
+Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede confirmar a quien está como «Apto para egresar» **y ya completó su contacto inicial**: es obligatorio para egresar, y si falta, el sistema lo avisa.
 
 ### Generar enlaces de contacto inicial
 
-El contacto inicial recoge los datos de contacto de los alumnos aptos y de los egresados. El enlace llega a su **correo institucional**; el alumno deja ahí su correo personal y su celular, y eso queda en su mismo expediente. La tabla «Egresados» muestra quién ya completó su contacto.
+El contacto inicial recoge los datos de contacto de los alumnos aptos y de los egresados. El enlace llega a su **correo institucional**; el alumno deja ahí su correo personal y su celular. **Es obligatorio**: el correo y el formulario se lo dicen, y sin él no se puede confirmar su egreso.
 
-1. Entra a **Padrón y cohortes** y pulsa **Contacto inicial de egresados**.
+1. Entra a **Padrón y promociones** y pulsa **Ir al contacto inicial**. La pantalla sigue tres pasos: **1. Enviar**, **2. Quién ya completó su contacto** y **3. Alumnos**.
 2. Elige cómo invitar:
-   - **A toda una cohorte.** En «Invitar a una cohorte» elige la cohorte y pulsa **Invitar a la cohorte**. Se genera un enlace para cada egresado que todavía no dejó su contacto. Los que ya lo dejaron, o que ya tienen un enlace pendiente, se omiten y la página dice cuántos.
-   - **A un egresado.** En la tabla «Egresados» busca por nombre, matrícula o documento, y pulsa **Generar enlace** en su fila. Los filtros permiten ver solo quienes no tienen contacto, solo quienes ya lo tienen, o todos.
+   - **A toda una promoción.** En el paso 1 elige la promoción y la **fecha límite**: el enlace de cada alumno funciona hasta el final de ese día (se sugiere 30 días desde hoy; el máximo es un año). Pulsa **Enviar a la promoción** y confirma. Se genera un enlace para cada alumno que todavía no dejó su contacto. Los que ya lo dejaron, o que ya tienen un enlace pendiente, se omiten y el aviso dice cuántos.
+   - **A un alumno.** En el paso 3 busca por nombre, matrícula o documento, y pulsa **Generar enlace** (o **Enlace nuevo**, que conserva la fecha límite del anterior). Los filtros permiten ver quienes aún no completaron, quienes **pasaron la fecha límite sin completar**, quienes ya completaron o todos.
 3. Aparece el panel **Enlaces personales de contacto inicial**:
    - Pulsa **Copiar** para copiar el enlace de cada egresado.
    - La columna **Correo** dice si el enlace se envió.
@@ -55,16 +57,18 @@ El contacto inicial recoge los datos de contacto de los alumnos aptos y de los e
 
 Un aviso amarillo al inicio de la página indica cuándo el correo no está conectado o está redirigido.
 
-#### Estado del enlace de cada egresado
+#### Quién completó su contacto
 
-En la tabla, la columna **Enlace de contacto inicial** muestra:
+El paso **2. Quién ya completó su contacto** resume cada promoción: cuántos completaron (en verde), cuántos siguen **en plazo**, cuántos **vencieron** sin completar (en rojo), cuántos no tienen enlace y la fecha límite. Míralo al llegar la fecha límite.
+
+En la tabla de alumnos, la columna **Contacto inicial** muestra:
 
 | Estado | Significa |
 |---|---|
+| ✓ Completó su contacto (verde) | Ya dejó su contacto. No necesita nada más. |
+| Pendiente · hasta el dd/mm | Tiene un enlace vigente. Debajo dice si el correo salió, falló o hay que entregarlo a mano. |
+| Venció el dd/mm sin completar (rojo) | Pasó la fecha límite. Usa **Enlace nuevo** para darle otra oportunidad. |
 | Sin enlace | Aún no se le generó uno. |
-| Pendiente | Tiene un enlace vigente. Debajo dice si el correo salió, falló o no se envió. |
-| Completado | El egresado ya dejó su contacto. |
-| Vencido | El enlace caducó. |
 
 #### Enlace perdido: «Enlace nuevo»
 

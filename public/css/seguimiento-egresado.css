@@ -130,6 +130,7 @@
 .sg-alert > .sg-svg { margin-top: 2px; width: 18px; height: 18px; }
 .sg-alert-warning { border-left-color: var(--sg-warning); background: var(--sg-warning-soft); }
 .sg-alert-danger { border-left-color: var(--sg-danger); background: var(--sg-danger-soft); }
+.sg-alert-success { border-left-color: var(--sg-success); background: var(--sg-success-soft); }
 .sg-home-notice { margin-top: var(--sg-space-8); }
 .sg-action-note { margin-top: 28px; padding-top: 18px; border-top: var(--sg-stroke); font-size: 13px; color: var(--sg-warning); }
 .sg-form-grid, .sg-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--sg-space-4); }

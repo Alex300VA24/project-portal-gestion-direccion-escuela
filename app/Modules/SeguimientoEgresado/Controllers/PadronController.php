@@ -111,26 +111,38 @@ class PadronController extends Controller
     public function importar(Request $request, PadronImportService $importService)
     {
         $request->validate([
+            'promocion' => ['required', 'integer', 'exists:'.Esquema::validar('cohorte').',id'],
             'archivo_padron' => 'required|file|max:10240', // 10MB max
         ], [
-            'archivo_padron.required' => 'Debe seleccionar un archivo para importar.',
-            'archivo_padron.file' => 'El archivo proporcionado no es válido.',
-            'archivo_padron.max' => 'El archivo no debe exceder los 10MB.',
+            'promocion.required' => 'Elige la promoción a la que pertenecen los alumnos del archivo.',
+            'promocion.exists' => 'La promoción elegida no existe.',
+            'archivo_padron.required' => 'Elige el archivo con los alumnos.',
+            'archivo_padron.file' => 'El archivo no es válido.',
+            'archivo_padron.max' => 'El archivo no debe pasar de 10 MB.',
         ]);
 
         $archivo = $request->file('archivo_padron');
-        // Importación siempre atómica (Todo o Nada) para garantizar integridad y evitar registros parciales
-        $resultado = $importService->importarArchivo($archivo, null, true);
+        $promocion = Cohorte::findOrFail($request->integer('promocion'));
+        // Siempre «todo o nada»: si una fila falla, no se guarda ninguna.
+        $resultado = $importService->importarArchivo($archivo, null, true, $promocion->id);
 
         if ($resultado['rechazadas'] > 0 && $resultado['aceptadas'] === 0) {
-            $mensaje = 'Carga rechazada: Se detectaron inconsistencias en el archivo. No se insertó ningún registro en la base de datos.';
+            $problemas = collect($resultado['detalles'] ?? [])
+                ->filter(fn (array $d) => ($d['error'] ?? '') !== PadronImportService::MENSAJE_FILA_SIN_ERROR)
+                ->map(fn (array $d) => 'Fila '.$d['numero_fila'].': '.$d['error'])
+                ->values();
+            $mensaje = 'No se cargó ningún alumno. Corrige esto en el archivo y vuelve a cargarlo:'
+                ."\n".$problemas->take(5)->implode("\n")
+                .($problemas->count() > 5 ? "\ny ".($problemas->count() - 5).' más (míralas en el historial de cargas).' : '');
 
             return redirect()->route('seguimiento-egresado.padron', ['tab' => 'importaciones'])
                 ->with('import_resumen', $resultado)
-                ->with('warning', $mensaje);
+                ->with('error', $mensaje);
         }
 
-        $mensaje = "Carga procesada: {$resultado['aceptadas']} egresados registrados correctamente.";
+        $n = $resultado['aceptadas'];
+        $mensaje = ($n === 1 ? 'Se cargó 1 alumno' : "Se cargaron {$n} alumnos")." en la Promoción {$promocion->anio_ingreso}. "
+            .'Siguiente paso: enviarles el contacto inicial.';
 
         return redirect()->route('seguimiento-egresado.padron', ['tab' => 'importaciones'])
             ->with('import_resumen', $resultado)
@@ -177,9 +189,9 @@ class PadronController extends Controller
             // BOM UTF-8 para Excel
             fprintf($salida, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($salida, ['matricula', 'tipo_doc', 'numero_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 'cohorte', 'correo_institucional']);
-            fputcsv($salida, ['1021400818', 'DNI', '74561239', 'Claudia Marcela', 'Paredes', 'Ríos', '2018', 'claudia.paredes@correo.test']);
-            fputcsv($salida, ['1021400918', 'DNI', '71239845', 'Jorge Luis', 'Navarro', 'Sánchez', '2018', 'jorge.navarro@correo.test']);
+            fputcsv($salida, ['matricula', 'tipo_doc', 'numero_documento', 'nombres', 'apellido_paterno', 'apellido_materno', 'correo_institucional']);
+            fputcsv($salida, ['1021400818', 'DNI', '74561239', 'Claudia Marcela', 'Paredes', 'Ríos', 'claudia.paredes@correo.test']);
+            fputcsv($salida, ['1021400918', 'DNI', '71239845', 'Jorge Luis', 'Navarro', 'Sánchez', 'jorge.navarro@correo.test']);
 
             fclose($salida);
         }, 200, $cabeceras);
@@ -464,6 +476,14 @@ class PadronController extends Controller
             return response()->json(['success' => false, 'message' => 'Solo se puede confirmar el egreso de un alumno apto para egresar.'], 422);
         }
 
+        // Dejar el contacto inicial es obligatorio para egresar: sin él no hay a dónde enviarle las campañas.
+        if (! $egresado->contactoVigente()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este alumno todavía no completó su contacto inicial, que es obligatorio para egresar. Envíale el enlace desde «Contacto inicial» y vuelve a intentarlo cuando lo complete.',
+            ], 422);
+        }
+
         $fecha = Carbon::parse($request->fecha_egreso);
 
         return DB::transaction(function () use ($egresado, $actual, $fecha) {
@@ -486,7 +506,7 @@ class PadronController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Egreso confirmado para {$egresado->nombre_completo}.",
+                'message' => "Se confirmó el egreso de {$egresado->nombre_completo}.",
                 'egresado' => $egresado->fresh(['cohorte', 'contactoVigente', 'estadoVigente.estadoAcademico']),
             ]);
         });

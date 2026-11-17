@@ -11,7 +11,7 @@
 </section>
 @foreach ([
   ['registro', 'Registro y seguimiento', [
-    ['padron', 'users', 'Padrón y cohortes', 'Expedientes de egresados organizados por cohorte.'],
+    ['padron', 'users', 'Padrón y promociones', 'Alumnos y egresados organizados por promoción.'],
     ['campanias', 'mail', 'Campañas e invitaciones', 'Periodos, convocatorias y cobertura del seguimiento.'],
   ]],
   ['evaluacion', 'Evaluación y resultados', [

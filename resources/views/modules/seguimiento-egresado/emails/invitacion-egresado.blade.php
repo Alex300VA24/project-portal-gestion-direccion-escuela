@@ -11,6 +11,9 @@
 
       @if ($proposito === 'CONTACTO_INICIAL')
         <p>La Escuela necesita tus datos de contacto para mantener el vínculo contigo. Completarlos toma un par de minutos.</p>
+        <p style="background:#fff3d8;border-left:4px solid #a65d00;padding:12px 14px;margin:16px 0;font-size:14px;">
+          <strong>Este paso es obligatorio.</strong> Si no completas tu contacto, no podrás egresar.@if ($venceEn) Tienes hasta el {{ $venceEn->format('d/m/Y') }} para hacerlo.@endif
+        </p>
       @else
         <p>La Escuela te invita a responder la encuesta de seguimiento a egresados{{ $campania ? ' ('.$campania.')' : '' }}. Tus respuestas ayudan a mejorar la formación profesional.</p>
       @endif

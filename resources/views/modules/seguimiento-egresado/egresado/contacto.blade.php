@@ -7,6 +7,12 @@
   <span class="sg-kicker">Mi expediente</span>
   <h1 class="sg-heading">Mis datos de contacto</h1>
   <p class="sgs-intro">Revisa que tus datos estén al día. Los campos con * son obligatorios.</p>
+  @if (empty($contacto))
+    <div class="sg-alert sg-alert-warning" role="note">
+      @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
+      <p><strong>Este paso es obligatorio:</strong> si no completas tus datos de contacto, no podrás egresar.</p>
+    </div>
+  @endif
 
   @include('modules.seguimiento-egresado.egresado._resumen-errores')
 

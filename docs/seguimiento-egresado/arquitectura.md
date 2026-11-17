@@ -28,7 +28,7 @@ Navegador ──► Routes/web.php ──► Middleware (auth, RequiereCapacidad
 | Identidad y permisos | `Support/Accesos/` (`Perfil`, `Capacidades`, `Identidad`), `Middleware/RequiereCapacidad.php`, `Policies/ExpedientePolicy.php`, `Services/Accesos/SesionAcceso.php` |
 | Entrada por enlace | `Services/Accesos/` (`EnlaceInvitacion`, `InvitacionRepositorio`, `InvitacionDb`), `Controllers/Accesos/AccesoController.php`, `resources/views/modules/seguimiento-egresado/acceso/` |
 | Área del egresado | `Controllers/Egresado/`, `Services/Egresado/` (`ContactoService`, `EncuestaService`, `HistorialService`), `Requests/`, `resources/views/modules/seguimiento-egresado/egresado/` |
-| Padrón y cohortes | `Controllers/PadronController.php`, `Services/PadronImportService.php`, `paginas/padron.blade.php` |
+| Padrón y promociones | `Controllers/PadronController.php`, `Services/PadronImportService.php`, `paginas/padron.blade.php` |
 | Contacto inicial y correo | `Controllers/Invitaciones/`, `Services/Invitaciones/`, `Mail/`, `resources/views/.../emails/` |
 | Campañas e invitaciones | `Controllers/CampaniasController.php`, `paginas/campanias.blade.php` |
 | Evaluación institucional y reportes | `Controllers/InstitucionalController.php`, `Controllers/ReportesController.php` |

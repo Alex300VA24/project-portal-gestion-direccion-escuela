@@ -6,6 +6,7 @@ use App\Modules\SeguimientoEgresado\Models\Cohorte;
 use App\Modules\SeguimientoEgresado\Models\Egresado;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Services\Accesos\EnlaceInvitacion;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,14 +22,16 @@ final class ContactoInicialService
     /**
      * Genera un enlace nuevo para el egresado y lo envía por correo. Si ya tenía un enlace de contacto inicial
      * pendiente, queda anulado: así «Enlace nuevo» también sirve cuando el anterior se perdió o se compartió.
+     * El enlace vence al final de la fecha límite; sin fecha límite, a los días configurados desde hoy.
      *
      * @return array{egresado: string, matricula: string, url: string, correo: string, correo_texto: string, correo_insignia: string}
      */
-    public function invitar(Egresado $egresado): array
+    public function invitar(Egresado $egresado, ?CarbonInterface $fechaLimite = null): array
     {
         $tokenPlano = Str::random(48);
+        $venceEn = ($fechaLimite ?? now()->addDays(max(1, (int) config('seguimiento-egresado.correo.dias_contacto_inicial'))))->copy()->endOfDay();
 
-        $invitacion = DB::transaction(function () use ($egresado, $tokenPlano) {
+        $invitacion = DB::transaction(function () use ($egresado, $tokenPlano, $venceEn) {
             InvitacionEgresado::where('id_egresado', $egresado->id)
                 ->where('proposito', 'CONTACTO_INICIAL')
                 ->where('estado', 'PENDIENTE')
@@ -39,7 +42,7 @@ final class ContactoInicialService
                 'id_egresado' => $egresado->id,
                 'proposito' => 'CONTACTO_INICIAL',
                 'token_hash' => EnlaceInvitacion::hashDe($tokenPlano),
-                'expira_en' => now()->addDays(max(1, (int) config('seguimiento-egresado.correo.dias_contacto_inicial')))->endOfDay(),
+                'expira_en' => $venceEn,
                 'recordatorios_enviados' => 0,
                 'entrega_fallida' => false,
                 'estado' => 'PENDIENTE',
@@ -56,12 +59,12 @@ final class ContactoInicialService
     }
 
     /**
-     * Invita a quienes de la cohorte aún no dejaron su contacto ni tienen un enlace pendiente vigente.
+     * Invita a quienes de la promoción aún no dejaron su contacto ni tienen un enlace pendiente vigente.
      * Quien ya tiene un enlace pendiente se omite (su enlace no se puede recuperar: se le da uno nuevo individualmente).
      *
      * @return array{enlaces: list<array>, con_contacto: int, con_enlace: int}
      */
-    public function invitarCohorte(Cohorte $cohorte): array
+    public function invitarCohorte(Cohorte $cohorte, ?CarbonInterface $fechaLimite = null): array
     {
         $egresados = Egresado::where('id_cohorte', $cohorte->id)
             ->with('contactoVigente')
@@ -79,7 +82,7 @@ final class ContactoInicialService
             } elseif (in_array($egresado->id, $conEnlace, true)) {
                 $conEnlaceVigente++;
             } else {
-                $enlaces[] = $this->invitar($egresado);
+                $enlaces[] = $this->invitar($egresado, $fechaLimite);
             }
         }
 

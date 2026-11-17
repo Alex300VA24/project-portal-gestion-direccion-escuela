@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Log;
 
 class PadronImportService
 {
+    /** Texto de las filas correctas que no se guardaron porque otra fila del archivo tiene un problema. */
+    public const MENSAJE_FILA_SIN_ERROR = 'Esta fila está bien, pero no se guardó porque otra fila del archivo tiene un problema.';
+
+    /** Promoción elegida antes de cargar el archivo (null = cada fila trae la suya). */
+    private ?Cohorte $promocionElegida = null;
+
     /**
      * Procesa un archivo CSV o Excel (.xlsx) con los alumnos aptos para egresar: matrícula, documento, nombres,
      * apellidos, correo institucional válido y cohorte. Quedan como «próximos a egresar» (PROXIMO), todavía no como
@@ -25,10 +31,13 @@ class PadronImportService
      * @param  UploadedFile|string  $archivo  Archivo subido o ruta en disco
      * @param  int|null  $usuarioId  ID del usuario de secretaría que realiza la carga
      * @param  bool  $atomico  Si es true (por defecto), revierte toda la carga ante cualquier inconsistencia
+     * @param  int|null  $promocionId  Promoción elegida por la Secretaría antes de cargar: todos los alumnos del archivo
+     *                                 se unen a ella. Sin promoción, cada fila indica la suya en la columna «cohorte».
      * @return array Resumen de la importación
      */
-    public function importarArchivo($archivo, ?int $usuarioId = null, bool $atomico = true): array
+    public function importarArchivo($archivo, ?int $usuarioId = null, bool $atomico = true, ?int $promocionId = null): array
     {
+        $this->promocionElegida = $promocionId !== null ? Cohorte::find($promocionId) : null;
         $usuarioId = $usuarioId ?? UsuarioInterno::idActual();
         $nombreOriginal = ($archivo instanceof UploadedFile) ? $archivo->getClientOriginalName() : basename($archivo);
         $rutaReal = ($archivo instanceof UploadedFile) ? $archivo->getRealPath() : $archivo;
@@ -188,7 +197,7 @@ class PadronImportService
                 $tieneError = isset($errores[$num]);
                 $msgError = $tieneError
                     ? $errores[$num]
-                    : 'Carga cancelada: Se detectaron inconsistencias en otras filas del archivo (Modo Estricto Todo o Nada).';
+                    : self::MENSAJE_FILA_SIN_ERROR;
 
                 ImportacionFila::create([
                     'id_importacion' => $importacion->id,
@@ -277,46 +286,79 @@ class PadronImportService
         $correoInst = $norm['correo_institucional'] ?? $norm['correo_inst'] ?? null;
 
         if (empty($matricula)) {
-            return 'Fila sin código de matrícula universitario obligatorio.';
+            return 'Falta la matrícula.';
         }
         if (isset($matriculasVistas[$matricula])) {
-            return "La matrícula '{$matricula}' se encuentra repetida dentro del mismo archivo.";
+            return "La matrícula {$matricula} aparece repetida en el archivo.";
         }
         $matriculasVistas[$matricula] = true;
 
         if (Egresado::where('codigo_matricula', $matricula)->exists()) {
-            return "La matrícula '{$matricula}' ya se encuentra registrada en el padrón institucional.";
+            return "La matrícula {$matricula} ya está registrada en el padrón.";
         }
 
         if (empty($numDoc)) {
-            return 'Fila sin número de documento de identidad obligatorio.';
+            return 'Falta el número de documento.';
         }
         if (isset($dnisVistos[$numDoc])) {
-            return "El {$tipoDoc} '{$numDoc}' se encuentra repetido dentro del mismo archivo.";
+            return "El {$tipoDoc} {$numDoc} aparece repetido en el archivo.";
         }
         $dnisVistos[$numDoc] = true;
 
         if (Egresado::where('tipo_documento', $tipoDoc)->where('numero_documento', $numDoc)->exists()) {
-            return "El {$tipoDoc} '{$numDoc}' ya pertenece a otro egresado registrado en el padrón.";
+            return "El {$tipoDoc} {$numDoc} ya pertenece a otro alumno registrado en el padrón.";
         }
 
         if (empty($nombres) || empty($apPaterno)) {
-            return 'Nombres y apellido paterno son obligatorios.';
+            return 'Faltan los nombres o el apellido paterno.';
         }
 
         if ($mensaje = $this->errorDeFechasYCorreo($correoInst, $norm)) {
             return $mensaje;
         }
 
-        if (empty($anioCohorte)) {
-            return 'La cohorte de ingreso (año) es obligatoria.';
-        }
-        $anioNum = (int) preg_replace('/[^0-9]/', '', $anioCohorte);
-        if (! Cohorte::where('anio_ingreso', $anioNum)->exists()) {
-            return "La cohorte '{$anioCohorte}' no existe en el catálogo institucional. Debe registrarla previamente en 'Cohortes y Denominador I1' con su número oficial de ingresantes.";
+        $errorPromocion = null;
+        $this->resolverPromocion($anioCohorte, $errorPromocion);
+
+        return $errorPromocion;
+    }
+
+    /**
+     * Promoción a la que pertenece la fila: la elegida antes de cargar o, si no se eligió ninguna, la que indica el archivo.
+     * Si se eligió una y la fila indica otra distinta, es un error: así ningún alumno queda en una promoción equivocada.
+     */
+    protected function resolverPromocion(?string $indicada, ?string &$error): ?Cohorte
+    {
+        $indicada = trim((string) $indicada);
+
+        if ($this->promocionElegida !== null) {
+            $elegida = $this->promocionElegida;
+            if ($indicada !== '') {
+                $anio = (int) preg_replace('/[^0-9]/', '', $indicada);
+                $coincide = $anio === (int) $elegida->anio_ingreso || strcasecmp($indicada, (string) $elegida->codigo_promocion) === 0;
+                if (! $coincide) {
+                    $error = "La fila indica la promoción '{$indicada}', pero elegiste la promoción {$elegida->anio_ingreso}. Corrige la fila o quita esa columna.";
+
+                    return null;
+                }
+            }
+
+            return $elegida;
         }
 
-        return null;
+        if ($indicada === '') {
+            $error = 'Falta la promoción: elige una al cargar el archivo o agrega la columna «cohorte» (año de ingreso).';
+
+            return null;
+        }
+
+        $anio = (int) preg_replace('/[^0-9]/', '', $indicada);
+        $promocion = Cohorte::where('anio_ingreso', $anio)->first() ?? Cohorte::where('codigo_promocion', $indicada)->first();
+        if (! $promocion) {
+            $error = "La promoción '{$indicada}' no está registrada. Regístrala primero en la pestaña «1. Promociones».";
+        }
+
+        return $promocion;
     }
 
     /** Mensaje de error si el correo institucional falta o es inválido, o si una fecha del archivo no es una fecha real. */
@@ -432,29 +474,11 @@ class PadronImportService
             );
         }
 
-        // 3. Resolución de Cohorte (debe existir previamente en el catálogo institucional)
-        if (empty($anioCohorte)) {
-            return $this->registrarFilaRechazada(
-                $importacionId,
-                $numeroFila,
-                $data,
-                'La cohorte de ingreso (año) es obligatoria.'
-            );
-        }
-
-        $anioNum = (int) preg_replace('/[^0-9]/', '', $anioCohorte);
-        $cohorte = Cohorte::where('anio_ingreso', $anioNum)->first();
-        if (! $cohorte && ! empty($anioCohorte)) {
-            $cohorte = Cohorte::where('codigo_promocion', trim($anioCohorte))->first();
-        }
-
+        // 3. Promoción del alumno: la elegida antes de cargar, o la que indica el archivo (debe estar registrada)
+        $errorPromocion = null;
+        $cohorte = $this->resolverPromocion($anioCohorte, $errorPromocion);
         if (! $cohorte) {
-            return $this->registrarFilaRechazada(
-                $importacionId,
-                $numeroFila,
-                $data,
-                "La cohorte '{$anioCohorte}' no existe en el catálogo institucional. Debe registrarla previamente en 'Cohortes y Denominador I1' con su número oficial de ingresantes."
-            );
+            return $this->registrarFilaRechazada($importacionId, $numeroFila, $data, $errorPromocion);
         }
 
         // 4. Mapeo del estado académico inicial

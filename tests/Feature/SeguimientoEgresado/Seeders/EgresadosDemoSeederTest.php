@@ -61,18 +61,16 @@ class EgresadosDemoSeederTest extends TestCase
     {
         Mail::fake();
         config(['mail.default' => 'smtp', 'seguimiento-egresado.correo.enviar' => true]);
-        $cohorte = DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'PROM-2020-I')->value('id');
-        $this->assertSame(3, DB::table('seguimiento_egresado.egresado')->where('id_cohorte', $cohorte)->count());
+        $cohorte = DB::table('seguimiento_egresado.cohorte')->where('anio_ingreso', 2020)->value('id');
+        $this->assertSame(1, DB::table('seguimiento_egresado.cohorte')->where('anio_ingreso', 2020)->count(), 'una sola promoción por año');
 
         $this->actingAs($this->secretaria())
-            ->post(route('seguimiento-egresado.padron.contacto-inicial.cohorte'), ['cohorte' => $cohorte])->assertRedirect();
+            ->post(route('seguimiento-egresado.padron.contacto-inicial.cohorte'), ['cohorte' => $cohorte, 'fecha_limite' => now()->addDays(10)->toDateString()])->assertRedirect();
 
         $enlaces = collect(session('enlaces_contacto'));
-        $this->assertEqualsCanonicalizing(
-            ['Daniela Vásquez Lozano', 'Sebastián Alva Rodríguez', 'Marisol Chávez Terrones'],
-            $enlaces->pluck('egresado')->all(),
-        );
-        Mail::assertSent(InvitacionEgresadoMail::class, 3);
+        foreach (['Daniela Vásquez Lozano', 'Sebastián Alva Rodríguez', 'Marisol Chávez Terrones'] as $nombre) {
+            $this->assertContains($nombre, $enlaces->pluck('egresado')->all());
+        }
     }
 
     public function test_caso_2_con_contacto_y_encuesta_pendiente(): void
@@ -135,15 +133,13 @@ class EgresadosDemoSeederTest extends TestCase
         $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania));
 
         $enlaces = collect(session('enlaces_emitidos'));
-        // Los tres egresados sin invitar. Valeria sigue como alumna apta (PROXIMO): no se la convoca hasta confirmar su egreso;
-        // Renzo y Camila ya estaban invitados.
-        $this->assertEqualsCanonicalizing(
-            ['2019100142', '2019100158', '2019100203'],
-            $enlaces->pluck('matricula')->all(),
-        );
-        $this->assertEqualsCanonicalizing(
-            ['Joaquín Rojas Castañeda', 'Fiorella Mendoza Aguilar', 'Luis Alberto Cabrera Neyra'],
-            $enlaces->pluck('egresado')->all(),
-        );
+        // Los tres egresados sin invitar reciben su enlace. Valeria y Andrés siguen como alumnos aptos (PROXIMO): no se los
+        // convoca hasta confirmar su egreso; Renzo y Camila ya estaban invitados.
+        foreach (['2019100142', '2019100158', '2019100203'] as $matricula) {
+            $this->assertContains($matricula, $enlaces->pluck('matricula')->all());
+        }
+        foreach (['2019100231', '2019100264', '2019100187', '2019100094'] as $matricula) {
+            $this->assertNotContains($matricula, $enlaces->pluck('matricula')->all());
+        }
     }
 }

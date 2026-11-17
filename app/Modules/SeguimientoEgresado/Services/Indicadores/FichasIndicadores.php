@@ -10,7 +10,7 @@ final class FichasIndicadores
             'nombre' => 'Egresados por promoción',
             'formula' => 'N.º de egresados de la promoción / N.º de ingresantes de la promoción × 100',
             'unidad' => '%',
-            'fuente' => 'Padrón y cohortes',
+            'fuente' => 'Padrón y promociones',
         ],
         'I2' => [
             'nombre' => 'Empleabilidad en la carrera',

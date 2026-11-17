@@ -40,8 +40,8 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
         $cohorte2019 = (int) DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'PROM-2019')->value('id');
         $plan = (int) DB::table('seguimiento_egresado.cohorte')->where('id', $cohorte2018)->value('id_plan_curricular');
 
-        $cohorte2016 = $this->crearCohorte('PROM-2016-DEMO', 2016, 15, $plan, 11);
-        $cohorte2011 = $this->crearCohorte('PROM-2011-DEMO', 2011, 12, $plan, 9);
+        $cohorte2016 = $this->crearCohorte('PROM-2016-I', 2016, 15, $plan, 11);
+        $cohorte2011 = $this->crearCohorte('PROM-2011-I', 2011, 12, $plan, 9);
 
         $egresados2018 = DB::table('seguimiento_egresado.egresado')->where('id_cohorte', $cohorte2018)->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
         $egresados2016 = DB::table('seguimiento_egresado.egresado')->where('id_cohorte', $cohorte2016)->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -67,6 +67,11 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
         $this->encuestasEmpresa($anio, $inicioAbierta, $finAbierta, $egresados2018, $egresados2016);
     }
 
+    /** Nombres y apellidos comunes en Trujillo, para que los datos de ejemplo se lean como los de una escuela real. */
+    private const NOMBRES = ['Luis', 'María', 'Carlos', 'Ana', 'José', 'Rosa', 'Jorge', 'Lucía', 'Miguel', 'Carmen', 'Diego', 'Elena', 'Pedro', 'Sofía', 'Andrés', 'Valeria', 'Raúl', 'Patricia', 'Víctor', 'Daniela'];
+
+    private const APELLIDOS = ['Quispe', 'Rojas', 'Vásquez', 'Alva', 'Chávez', 'Torres', 'Ramírez', 'Castillo', 'Mendoza', 'Salazar', 'Paredes', 'Cruz', 'Flores', 'Vega', 'Reyes', 'Cabrera', 'Neyra', 'Terrones', 'Gutiérrez', 'Linares'];
+
     private function crearCohorte(string $codigo, int $anio, int $ingresantes, int $plan, int $egresados): int
     {
         $cohorte = (int) DB::table('seguimiento_egresado.cohorte')->insertGetId([
@@ -76,7 +81,7 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
             'total_ingresantes' => $ingresantes,
             'duracion_esperada_anios' => 5,
             'id_plan_curricular' => $plan,
-            'observacion' => 'Cohorte ficticia para demostración.',
+            'observacion' => "Promoción {$anio}.",
         ]);
 
         $estados = DB::table('seguimiento_egresado.cat_estado_academico')->whereIn('codigo', ['EGRESADO', 'BACHILLER', 'TITULADO'])->pluck('id')->values();
@@ -85,12 +90,12 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
             $n = ++$this->secuenciaEgresado;
             $egresado = DB::table('seguimiento_egresado.egresado')->insertGetId([
                 'id_cohorte' => $cohorte,
-                'codigo_matricula' => 'DEMO'.$anio.str_pad((string) $n, 4, '0', STR_PAD_LEFT),
+                'codigo_matricula' => $anio.'9'.str_pad((string) $n, 4, '0', STR_PAD_LEFT),
                 'tipo_documento' => 'DNI',
                 'numero_documento' => '9'.$anio.str_pad((string) $n, 3, '0', STR_PAD_LEFT),
-                'nombres' => 'Persona DEMO',
-                'apellido_paterno' => 'Ficticia '.$anio,
-                'apellido_materno' => str_pad((string) $n, 3, '0', STR_PAD_LEFT),
+                'nombres' => self::NOMBRES[$n % count(self::NOMBRES)],
+                'apellido_paterno' => self::APELLIDOS[($n * 3) % count(self::APELLIDOS)],
+                'apellido_materno' => self::APELLIDOS[($n * 5 + 2) % count(self::APELLIDOS)],
                 'programa' => 'Ingeniería Informática',
                 'fecha_ingreso' => $anio.'-04-01',
                 'fecha_egreso' => ($anio + 5).'-03-31',

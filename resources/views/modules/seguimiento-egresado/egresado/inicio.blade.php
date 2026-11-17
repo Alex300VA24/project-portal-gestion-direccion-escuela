@@ -27,7 +27,7 @@
   @if ($contactoPendiente)
     <section class="sg-panel" aria-labelledby="t-contacto-pendiente">
       <h2 class="sg-section-title" id="t-contacto-pendiente">Completa tus datos de contacto</h2>
-      <p>La Escuela necesita tus datos para mantener el vínculo contigo después de tu egreso.</p>
+      <p><strong>Este paso es obligatorio:</strong> si no completas tus datos de contacto, no podrás egresar.@if ($invitacion?->expira_en) Tienes hasta el {{ $fecha($invitacion->expira_en) }} para hacerlo.@endif</p>
       <div class="sg-actions"><a class="sg-button" href="{{ route('seguimiento-egresado.egresado.contacto') }}">Completar mi contacto</a></div>
     </section>
   @endif
@@ -41,7 +41,10 @@
       @endforeach
     </section>
   @elseif (! $contactoPendiente && $invitacion && $invitacion->estado === 'COMPLETADA')
-    <div class="sg-alert" role="status">Ya completaste esta invitación. Gracias por tu respuesta.</div>
+    <div class="sg-alert sg-alert-success" role="status">
+      @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
+      <p><strong>Ya completaste esta invitación.</strong> ¡Gracias!</p>
+    </div>
   @endif
 
   <section class="sg-panel" aria-labelledby="t-contacto">

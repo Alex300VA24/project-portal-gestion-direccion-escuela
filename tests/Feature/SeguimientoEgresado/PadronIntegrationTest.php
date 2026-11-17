@@ -10,6 +10,7 @@ use App\Modules\SeguimientoEgresado\Models\ImportacionPadron;
 use App\Modules\SeguimientoEgresado\Services\PadronImportService;
 use Tests\Support\SeguimientoEgresado\ComoPersonal;
 use Tests\Support\SeguimientoEgresado\UsaBaseDeDatos;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class PadronIntegrationTest extends TestCase
@@ -61,7 +62,7 @@ class PadronIntegrationTest extends TestCase
         $this->assertSame(0, $res['aceptadas']);
         $this->assertSame(1, $res['rechazadas']);
         $fila = ImportacionFila::where('id_importacion', $res['importacion_id'])->where('estado', 'RECHAZADA')->first();
-        $this->assertStringContainsString('ya se encuentra registrada en el padrón', $fila->detalle_error);
+        $this->assertStringContainsString('ya está registrada en el padrón', $fila->detalle_error);
     }
 
     public function test_el_correo_institucional_es_obligatorio_y_valido(): void
@@ -128,9 +129,67 @@ class PadronIntegrationTest extends TestCase
         $this->assertSame('p@correo.test', $alumno->contactoVigente->correo_personal);
     }
 
+    public function test_sin_contacto_inicial_no_se_puede_confirmar_el_egreso(): void
+    {
+        $alumno = $this->alumnoApto();
+
+        $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])
+            ->assertStatus(422)->assertJsonPath('success', false)
+            ->assertJsonFragment(['message' => 'Este alumno todavía no completó su contacto inicial, que es obligatorio para egresar. Envíale el enlace desde «Contacto inicial» y vuelve a intentarlo cuando lo complete.']);
+
+        $alumno->refresh();
+        $this->assertNull($alumno->fecha_egreso);
+        $this->assertSame('PROXIMO', $alumno->estadoVigente->estadoAcademico->codigo);
+    }
+
+    public function test_la_carga_une_a_todos_los_alumnos_a_la_promocion_elegida_aunque_el_archivo_no_la_traiga(): void
+    {
+        $promocion = Cohorte::firstOrFail();
+        $csv = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,correo_institucional\n"
+             ."1021477001,DNI,78880001,Ana,Lopez,Diaz,ana.lopez@correo.test\n"
+             ."1021477002,DNI,78880002,Beto,Rios,Paz,beto.rios@correo.test\n";
+
+        $this->post(route('seguimiento-egresado.padron.importar'), [
+            'promocion' => $promocion->id, 'archivo_padron' => UploadedFile::fake()->createWithContent('aptos.csv', $csv),
+        ])->assertRedirect();
+
+        $this->assertSame(
+            [$promocion->id, $promocion->id],
+            Egresado::whereIn('codigo_matricula', ['1021477001', '1021477002'])->pluck('id_cohorte')->all(),
+        );
+        $this->assertStringContainsString('Se cargaron 2 alumnos en la Promoción '.$promocion->anio_ingreso, session('success'));
+    }
+
+    public function test_la_carga_rechaza_la_fila_que_indica_otra_promocion_y_explica_cual(): void
+    {
+        $promocion = Cohorte::orderBy('id')->firstOrFail();
+        $otra = Cohorte::where('id', '!=', $promocion->id)->where('anio_ingreso', '!=', $promocion->anio_ingreso)->firstOrFail();
+        $csv = "matricula,tipo_doc,numero_documento,nombres,apellido_paterno,apellido_materno,cohorte,correo_institucional\n"
+             ."1021477011,DNI,78880011,Ana,Lopez,Diaz,{$promocion->anio_ingreso},ana.lopez@correo.test\n"
+             ."1021477012,DNI,78880012,Beto,Rios,Paz,{$otra->anio_ingreso},beto.rios@correo.test\n";
+
+        $this->post(route('seguimiento-egresado.padron.importar'), [
+            'promocion' => $promocion->id, 'archivo_padron' => UploadedFile::fake()->createWithContent('aptos.csv', $csv),
+        ])->assertRedirect();
+
+        $this->assertFalse(Egresado::whereIn('codigo_matricula', ['1021477011', '1021477012'])->exists(), 'todo o nada');
+        $mensaje = session('error');
+        $this->assertStringContainsString('No se cargó ningún alumno', $mensaje);
+        $this->assertStringContainsString("Fila 2: La fila indica la promoción '{$otra->anio_ingreso}', pero elegiste la promoción {$promocion->anio_ingreso}", $mensaje);
+        $this->assertStringNotContainsString('Fila 1:', $mensaje, 'la fila correcta no se cuenta como problema');
+    }
+
+    public function test_la_carga_exige_elegir_la_promocion(): void
+    {
+        $this->post(route('seguimiento-egresado.padron.importar'), [
+            'archivo_padron' => UploadedFile::fake()->createWithContent('aptos.csv', "matricula\n1\n"),
+        ])->assertSessionHasErrors(['promocion' => 'Elige la promoción a la que pertenecen los alumnos del archivo.']);
+    }
+
     public function test_el_periodo_de_egreso_se_calcula_de_la_fecha(): void
     {
         $alumno = $this->alumnoApto();
+        $alumno->contactos()->create(['correo_personal' => 'p2@correo.test', 'celular_whatsapp' => '900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO']);
 
         $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-12-12'])->assertOk();
 
@@ -327,7 +386,7 @@ class PadronIntegrationTest extends TestCase
 
         $filaRechazada = ImportacionFila::where('id_importacion', $res['importacion_id'])->first();
         $this->assertNotNull($filaRechazada);
-        $this->assertStringContainsString('no existe en el catálogo institucional', $filaRechazada->detalle_error);
+        $this->assertStringContainsString('no está registrada', $filaRechazada->detalle_error);
     }
 
     public function test_importacion_modo_atomico_cancela_todo_si_hay_errores(): void

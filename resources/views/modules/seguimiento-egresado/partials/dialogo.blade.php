@@ -37,6 +37,7 @@
   .sg-dialogo-pie { padding: 0 28px 24px; display: flex; justify-content: center; }
   .sg-dialogo-pie button { min-width: 120px; padding: 9px 22px; border: 0; border-radius: 8px; background: var(--sg-navy, #172554); color: #fff; font-weight: 600; cursor: pointer; }
   .sg-dialogo-pie button:hover { filter: brightness(1.15); }
+  .sg-dialogo-pie .sg-dialogo-secundario { background: transparent; color: var(--sg-text, #15233d); border: 1px solid var(--sg-border, #dde1da); }
 </style>
 <dialog class="sg-dialogo" id="sg-dialogo" data-tipo="{{ $aviso['tipo'] ?? 'info' }}" aria-labelledby="sg-dialogo-titulo" aria-describedby="sg-dialogo-mensaje" @if($aviso) open @endif>
   <div class="sg-dialogo-cuerpo">
@@ -47,6 +48,19 @@
     <p class="sg-dialogo-mensaje" id="sg-dialogo-mensaje" role="status">{{ $aviso['mensaje'] ?? '' }}</p>
   </div>
   <form class="sg-dialogo-pie" method="dialog"><button type="submit" autofocus>Entendido</button></form>
+</dialog>
+<dialog class="sg-dialogo" id="sg-confirmar" data-tipo="info" aria-labelledby="sg-confirmar-titulo" aria-describedby="sg-confirmar-mensaje">
+  <div class="sg-dialogo-cuerpo">
+    <div class="sg-dialogo-icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8h.01M11 12h1v4h1"/></svg>
+    </div>
+    <h2 class="sg-dialogo-titulo" id="sg-confirmar-titulo">¿Continuar?</h2>
+    <p class="sg-dialogo-mensaje" id="sg-confirmar-mensaje"></p>
+  </div>
+  <form class="sg-dialogo-pie" method="dialog" style="gap: 10px;">
+    <button type="submit" value="no" class="sg-dialogo-secundario">Cancelar</button>
+    <button type="submit" value="si" autofocus>Continuar</button>
+  </form>
 </dialog>
 <script>
   (() => {
@@ -70,5 +84,28 @@
     @if($aviso)
       abrir();
     @endif
+  })();
+
+  // Confirmación sobria para acciones que no se pueden deshacer: <form data-sg-confirmar="¿Seguro?"> o window.sgConfirmar().
+  (() => {
+    const confirmar = document.getElementById('sg-confirmar');
+    window.sgConfirmar = (mensaje, titulo = '¿Continuar?') => new Promise((resolver) => {
+      if (!confirmar || typeof confirmar.showModal !== 'function') { resolver(window.confirm(mensaje)); return; }
+      document.getElementById('sg-confirmar-titulo').textContent = titulo;
+      document.getElementById('sg-confirmar-mensaje').textContent = mensaje;
+      confirmar.returnValue = 'no';
+      confirmar.addEventListener('close', () => resolver(confirmar.returnValue === 'si'), { once: true });
+      confirmar.showModal();
+    });
+    document.addEventListener('submit', (evento) => {
+      const formulario = evento.target;
+      if (!(formulario instanceof HTMLFormElement) || !formulario.dataset.sgConfirmar || formulario.dataset.sgConfirmado === '1') return;
+      evento.preventDefault();
+      window.sgConfirmar(formulario.dataset.sgConfirmar).then((acepto) => {
+        if (!acepto) return;
+        formulario.dataset.sgConfirmado = '1';
+        formulario.requestSubmit(evento.submitter || undefined);
+      });
+    });
   })();
 </script>
