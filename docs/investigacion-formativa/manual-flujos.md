@@ -1,0 +1,151 @@
+# Flujos de Investigación Formativa
+
+El módulo permite configurar secciones, formar grupos, revisar títulos, evaluar entregas existentes, aplicar encuestas y consultar resultados. La carga y descarga de archivos permanece pendiente del contrato compartido.
+
+## Preparación de una demostración local
+
+Use PostgreSQL, PHP y las dependencias indicadas en el README del proyecto. Ejecute los comandos desde la raíz del repositorio. Configure primero la conexión a su servidor PostgreSQL local. Use una base nueva; no reutilice una base institucional ni ejecute el seeder raíz.
+
+```bash
+export APP_ENV=local
+export DB_CONNECTION=pgsql
+export DB_HOST=127.0.0.1
+export DB_PORT=55432
+export DB_USERNAME=postgres
+export DB_URL=''
+export PGHOST="$DB_HOST"
+export PGPORT="$DB_PORT"
+export PGUSER="$DB_USERNAME"
+export DB_DATABASE="portal_gestion_direccion_test_demo_$(date -u +%Y%m%d%H%M%S)"
+createdb "$DB_DATABASE"
+php artisan module:migrate all --force
+read -rs -p 'Contraseña local de al menos 12 caracteres: ' IF_DEMO_PASSWORD
+export IF_DEMO_PASSWORD
+export IF_DEMO_EXPORT_DIR="/tmp/if-demo-exports"
+php artisan db:seed --class='App\Modules\InvestigacionFormativa\Database\Seeders\InvestigacionDemoSeeder'
+npm run build
+php artisan serve --host=127.0.0.1 --port=8059 --no-reload
+```
+
+El servidor PostgreSQL y las credenciales de estos ejemplos corresponden a la verificación local. Adapte el puerto y el usuario a su entorno. La base debe contener `_test_demo_` en su nombre. El seeder solo funciona en `local` o `testing`. No imprime la contraseña. Crea cuentas nuevas; no cambia contraseñas ni roles de cuentas existentes.
+
+El seeder imprime los correos y las secciones. Exporta un directorio por lote con `demo.json` y cuatro CSV. No exporta contraseñas. Los CSV contienen IDs devueltos por esa misma base y no sirven como catálogo institucional.
+
+| Archivo exportado | Comando de validación |
+|---|---|
+| `identidades.csv` | `php artisan investigacion:importar-identidades RUTA --dry-run` |
+| `directores.csv` | `php artisan investigacion:importar-directores RUTA --dry-run` |
+| `participantes.csv` | `php artisan investigacion:importar-participantes RUTA --dry-run` |
+| `competencias.csv` | `php artisan investigacion:importar-competencias RUTA --dry-run` |
+
+Sustituya `RUTA` por el archivo del lote. `--dry-run` valida sin escribir. Solo `--apply` aplica una importación. No combine ambas opciones. Los roles de Laravel se asignan por separado; importar una identidad no concede un rol.
+
+La demostración incluye dos escuelas, dos periodos, dos directores, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. La sección `completa` está lista para crear grupos. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
+
+## 1. Habilitación y configuración
+
+Actor inicial: director de la escuela. Datos iniciales: identidad y alcance importados; sección y responsable existentes en `core`.
+
+1. Inicie sesión y abra Investigación Formativa.
+2. Abra «Ver cursos y habilitar secciones». Filtre por escuela o periodo.
+3. Habilite la sección deseada.
+4. Inicie sesión como su docente responsable.
+5. En «Competencias», seleccione el contenido importado y guarde.
+6. En «Rúbrica», configure criterios y sus cuatro niveles. El puntaje mayor debe ser positivo.
+7. En «Cronograma», guarde tres fechas crecientes, expresadas en hora de Lima.
+8. Recargue «Mis cursos». La sección debe indicar configuración completa.
+
+Resultado: una configuración por sección, competencias seleccionadas, rúbrica y tres entregables. La configuración tiene una versión para detectar formularios antiguos. La demostración ya realiza estos pasos en `completa`; use `incompleta` para practicarlos.
+
+Ruta negativa: faltan competencias, niveles o fechas válidas. Se muestra el error y la sección no queda lista. Una sección deshabilitada no permite guardar. Un formulario antiguo produce conflicto; recargue y revise los valores actuales.
+
+Reinicio: use otra base de demostración nueva. Deshabilitar una sección conserva el historial. No elimina grupos ni respuestas.
+
+## 2. Grupo y título
+
+Actor inicial: estudiante activo del padrón. Datos iniciales: sección habilitada y completa; integrantes sin grupo en esa sección; línea y tipo de producto existentes.
+
+1. Abra «Mis cursos» y «Formar grupo».
+2. Ingrese nombre y título. Marque los integrantes.
+3. Seleccione línea de investigación y tipo de producto.
+4. Guarde. El creador queda como coordinador fijo y miembro.
+5. Recargue y vuelva a iniciar sesión. El grupo debe conservarse.
+6. Como docente responsable, abra «Grupos» y el grupo creado.
+7. Acepte el título o solicite un cambio con motivo.
+8. Como coordinador, consulte el resultado. Si corresponde, edite el título y guarde.
+
+Resultado: grupo, integrantes, proyecto y revisión se guardan de forma atómica. Un cambio de título vuelve a `Registrado`. El historial conserva las revisiones anteriores. Un integrante consulta el grupo, pero no edita el título.
+
+Ruta negativa: estudiante retirado, integrante ya agrupado, sección incorrecta o configuración incompleta. La operación se rechaza sin crear un grupo parcial. No existe pantalla para transferir la coordinación ni modificar la membresía. El título aceptado queda fijo tras la primera entrega. El vencimiento de la primera unidad también puede impedir su edición.
+
+Reinicio: cree un lote y una base nuevos. No borre grupos para repetir el recorrido.
+
+## 3. Tres avances y archivos: pendiente
+
+Actor previsto: coordinador. El esquema y las políticas representan versiones de entrega. Sin embargo, no hay una ruta funcional de carga o descarga ni un escritor compartido aprobado.
+
+La integración G4 debe resolver el registro de metadatos, el archivo privado y sus fallos antes de aceptar este flujo. No escriba en `comun.archivo` para simularlo. El PDF `tests/Fixtures/InvestigacionFormativa/avance-demo.pdf` es una muestra para la futura prueba; no demuestra una carga funcional.
+
+Reglas propuestas para esa integración: PDF de hasta 10 MiB, tres ventanas ordenadas y versiones inmutables. No se presentan como reglas institucionales aprobadas ni como funciones terminadas. Las pruebas de configuración sí verifican fechas crecientes, hora de Lima, congelación de rúbrica y extensiones de plazo tras entregas de prueba.
+
+## 4. Evaluación y corrección
+
+Actor: docente responsable. Datos iniciales: entrega existente con proyecto, sección y rúbrica válidos. La demostración vacía no crea entregas. Este recorrido se verifica con datos de prueba en `EvaluacionesTest`; la demostración completa en navegador depende de G4.
+
+1. Abra el grupo y seleccione la versión de entrega que va a revisar.
+2. Marque un nivel de cada criterio.
+3. Agregue observaciones o marque que no hay observaciones.
+4. Guarde la evaluación.
+5. Corrija una evaluación existente y guarde de nuevo.
+6. Consulte el historial. Las observaciones anteriores deben permanecer.
+
+Resultado: los puntos se derivan de la rúbrica; no se acepta una nota arbitraria del cliente. La versión de evaluación aumenta. La entrega anterior conserva su evaluación cuando llega una versión nueva.
+
+Ruta negativa: criterio ausente o ajeno, nivel inválido, docente distinto o versión desactualizada. La evaluación no queda parcialmente guardada. La nueva entrega sin evaluación aparece pendiente, aunque una versión anterior tenga nota.
+
+Reinicio: ejecute la prueba en una base nueva o use otro proyecto de prueba. No sustituya archivos ni evaluaciones para reiniciar.
+
+## 5. Encuesta individual
+
+Actor inicial: director. Datos iniciales: sección habilitada y padrón activo.
+
+1. Abra «Encuesta» en la sección.
+2. Guarde de 1 a 50 preguntas; cada una admite de 1 a 1000 caracteres.
+3. Publique. Las preguntas quedan fijas.
+4. Como estudiante activo, responda cada pregunta con un entero de 1 a 5.
+5. Agregue un comentario opcional de hasta 2000 caracteres y envíe.
+6. Recargue y vuelva a iniciar sesión. Debe aparecer la confirmación.
+7. Como director, cierre la encuesta cuando corresponda.
+
+Resultado: se guarda una cabecera de respuesta y todos sus ítems en una sola transacción. Reenviar no reemplaza la respuesta original. El cierre impide nuevas respuestas y no ofrece reapertura. Las respuestas enviadas siguen disponibles después de deshabilitar la sección.
+
+Ruta negativa: falta una respuesta, se repite una pregunta, la encuesta está cerrada o el estudiante se retiró. No se registra una respuesta parcial. Los comentarios son confidenciales; la base conserva identidad para impedir duplicados. No se promete anonimato.
+
+Reinicio: use un lote nuevo. No existe una acción de borrado o reapertura para repetir la encuesta.
+
+## 6. Resultados e historial
+
+Actor: director. Datos iniciales: escuela asignada y periodos reales con secciones.
+
+1. Abra el resumen de dirección y seleccione escuela o periodo.
+2. Abra «Ver resultados» de una sección.
+3. Consulte la encuesta, sus promedios y la distribución por pregunta.
+4. Cambie de página o tamaño en comentarios. Los filtros deben conservarse.
+5. Consulte las notas por unidad, la nota final y todos los empates.
+6. Vuelva al historial y abra una sección cerrada de otro periodo.
+
+Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye.
+
+Ruta negativa: escuela fuera del alcance, sección ajena o permiso ausente. Se devuelve 403. Una consulta válida sin datos muestra un estado vacío. No existen tendencias ni notas de ejemplo en las pantallas reales.
+
+## Verificación de navegador
+
+Inicie geckodriver en una terminal: `geckodriver --host 127.0.0.1 --port 4449`. Mantenga el servidor local iniciado con `--no-reload` para conservar las variables de conexión. En otra terminal, defina la contraseña del mismo lote y ejecute:
+
+```bash
+export IF_DEMO_MANIFEST=/ruta/al/lote/demo.json
+export IF_BROWSER_OUTPUT=/ruta/nueva/para/evidencia
+python3 tests/Browser/investigacion_formativa.py
+```
+
+Use un lote sin grupos ni encuestas previas. El destino de evidencia debe ser nuevo y quedar fuera de los archivos versionados. Se guardan HTML, capturas y `results.json`. El recorrido usa formularios reales, comprueba persistencia y compara anchos de 1280 y 390 píxeles. No comprueba carga, descarga ni evaluación en navegador mientras falte G4. Un resultado de este script no equivale a aceptación completa ni a una auditoría de accesibilidad.

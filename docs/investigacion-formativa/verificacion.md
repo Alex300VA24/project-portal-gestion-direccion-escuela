@@ -1,0 +1,93 @@
+# Verificación y límites de aceptación
+
+Fecha: 17 de noviembre de 2026. Este registro distingue funciones verificadas, cobertura parcial y requisitos pendientes. No declara el módulo listo para producción.
+
+## Documentación entregada
+
+- [Flujos, preparación y recorrido de navegador](manual-flujos.md).
+- [Arquitectura, datos, cálculos e integración](manual-arquitectura.md).
+- [Instrucciones de usuario por actor](manual-usuario.md).
+- [Roles, permisos y diagnóstico](roles-y-permisos.md).
+
+## Evidencia ejecutada
+
+| Comprobación | Resultado | Alcance |
+|---|---|---|
+| Suite completa sobre PostgreSQL 17.12 y PHP 8.4.27 | 249 aprobadas, 1 omitida, 1130 aserciones | Base exclusiva `portal_gestion_direccion_test_demo_p09_verify_20261117125000`. |
+| Generador de demostración | 2 aprobadas, 28 aserciones | Topología, conservación de cuentas, contraseña local y cuatro CSV válidos en modo de validación. |
+| Reportes | 12 aprobadas, 79 aserciones | Última versión, notas parciales, empates, redondeo, conteos, retiros, historial y consultas por lote. Incluidas en la suite completa. |
+| Concurrencia exclusiva de P08 | 1 aprobada, 68 aserciones | Ejecutada por separado en `portal_gestion_direccion_test_concurrency_p08_20261117124600`. La lógica concurrente del dominio no cambió después. |
+| Firefox 153.7.0 con geckodriver 0.37.1 | 58 comprobaciones aprobadas | Formularios reales; persistencia tras recarga e inicio de sesión; 19 capturas de página en dos anchos. |
+| HTML de navegador | 19 páginas, 86 IDs, 58 etiquetas, 164 controles | Etiquetas cerradas, IDs únicos, destinos de etiquetas y referencias ARIA. |
+| JavaScript incluido | 20 scripts con sintaxis válida | Extraídos del HTML capturado y revisados con `node --check`. |
+| Compilación y formato | Vite, Pint y sintaxis PHP aprobados | Solo archivos PHP nuevos; sin cambios de formato en otros módulos. |
+| Cachés y estructura | Blade, rutas y prueba SQL aprobados | Las cachés se limpiaron tras verificar; `modular_database_smoke: OK`. |
+| Manuales | Ortografía, enlaces y referencias revisados | Cinco documentos, cuatro capturas y diez enlaces locales comprobados. |
+| PDF de muestra | Una página A4, 601 bytes | `pdfinfo`, extracción de texto y hash coincidente. No es evidencia de una carga. |
+
+La prueba omitida en la suite requiere una base exclusiva de concurrencia. Su resultado separado se indica sin sumarlo a la suite. Las comprobaciones de ancho verifican ausencia de desplazamiento horizontal de toda la página a 1280 y 390 píxeles. No equivalen a una auditoría completa de accesibilidad, lectores de pantalla o todos los navegadores.
+
+## Trazabilidad de las 14 pantallas
+
+Las páginas de origen corresponden al informe de interfaces. Las rutas Blade son relativas a `resources/views/modules/investigacion-formativa/`.
+
+| Origen | Pantalla | Implementación | Evidencia y estado |
+|---|---|---|---|
+| Página 3 | Habilitar cursos | `director/cursos.blade.php`; `DirectorController::habilitacion` | Pruebas de configuración aprobadas; consulta y diseño adaptable comprobados en Firefox. |
+| Página 4 | Diseñar encuesta | `director/encuesta.blade.php`; `EncuestaService` | Guardar y publicar mediante formularios reales; pruebas de cierre y conflictos aprobadas. |
+| Página 5 | Resultados | `director/resultados.blade.php`; `ReporteService::porSeccion` | Encuesta en Firefox; calificaciones y empates con datos independientes de prueba. |
+| Página 6 | Resumen e historial | `director/index.blade.php`; `ReporteService::resumenDirector` | Periodos reales y sección cerrada en Firefox; filtros y consultas por lote en pruebas. |
+| Página 7 | Cursos del docente | `docente/cursos.blade.php` | Firefox y pruebas de asignación. |
+| Página 8 | Competencias | `docente/competencias.blade.php`; `ConfiguracionService::guardarCompetencias` | Guardado verificado por prueba funcional; lectura y diseño adaptable en Firefox. |
+| Página 9 | Rúbrica | `docente/rubrica.blade.php`; `ConfiguracionService::guardarRubrica` | Guardado y cuatro niveles en pruebas; formulario y diseño adaptable en Firefox. |
+| Página 10 | Cronograma | `docente/cronograma.blade.php`; `ConfiguracionService::guardarCronograma` | Fechas y hora de Lima en pruebas; lectura y diseño adaptable en Firefox. |
+| Página 11 | Grupos del docente | `docente/grupos.blade.php` | Firefox y pruebas de pertenencia. |
+| Página 12 | Revisar grupo y evaluar | `docente/grupo.blade.php`; `GrupoService::revisarTitulo`; `EvaluacionService::guardar` | Revisión de título en Firefox. Evaluación con entregas de prueba aprobada; recorrido real de entrega/evaluación pendiente de G4. |
+| Página 13 | Cursos del estudiante | `alumno/cursos.blade.php` | Firefox y pruebas de configuración incompleta. |
+| Página 14 | Crear grupo | `alumno/grupo-crear.blade.php`; `GrupoService::crear` | Creación, validación de campos y persistencia en Firefox; atomicidad en pruebas. |
+| Página 15 | Trabajo del estudiante | `alumno/grupo.blade.php` | Grupo, título e historial disponibles. Carga y descarga pendientes; pantalla parcialmente cubierta. |
+| Página 16 | Encuesta individual | `alumno/encuesta.blade.php`; `EncuestaService::responder` | Envío y persistencia en Firefox; validaciones, duplicados y transacción en pruebas. |
+
+## Trazabilidad de reglas
+
+Los códigos B01–B24 identifican los requisitos y decisiones de implementación. «Verificada» significa comprobada en el alcance indicado, no aprobada como regla académica. Los nombres de prueba se resuelven dentro de `tests/Feature/InvestigacionFormativa/`.
+
+| Regla | Implementación | Evidencia | Estado / acción pendiente |
+|---|---|---|---|
+| B01: habilitación por sección | `ConfiguracionService::cambiarHabilitacion` | `ConfiguracionSeccionTest::test_director_habilita_seccion_y_la_recarga_muestra_habilitada` | Verificada. |
+| B02: detener escrituras deshabilitadas | Servicios de configuración, evaluación y encuesta | `test_una_seccion_deshabilitada_rechaza_cambios_del_docente`; `test_las_respuestas_enviadas_siguen_visibles_tras_deshabilitar_la_seccion` | Verificada para las operaciones implementadas. Archivos pendientes. |
+| B03: configuración completa | `ConfiguracionService::estaConfigurada` | `test_completitud_y_version_compartida_entre_los_pasos` | Verificada. |
+| B04: creador coordinador | `GrupoService::crear` | `GruposTitulosTest::test_la_creacion_de_grupo_guarda_miembros_proyecto_y_historial` | Verificada. |
+| B05: grupo único y coordinador único | Servicio y restricciones de grupo | `test_un_integrante_no_puede_formar_un_segundo_grupo`; prueba de concurrencia | Verificada. |
+| B06: membresía fija | Rutas y `GrupoService` | Inventario de rutas y creación de grupo | No hay acciones de incorporación, transferencia ni eliminación. Decisión local propuesta. |
+| B07: título por coordinador | `ProyectoPolicy::update`; `GrupoService::actualizarTitulo` | `test_un_integrante_no_coordinador_no_puede_editar_el_titulo` | Verificada. |
+| B08: nueva revisión tras editar | `GrupoService::actualizarTitulo` | `test_el_coordinador_puede_editar_y_el_docente_acepta_el_titulo` | Verificada. |
+| B09: tres estados de título | `GrupoService::revisarTitulo` | `test_el_docente_responsable_acepta_y_solicita_cambios` | Verificada. |
+| B10: título fijo tras entrega | `GrupoService::motivoBloqueoTitulo` | `test_el_titulo_no_se_rea_bre_despues_de_una_entrega` | Verificada con entrega de prueba; carga real pendiente. |
+| B11: PDF, tamaño y coordinador | Contrato de archivo propuesto | PDF de muestra y políticas previas | Pendiente de G4. Falta servicio y ruta de carga. |
+| B12: ventanas de tres avances | Contrato propuesto | Cronograma persistido | Pendiente de G4 y del servicio de entregas. Guardar fechas no verifica ventanas de carga. |
+| B13: fechas crecientes y Lima | `ConfiguracionService::guardarCronograma` | `test_cronograma_guarda_tres_fechas_en_hora_lima_y_no_duplica_entregables` | Verificada. |
+| B14: versiones inmutables de entrega | Esquema y lectura de versiones | `EvaluacionesTest::test_la_version_anterior_conserva_su_nota_y_la_mas_reciente_queda_pendiente` | Lectura verificada; creación y ciclo de archivos pendientes. |
+| B15: criterios y nivel por versión | `EvaluacionService::guardar` | `test_exige_criterios_exactos_niveles_validos_y_observaciones_explicitas` | Verificada con datos de prueba. |
+| B16: última versión vigente | `EvaluacionService`; `ReporteService` | `ReportesTest::test_la_version_nueva_sin_evaluar_no_reutiliza_la_nota_anterior` | Verificada. |
+| B17: congelación y extensión | `ConfiguracionService` | `test_rubrica_se_congela_cuando_existen_entregas`; `test_el_cronograma_solo_se_extiende_despues_de_una_entrega` | Verificada con datos de prueba. |
+| B18: publicar y cerrar sin reabrir | `EncuestaService` | `test_la_publicacion_exige_preguntas_guardadas_y_luego_fija_el_contenido`; `test_una_encuesta_se_cierra_sin_reabrir_y_el_mensaje_bloquea_nuevas_respuestas` | Verificada. |
+| B19: respuesta individual única | `EncuestaService::responder` | `test_el_estudiante_ve_las_preguntas_y_guarda_una_sola_respuesta` | Verificada. |
+| B20: confidencialidad | Vistas de encuesta y resultados | `test_pagina_comentarios_sin_identidades_y_conserva_filtros_y_tamano`; comprobación de reporte en Firefox | Verificada para la salida mostrada. Identidad almacenada; no se promete anonimato. |
+| B21: resultados reales y vacíos | `ReporteService` | `test_muestra_estados_vacios_sin_notas_inventadas`; `test_incluye_todos_los_empates_y_excluye_el_proyecto_incompleto` | Verificada. |
+| B22: periodo y sección reales | `ReporteService::resumenDirector` | `test_el_historial_usa_periodos_reales_e_incluye_secciones_cerradas` | Verificada. |
+| B23: línea y tipo de producto | Formulario y `GrupoService::crear` | Creación en Firefox y prueba de creación de grupo | Verificada. |
+| B24: no cambiar notas de matrícula | Servicios y esquema propio | Pruebas de aislamiento de esquema y revisión de escrituras | No se escriben notas de matrícula. |
+| Cálculo y clasificación | `CalificacionService`; `ReporteService` | `test_un_proyecto_completo_ocupa_ambos_extremos`; `test_el_promedio_del_curso_redondea_medios_hacia_arriba` | Verificada con expectativas numéricas independientes. |
+| Conteos y denominadores | `ReporteService` | `test_cuenta_cabeceras_y_calcula_la_media_por_pregunta`; `test_los_retiros_cambian_el_denominador_sin_limitar_la_tasa` | Verificada. |
+
+## Pendientes que impiden la aceptación completa
+
+1. G4: aprobar e implementar el contrato del archivo compartido. Completar carga, descarga, versiones, fallos y auditoría de archivos sin escrituras directas desde este módulo.
+2. Ejecutar el recorrido de tres entregas y evaluación en navegador con esa integración real. El generador de demostración no inserta entregas falsas para aparentarlo.
+3. Confirmar G1, G2, G3 y G5 con los responsables de identidad, matrícula, contenido académico y asignaciones.
+4. Validar las decisiones académicas propuestas, incluidas membresía fija, ventanas, congelación, versión vigente y promedio sin ponderación.
+5. Construir y comprobar la imagen de producción en un entorno con Docker o Podman. No se ejecutó aquí por falta de esas herramientas.
+6. Realizar la revisión de seguridad dedicada que fue diferida. Se conservaron los controles existentes; las pruebas funcionales no sustituyen esa revisión.
+
+P09 tiene demostración y recorrido parcial verificados; su aceptación completa sigue bloqueada por G4. P10 tiene los cuatro manuales y el registro de regresión; la aceptación final conserva los bloqueos anteriores.
