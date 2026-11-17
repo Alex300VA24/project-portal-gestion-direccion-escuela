@@ -88,21 +88,6 @@
   </div>
 @endif
 
-{{-- AVISO METODOLÓGICO OBLIGATORIO --}}
-<div class="sg-alert sg-alert-warning" role="note" style="margin-bottom: var(--sg-space-6);" aria-labelledby="sg-nota-metodologica-titulo">
-  @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
-  <div>
-    <strong id="sg-nota-metodologica-titulo">Criterio metodológico fundamental:</strong>
-    <p>
-      La <strong>cobertura</strong> mide la proporción de personas convocadas que respondieron la encuesta
-      (<em>cobertura = respuestas recibidas ÷ total de invitaciones enviadas</em>).
-      <strong>La falta de respuesta o persona pendiente NO debe confundirse con desempleo</strong>:
-      la no respuesta indica ausencia de información muestral, mientras que la situación laboral
-      (empleado, en búsqueda, posgrado o independiente) se determina únicamente sobre los cuestionarios completados.
-    </p>
-  </div>
-</div>
-
 {{-- MÉTRICAS RESUMEN DE COBERTURA --}}
 <section class="sg-panel" aria-labelledby="sg-metricas-title" style="margin-bottom: var(--sg-space-6);">
   <div class="sg-section-title">
