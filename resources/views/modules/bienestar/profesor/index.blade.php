@@ -1,53 +1,21 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Reportes Docentes de Riesgo Estudiantil · Bienestar UNT</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
-    <header class="bg-indigo-950 text-white shadow-md">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <a href="{{ route('bienestar.index') }}" class="flex items-center space-x-2 text-white hover:text-indigo-200 transition">
-                    <img src="{{ asset('img/logo-informatica.png') }}" alt="Logo Informática" class="h-8 w-auto">
-                    <span class="font-bold text-lg">Bienestar UNT</span>
-                </a>
-                <span class="text-indigo-400">/</span>
-                <span class="text-sm text-indigo-200 font-medium">Portal Docente</span>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span class="text-xs text-indigo-300">Docente: <strong>{{ $actor->nombreCompleto }}</strong> ({{ $actor->codigoDocente ?? 'DOC-001' }})</span>
-                <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver</a>
-                <form method="POST" action="{{ route('logout') }}" class="inline">
-                    @csrf
-                    <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
-                        Cerrar Sesión
-                    </button>
-                </form>
-            </div>
+@extends('modules.bienestar.layout')
+
+@section('title', 'Mis Reportes · Bienestar UNT')
+@section('page-label', 'Mis Reportes')
+
+@section('content')
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Mis Reportes de Riesgo Estudiantil</h1>
+            <p class="text-xs text-slate-600 mt-1">
+                Docente: <strong>{{ $actor->nombreCompleto }}</strong> ({{ $actor->codigoDocente ?? 'DOC-001' }}) · Seguimiento preventivo.
+            </p>
         </div>
-    </header>
-
-    <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
-        @if (session('status'))
-            <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
-                {{ session('status') }}
-            </div>
-        @endif
-
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Mis Reportes de Riesgo Estudiantil</h1>
-                <p class="text-slate-600 text-sm mt-1">Seguimiento al estado de atención de los estudiantes que has reportado para acompañamiento de Bienestar.</p>
-            </div>
-            <a href="{{ route('bienestar.profesor.create') }}" class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg shadow-sm transition">
-                + Reportar Estudiante en Riesgo
-            </a>
+        <a href="{{ route('bienestar.profesor.create') }}" class="inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-xs transition">
+            + Reportar Estudiante en Riesgo
+        </a>
+    </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -119,6 +87,5 @@
         <div class="mt-6">
             {{ $reportes->links() }}
         </div>
-    </main>
-</body>
-</html>
+</div>
+@endsection

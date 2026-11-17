@@ -1,46 +1,18 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Métricas Consolidadas de Bienestar · Dirección de Escuela UNT</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
-    <header class="bg-indigo-950 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <a href="{{ route('bienestar.index') }}" class="flex items-center space-x-2 text-white hover:text-indigo-200 transition">
-                    <img src="{{ asset('img/logo-informatica.png') }}" alt="Logo Informática" class="h-8 w-auto">
-                    <span class="font-bold text-lg">Dirección de Escuela</span>
-                </a>
-                <span class="text-indigo-400">/</span>
-                <span class="text-sm text-indigo-200 font-medium">Estadísticas Agregadas de Bienestar</span>
-            </div>
-            <div class="flex items-center space-x-3">
-                <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver al Módulo</a>
-                <form method="POST" action="{{ route('logout') }}" class="inline">
-                    @csrf
-                    <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
-                        Cerrar Sesión
-                    </button>
-                </form>
-            </div>
-        </div>
-    </header>
+@extends('modules.bienestar.layout')
 
-    <main class="flex-1 max-w-7xl mx-auto px-4 py-8 w-full space-y-8">
-        <!-- Aviso de k-anonimato y confidencialidad -->
-        <div class="p-4 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-start space-x-3">
-            <svg class="w-5 h-5 text-purple-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <div>
-                <strong class="font-bold">Política de Privacidad y K-Anonimato (Ley N° 29733):</strong>
-                En estricto cumplimiento del principio de proporcionalidad, la Dirección de Escuela accede únicamente a indicadores agregados y frecuencias consolidadas por periodo lectivo. Para resguardar la identidad de los estudiantes, cualquier celda o conteo menor a cinco casos se reporta con la etiqueta <span class="font-bold font-mono bg-purple-100 px-1 py-0.5 rounded text-purple-900">"menos de 5"</span>. Este módulo no expone nombres, registros clínicos ni identificadores individuales.
-            </div>
+@section('title', 'Métricas Consolidadas · Dirección de Escuela UNT')
+@section('page-label', 'Estadísticas')
+
+@section('content')
+<div class="space-y-6">
+    <!-- Aviso de k-anonimato y confidencialidad -->
+    <div class="p-4 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-start space-x-3">
+        <svg class="w-5 h-5 text-purple-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>
+            <strong class="font-bold">Política de Privacidad y K-Anonimato (Ley N° 29733):</strong>
+            En estricto cumplimiento del principio de proporcionalidad, la Dirección de Escuela accede únicamente a indicadores agregados y frecuencias consolidadas por periodo lectivo. Para resguardar la identidad de los estudiantes, cualquier celda o conteo menor a cinco casos se reporta con la etiqueta <span class="font-bold font-mono bg-purple-100 px-1 py-0.5 rounded text-purple-900">"menos de 5"</span>. Este módulo no expone nombres, registros clínicos ni identificadores individuales.
         </div>
+    </div>
 
         <!-- Selector de periodo -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -161,10 +133,6 @@
                 </table>
             </div>
         </div>
-    </main>
-
-    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        Información estadística para toma de decisiones académicas · Dirección de Escuela de Informática UNT
-    </footer>
-</body>
-</html>
+    </div>
+</div>
+@endsection

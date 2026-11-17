@@ -1,51 +1,21 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Información Académica y Bienestar · UNT</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
-    <!-- Barra superior -->
-    <header class="bg-indigo-950 text-white shadow-md">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <a href="{{ route('bienestar.index') }}" class="flex items-center space-x-2 text-white hover:text-indigo-200 transition">
-                    <img src="{{ asset('img/logo-informatica.png') }}" alt="Logo Informática" class="h-8 w-auto">
-                    <span class="font-bold text-lg">Bienestar UNT</span>
-                </a>
-                <span class="text-indigo-400">/</span>
-                <span class="text-sm text-indigo-200 font-medium">Información Académica</span>
-            </div>
-            <div class="flex items-center space-x-3">
-                @if ($puedeGestionar)
-                    <a href="{{ route('bienestar.informacion.create') }}" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg shadow-sm transition">
-                        + Redactar Artículo
-                    </a>
-                @endif
-                <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver al Módulo</a>
-                @auth
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
-                        @csrf
-                        <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
-                            Cerrar Sesión
-                        </button>
-                    </form>
-                @endauth
-            </div>
-        </div>
-    </header>
+@extends('modules.bienestar.layout')
 
-    <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
-        @if (session('status'))
-            <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
-                {{ session('status') }}
-            </div>
+@section('title', 'Información Académica y Bienestar · UNT')
+@section('page-label', 'Normativa Académica')
+
+@section('content')
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Información Académica y Bienestar</h1>
+            <p class="text-xs text-slate-600 mt-1">Normativas de permanencia, régimen disciplinario y orientaciones clave de la Escuela de Informática.</p>
+        </div>
+        @if ($puedeGestionar)
+            <a href="{{ route('bienestar.informacion.create') }}" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition">
+                + Redactar Artículo
+            </a>
         @endif
+    </div>
 
         <div class="mb-8 text-center max-w-2xl mx-auto">
             <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Información Académica y Bienestar</h1>
@@ -94,10 +64,5 @@
         <div class="mt-8">
             {{ $articulos->links() }}
         </div>
-    </main>
-
-    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        Información sujeta a confirmación oficial con el Reglamento General de la Universidad Nacional de Trujillo.
-    </footer>
-</body>
-</html>
+</div>
+@endsection

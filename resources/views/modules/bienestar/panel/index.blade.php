@@ -1,53 +1,26 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Panel de Bienestar Universitario · UNT</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
-    <header class="bg-indigo-950 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <a href="{{ route('bienestar.index') }}" class="flex items-center space-x-2 text-white hover:text-indigo-200 transition">
-                    <img src="{{ asset('img/logo-informatica.png') }}" alt="Logo Informática" class="h-8 w-auto">
-                    <span class="font-bold text-lg">Bienestar UNT</span>
-                </a>
-                <span class="text-indigo-400">/</span>
-                <span class="text-sm text-indigo-200 font-medium">Panel Operativo de Riesgo</span>
-            </div>
-            <div class="flex items-center space-x-3">
-                <a href="{{ route('bienestar.panel.alertas.create') }}" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition">
-                    + Nueva Alerta Manual
-                </a>
-                <a href="{{ route('bienestar.panel.solicitudes.index') }}" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold shadow-sm transition">
-                    Solicitudes de Apoyo
-                </a>
-                <a href="{{ route('bienestar.informacion.create') }}" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-sm transition">+ Nuevo Artículo</a>
-                <a href="{{ route('bienestar.informacion.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Artículos Públicos</a>
-                <a href="{{ route('bienestar.index') }}" class="text-xs text-indigo-200 hover:text-white transition">Volver</a>
-                <form method="POST" action="{{ route('logout') }}" class="inline">
-                    @csrf
-                    <button type="submit" class="text-xs bg-rose-700/80 hover:bg-rose-600 px-2.5 py-1 rounded text-white font-semibold transition">
-                        Cerrar Sesión
-                    </button>
-                </form>
-            </div>
+@extends('modules.bienestar.layout')
+
+@section('title', 'Hub Operativo · Bienestar')
+@section('page-label', 'Hub Operativo')
+
+@section('content')
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Hub Operativo de Riesgo Estudiantil</h1>
+            <p class="text-xs text-slate-600 mt-1">Gestión integral de alertas preventivas, atención de casos y derivaciones.</p>
         </div>
-    </header>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('bienestar.panel.alertas.create') }}" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition">
+                + Nueva Alerta Manual
+            </a>
+            <a href="{{ route('bienestar.panel.solicitudes.index') }}" class="px-3.5 py-2 bg-indigo-900 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold shadow-xs transition">
+                Solicitudes de Apoyo
+            </a>
+        </div>
+    </div>
 
-    <main class="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
-        @if (session('status'))
-            <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
-                {{ session('status') }}
-            </div>
-        @endif
-
-        <!-- Métricas resumidas -->
+    <!-- Métricas resumidas -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Alertas Pendientes</span>
@@ -210,6 +183,5 @@
         <div class="mt-6">
             {{ $alertas->links() }}
         </div>
-    </main>
-</body>
-</html>
+</div>
+@endsection
