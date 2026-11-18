@@ -840,7 +840,7 @@ class DatosPruebaSeeder extends Seeder
                 'region_empleo' => 'LA_LIBERTAD',
                 'nivel_ingles' => 'INTERMEDIO',
                 'autoriza_contacto_empresa' => true,
-                'contacto_jefe' => 'Líder Técnico de Software',
+                'contacto_jefe' => '+51 944 12'.($i % 10).' 30'.($i % 10),
             ]);
 
             DB::table('seguimiento_egresado.satisfaccion_egresado')->insert([

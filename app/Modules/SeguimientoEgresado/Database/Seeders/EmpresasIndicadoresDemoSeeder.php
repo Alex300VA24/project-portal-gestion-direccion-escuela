@@ -68,6 +68,9 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
     }
 
     /** Nombres y apellidos comunes en Trujillo, para que los datos de ejemplo se lean como los de una escuela real. */
+    /** Empresas de ejemplo (nombres inventados). */
+    private const EMPRESAS = ['Andes Software Labs', 'Agroindustrial Virú S.A.', 'Banco del Norte', 'Tecnologías del Pacífico', 'Constructora Chimú', 'Clínica La Libertad', 'Distribuidora Trujillo', 'Minera Sierra Alta'];
+
     private const NOMBRES = ['Luis', 'María', 'Carlos', 'Ana', 'José', 'Rosa', 'Jorge', 'Lucía', 'Miguel', 'Carmen', 'Diego', 'Elena', 'Pedro', 'Sofía', 'Andrés', 'Valeria', 'Raúl', 'Patricia', 'Víctor', 'Daniela'];
 
     private const APELLIDOS = ['Quispe', 'Rojas', 'Vásquez', 'Alva', 'Chávez', 'Torres', 'Ramírez', 'Castillo', 'Mendoza', 'Salazar', 'Paredes', 'Cruz', 'Flores', 'Vega', 'Reyes', 'Cabrera', 'Neyra', 'Terrones', 'Gutiérrez', 'Linares'];
@@ -190,8 +193,9 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
                 'id_sector_laboral' => $trabaja ? $this->catalogo('cat_sector_laboral', 'PRIVADO') : null,
                 'id_area_profesional' => $trabaja ? $this->catalogo('cat_area_profesional', $areas[$posicion % 5]) : null,
                 'id_pais_residencia' => $posicion % 7 === 6 ? $extranjero : $paises['PE'],
-                'nombre_empleador_cliente' => $trabaja ? 'Empresa DEMO '.($posicion % 4 + 1) : null,
+                'nombre_empleador_cliente' => $trabaja ? self::EMPRESAS[$posicion % count(self::EMPRESAS)] : null,
                 'autoriza_contacto_empresa' => $trabaja,
+                'contacto_jefe' => $trabaja ? sprintf('+51 94%d %03d %03d', $posicion % 10, 100 + $posicion % 900, 200 + ($posicion * 7) % 800) : null,
             ]);
 
             DB::table('seguimiento_egresado.satisfaccion_egresado')->insert([
@@ -227,26 +231,28 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
      */
     private function encuestasEmpresa(int $anio, string $inicio, string $fin, array $egresados2018, array $egresados2016): void
     {
-        $campania3 = $this->crearCampania('Evaluación de empleadores a 3 años '.$anio, 'EMPRESAS', 3, $anio.'-II', $inicio, $fin, 'ABIERTA');
-        $campania5 = $this->crearCampania('Evaluación de empleadores a 5 años '.$anio, 'EMPRESAS', 5, $anio.'-II', $inicio, $fin, 'ABIERTA');
-        $mercado = $this->crearCampania('Demanda de habilidades '.$anio, 'EMPRESAS', null, $anio.'-II', $inicio, $fin, 'ABIERTA');
+        $cohorte2018 = (int) DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'PROM-2018')->value('id');
+        $cohorte2016 = (int) DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'PROM-2016-I')->value('id');
+        $campania3 = $this->crearCampania('Evaluación de empleadores a 3 años '.$anio, 'EMPRESAS', 3, $anio.'-II', $inicio, $fin, 'ABIERTA', [$cohorte2018]);
+        $campania5 = $this->crearCampania('Evaluación de empleadores a 5 años '.$anio, 'EMPRESAS', 5, $anio.'-II', $inicio, $fin, 'ABIERTA', [$cohorte2016]);
+        $mercado = $this->crearCampania('Demanda de habilidades '.$anio, 'EMPRESAS', null, $anio.'-II', $inicio, $fin, 'ABIERTA', [$cohorte2018]);
 
         $niveles3 = ['SATISFECHO', 'MUY_SATISFECHO', 'SATISFECHO', 'NEUTRAL', 'INSATISFECHO'];
         foreach (array_slice($egresados2018, 0, 5) as $i => $egresado) {
-            $this->respuestaEmpresa($campania3, 'DESEMPENO', $egresado, 'Empresa DEMO '.($i + 1), $niveles3[$i], $i);
+            $this->respuestaEmpresa($campania3, 'DESEMPENO', $egresado, self::EMPRESAS[$i % count(self::EMPRESAS)], $niveles3[$i], $i);
         }
-        $this->invitacionSinResponder($campania3, 'DESEMPENO', $egresados2018[5] ?? null, 'Empresa DEMO pendiente', $this->hoy->addDays(30), 'PENDIENTE');
+        $this->invitacionSinResponder($campania3, 'DESEMPENO', $egresados2018[5] ?? null, 'Soluciones Andinas S.A.C.', $this->hoy->addDays(30), 'PENDIENTE');
 
         $niveles5 = ['MUY_SATISFECHO', 'SATISFECHO', 'SATISFECHO'];
         foreach (array_slice($egresados2016, 0, 3) as $i => $egresado) {
-            $this->respuestaEmpresa($campania5, 'DESEMPENO', $egresado, 'Empresa DEMO '.($i + 6), $niveles5[$i], $i + 5);
+            $this->respuestaEmpresa($campania5, 'DESEMPENO', $egresado, self::EMPRESAS[($i + 5) % count(self::EMPRESAS)], $niveles5[$i], $i + 5);
         }
 
         for ($i = 0; $i < 4; $i++) {
-            $this->respuestaEmpresa($mercado, 'MERCADO', null, 'Organización DEMO '.chr(65 + $i), null, $i + 2);
+            $this->respuestaEmpresa($mercado, 'MERCADO', null, self::EMPRESAS[($i + 3) % count(self::EMPRESAS)], null, $i + 2);
         }
-        $this->invitacionSinResponder($mercado, 'MERCADO', null, 'Organización DEMO vencida', $this->hoy->subDays(3), 'EXPIRADA');
-        $this->invitacionSinResponder($mercado, 'MERCADO', null, 'Organización DEMO pendiente', $this->hoy->addDays(20), 'PENDIENTE');
+        $this->invitacionSinResponder($mercado, 'MERCADO', null, 'Comercial Norte E.I.R.L.', $this->hoy->subDays(3), 'EXPIRADA');
+        $this->invitacionSinResponder($mercado, 'MERCADO', null, 'Servicios Pacífico S.A.', $this->hoy->addDays(20), 'PENDIENTE');
     }
 
     private function respuestaEmpresa(int $campania, string $contexto, ?int $egresado, string $organizacion, ?string $nivel, int $posicion): void

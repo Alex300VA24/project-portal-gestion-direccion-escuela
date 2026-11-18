@@ -3,19 +3,21 @@
 @section('section_name', 'Encuesta empresarial')
 @php
   $formato = fn (?float $v) => $v === null ? '—' : number_format($v, 1, ',', '.');
-  $estados = [
-    'PENDIENTE' => ['Pendiente', 'sg-badge-warning'],
-    'COMPLETADA' => ['Respondida', 'sg-badge-success'],
-    'EXPIRADA' => ['Vencida', 'sg-badge-danger'],
-    'ANULADA' => ['Anulada', 'sg-badge-danger'],
-  ];
-  $tipos = ['DESEMPENO' => 'Desempeño', 'MERCADO' => 'Mercado'];
-  $enlaceGenerado = session('enlace_generado');
-  $campaniaActual = $campanias->firstWhere('id', $campaniaId);
-  $periodoTexto = $campaniaActual ? 'Periodo '.$campaniaActual->periodo : 'Histórico hasta '.now(\App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::ZONA)->year;
-  $corteTexto = 'Corte '.now(\App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::ZONA)->format('d/m/Y');
-  $alcance = ($campaniaActual->nombre ?? 'Todas las campañas').' · '.($tipos[$contexto] ?? 'Todos los tipos').' · '.$periodoTexto.' · '.$corteTexto;
+  $fecha = fn ($v, $f = 'd/m/Y') => $v ? \Illuminate\Support\Carbon::parse($v)->format($f) : '—';
+  $campaniaActual = $campania;
+  $zona = \App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::ZONA;
+  $periodoTexto = $campaniaActual ? 'Periodo '.$campaniaActual->periodo : 'Histórico hasta '.now($zona)->year;
+  $corteTexto = 'Corte '.now($zona)->format('d/m/Y');
+  $alcance = ($campaniaActual->nombre ?? 'Todas las campañas').' · '.$periodoTexto.' · '.$corteTexto;
   $coberturaTexto = ($resumen['cobertura'] ?? null) === null ? 'Cobertura sin datos' : 'Cobertura '.$formato($resumen['cobertura']).' %';
+  $abierta = $campaniaActual && $campaniaActual->estado === 'ABIERTA';
+  $estadosCampania = ['ABIERTA' => ['Abierta', 'sg-badge-success'], 'PROGRAMADA' => ['Programada', 'sg-badge-warning'], 'CERRADA' => ['Cerrada', '']];
+  $etiquetas = [
+    'sin_enlace' => ['Sin enlace', ''], 'pendiente' => ['Pendiente', 'sg-badge-warning'],
+    'respondida' => ['Respondida', 'sg-badge-success'], 'vencida' => ['Vencida', 'sg-badge-danger'],
+  ];
+  $faltan = $evaluables->whereIn('estado', ['sin_enlace', 'vencida'])->count();
+  $enlacesGenerados = session('enlaces_empresa');
 
   $barras = fn (array $ranking, string $color) => [
     'tipo' => 'bar', 'horizontal' => true, 'unidad' => 'n',
@@ -25,75 +27,29 @@
       'textos' => array_map(fn ($f) => $f['cantidad'].' de '.$f['base'], $ranking),
     ]],
   ];
-  $porPagina = 10;
-  $totalPaginas = max(1, (int) ceil(($resumen['total'] ?? 0) / $porPagina));
-  $paginaActual = min($pagina, $totalPaginas);
-  $urlPagina = fn (int $n) => route('seguimiento-egresado.empresas', array_filter(['campania' => $campaniaId, 'contexto' => $contexto, 'pagina' => $n > 1 ? $n : null])).'#sg-emp-invitaciones';
-  $egresadosPorCohorte = $evaluables->groupBy('codigo_promocion')->sortKeysDesc();
   $filasRanking = fn (array $ranking) => array_map(fn ($f) => [$f['nombre'], $f['cantidad'], $formato($f['porcentaje']).' %'], $ranking);
 @endphp
 @push('styles')
   @include('modules.seguimiento-egresado.partials.estilos-graficos')
   <style>
-    .sg-emp-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: end; }
-    .sg-emp-filtros .sg-actions { margin: 0; }
-    .sg-modal.sg-modal-corto { width: min(640px, calc(100% - 32px)); }
-    .sg-emp-enlace { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sg-space-3); align-items: center; }
-    .sg-emp-enlace input { font-family: var(--sg-font-code); font-size: 13px; }
-    .sg-emp-form .sg-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-    .sg-emp-form [data-sg-promocion][hidden] { display: none; }
-    .sg .sg-emp-renovar { min-height: 44px; padding: 0; border: 0; background: none; color: var(--sg-accent); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-    .sg .sg-emp-renovar:hover { text-decoration: underline; }
-    .sg-emp-invitaciones .sg-table :is(th, td) { vertical-align: middle; }
-    .sg-emp-invitaciones form { margin: 0; }
-    .sg-emp-invitaciones td:nth-of-type(2) { min-width: 210px; }
-    .sg-emp-invitaciones td:nth-of-type(1), .sg-emp-invitaciones td:nth-of-type(5) { white-space: nowrap; }
-    .sg-emp-encabezado { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--sg-space-4); margin-bottom: var(--sg-space-6); }
-    .sg-emp-encabezado .sg-heading { margin-bottom: 0; }
-    .sg-emp-encabezado .sg-button[hidden] { display: none; }
-    .sg-emp-confirmar p { margin: 0; }
-    .sg-emp-sin-valor { color: var(--sg-muted); white-space: nowrap; }
-    .sg .sg-emp-peligro { background: var(--sg-danger); border-color: var(--sg-danger); }
-    .sg .sg-emp-peligro:hover { background: var(--sg-danger); filter: brightness(.9); }
-    .sg-emp-copiado { display: block; margin-top: 4px; color: var(--sg-muted); font-size: 12px; white-space: nowrap; }
-    .sg-emp-form .sg-actions { justify-content: flex-end; margin-top: var(--sg-space-5); }
-    .sg-emp-form [data-sg-solo-desempeno][hidden] { display: none; }
-    .sg-emp-paginas { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sg-space-3); margin-top: var(--sg-space-4); color: var(--sg-muted); font-size: 14px; }
-    .sg-emp-paginas > span:empty { min-width: 1px; }
-    @media (max-width: 900px) { .sg-emp-filtros { grid-template-columns: minmax(0, 1fr); } }
-    @media (max-width: 540px) { .sg-emp-enlace, .sg-emp-form .sg-form-grid { grid-template-columns: minmax(0, 1fr); } }
+    .sg-emp-barra { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .sg-emp-barra .sg-field { min-width: 280px; flex: 1; max-width: 520px; }
+    .sg-emp-tabla th, .sg-emp-tabla td { white-space: nowrap; vertical-align: middle; padding-left: 10px; padding-right: 10px; }
+    .sg-emp-tabla form { margin: 0; }
+    .sg-emp-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+    .sg-emp-cab h2 { margin: 0; }
+    .sg-emp-lote { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin: 10px 0 14px; }
+    #dlg-enlaces-empresa { width: min(98vw, 1200px); max-width: 98vw; max-height: 92vh; text-align: left; overflow: auto; }
+    #dlg-enlaces-empresa .sg-detalle-cuerpo { padding: 22px; }
+    #dlg-enlaces-empresa input.sg-input { font-family: var(--sg-font-code); font-size: 12px; min-width: 280px; }
+    .sg-emp-pie { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-top: 14px; }
   </style>
 @endpush
 @section('content')
-<div class="sg-emp-encabezado">
-  <section class="sg-heading">
-    <h1>Encuesta empresarial</h1>
-    <p>Las empresas responden con un enlace, sin crear cuenta.</p>
-  </section>
-  @if ($puedeGenerar && ! $error)
-    <button class="sg-button" type="button" data-sg-abrir-modal="sg-modal-enlace" hidden>Generar enlace</button>
-  @endif
-</div>
-
-@if ($enlaceGenerado)
-  <dialog class="sg-modal sg-modal-corto" id="sg-modal-enlace-listo" aria-labelledby="sg-modal-enlace-listo-titulo" data-sg-abrir-al-cargar data-sg-protegido data-sg-enlace-listo data-sg-url-enviado="{{ route('seguimiento-egresado.empresas.enlaces.enviado', ['id' => $enlaceGenerado['id']]) }}">
-    @include('modules.seguimiento-egresado.partials.modal-apertura', ['id' => 'sg-modal-enlace-listo', 'titulo' => 'Enlace generado', 'detalle' => 'Vence el '.$enlaceGenerado['expira_en']])
-    <div class="sg-modal-cuerpo">
-      <div class="sg-field">
-        <label class="sg-label" for="sg-enlace-generado">Envíalo a la empresa</label>
-        <div class="sg-emp-enlace">
-          <input class="sg-input" id="sg-enlace-generado" type="text" readonly value="{{ $enlaceGenerado['url'] }}" aria-describedby="sg-enlace-ayuda">
-          <button class="sg-button" type="button" data-sg-copiar="sg-enlace-generado">Copiar enlace</button>
-        </div>
-        <p class="sg-help" id="sg-enlace-ayuda" role="status">Cópialo ahora: no se volverá a mostrar.</p>
-      </div>
-    </div>
-  </dialog>
-@endif
-
-@if (session('aviso_enlace'))
-  <div class="sg-alert sg-alert-warning sg-bloque" role="alert">{{ session('aviso_enlace') }}</div>
-@endif
+<section class="sg-heading">
+  <h1>Encuesta empresarial</h1>
+  <p>Las empresas responden con un enlace, sin crear cuenta. Elige la campaña y entrega a cada empresa su enlace.</p>
+</section>
 
 @if ($error)
   <div class="sg-alert sg-alert-danger sg-bloque" role="alert">
@@ -101,35 +57,169 @@
     <a class="sg-link" href="{{ route('seguimiento-egresado.empresas') }}">vuelve a intentarlo</a>.
   </div>
 @else
-  <form class="sg-panel sg-bloque" method="get" action="{{ route('seguimiento-egresado.empresas') }}" aria-label="Filtros de resultados">
-    <div class="sg-filters sg-emp-filtros">
-      <div class="sg-field">
-        <label class="sg-label" for="campania">Campaña</label>
-        <select class="sg-select" id="campania" name="campania">
-          <option value="">Todas las campañas</option>
-          @foreach ($campanias as $c)
-            <option value="{{ $c->id }}" @selected($campaniaId === (int) $c->id)>{{ $c->nombre }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="sg-field">
-        <label class="sg-label" for="contexto">Tipo de encuesta</label>
-        <select class="sg-select" id="contexto" name="contexto">
-          <option value="">Todos los tipos</option>
-          @foreach ($tipos as $valor => $texto)
-            <option value="{{ $valor }}" @selected($contexto === $valor)>{{ $texto }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="sg-actions">
-        <button class="sg-button" type="submit">Aplicar filtros</button>
-        @if ($campaniaId || $contexto)
-          <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.empresas') }}">Limpiar</a>
+  {{-- CAMPAÑA --}}
+  <section class="sg-panel sg-bloque" aria-labelledby="sg-emp-campania">
+    <h2 class="sg-section-title" id="sg-emp-campania">Campaña de empleadores</h2>
+    <div class="sg-emp-barra">
+      @if ($campanias->isNotEmpty())
+        <form method="get" action="{{ route('seguimiento-egresado.empresas') }}" class="sg-field">
+          <label class="sg-label" for="campania">Campaña</label>
+          <select class="sg-select" id="campania" name="campania" onchange="this.form.submit()">
+            @foreach ($campanias as $c)
+              <option value="{{ $c->id }}" @selected($campaniaId === (int) $c->id)>{{ $c->nombre }} · {{ $c->periodo }}</option>
+            @endforeach
+          </select>
+        </form>
+      @endif
+      @if ($puedeGenerar)
+        <button type="button" class="sg-button {{ $campanias->isEmpty() ? '' : 'sg-button-secondary' }}" onclick="abrirNuevaCampania('EMPRESAS')">+ Nueva campaña de empleadores</button>
+      @endif
+    </div>
+    @if ($campaniaActual)
+      @php [$estadoTexto, $estadoClase] = $estadosCampania[$campaniaActual->estado] ?? [$campaniaActual->estado, '']; @endphp
+      <p class="sg-help" style="margin-top: 10px;">
+        <span class="sg-badge {{ $estadoClase }}">{{ $estadoTexto }}</span>
+        Del {{ $fecha($campaniaActual->fecha_inicio) }} al {{ $fecha($campaniaActual->fecha_fin) }}. Los enlaces valen hasta el cierre de la campaña.
+        @unless ($abierta) No se pueden generar enlaces mientras la campaña no esté abierta. @endunless
+      </p>
+    @else
+      <p class="sg-help" style="margin-top: 10px;">Aún no hay campañas para empleadores. Crea la primera con el botón de arriba.</p>
+    @endif
+  </section>
+
+  @if ($campaniaActual)
+    {{-- ① OPINIÓN SOBRE CADA EGRESADO --}}
+    <section class="sg-panel sg-bloque" aria-labelledby="sg-emp-desempeno">
+      <div class="sg-emp-cab">
+        <h2 class="sg-section-title" id="sg-emp-desempeno" style="margin: 0;">Opinión de la empresa sobre cada egresado <span class="sg-badge">cuenta para I5</span></h2>
+        @if ($puedeGenerar && $abierta)
+          <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}"
+                data-sg-confirmar="Se generará un enlace para cada egresado que aún no lo tiene o cuyo enlace venció. ¿Continuar?">
+            @csrf
+            <input type="hidden" name="id_campania" value="{{ $campaniaId }}">
+            <input type="hidden" name="contexto" value="DESEMPENO">
+            <button type="submit" class="sg-button" @disabled($faltan === 0)>Generar los enlaces que faltan{{ $faltan > 0 ? ' ('.$faltan.')' : '' }}</button>
+          </form>
         @endif
       </div>
-    </div>
-  </form>
+      <p class="sg-help" style="margin-bottom: 10px;">Aquí están los egresados de las promociones de esta campaña que autorizaron contactar a su empresa. La empresa y el contacto son los que ellos mismos indicaron.</p>
+      @if ($evaluables->isEmpty())
+        <p class="sg-help">Todavía ningún egresado de estas promociones autorizó contactar a su empresa. Aparecerán cuando respondan la encuesta de seguimiento.</p>
+      @else
+        <div class="sg-table-wrap">
+          <table class="sg-table sg-emp-tabla">
+            <caption class="sg-sr-only">Egresados a evaluar y el estado de su enlace</caption>
+            <thead>
+              <tr><th scope="col">Egresado</th><th scope="col">Promoción</th><th scope="col">Empresa</th><th scope="col">Contacto del jefe</th><th scope="col">Estado</th><th scope="col">Acción</th></tr>
+            </thead>
+            <tbody>
+              @foreach ($evaluables as $fila)
+                @php
+                  $inv = $fila->invitacion;
+                  [$texto, $clase] = $etiquetas[$fila->estado];
+                @endphp
+                <tr>
+                  <td><strong>{{ $fila->nombre }}</strong></td>
+                  <td>{{ $fila->anio_ingreso }}</td>
+                  <td>{{ $fila->empresa ?: '—' }}</td>
+                  <td>{{ $fila->contacto ?: '—' }}</td>
+                  <td>
+                    <span class="sg-badge {{ $clase }}">{{ $texto }}</span>
+                    @if ($fila->estado === 'pendiente')
+                      <span class="sg-help" style="display: block;">hasta el {{ $fecha($inv->expira_en) }}{{ $inv->enviado_en ? ' · entregado el '.$fecha($inv->enviado_en) : '' }}</span>
+                    @elseif ($fila->estado === 'vencida')
+                      <span class="sg-help" style="display: block;">venció el {{ $fecha($inv->expira_en) }}</span>
+                    @endif
+                  </td>
+                  <td>
+                    @if ($fila->estado === 'respondida')
+                      <span class="sg-badge sg-badge-success">✓ Respondió</span>
+                    @elseif ($puedeGenerar && $abierta)
+                      @if ($fila->estado === 'sin_enlace')
+                        <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces') }}">
+                          @csrf
+                          <input type="hidden" name="id_campania" value="{{ $campaniaId }}">
+                          <input type="hidden" name="contexto" value="DESEMPENO">
+                          <input type="hidden" name="id_egresado" value="{{ $fila->id }}">
+                          <button type="submit" class="sg-button sg-button-secondary">Generar enlace</button>
+                        </form>
+                      @else
+                        <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $inv->id) }}"
+                              @if ($fila->estado === 'pendiente') data-sg-confirmar="{{ $inv->enviado_en ? 'Ya entregaste este enlace a la empresa. Si generas uno nuevo, el anterior dejará de funcionar.' : 'Si generas un enlace nuevo, el anterior dejará de funcionar.' }} ¿Continuar?" @endif>
+                          @csrf
+                          <input type="hidden" name="confirmar_reemplazo" value="1">
+                          <button type="submit" class="sg-button sg-button-secondary">Enlace nuevo</button>
+                        </form>
+                      @endif
+                    @else
+                      <span class="sg-help">—</span>
+                    @endif
+                  </td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      @endif
+    </section>
 
+    {{-- ② DEMANDA DE HABILIDADES --}}
+    <section class="sg-panel sg-bloque" aria-labelledby="sg-emp-mercado">
+      <h2 class="sg-section-title" id="sg-emp-mercado">Demanda de habilidades (encuesta general) <span class="sg-badge">no cuenta para I5</span></h2>
+      <p class="sg-help">No es sobre un egresado: pregunta a cualquier empresa qué habilidades busca. Cada enlace admite una sola respuesta, así que genera uno por empresa.</p>
+      @if ($puedeGenerar && $abierta)
+        <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}" class="sg-emp-lote">
+          @csrf
+          <input type="hidden" name="id_campania" value="{{ $campaniaId }}">
+          <input type="hidden" name="contexto" value="MERCADO">
+          <div class="sg-field">
+            <label class="sg-label" for="cantidad-mercado">¿Cuántos enlaces?</label>
+            <input class="sg-input" id="cantidad-mercado" type="number" name="cantidad" min="1" max="50" value="5" required style="width: 110px;">
+          </div>
+          <button type="submit" class="sg-button sg-button-secondary">Generar enlaces</button>
+        </form>
+      @endif
+      @if ($mercado->isEmpty())
+        <p class="sg-help">Aún no hay enlaces de esta encuesta.</p>
+      @else
+        <div class="sg-table-wrap">
+          <table class="sg-table sg-emp-tabla">
+            <caption class="sg-sr-only">Enlaces de la encuesta general de mercado</caption>
+            <thead><tr><th scope="col">N.º</th><th scope="col">Estado</th><th scope="col">Empresa que respondió</th><th scope="col">Acción</th></tr></thead>
+            <tbody>
+              @foreach ($mercado as $n => $m)
+                @php [$texto, $clase] = $etiquetas[$m->estado_fila]; @endphp
+                <tr>
+                  <td>{{ $n + 1 }}</td>
+                  <td>
+                    <span class="sg-badge {{ $clase }}">{{ $texto }}</span>
+                    @if ($m->estado_fila === 'pendiente')<span class="sg-help" style="display: block;">hasta el {{ $fecha($m->expira_en) }}{{ $m->enviado_en ? ' · entregado el '.$fecha($m->enviado_en) : '' }}</span>@endif
+                  </td>
+                  <td>{{ $m->organizacion_informada ?: '—' }}</td>
+                  <td>
+                    @if ($m->estado_fila === 'respondida')
+                      <span class="sg-badge sg-badge-success">✓ Respondió</span>
+                    @elseif ($puedeGenerar && $abierta)
+                      <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $m->id) }}"
+                            @if ($m->estado_fila === 'pendiente') data-sg-confirmar="{{ $m->enviado_en ? 'Ya entregaste este enlace. Si generas uno nuevo, el anterior dejará de funcionar.' : 'Si generas un enlace nuevo, el anterior dejará de funcionar.' }} ¿Continuar?" @endif>
+                        @csrf
+                        <input type="hidden" name="confirmar_reemplazo" value="1">
+                        <button type="submit" class="sg-button sg-button-secondary">Enlace nuevo</button>
+                      </form>
+                    @else
+                      <span class="sg-help">—</span>
+                    @endif
+                  </td>
+                </tr>
+              @endforeach
+            </tbody>
+          </table>
+        </div>
+      @endif
+    </section>
+  @endif
+
+  {{-- ③ RESULTADOS: totales y gráficas de la campaña elegida --}}
   <section class="sg-bloque" aria-labelledby="sg-emp-resumen">
     <div class="sg-section-title"><h2 id="sg-emp-resumen">Resultados</h2></div>
     <p class="sg-criterio" role="status">{{ $periodoTexto }} · {{ $corteTexto }} · {{ $resumen['total'] }} {{ $resumen['total'] === 1 ? 'invitación' : 'invitaciones' }}</p>
@@ -196,275 +286,89 @@
       ])
     </div>
   </section>
+@endif
 
-  @if ($puedeGenerar)
-    <dialog class="sg-modal sg-modal-corto sg-emp-form" id="sg-modal-enlace" aria-labelledby="sg-modal-enlace-titulo" @if ($errors->any()) data-sg-abrir-al-cargar @endif>
-      @include('modules.seguimiento-egresado.partials.modal-apertura', ['id' => 'sg-modal-enlace', 'titulo' => 'Generar enlace'])
-      <div class="sg-modal-cuerpo">
-      @if ($campanias->where('estado', 'ABIERTA')->isEmpty())
-        <div class="sg-empty">
-          <h3>No hay campañas abiertas para empresas</h3>
-          <p>Abre una campaña de tipo Empresas o Mixta para generar enlaces.</p>
+@if ($enlacesGenerados)
+  <dialog class="sg-dialogo" id="dlg-enlaces-empresa" aria-labelledby="dlg-enlaces-titulo">
+    <div class="sg-detalle-cuerpo">
+      <div class="sg-detalle-cabecera">
+        <div>
+          <h2 class="sg-dialogo-titulo" id="dlg-enlaces-titulo" style="text-align: left; margin: 0 0 4px;">{{ session('enlaces_titulo', 'Enlaces generados') }}</h2>
+          <p class="sg-help" style="margin: 0;">Se muestran una sola vez. Cópialos o descárgalos antes de cerrar y entrégalos a cada empresa. Si se pierde uno, genera un enlace nuevo.</p>
         </div>
-      @else
-        <form method="post" action="{{ route('seguimiento-egresado.empresas.enlaces') }}" novalidate>
-          @csrf
-          <div class="sg-form-grid">
-            <div class="sg-field">
-              <label class="sg-label" for="id_campania">Campaña</label>
-              <select class="sg-select" id="id_campania" name="id_campania" required @error('id_campania') aria-invalid="true" aria-describedby="id_campania-error" @enderror>
-                <option value="">Selecciona una campaña</option>
-                @foreach ($campanias->where('estado', 'ABIERTA') as $c)
-                  <option value="{{ $c->id }}" @selected((int) old('id_campania') === (int) $c->id)>{{ $c->nombre }}</option>
-                @endforeach
-              </select>
-              @error('id_campania')<p class="sg-field-error" id="id_campania-error">{{ $message }}</p>@enderror
-            </div>
-            <div class="sg-field">
-              <label class="sg-label" for="sg-contexto-enlace">Tipo de encuesta</label>
-              <select class="sg-select" id="sg-contexto-enlace" name="contexto" required @error('contexto') aria-invalid="true" aria-describedby="contexto-error" @enderror>
-                <option value="DESEMPENO" @selected(old('contexto', 'DESEMPENO') === 'DESEMPENO')>Desempeño (cuenta para I5)</option>
-                <option value="MERCADO" @selected(old('contexto') === 'MERCADO')>Mercado general</option>
-              </select>
-              @error('contexto')<p class="sg-field-error" id="contexto-error">{{ $message }}</p>@enderror
-            </div>
-            <div class="sg-field" data-sg-solo-desempeno data-sg-promocion hidden>
-              <label class="sg-label" for="sg-promocion">Promoción</label>
-              <select class="sg-select" id="sg-promocion">
-                <option value="">Selecciona una promoción</option>
-                @foreach ($egresadosPorCohorte as $cohorte => $grupo)
-                  <option value="{{ $cohorte }}">{{ $cohorte }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="sg-field" data-sg-solo-desempeno>
-              <label class="sg-label" for="id_egresado">Egresado evaluado</label>
-              <select class="sg-select" id="id_egresado" name="id_egresado" aria-describedby="id_egresado-ayuda @error('id_egresado') id_egresado-error @enderror" @error('id_egresado') aria-invalid="true" @enderror>
-                <option value="">Selecciona un egresado</option>
-                @foreach ($egresadosPorCohorte as $cohorte => $grupo)
-                  <optgroup label="{{ $cohorte }}">
-                    @foreach ($grupo as $e)
-                      <option value="{{ $e->id }}" data-cohorte="{{ $cohorte }}" @selected((int) old('id_egresado') === (int) $e->id)>{{ trim($e->apellido_paterno.' '.$e->apellido_materno) }}, {{ $e->nombres }}@if ($e->nombre_empleador_cliente) · {{ $e->nombre_empleador_cliente }}@endif</option>
-                    @endforeach
-                  </optgroup>
-                @endforeach
-              </select>
-              <p class="sg-help" id="id_egresado-ayuda">Solo quienes autorizaron contactar a su empresa.</p>
-              @error('id_egresado')<p class="sg-field-error" id="id_egresado-error">{{ $message }}</p>@enderror
-            </div>
-            <div class="sg-field">
-              <label class="sg-label" for="organizacion">Organización (opcional)</label>
-              <input class="sg-input" id="organizacion" name="organizacion" type="text" maxlength="180" autocomplete="off" value="{{ old('organizacion') }}" @error('organizacion') aria-invalid="true" aria-describedby="organizacion-error" @enderror>
-              @error('organizacion')<p class="sg-field-error" id="organizacion-error">{{ $message }}</p>@enderror
-            </div>
-            <div class="sg-field">
-              <label class="sg-label" for="contacto_empresa">Persona de contacto (opcional)</label>
-              <input class="sg-input" id="contacto_empresa" name="contacto_empresa" type="text" maxlength="180" autocomplete="off" value="{{ old('contacto_empresa') }}" @error('contacto_empresa') aria-invalid="true" aria-describedby="contacto_empresa-error" @enderror>
-              @error('contacto_empresa')<p class="sg-field-error" id="contacto_empresa-error">{{ $message }}</p>@enderror
-            </div>
-            <div class="sg-field">
-              <label class="sg-label" for="dias_validez">Días de validez</label>
-              <input class="sg-input" id="dias_validez" name="dias_validez" type="number" inputmode="numeric" min="1" max="{{ \App\Modules\SeguimientoEgresado\Services\Empresas\EnlaceEmpresa::DIAS_MAXIMOS }}" required value="{{ old('dias_validez', \App\Modules\SeguimientoEgresado\Services\Empresas\EnlaceEmpresa::DIAS_POR_DEFECTO) }}" aria-describedby="dias_validez-ayuda @error('dias_validez') dias_validez-error @enderror" @error('dias_validez') aria-invalid="true" @enderror>
-              <p class="sg-help" id="dias_validez-ayuda">Nunca supera la fecha de cierre de la campaña.</p>
-              @error('dias_validez')<p class="sg-field-error" id="dias_validez-error">{{ $message }}</p>@enderror
-            </div>
-          </div>
-          <div class="sg-actions"><button class="sg-button" type="submit">Generar enlace</button></div>
-        </form>
-      @endif
+        <button type="button" class="sg-dialogo-cerrar" aria-label="Cerrar" onclick="document.getElementById('dlg-enlaces-empresa').close()">✕</button>
       </div>
-    </dialog>
-  @endif
-
-  <section class="sg-bloque sg-emp-invitaciones" aria-labelledby="sg-emp-invitaciones">
-    <div class="sg-section-title"><h2 id="sg-emp-invitaciones">Invitaciones</h2></div>
-    @if ($resumen['total'] === 0)
-      <div class="sg-empty"><h3>Sin invitaciones</h3><p>Genera un enlace o cambia los filtros.</p></div>
-    @else
-      <div class="sg-table-wrap" tabindex="0" role="region" aria-labelledby="sg-emp-invitaciones">
-        <table class="sg-table">
-          <caption class="sg-graf-oculto">Invitaciones de empresas, página {{ $paginaActual }} de {{ $totalPaginas }}</caption>
-          <thead>
-            <tr>
-              <th scope="col">Organización</th>
-              <th scope="col">Tipo</th>
-              <th scope="col">Campaña</th>
-              <th scope="col">Satisfacción</th>
-              <th scope="col">Estado</th>
-              <th scope="col">Vence</th>
-              @if ($puedeGenerar)<th scope="col">Acción</th>@endif
-            </tr>
-          </thead>
+      <div class="sg-table-wrap">
+        <table class="sg-table sg-emp-tabla" id="tabla-enlaces-empresa">
+          <thead><tr><th scope="col">Egresado</th><th scope="col">Empresa</th><th scope="col">Contacto del jefe</th><th scope="col">Vence</th><th scope="col">Enlace</th><th scope="col">Copiar</th></tr></thead>
           <tbody>
-            @foreach ($resumen['invitaciones']->forPage($paginaActual, $porPagina) as $i)
-              <tr>
-                <th scope="row">{{ $i->organizacion_informada ?? $i->organizacion ?? 'Sin indicar' }}</th>
-                <td>{{ $tipos[$i->contexto] ?? $i->contexto }}</td>
-                <td>{{ $i->campania }}</td>
-                <td @class(['sg-emp-sin-valor' => $i->contexto === 'MERCADO'])>{{ $i->contexto === 'MERCADO' ? 'No corresponde' : ($i->nivel_nombre ?? 'Sin medición') }}</td>
-                <td>
-                  <span class="sg-badge {{ $estados[$i->estado_real][1] ?? '' }}">{{ $estados[$i->estado_real][0] ?? $i->estado_real }}</span>
-                  @if ($i->estado_real === 'PENDIENTE' && $i->enviado_en)
-                    <small class="sg-emp-copiado">Copiado {{ \Carbon\CarbonImmutable::parse($i->enviado_en)->setTimezone(\App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::ZONA)->format('d/m H:i') }}</small>
-                  @endif
-                </td>
-                <td>{{ \Carbon\CarbonImmutable::parse($i->expira_en)->setTimezone(\App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::ZONA)->format('d/m/Y') }}</td>
-                @if ($puedeGenerar)
-                  <td>
-                    @if (in_array($i->estado_real, ['PENDIENTE', 'EXPIRADA'], true) && $i->estado_campania === 'ABIERTA')
-                      @php
-                        $nombre = $i->organizacion_informada ?? $i->organizacion ?? 'esta invitación';
-                        $yaCopiado = $i->estado_real === 'PENDIENTE' && $i->enviado_en;
-                        $accion = match (true) {
-                          $i->estado_real === 'EXPIRADA' => ['Renovar', 'El enlace de '.$nombre.' ya venció. Se generará uno nuevo.', 'Renovar enlace'],
-                          $yaCopiado => ['Reemplazar', 'El enlace de '.$nombre.' ya se copió. Si la empresa lo recibió, dejará de funcionarle y tendrás que enviarle el nuevo.', 'Reemplazar enlace'],
-                          default => ['Generar otro', 'Se generará otro enlace para '.$nombre.'. El anterior dejará de funcionar.', 'Generar otro enlace'],
-                        };
-                      @endphp
-                      <form method="post" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i->id]) }}" data-sg-renovar data-sg-mensaje="{{ $accion[1] }}" data-sg-confirmar="{{ $accion[2] }}" @if ($yaCopiado) data-sg-peligro @endif>
-                        @csrf
-                        @if ($yaCopiado)<input type="hidden" name="confirmar_reemplazo" value="1">@endif
-                        <button class="sg-emp-renovar" type="submit">{{ $accion[0] }}</button>
-                      </form>
-                    @else
-                      —
-                    @endif
-                  </td>
-                @endif
+            @foreach ($enlacesGenerados as $e)
+              <tr data-id="{{ $e['id'] }}">
+                <td>{{ $e['egresado'] }}</td>
+                <td>{{ $e['empresa'] ?: '—' }}</td>
+                <td>{{ $e['contacto'] ?: '—' }}</td>
+                <td>{{ $e['expira_en'] }}</td>
+                <td><input class="sg-input" type="text" readonly value="{{ $e['url'] }}" aria-label="Enlace de {{ $e['egresado'] }}" onfocus="this.select()"></td>
+                <td><button type="button" class="sg-button sg-button-secondary" data-copiar-fila>Copiar</button></td>
               </tr>
             @endforeach
           </tbody>
         </table>
       </div>
-      @if ($puedeGenerar)
-        <dialog class="sg-modal sg-modal-corto" id="sg-modal-renovar" aria-labelledby="sg-modal-renovar-titulo">
-          @include('modules.seguimiento-egresado.partials.modal-apertura', ['id' => 'sg-modal-renovar', 'titulo' => '¿Confirmas esta acción?'])
-          <div class="sg-modal-cuerpo sg-emp-confirmar">
-            <p data-sg-renovar-texto></p>
-            <div class="sg-actions"><button class="sg-button" type="button" data-sg-renovar-confirmar>Confirmar</button></div>
-          </div>
-        </dialog>
-      @endif
-      @if ($totalPaginas > 1)
-        <nav class="sg-emp-paginas" aria-label="Páginas de invitaciones">
-          <span>@if ($paginaActual > 1)<a class="sg-button sg-button-secondary" href="{{ $urlPagina($paginaActual - 1) }}" rel="prev">Anterior</a>@endif</span>
-          <span>Página {{ $paginaActual }} de {{ $totalPaginas }} · {{ $resumen['total'] }} invitaciones</span>
-          <span>@if ($paginaActual < $totalPaginas)<a class="sg-button sg-button-secondary" href="{{ $urlPagina($paginaActual + 1) }}" rel="next">Siguiente</a>@endif</span>
-        </nav>
-      @endif
-    @endif
-  </section>
+      <div class="sg-emp-pie">
+        <button type="button" class="sg-button sg-button-secondary" id="btn-copiar-todos">Copiar todos</button>
+        <button type="button" class="sg-button sg-button-secondary" id="btn-csv-enlaces">Descargar lista (CSV)</button>
+        <button type="button" class="sg-button" onclick="document.getElementById('dlg-enlaces-empresa').close()">Cerrar</button>
+      </div>
+    </div>
+  </dialog>
 @endif
+
+@include('modules.seguimiento-egresado.partials.campania-formulario', ['promociones' => $promociones, 'periodos' => $periodos, 'tipoFijo' => 'EMPRESAS', 'volverA' => 'empresas'])
 @endsection
 @push('scripts')
   <script src="{{ asset('js/seguimiento-egresado/vendor/chart-4.4.9.umd.js') }}"></script>
   <script src="{{ asset('js/seguimiento-egresado/seguimiento-graficos.js') }}"></script>
   <script>
     (() => {
-      const tipo = document.getElementById('sg-contexto-enlace');
-      if (tipo) {
-        const camposDesempeno = document.querySelectorAll('[data-sg-solo-desempeno]');
-        const actualizar = () => camposDesempeno.forEach((campo) => { campo.hidden = tipo.value !== 'DESEMPENO'; });
-        tipo.addEventListener('change', actualizar);
-        actualizar();
-      }
+      @if ($errors->any())
+        if (window.sgDialogo) window.sgDialogo({ tipo: 'error', mensaje: @json($errors->all()).join('\n') });
+      @endif
 
-      // Primero la promoción; luego solo sus egresados.
-      const promocion = document.getElementById('sg-promocion');
-      const egresado = document.getElementById('id_egresado');
-      if (promocion && egresado) {
-        const inicial = egresado.options[0];
-        const opciones = [...egresado.querySelectorAll('option[data-cohorte]')];
-        const elegida = opciones.find((opcion) => opcion.selected);
-        const cargar = (seleccion = '') => {
-          egresado.replaceChildren(inicial, ...opciones.filter((opcion) => opcion.dataset.cohorte === promocion.value));
-          egresado.disabled = !promocion.value;
-          inicial.textContent = promocion.value ? 'Selecciona un egresado' : 'Primero elige la promoción';
-          egresado.value = seleccion;
-        };
-        promocion.value = elegida?.dataset.cohorte ?? '';
-        promocion.addEventListener('change', () => cargar());
-        cargar(elegida?.value ?? '');
-      }
+      const dialogo = document.getElementById('dlg-enlaces-empresa');
+      if (!dialogo) return;
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const urlEnviado = (id) => '{{ url('seguimiento-egresado/empresas/enlaces') }}/' + id + '/enviado';
+      const filas = [...dialogo.querySelectorAll('tbody tr')];
+      const datos = (tr) => [...tr.children].slice(0, 3).map((td) => td.textContent.trim()).concat(tr.querySelector('input').value);
+      const marcar = (tr) => fetch(urlEnviado(tr.dataset.id), { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf } }).catch(() => {});
+      const copiar = async (texto) => {
+        try { await navigator.clipboard.writeText(texto); return true; } catch (_) { return false; }
+      };
 
-      // Enlace generado: se copia y el aviso desaparece. Si intenta cerrar sin copiar, se le avisa una vez.
-      const listo = document.querySelector('[data-sg-enlace-listo]');
-      if (listo) {
-        const campo = listo.querySelector('#sg-enlace-generado');
-        const copiar = listo.querySelector('[data-sg-copiar]');
-        const cerrar = listo.querySelector('[data-sg-cerrar-modal]');
-        const ayuda = listo.querySelector('#sg-enlace-ayuda');
-        let avisado = false;
-        let sePuedeCerrar = false;
+      dialogo.querySelectorAll('[data-copiar-fila]').forEach((boton) => boton.addEventListener('click', async () => {
+        const tr = boton.closest('tr');
+        if (await copiar(tr.querySelector('input').value)) { boton.textContent = 'Copiado'; marcar(tr); }
+        else { tr.querySelector('input').select(); }
+      }));
 
-        const copiarTexto = async () => {
-          campo.select();
-          try {
-            await navigator.clipboard.writeText(campo.value);
-            return true;
-          } catch {
-            return document.execCommand('copy');
-          }
-        };
-        const intentarCerrar = () => {
-          if (avisado) {
-            sePuedeCerrar = true;
-            listo.close();
-            return;
-          }
-          avisado = true;
-          ayuda.textContent = 'Aún no lo copias. Si cierras, podrás generar otro desde Invitaciones.';
-          cerrar.textContent = 'Cerrar sin copiar';
-        };
+      document.getElementById('btn-copiar-todos').addEventListener('click', async (e) => {
+        const texto = filas.map((tr) => { const [egresado, empresa, contacto, url] = datos(tr); return `${egresado} · ${empresa} · ${contacto}\n${url}`; }).join('\n\n');
+        if (await copiar(texto)) { e.target.textContent = 'Copiados'; filas.forEach(marcar); }
+      });
 
-        copiar.addEventListener('click', async () => {
-          if (await copiarTexto()) {
-            sePuedeCerrar = true;
-            copiar.textContent = 'Enlace copiado';
-            copiar.disabled = true;
-            ayuda.textContent = 'Listo: pégalo en el mensaje para la empresa.';
-            fetch(listo.dataset.sgUrlEnviado, {
-              method: 'POST',
-              headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            }).catch(() => {});
-            setTimeout(() => listo.close(), 1200);
-          } else {
-            ayuda.textContent = 'No se pudo copiar. Selecciona el enlace y pulsa Ctrl+C.';
-          }
-        });
-        cerrar.addEventListener('click', intentarCerrar);
-        listo.addEventListener('cancel', (evento) => {
-          if (sePuedeCerrar) return;
-          evento.preventDefault();
-          intentarCerrar();
-        });
-        // El navegador puede cerrar con Escape aunque se cancele: si aún no corresponde, se vuelve a abrir.
-        listo.addEventListener('close', () => {
-          if (!sePuedeCerrar) {
-            window.sgAbrirModal(listo);
-            return;
-          }
-          campo.value = '';
-        });
-      }
+      document.getElementById('btn-csv-enlaces').addEventListener('click', () => {
+        const comillas = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+        const lineas = [['Egresado', 'Empresa', 'Contacto del jefe', 'Enlace'].map(comillas).join(',')]
+          .concat(filas.map((tr) => datos(tr).map(comillas).join(',')));
+        const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = 'enlaces-encuesta-empresarial.csv'; a.click();
+        URL.revokeObjectURL(a.href);
+        filas.forEach(marcar);
+      });
 
-      // Nuevo enlace: se confirma porque el anterior deja de funcionar.
-      const confirmacion = document.getElementById('sg-modal-renovar');
-      if (confirmacion) {
-        let pendiente = null;
-        document.querySelectorAll('[data-sg-renovar]').forEach((formulario) => {
-          formulario.addEventListener('submit', (evento) => {
-            evento.preventDefault();
-            pendiente = formulario;
-            const boton = confirmacion.querySelector('[data-sg-renovar-confirmar]');
-            confirmacion.querySelector('[data-sg-renovar-texto]').textContent = formulario.dataset.sgMensaje;
-            boton.textContent = formulario.dataset.sgConfirmar;
-            boton.classList.toggle('sg-emp-peligro', formulario.hasAttribute('data-sg-peligro'));
-            window.sgAbrirModal(confirmacion);
-          });
-        });
-        confirmacion.querySelector('[data-sg-renovar-confirmar]').addEventListener('click', () => pendiente?.submit());
-      }
+      dialogo.showModal();
     })();
   </script>
 @endpush

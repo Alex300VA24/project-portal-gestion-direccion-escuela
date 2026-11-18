@@ -4,7 +4,7 @@
   Variables: $promociones (id, anio, egresados), $periodos. Opcional: $tipoFijo ('EMPRESAS' o 'EGRESADOS') para no preguntar para quién es.
   JavaScript: abrirNuevaCampania(tipo?) y abrirEditarCampania(datos).
 --}}
-@php $tipoFijo = $tipoFijo ?? null; @endphp
+@php $tipoFijo = $tipoFijo ?? null; $volverA = $volverA ?? null; @endphp
 <style>
   .sg-form-dialogo .sg-dialogo-cuerpo { text-align: left; padding: 24px 24px 8px; }
   .sg-form-dialogo .sg-dialogo-pie { gap: 10px; padding: 8px 24px 22px; justify-content: flex-end; }
@@ -19,6 +19,7 @@
   <form method="POST" action="{{ route('seguimiento-egresado.campanias.store') }}" id="form-campania">
     @csrf
     <input type="hidden" name="_method" value="POST" id="camp-metodo">
+    @if($volverA)<input type="hidden" name="volver_a" value="{{ $volverA }}">@endif
     <div class="sg-dialogo-cuerpo">
       <h2 class="sg-dialogo-titulo" id="dlg-campania-titulo">Nueva campaña</h2>
       <p class="sg-dialogo-mensaje" style="white-space: normal;">La campaña se abre y se cierra sola en las fechas que elijas.</p>

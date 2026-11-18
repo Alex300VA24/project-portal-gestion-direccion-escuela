@@ -98,7 +98,10 @@ class EnvioDeEnlacesTest extends TestCase
     public function test_las_campanas_van_solo_al_correo_personal_y_sin_el_no_se_envia(): void
     {
         Mail::fake();
-        $campania = \App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento::firstOrFail()->id;
+        $campania = \App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento::create([
+            'nombre' => 'Campaña de envío', 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'periodo' => '2026-II',
+            'fecha_inicio' => now()->subDay()->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString(), 'estado' => 'ABIERTA', 'id_usuario_creacion' => \App\Modules\SeguimientoEgresado\Models\UsuarioInterno::idActual(),
+        ])->id;
         $seguimiento = InvitacionEgresado::create([
             'id_campania' => $campania, 'id_egresado' => $this->egresado->id, 'proposito' => 'SEGUIMIENTO',
             'token_hash' => hash('sha256', 'token-seguimiento'), 'expira_en' => now()->addDays(30),

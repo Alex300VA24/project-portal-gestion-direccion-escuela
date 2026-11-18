@@ -236,7 +236,7 @@ class EgresadosDemoSeeder extends Seeder
             'id_sector_laboral' => $this->idDe('cat_sector_laboral', 'PRIVADO'), 'id_area_profesional' => $this->idDe('cat_area_profesional', 'SOFTWARE'),
             'id_pais_residencia' => $pais, 'ciudad_residencia' => 'Trujillo', 'nombre_empleador_cliente' => 'Andes Software Labs S.A.C.',
             'id_pais_empleador' => $pais, 'region_empleo' => 'LA_LIBERTAD', 'nivel_ingles' => 'INTERMEDIO', 'otros_idiomas' => 'Portugués básico',
-            'autoriza_contacto_empresa' => true, 'contacto_jefe' => 'rrhh@andessoftwarelabs.pe',
+            'autoriza_contacto_empresa' => true, 'contacto_jefe' => '+51 944 118 205',
         ]);
 
         DB::table('seguimiento_egresado.satisfaccion_egresado')->insert([

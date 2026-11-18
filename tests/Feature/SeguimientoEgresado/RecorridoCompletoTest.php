@@ -125,12 +125,12 @@ class RecorridoCompletoTest extends TestCase
         $this->actingAs($this->secretaria());
         $this->post(route('seguimiento-egresado.empresas.enlaces'), [
             'id_campania' => $campaniaEmpresas, 'contexto' => 'DESEMPENO', 'id_egresado' => $luciaId, 'organizacion' => 'Empresa Ficticia S.A.C.', 'contacto_empresa' => 'jefe@empresa.test', 'dias_validez' => 7,
-        ])->assertSessionHas('enlace_generado');
-        $enlaceEmpresa = session('enlace_generado');
-        $token = $enlaceEmpresa['token'] ?? basename($enlaceEmpresa['url'] ?? '');
+        ])->assertSessionHas('enlaces_empresa');
+        $enlaceEmpresa = session('enlaces_empresa')[0];
+        $token = basename($enlaceEmpresa['url']);
         $this->assertNotEmpty($token);
-        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campaniaEmpresas, 'contexto' => 'MERCADO', 'organizacion' => 'Empresa del Mercado', 'dias_validez' => 7])->assertSessionHas('enlace_generado');
-        $tokenMercado = session('enlace_generado')['token'] ?? basename(session('enlace_generado')['url'] ?? '');
+        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campaniaEmpresas, 'contexto' => 'MERCADO', 'organizacion' => 'Empresa del Mercado', 'dias_validez' => 7])->assertSessionHas('enlaces_empresa');
+        $tokenMercado = basename(session('enlaces_empresa')[0]['url']);
 
         // La empresa responde con su enlace, sin iniciar sesión
         auth()->logout();

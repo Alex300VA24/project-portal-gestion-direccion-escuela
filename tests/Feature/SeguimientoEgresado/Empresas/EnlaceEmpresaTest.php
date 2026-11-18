@@ -107,25 +107,38 @@ class EnlaceEmpresaTest extends TestCase
         $servicio->generar(['id_campania' => $campania, 'contexto' => 'DESEMPENO', 'id_egresado' => $egresado]);
     }
 
+    private function paginaDe(int $campania): \Illuminate\Testing\TestResponse
+    {
+        return $this->get(route('seguimiento-egresado.empresas', ['campania' => $campania]));
+    }
+
+    /** Egresado que autorizó contactar a su empresa y pertenece a una promoción de la campaña. */
+    private function evaluableEnCampania(int $campania, array $respuesta = []): int
+    {
+        $egresado = $this->egresado($this->cohorte());
+        $this->responder($this->invitacionSeguimiento($this->campania(['tipo' => 'EGRESADOS']), $egresado), cambios: ['autoriza_contacto_empresa' => true] + $respuesta);
+        DB::table('seguimiento_egresado.campania_cohorte')->insert(['id_campania' => $campania, 'id_cohorte' => DB::table('seguimiento_egresado.egresado')->where('id', $egresado)->value('id_cohorte')]);
+
+        return $egresado;
+    }
+
     public function test_secretaria_genera_y_ve_el_enlace_una_sola_vez(): void
     {
         $campania = $this->campania();
 
-        $respuesta = $this->post(route('seguimiento-egresado.empresas.enlaces'), [
-            'id_campania' => $campania, 'contexto' => 'MERCADO', 'dias_validez' => 10,
-        ]);
+        $respuesta = $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campania, 'contexto' => 'MERCADO']);
 
-        $respuesta->assertRedirect(route('seguimiento-egresado.empresas'));
-        $url = session('enlace_generado')['url'];
+        $respuesta->assertRedirect(route('seguimiento-egresado.empresas', ['campania' => $campania]));
+        $url = session('enlaces_empresa')[0]['url'];
         $this->get($url)->assertOk()->assertSee('Demanda de habilidades');
 
-        $this->followingRedirects()->get(route('seguimiento-egresado.empresas'))->assertDontSee('/encuesta-empresa/');
+        $this->followingRedirects()->get(route('seguimiento-egresado.empresas', ['campania' => $campania]))->assertDontSee('/encuesta-empresa/');
     }
 
-    public function test_error_de_generacion_se_muestra_junto_al_campo(): void
+    public function test_error_de_generacion_se_muestra_como_error(): void
     {
         $this->from(route('seguimiento-egresado.empresas'))->post(route('seguimiento-egresado.empresas.enlaces'), [
-            'id_campania' => $this->campania(['estado' => 'CERRADA']), 'contexto' => 'MERCADO', 'dias_validez' => 10,
+            'id_campania' => $this->campania(['estado' => 'CERRADA']), 'contexto' => 'MERCADO',
         ])->assertRedirect(route('seguimiento-egresado.empresas'))->assertSessionHasErrors('id_campania');
 
         $this->from(route('seguimiento-egresado.empresas'))->post(route('seguimiento-egresado.empresas.enlaces'), [
@@ -133,12 +146,21 @@ class EnlaceEmpresaTest extends TestCase
         ])->assertSessionHasErrors('dias_validez');
     }
 
+    public function test_el_enlace_vale_hasta_el_cierre_de_la_campania_si_no_se_indican_dias(): void
+    {
+        $fin = now('America/Lima')->addDays(40);
+        $enlace = app(EnlaceEmpresa::class)->generar(['id_campania' => $this->campania(['fecha_fin' => $fin->toDateString()]), 'contexto' => 'MERCADO']);
+
+        $this->assertSame($fin->toDateString(), $enlace['expira_en']->setTimezone('America/Lima')->toDateString());
+    }
+
     public function test_un_enlace_perdido_se_reemplaza_y_el_anterior_deja_de_funcionar(): void
     {
-        $i = $this->invitacionEmpresa($this->campania(), cambios: ['organizacion' => 'Empresa Original']);
+        $campania = $this->campania();
+        $i = $this->invitacionEmpresa($campania, cambios: ['organizacion' => 'Empresa Original']);
 
-        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertRedirect(route('seguimiento-egresado.empresas'));
-        $nuevo = session('enlace_generado')['url'];
+        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertRedirect(route('seguimiento-egresado.empresas', ['campania' => $campania]));
+        $nuevo = session('enlaces_empresa')[0]['url'];
 
         $this->get(route('seguimiento-egresado.encuesta-empresa', ['token' => $i['token']]))->assertNotFound();
         $this->get($nuevo)->assertOk();
@@ -150,9 +172,9 @@ class EnlaceEmpresaTest extends TestCase
     {
         $i = $this->invitacionEmpresa($this->campania(), cambios: ['estado' => 'EXPIRADA', 'expira_en' => now()->subDay()->format('Y-m-d H:i:sP')]);
 
-        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertRedirect(route('seguimiento-egresado.empresas'));
+        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertRedirect();
 
-        $this->get(session('enlace_generado')['url'])->assertOk();
+        $this->get(session('enlaces_empresa')[0]['url'])->assertOk();
     }
 
     public function test_no_se_renueva_una_invitacion_respondida_ni_de_campania_cerrada(): void
@@ -164,19 +186,20 @@ class EnlaceEmpresaTest extends TestCase
         foreach ([$respondida, $cerrada] as $i) {
             $hash = DB::table('seguimiento_egresado.invitacion_empresa')->where('id', $i['id'])->value('token_hash');
 
-            $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertSessionHas('aviso_enlace');
+            $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertSessionHas('error');
             $this->assertDatabaseHas('seguimiento_egresado.invitacion_empresa', ['id' => $i['id'], 'token_hash' => $hash]);
         }
     }
 
     public function test_copiar_el_enlace_deja_constancia(): void
     {
-        $i = $this->invitacionEmpresa($this->campania());
+        $campania = $this->campania();
+        $i = $this->invitacionEmpresa($campania);
 
         $this->post(route('seguimiento-egresado.empresas.enlaces.enviado', ['id' => $i['id']]))->assertNoContent();
 
         $this->assertNotNull(DB::table('seguimiento_egresado.invitacion_empresa')->where('id', $i['id'])->value('enviado_en'));
-        $this->get(route('seguimiento-egresado.empresas'))->assertSee('Copiado')->assertSee('Reemplazar');
+        $this->paginaDe($campania)->assertSee('entregado el')->assertSee('Enlace nuevo');
     }
 
     public function test_un_enlace_ya_copiado_no_se_reemplaza_sin_confirmar(): void
@@ -184,11 +207,11 @@ class EnlaceEmpresaTest extends TestCase
         $i = $this->invitacionEmpresa($this->campania(), cambios: ['enviado_en' => now()->format('Y-m-d H:i:sP')]);
         $hash = DB::table('seguimiento_egresado.invitacion_empresa')->where('id', $i['id'])->value('token_hash');
 
-        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertSessionHas('aviso_enlace');
+        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertSessionHas('error');
         $this->assertDatabaseHas('seguimiento_egresado.invitacion_empresa', ['id' => $i['id'], 'token_hash' => $hash]);
         $this->get(route('seguimiento-egresado.encuesta-empresa', ['token' => $i['token']]))->assertOk();
 
-        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]), ['confirmar_reemplazo' => '1'])->assertSessionHas('enlace_generado');
+        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]), ['confirmar_reemplazo' => '1'])->assertSessionHas('enlaces_empresa');
         $this->get(route('seguimiento-egresado.encuesta-empresa', ['token' => $i['token']]))->assertNotFound();
         $this->assertNull(DB::table('seguimiento_egresado.invitacion_empresa')->where('id', $i['id'])->value('enviado_en'));
     }
@@ -196,59 +219,122 @@ class EnlaceEmpresaTest extends TestCase
     public function test_la_accion_de_la_tabla_depende_del_estado(): void
     {
         $campania = $this->campania();
-        $this->invitacionEmpresa($campania);
-        $this->invitacionEmpresa($campania, cambios: ['estado' => 'EXPIRADA', 'expira_en' => now()->subDay()->format('Y-m-d H:i:sP')]);
-
-        $this->get(route('seguimiento-egresado.empresas'))->assertOk()->assertSee('Generar otro')->assertSee('Renovar')->assertDontSee('confirmar_reemplazo', false);
-    }
-
-    public function test_la_tabla_ofrece_nuevo_enlace_solo_si_se_puede(): void
-    {
-        $campania = $this->campania();
-        $pendiente = $this->invitacionEmpresa($campania);
+        $this->invitacionEmpresa($campania, cambios: ['enviado_en' => now()->format('Y-m-d H:i:sP')]);
         $respondida = $this->invitacionEmpresa($campania);
         $this->respuestaEmpresa($respondida['id'], null);
 
-        $this->get(route('seguimiento-egresado.empresas'))->assertOk()
-            ->assertSee(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $pendiente['id']]), false)
-            ->assertDontSee(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $respondida['id']]), false);
+        $pagina = $this->paginaDe($campania)->assertOk();
+        $pagina->assertSee('Enlace nuevo')->assertSee('Ya entregaste este enlace')->assertSee('✓ Respondió');
+        $pagina->assertDontSee(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $respondida['id']]), false);
     }
 
-    public function test_el_enlace_generado_se_muestra_en_un_modal(): void
-    {
-        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $this->campania(), 'contexto' => 'MERCADO', 'dias_validez' => 10]);
-
-        $this->get(route('seguimiento-egresado.empresas'))->assertOk()
-            ->assertSee('id="sg-modal-enlace-listo"', false)
-            ->assertSee('data-sg-abrir-al-cargar', false)
-            ->assertSee('Copiar enlace');
-    }
-
-    public function test_el_formulario_pide_promocion_y_luego_egresado(): void
-    {
-        $this->egresadoAutorizado();
-        $this->campania();
-
-        $this->get(route('seguimiento-egresado.empresas'))->assertOk()
-            ->assertSee('<optgroup label="C-', false)
-            ->assertSee('id="sg-promocion"', false)
-            ->assertSee('data-cohorte="C-', false)
-            ->assertDontSee('sg-buscar-egresado', false);
-    }
-
-    public function test_las_invitaciones_se_paginan_y_conservan_filtros(): void
+    public function test_los_enlaces_generados_se_muestran_en_una_ventana_con_copiar_y_descargar(): void
     {
         $campania = $this->campania();
-        for ($i = 1; $i <= 12; $i++) {
-            $this->invitacionEmpresa($campania, cambios: ['organizacion' => 'Org-'.str_pad((string) $i, 2, '0', STR_PAD_LEFT)]);
-        }
+        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campania, 'contexto' => 'MERCADO']);
 
-        $primera = $this->get(route('seguimiento-egresado.empresas', ['campania' => $campania]))->assertOk();
-        $primera->assertSee('Org-12')->assertDontSee('Org-02')->assertSee('Página 1 de 2')->assertSee('Siguiente')->assertSee('campania='.$campania.'&amp;pagina=2', false);
+        $this->paginaDe($campania)->assertOk()
+            ->assertSee('id="dlg-enlaces-empresa"', false)->assertSee('Copiar todos')->assertSee('Descargar lista (CSV)')->assertSee('Se muestran una sola vez');
+    }
 
-        $this->get(route('seguimiento-egresado.empresas', ['campania' => $campania, 'pagina' => 2]))->assertOk()
-            ->assertSee('Org-02')->assertDontSee('Org-12')->assertSee('Anterior');
-        $this->get(route('seguimiento-egresado.empresas', ['campania' => $campania, 'pagina' => 999]))->assertOk()->assertSee('Página 2 de 2');
+    public function test_la_tabla_trae_la_empresa_y_el_contacto_que_dejo_el_egresado(): void
+    {
+        $campania = $this->campania();
+        $this->evaluableEnCampania($campania, ['nombre_empleador_cliente' => 'Andes Software Labs', 'contacto_jefe' => '+51 944 120 301']);
+
+        $this->paginaDe($campania)->assertOk()
+            ->assertSee('Andes Software Labs')->assertSee('+51 944 120 301')->assertSee('Sin enlace')->assertSee('Generar enlace')
+            ->assertSee('Generar los enlaces que faltan (1)')->assertDontSee('Organización (opcional)');
+    }
+
+    public function test_solo_aparecen_quienes_autorizaron_y_estan_en_las_promociones_de_la_campania(): void
+    {
+        $campania = $this->campania();
+        $dentro = $this->evaluableEnCampania($campania);
+        $noAutorizo = $this->egresado($this->cohorte());
+        $this->responder($this->invitacionSeguimiento($this->campania(['tipo' => 'EGRESADOS']), $noAutorizo), cambios: ['autoriza_contacto_empresa' => false]);
+        $otraCampania = $this->campania();
+        $fuera = $this->evaluableEnCampania($otraCampania);
+
+        $filas = app(\App\Modules\SeguimientoEgresado\Services\Empresas\ResultadosEmpresas::class)->evaluablesDeCampania($campania);
+
+        $this->assertSame([$dentro], $filas->pluck('id')->map(fn ($v) => (int) $v)->all());
+    }
+
+    public function test_generar_un_enlace_de_desempeno_toma_empresa_y_contacto_de_la_respuesta(): void
+    {
+        $campania = $this->campania();
+        $egresado = $this->evaluableEnCampania($campania, ['nombre_empleador_cliente' => 'Banco del Norte', 'contacto_jefe' => '+51 944 555 666']);
+
+        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campania, 'contexto' => 'DESEMPENO', 'id_egresado' => $egresado])->assertRedirect();
+
+        $this->assertDatabaseHas('seguimiento_egresado.invitacion_empresa', ['id_campania' => $campania, 'id_egresado' => $egresado, 'organizacion' => 'Banco del Norte', 'contacto_empresa' => '+51 944 555 666']);
+        $fila = session('enlaces_empresa')[0];
+        $this->assertSame('Banco del Norte', $fila['empresa']);
+        $this->assertSame('+51 944 555 666', $fila['contacto']);
+    }
+
+    public function test_generar_los_que_faltan_crea_un_enlace_por_egresado_sin_repetir_a_quien_ya_tiene(): void
+    {
+        $campania = $this->campania();
+        $uno = $this->evaluableEnCampania($campania);
+        $dos = $this->evaluableEnCampania($campania);
+        $tres = $this->evaluableEnCampania($campania);
+        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campania, 'contexto' => 'DESEMPENO', 'id_egresado' => $uno]);
+        $hashUno = DB::table('seguimiento_egresado.invitacion_empresa')->where('id_egresado', $uno)->value('token_hash');
+
+        $this->post(route('seguimiento-egresado.empresas.enlaces.lote'), ['id_campania' => $campania, 'contexto' => 'DESEMPENO'])
+            ->assertRedirect(route('seguimiento-egresado.empresas', ['campania' => $campania]));
+
+        $this->assertCount(2, session('enlaces_empresa'));
+        $this->assertSame(3, DB::table('seguimiento_egresado.invitacion_empresa')->where('id_campania', $campania)->count());
+        $this->assertSame($hashUno, DB::table('seguimiento_egresado.invitacion_empresa')->where('id_egresado', $uno)->value('token_hash'), 'quien ya tenía enlace vigente no se toca');
+
+        $this->post(route('seguimiento-egresado.empresas.enlaces.lote'), ['id_campania' => $campania, 'contexto' => 'DESEMPENO'])->assertSessionHas('info');
+        $this->assertSame(3, DB::table('seguimiento_egresado.invitacion_empresa')->where('id_campania', $campania)->count());
+    }
+
+    public function test_generar_enlaces_de_mercado_por_cantidad(): void
+    {
+        $campania = $this->campania();
+
+        $this->post(route('seguimiento-egresado.empresas.enlaces.lote'), ['id_campania' => $campania, 'contexto' => 'MERCADO', 'cantidad' => 4])->assertRedirect();
+
+        $this->assertCount(4, session('enlaces_empresa'));
+        $this->assertSame(4, DB::table('seguimiento_egresado.invitacion_empresa')->where('id_campania', $campania)->where('contexto', 'MERCADO')->whereNull('id_egresado')->count());
+        $this->post(route('seguimiento-egresado.empresas.enlaces.lote'), ['id_campania' => $campania, 'contexto' => 'MERCADO'])->assertSessionHasErrors('cantidad');
+        $this->post(route('seguimiento-egresado.empresas.enlaces.lote'), ['id_campania' => $campania, 'contexto' => 'MERCADO', 'cantidad' => 500])->assertSessionHasErrors('cantidad');
+    }
+
+    public function test_no_se_generan_enlaces_en_lote_en_una_campania_cerrada(): void
+    {
+        $cerrada = $this->campania(['estado' => 'CERRADA']);
+
+        $this->post(route('seguimiento-egresado.empresas.enlaces.lote'), ['id_campania' => $cerrada, 'contexto' => 'MERCADO', 'cantidad' => 2])->assertSessionHasErrors('general');
+        $this->assertDatabaseCount('seguimiento_egresado.invitacion_empresa', 0);
+    }
+
+    public function test_la_pantalla_elige_la_campania_abierta_y_ofrece_crear_una_nueva(): void
+    {
+        $this->campania(['estado' => 'CERRADA', 'nombre' => 'Vieja de empleadores']);
+        $abierta = $this->campania(['nombre' => 'Abierta de empleadores']);
+
+        $this->get(route('seguimiento-egresado.empresas'))->assertOk()
+            ->assertSee('value="'.$abierta.'" selected', false)->assertSee('+ Nueva campaña de empleadores')->assertSee("abrirNuevaCampania('EMPRESAS')", false)
+            ->assertSee('name="volver_a" value="empresas"', false)->assertSee('Lo que dicen las empresas');
+    }
+
+    public function test_crear_una_campania_de_empleadores_desde_esta_pantalla_vuelve_aqui(): void
+    {
+        $promocion = $this->cohorte();
+
+        $respuesta = $this->post(route('seguimiento-egresado.campanias.store'), [
+            'nombre' => 'Empleadores 2026-II', 'tipo' => 'EMPRESAS', 'periodo' => '2026-II', 'volver_a' => 'empresas',
+            'fecha_inicio' => now()->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString(), 'cohortes' => [$promocion],
+        ]);
+
+        $id = (int) DB::table('seguimiento_egresado.campania_seguimiento')->where('nombre', 'Empleadores 2026-II')->value('id');
+        $respuesta->assertRedirect(route('seguimiento-egresado.empresas', ['campania' => $id]));
     }
 
     public function test_token_invalido_responde_404_sin_datos(): void

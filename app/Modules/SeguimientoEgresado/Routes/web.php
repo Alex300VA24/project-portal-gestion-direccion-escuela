@@ -87,6 +87,7 @@ Route::prefix('seguimiento-egresado')
         // Encuesta empresarial e indicadores
         Route::get('/empresas', [EmpresasController::class, 'index'])->middleware($interna('empresas.resultados'))->name('empresas');
         Route::post('/empresas/enlaces', [EmpresasController::class, 'generarEnlace'])->middleware($interna('campanias.administrar'))->name('empresas.enlaces');
+        Route::post('/empresas/enlaces/lote', [EmpresasController::class, 'generarLote'])->middleware($interna('campanias.administrar'))->name('empresas.enlaces.lote');
         Route::post('/empresas/enlaces/{id}/renovar', [EmpresasController::class, 'renovarEnlace'])->whereNumber('id')->middleware($interna('campanias.administrar'))->name('empresas.enlaces.renovar');
         Route::post('/empresas/enlaces/{id}/enviado', [EmpresasController::class, 'marcarEnviado'])->whereNumber('id')->middleware($interna('campanias.administrar'))->name('empresas.enlaces.enviado');
         Route::get('/indicadores', [IndicadoresController::class, 'index'])->middleware($interna('indicadores.consultar'))->name('indicadores');

@@ -49,11 +49,14 @@ final class EnlaceEmpresa
             $egresadoId = $this->egresadoEvaluable($datos['id_egresado'] ?? null, (int) $campania->id);
         }
 
-        $dias = (int) ($datos['dias_validez'] ?? self::DIAS_POR_DEFECTO);
-        $expira = $ahora->addDays($dias);
-        if ($expira->greaterThan(self::finDeCampania($campania))) {
-            $expira = self::finDeCampania($campania);
+        // Sin días indicados, el enlace vale hasta el cierre de la campaña (igual que las invitaciones a egresados).
+        $expira = self::finDeCampania($campania);
+        if (($datos['dias_validez'] ?? null) !== null && $ahora->addDays((int) $datos['dias_validez'])->lessThan($expira)) {
+            $expira = $ahora->addDays((int) $datos['dias_validez']);
         }
+
+        // Empresa y contacto del jefe ya los dejó el egresado en su respuesta: no se vuelven a escribir.
+        $empleador = $egresadoId !== null ? $this->datosDelEmpleador($egresadoId) : ['organizacion' => null, 'contacto' => null];
 
         $token = bin2hex(random_bytes(32));
 
@@ -61,8 +64,8 @@ final class EnlaceEmpresa
             'id_campania' => $campania->id,
             'id_egresado' => $egresadoId,
             'contexto' => $datos['contexto'],
-            'organizacion' => self::textoOpcional($datos['organizacion'] ?? null),
-            'contacto_empresa' => self::textoOpcional($datos['contacto_empresa'] ?? null),
+            'organizacion' => self::textoOpcional($datos['organizacion'] ?? null) ?? $empleador['organizacion'],
+            'contacto_empresa' => self::textoOpcional($datos['contacto_empresa'] ?? null) ?? $empleador['contacto'],
             'token_hash' => self::hashDe($token),
             'expira_en' => $expira->format('Y-m-d H:i:sP'),
             'enviado_en' => null,
@@ -102,10 +105,7 @@ final class EnlaceEmpresa
             throw new EnlaceNoGenerable('La campaña debe estar abierta y dentro de sus fechas.');
         }
 
-        $expira = $ahora->addDays(self::DIAS_POR_DEFECTO);
-        if ($expira->greaterThan(self::finDeCampania($campania))) {
-            $expira = self::finDeCampania($campania);
-        }
+        $expira = self::finDeCampania($campania);
 
         $token = bin2hex(random_bytes(32));
 
@@ -218,6 +218,22 @@ final class EnlaceEmpresa
         }
 
         return $egresadoId;
+    }
+
+    /**
+     * Empresa y contacto del jefe que el egresado dejó en su última respuesta de seguimiento.
+     *
+     * @return array{organizacion: ?string, contacto: ?string}
+     */
+    public function datosDelEmpleador(int $egresadoId): array
+    {
+        $fila = DB::table('seguimiento_egresado.medicion_laboral as m')
+            ->join('seguimiento_egresado.invitacion_egresado as i', 'i.id', '=', 'm.id_invitacion')
+            ->where('i.id_egresado', $egresadoId)
+            ->orderByDesc('m.fecha_respuesta')->orderByDesc('m.id')
+            ->first(['m.nombre_empleador_cliente', 'm.contacto_jefe']);
+
+        return ['organizacion' => self::textoOpcional($fila->nombre_empleador_cliente ?? null), 'contacto' => self::textoOpcional($fila->contacto_jefe ?? null)];
     }
 
     private static function finDeCampania(object $campania): CarbonImmutable

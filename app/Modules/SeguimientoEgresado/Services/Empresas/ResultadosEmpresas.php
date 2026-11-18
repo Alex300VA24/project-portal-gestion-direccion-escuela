@@ -43,7 +43,7 @@ final class ResultadosEmpresas
         return DB::table('seguimiento_egresado.campania_seguimiento')
             ->whereIn('tipo', ['EMPRESAS', 'MIXTA'])
             ->orderByDesc('fecha_fin')
-            ->get(['id', 'nombre', 'periodo', 'estado', 'fecha_fin']);
+            ->get(['id', 'nombre', 'periodo', 'estado', 'fecha_inicio', 'fecha_fin']);
     }
 
     /**
@@ -68,6 +68,73 @@ final class ResultadosEmpresas
             ->filter(fn ($f) => (bool) $f->autoriza_contacto_empresa)
             ->sortBy(fn ($f) => $f->apellido_paterno.' '.$f->nombres)
             ->values();
+    }
+
+    /**
+     * Egresados de las promociones de la campaña que autorizaron contactar a su empresa, con la empresa y el contacto del jefe
+     * que ellos mismos dejaron y el estado de su evaluación de desempeño en esta campaña.
+     * «estado»: sin_enlace, pendiente, respondida o vencida.
+     *
+     * @return Collection<int, object>
+     */
+    public function evaluablesDeCampania(int $campaniaId): Collection
+    {
+        $promociones = DB::table('seguimiento_egresado.campania_cohorte')->where('id_campania', $campaniaId)->pluck('id_cohorte');
+
+        $filas = DB::table('seguimiento_egresado.medicion_laboral as m')
+            ->join('seguimiento_egresado.invitacion_egresado as i', 'i.id', '=', 'm.id_invitacion')
+            ->join('seguimiento_egresado.egresado as e', 'e.id', '=', 'i.id_egresado')
+            ->join('seguimiento_egresado.cohorte as c', 'c.id', '=', 'e.id_cohorte')
+            ->whereIn('e.id_cohorte', $promociones)
+            ->orderByDesc('m.fecha_respuesta')->orderByDesc('m.id')
+            ->get(['e.id', 'e.nombres', 'e.apellido_paterno', 'e.apellido_materno', 'c.anio_ingreso', 'm.nombre_empleador_cliente as empresa', 'm.contacto_jefe as contacto', 'm.autoriza_contacto_empresa'])
+            ->unique('id')
+            ->filter(fn ($f) => (bool) $f->autoriza_contacto_empresa);
+
+        $invitaciones = DB::table('seguimiento_egresado.invitacion_empresa')
+            ->where('id_campania', $campaniaId)->where('contexto', 'DESEMPENO')->where('estado', '<>', 'ANULADA')
+            ->whereIn('id_egresado', $filas->pluck('id'))->orderBy('id')->get()->keyBy('id_egresado');
+
+        $ahora = CarbonImmutable::now();
+
+        return $filas->map(function ($f) use ($invitaciones, $ahora) {
+            $inv = $invitaciones->get($f->id);
+            $f->nombre = trim($f->apellido_paterno.' '.$f->apellido_materno.', '.$f->nombres);
+            $f->invitacion = $inv;
+            $f->estado = match (true) {
+                $inv === null => 'sin_enlace',
+                $inv->estado === 'COMPLETADA' => 'respondida',
+                $inv->estado === 'PENDIENTE' && CarbonImmutable::parse($inv->expira_en)->greaterThan($ahora) => 'pendiente',
+                default => 'vencida',
+            };
+
+            return $f;
+        })->sortBy('nombre')->values();
+    }
+
+    /**
+     * Enlaces de la encuesta general de mercado de la campaña (sin egresado ni datos de la empresa).
+     *
+     * @return Collection<int, object>
+     */
+    public function enlacesDeMercado(int $campaniaId): Collection
+    {
+        $ahora = CarbonImmutable::now();
+
+        return DB::table('seguimiento_egresado.invitacion_empresa as ie')
+            ->leftJoin('seguimiento_egresado.respuesta_empresa as r', 'r.id_invitacion_empresa', '=', 'ie.id')
+            ->where('ie.id_campania', $campaniaId)->where('ie.contexto', 'MERCADO')->where('ie.estado', '<>', 'ANULADA')
+            ->orderBy('ie.id')
+            ->get(['ie.id', 'ie.estado', 'ie.expira_en', 'ie.enviado_en', 'ie.respondido_en', 'r.organizacion_informada'])
+            ->map(function ($i) use ($ahora) {
+                $i->estado_fila = match (true) {
+                    $i->estado === 'COMPLETADA' => 'respondida',
+                    $i->estado === 'PENDIENTE' && CarbonImmutable::parse($i->expira_en)->greaterThan($ahora) => 'pendiente',
+                    default => 'vencida',
+                };
+
+                return $i;
+            });
     }
 
     /** @return Collection<int, object> */

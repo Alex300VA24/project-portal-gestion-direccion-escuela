@@ -40,7 +40,8 @@
 @else
   <div class="sg-cobertura">
     <strong style="font-size: 14px;">{{ $empresas['respondieron'] }} de {{ $empresas['enlaces'] }} empleadores respondieron</strong>
-    <p class="sg-help" style="margin: 4px 0 0;">Los enlaces para empleadores se envían desde Encuesta empresarial.</p>
+    <p class="sg-help" style="margin: 4px 0 8px;">Los enlaces para empleadores se generan y se entregan desde Encuesta empresarial.</p>
+    <a class="sg-button" href="{{ route('seguimiento-egresado.empresas', ['campania' => $campania->id]) }}">Abrir en Encuesta empresarial</a>
   </div>
 @endif
 

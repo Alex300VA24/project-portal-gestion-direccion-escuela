@@ -45,7 +45,7 @@ class PermisosEmpresasIndicadoresTest extends TestCase
         $this->get(route('seguimiento-egresado.indicadores.exportar'))->assertOk();
         $this->get(route('seguimiento-egresado.empresas'))->assertOk();
         $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $this->campania(), 'contexto' => 'MERCADO', 'dias_validez' => 5])
-            ->assertRedirect(route('seguimiento-egresado.empresas'));
+            ->assertRedirect();
     }
 
     public function test_director_consulta_pero_no_genera_enlaces(): void
@@ -57,7 +57,7 @@ class PermisosEmpresasIndicadoresTest extends TestCase
         $this->get(route('seguimiento-egresado.empresas'))->assertOk()->assertDontSee(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]), false);
 
         $this->get(route('seguimiento-egresado.indicadores'))->assertOk()->assertSee('Evidencia de las mejoras')->assertDontSee('Gestión diaria');
-        $this->get(route('seguimiento-egresado.empresas'))->assertOk()->assertDontSee('Generar enlace');
+        $this->get(route('seguimiento-egresado.empresas'))->assertOk()->assertDontSee('Generar enlace')->assertDontSee('Generar los enlaces que faltan');
         $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $this->campania(), 'contexto' => 'MERCADO', 'dias_validez' => 5])
             ->assertForbidden();
     }
@@ -67,7 +67,7 @@ class PermisosEmpresasIndicadoresTest extends TestCase
         $this->entrarComo('SECRETARIA');
         $i = $this->invitacionEmpresa($this->campania());
 
-        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertSessionHas('enlace_generado');
+        $this->post(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $i['id']]))->assertSessionHas('enlaces_empresa');
 
         $this->assertDatabaseHas('seguimiento_egresado.auditoria', ['tabla_afectada' => 'invitacion_empresa', 'id_registro' => $i['id'], 'accion' => 'REEMPLAZAR_ENLACE']);
     }

@@ -10,6 +10,7 @@ use App\Modules\SeguimientoEgresado\Models\Egresado;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
 use App\Modules\SeguimientoEgresado\Services\Accesos\EnlaceInvitacion;
+use App\Modules\SeguimientoEgresado\Services\CatalogosDeCampania;
 use App\Modules\SeguimientoEgresado\Services\EstadoDeCampanias;
 use App\Modules\SeguimientoEgresado\Services\Invitaciones\EnvioDeEnlaces;
 use App\Modules\SeguimientoEgresado\Support\Esquema;
@@ -27,8 +28,6 @@ use Illuminate\View\View;
  */
 class CampaniasController extends Controller
 {
-    private const ETAPAS_EGRESADO = ['EGRESADO', 'BACHILLER', 'TITULADO'];
-
     public function index(Request $request): View
     {
         $filtros = [
@@ -69,8 +68,8 @@ class CampaniasController extends Controller
                 'pendientes' => $campanias->sum('pendientes'),
                 'cobertura' => $convocados > 0 ? round($respondieron * 100 / $convocados, 1) : 0.0,
             ],
-            'promociones' => $this->promociones(),
-            'periodos' => $this->periodos(),
+            'promociones' => app(CatalogosDeCampania::class)->promociones(),
+            'periodos' => app(CatalogosDeCampania::class)->periodos(),
             'filtros' => $filtros,
             'detalle' => $detalle ? $this->datosDeDetalle($detalle) : null,
         ]);
@@ -97,7 +96,11 @@ class CampaniasController extends Controller
             return $campania;
         });
 
-        return redirect()->route('seguimiento-egresado.campanias', ['ver' => $campania->id])
+        $destino = $request->input('volver_a') === 'empresas'
+            ? redirect()->route('seguimiento-egresado.empresas', ['campania' => $campania->id])
+            : redirect()->route('seguimiento-egresado.campanias', ['ver' => $campania->id]);
+
+        return $destino
             ->with('success', "La campaña «{$campania->nombre}» quedó creada. Se abre y se cierra sola en las fechas que elegiste.");
     }
 
@@ -128,7 +131,7 @@ class CampaniasController extends Controller
         }
 
         $egresados = Egresado::with('contactoVigente')->whereIn('id_cohorte', $campania->cohortes->pluck('id'))
-            ->whereHas('estadoVigente.estadoAcademico', fn ($q) => $q->whereIn('codigo', self::ETAPAS_EGRESADO))
+            ->whereHas('estadoVigente.estadoAcademico', fn ($q) => $q->whereIn('codigo', CatalogosDeCampania::ETAPAS_EGRESADO))
             ->orderBy('apellido_paterno')->orderBy('apellido_materno')->orderBy('nombres')->get();
 
         if ($egresados->isEmpty()) {
@@ -371,37 +374,8 @@ class CampaniasController extends Controller
             'invitaciones' => $invitaciones,
             'pendientesConvocables' => $invitaciones->where('estado', 'PENDIENTE')->where('expira_en', '>', now())->count(),
             'empresas' => ['enlaces' => (clone $empresas)->count(), 'respondieron' => (clone $empresas)->where('estado', 'COMPLETADA')->count()],
-            'promociones' => $this->promociones(),
-            'periodos' => $this->periodos($campania->periodo),
+            'promociones' => app(CatalogosDeCampania::class)->promociones(),
+            'periodos' => app(CatalogosDeCampania::class)->periodos($campania->periodo),
         ];
-    }
-
-    /**
-     * Promociones con cuántos egresados confirmados tienen (solo a ellos se les puede enviar una campaña).
-     *
-     * @return Collection<int, array{id:int, anio:int, egresados:int}>
-     */
-    private function promociones(): Collection
-    {
-        $conteo = Egresado::query()
-            ->whereHas('estadoVigente.estadoAcademico', fn ($q) => $q->whereIn('codigo', self::ETAPAS_EGRESADO))
-            ->selectRaw('id_cohorte, count(*) as total')->groupBy('id_cohorte')->pluck('total', 'id_cohorte');
-
-        return Cohorte::orderBy('anio_ingreso')->get(['id', 'anio_ingreso'])
-            ->map(fn (Cohorte $c) => ['id' => $c->id, 'anio' => $c->anio_ingreso, 'egresados' => (int) ($conteo[$c->id] ?? 0)]);
-    }
-
-    /**
-     * Periodos académicos para elegir: de dos años atrás a uno adelante, más los que ya usan las campañas existentes.
-     *
-     * @return Collection<int, string>
-     */
-    private function periodos(?string $extra = null): Collection
-    {
-        $anio = (int) now()->year;
-        $lista = collect(range($anio + 1, $anio - 2))->flatMap(fn (int $a) => ["{$a}-II", "{$a}-I"]);
-
-        return $lista->merge(CampaniaSeguimiento::query()->distinct()->pluck('periodo'))->when($extra, fn ($c) => $c->push($extra))
-            ->filter(fn ($p) => preg_match('/^\d{4}-(I|II)$/', (string) $p))->unique()->sortDesc()->values();
     }
 }

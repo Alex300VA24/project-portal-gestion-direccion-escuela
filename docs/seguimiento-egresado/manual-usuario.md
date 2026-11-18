@@ -74,7 +74,20 @@ La pantalla muestra todas las campañas (nombre, periodo, fechas, promociones, e
 
 **Recordar.** **Recordar a los N pendientes** envía un recordatorio a todos los que aún no respondieron (después de confirmar); **Recordar** en una fila lo hace con uno solo. Cada recordatorio genera un **enlace nuevo y el anterior deja de funcionar**.
 
-**Campañas para empleadores** se crean aquí igual, pero sus enlaces se envían desde **Encuesta empresarial**.
+**Campañas para empleadores** se crean igual (también desde Encuesta empresarial, con **+ Nueva campaña de empleadores**), pero sus enlaces se generan en **Encuesta empresarial**.
+
+### Encuesta empresarial
+
+Las empresas responden con un enlace, sin cuenta. El sistema **no envía nada a la empresa**: la Secretaría copia el enlace y se lo entrega por su cuenta (al número que figura en la tabla).
+
+1. **Elige la campaña de empleadores** arriba (se propone la abierta). Los enlaces valen hasta el cierre de la campaña.
+2. **Opinión de la empresa sobre cada egresado** (cuenta para I5). La tabla lista a los egresados de las promociones de la campaña que **autorizaron contactar a su empresa**, con la empresa y el contacto del jefe que ellos mismos dejaron en su encuesta, y el estado de su enlace: *Sin enlace*, *Pendiente* (con su fecha y si ya se entregó), *Respondida* o *Vencida*.
+   - **Generar enlace** (en una fila) o **Generar los enlaces que faltan** (todos a la vez, con confirmación). No hay que escribir ningún dato.
+   - Al generar, una ventana muestra egresado, empresa, contacto y enlace, con **Copiar** por fila, **Copiar todos** y **Descargar lista (CSV)**. **Se muestran una sola vez**: cópialos o descárgalos antes de cerrar.
+   - **Enlace nuevo** genera otro y el anterior deja de funcionar; si ya lo entregaste, pide confirmación.
+3. **Demanda de habilidades** (encuesta general, no cuenta para I5): no trata de un egresado. Indica **cuántos enlaces** necesitas y se generan uno por empresa (cada enlace admite una sola respuesta).
+4. **Resultados**: los totales (cobertura, I5, encuestas de mercado) y las gráficas de habilidades más demandadas, aspectos por reforzar y satisfacción, de la campaña elegida.
+
 
 ---
 
