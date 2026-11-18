@@ -360,10 +360,10 @@ class PadronIntegrationTest extends TestCase
         ]);
     }
 
-    public function test_planes_curriculares_1998_2017_2027_exist(): void
+    public function test_planes_curriculares_1997_2018_2027_exist(): void
     {
-        $this->assertDatabaseHas('seguimiento_egresado.plan_curricular', ['codigo_version' => 'Plan 1998']);
-        $this->assertDatabaseHas('seguimiento_egresado.plan_curricular', ['codigo_version' => 'Plan 2017']);
+        $this->assertDatabaseHas('seguimiento_egresado.plan_curricular', ['codigo_version' => 'Plan 1997']);
+        $this->assertDatabaseHas('seguimiento_egresado.plan_curricular', ['codigo_version' => 'Plan 2018']);
         $this->assertDatabaseHas('seguimiento_egresado.plan_curricular', ['codigo_version' => 'Plan 2027']);
     }
 

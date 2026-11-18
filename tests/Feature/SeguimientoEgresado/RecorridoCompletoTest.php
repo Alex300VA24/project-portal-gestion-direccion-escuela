@@ -43,7 +43,7 @@ class RecorridoCompletoTest extends TestCase
         $this->actingAs($this->secretaria());
 
         // 0. Plan y cohorte oficiales
-        $this->postJson(route('seguimiento-egresado.padron.guardar-plan'), ['codigo_version' => 'Plan 2017', 'vigencia_desde' => '2017-03-01', 'estado' => 'VIGENTE'])->assertOk();
+        $this->postJson(route('seguimiento-egresado.padron.guardar-plan'), ['codigo_version' => 'Plan 2018', 'vigencia_desde' => '2018-03-01', 'estado' => 'VIGENTE'])->assertOk();
         $plan = (int) DB::table('seguimiento_egresado.plan_curricular')->value('id');
         $this->postJson(route('seguimiento-egresado.padron.guardar-cohorte'), ['anio_ingreso' => 2019, 'total_ingresantes' => 3, 'id_plan_curricular' => $plan, 'codigo_promocion' => 'PROM-2019'])->assertOk();
         $cohorte = (int) DB::table('seguimiento_egresado.cohorte')->value('id');
@@ -150,7 +150,7 @@ class RecorridoCompletoTest extends TestCase
         }
         $this->get(route('seguimiento-egresado.indicadores'))->assertOk()->assertDontSee('[DEMO]');
         $this->get(route('seguimiento-egresado.empresas'))->assertOk()->assertSee('Empresa Ficticia S.A.C.');
-        $this->get(route('seguimiento-egresado.reportes.indicadores.csv'))->assertOk();
+        $this->get(route('seguimiento-egresado.indicadores.exportar'))->assertOk();
         $this->get(route('seguimiento-egresado.campanias', ['ver' => $campania]))->assertOk()->assertSee('Seguimiento 2026-II');
     }
 }

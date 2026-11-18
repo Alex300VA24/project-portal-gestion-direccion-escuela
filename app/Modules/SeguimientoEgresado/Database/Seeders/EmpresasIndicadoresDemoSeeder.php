@@ -40,8 +40,10 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
         $cohorte2019 = (int) DB::table('seguimiento_egresado.cohorte')->where('codigo_promocion', 'PROM-2019')->value('id');
         $plan = (int) DB::table('seguimiento_egresado.cohorte')->where('id', $cohorte2018)->value('id_plan_curricular');
 
-        $cohorte2016 = $this->crearCohorte('PROM-2016-I', 2016, 15, $plan, 11);
-        $cohorte2011 = $this->crearCohorte('PROM-2011-I', 2011, 12, $plan, 9);
+        // Las promociones de 2011 y 2016 estudiaron con el Plan 1997.
+        $plan1997 = (int) DB::table('seguimiento_egresado.plan_curricular')->where('codigo_version', 'Plan 1997')->value('id') ?: $plan;
+        $cohorte2016 = $this->crearCohorte('PROM-2016-I', 2016, 15, $plan1997, 11);
+        $cohorte2011 = $this->crearCohorte('PROM-2011-I', 2011, 12, $plan1997, 9);
 
         $egresados2018 = DB::table('seguimiento_egresado.egresado')->where('id_cohorte', $cohorte2018)->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
         $egresados2016 = DB::table('seguimiento_egresado.egresado')->where('id_cohorte', $cohorte2016)->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();

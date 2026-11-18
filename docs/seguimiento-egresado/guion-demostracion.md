@@ -65,7 +65,7 @@ Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimie
 
 | Paso | Qué se hace | Resultado esperado |
 |---|---|---|
-| 0 | **Padrón y promociones** → «+ Nueva promoción»: año `2019`, total de ingresantes `6`; si falta el plan, «+ Otro plan»: `Plan 2017`, vigente desde `2017-03-01`, estado Vigente. | El cuadro «Listo» y la página de la promoción en el paso 2. |
+| 0 | **Padrón y promociones** → «+ Nueva promoción»: año `2019`, total de ingresantes `6`; si falta el plan, «+ Otro plan»: `Plan 2018`, vigente desde `2018-03-01`, estado Vigente. | El cuadro «Listo» y la página de la promoción en el paso 2. |
 | 1 | Paso **2. Cargar a los alumnos** de la misma página → elegir `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv`. | Cuadro «Se cargaron 6 alumnos en la Promoción 2019» y el paso 3 «Te toca». Los 6 aparecen como **Apto para egresar**, sin fecha de egreso, sin créditos y sin contacto. |
 | 1b | Cargar el mismo archivo otra vez. | Cuadro «No se cargó ningún alumno» con las filas y el motivo (matrícula repetida); no se crea nada. |
 | 2 | Paso **3. Enviar el enlace de contacto** → elegir la **fecha límite** → «Enviar enlaces» → «Continuar». | 6 enlaces personales, una sola vez, con botón «Copiar». Con correo conectado dice «Enviado por correo a… (redirigido)»; si no, «No enviado» y se entregan a mano. |
@@ -78,7 +78,7 @@ Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimie
 | 9 | **Indicadores I1 a I6**, **Encuesta empresarial** y los botones de descarga (CSV). | Las cifras salen solo de lo respondido en el recorrido. Sin datos `[DEMO]`. |
 | 10 | Secretaría → **Evaluación institucional** → **+ Nuevo informe** (F8): promoción, periodo, nivel de cada uno de los tres objetivos → «Guardar borrador». Luego **+ Registrar cambio**: tipo, «dice», «debe decir», motivo, estado «Propuesta». | El informe queda en **Borrador** (no cuenta aún en I3) y el cambio en **Propuesta**. La Secretaría no puede validar ni implementar. |
 | 11 | Dirección (otra sesión) → **Evaluación institucional** → «Revisar y validar» el informe → «Guardar y validar». En el cambio, estado «Implementada» con documento y fecha. | El informe pasa a **Validado** y **I3** se actualiza («x de y objetivos logrados»); el cambio implementado suma 1 a **I6**. En **Indicadores** coinciden las mismas cifras. |
-| 12 | **Descargar F8** (o F10, F11) desde la misma página. | Un CSV con el formato oficial: promoción, periodo, nivel marcado con X, conclusiones, toma de decisiones y V° B° del Director. |
+| 12 | **Descargar F8** (o F10, F11) desde la misma página. | Un libro de Excel con el formato oficial (una hoja por informe): promoción, periodo, nivel marcado con X, conclusiones, toma de decisiones y V° B° del Director. |
 
 ## 3. Qué demuestra y qué comprobar si algo falla
 

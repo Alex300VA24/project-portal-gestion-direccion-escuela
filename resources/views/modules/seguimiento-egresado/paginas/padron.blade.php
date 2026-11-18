@@ -1070,7 +1070,7 @@
             </div>
             <div class="sg-info-block">
               <span class="sg-info-label">Plan Curricular</span>
-              <span class="sg-info-val" id="exp-plan">Plan 2017</span>
+              <span class="sg-info-val" id="exp-plan">—</span>
             </div>
             <div class="sg-info-block">
               <span class="sg-info-label">Créditos Aprobados</span>
@@ -1422,7 +1422,7 @@
               'egresados' => $c->egresados_acreditados_count ?? 0,
               'tasaI1' => $c->porcentaje_i1 ?? 0,
               'duracion' => $c->duracion_esperada_anios ?? 5,
-              'plan' => $c->planCurricular ? $c->planCurricular->codigo_version : 'Plan 2017',
+              'plan' => $c->planCurricular ? $c->planCurricular->codigo_version : '—',
               'idPlan' => $c->id_plan_curricular,
               'estado' => $c->anio_ingreso <= 2018 ? 'Evaluación 5to Año' : ($c->anio_ingreso == 2019 ? 'Evaluación 3er Año' : ($c->anio_ingreso == 2020 ? 'Evaluación 1er Año' : 'En Consolidación')),
               'obs' => $c->observacion ?? '',
@@ -2597,7 +2597,7 @@
         cohorte: coh,
         egreso: per,
         fechaEgreso: new Date().toLocaleDateString('es-PE'),
-        plan: cohortesData[coh]?.plan || 'Plan 2017',
+        plan: cohortesData[coh]?.plan || '—',
         creditos: '220.0 / 220.0 (100%)',
         grado: grd,
         aptoF1: apt,

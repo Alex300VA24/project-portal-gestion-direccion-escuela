@@ -17,17 +17,17 @@ class DatosPruebaSeeder extends Seeder
         $estBachiller = DB::table('seguimiento_egresado.cat_estado_academico')->where('codigo', 'BACHILLER')->value('id');
         $estTitulado = DB::table('seguimiento_egresado.cat_estado_academico')->where('codigo', 'TITULADO')->value('id');
 
-        // 1. Planes curriculares: 1998, 2017, 2027
-        $plan1998Id = DB::table('seguimiento_egresado.plan_curricular')->insertGetId([
-            'codigo_version' => 'Plan 1998',
-            'vigencia_desde' => '1998-03-01',
-            'vigencia_hasta' => '2017-02-28',
+        // 1. Planes curriculares: 1997 (cerrado), 2018 (vigente) y 2027 (borrador)
+        $plan1997Id = DB::table('seguimiento_egresado.plan_curricular')->insertGetId([
+            'codigo_version' => 'Plan 1997',
+            'vigencia_desde' => '1997-03-01',
+            'vigencia_hasta' => '2018-02-28',
             'estado' => 'CERRADO',
         ]);
 
-        $plan2017Id = DB::table('seguimiento_egresado.plan_curricular')->insertGetId([
-            'codigo_version' => 'Plan 2017',
-            'vigencia_desde' => '2017-03-01',
+        $plan2018Id = DB::table('seguimiento_egresado.plan_curricular')->insertGetId([
+            'codigo_version' => 'Plan 2018',
+            'vigencia_desde' => '2018-03-01',
             'vigencia_hasta' => '2027-02-28',
             'estado' => 'VIGENTE',
         ]);
@@ -46,7 +46,7 @@ class DatosPruebaSeeder extends Seeder
             'semestre_ingreso' => 'I',
             'total_ingresantes' => 52, // Denominador oficial I1
             'duracion_esperada_anios' => 5,
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'observacion' => 'Promoción 2018 — Alan Turing.',
         ]);
 
@@ -56,7 +56,7 @@ class DatosPruebaSeeder extends Seeder
             'semestre_ingreso' => 'I',
             'total_ingresantes' => 48,
             'duracion_esperada_anios' => 5,
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'observacion' => 'Promoción 2019 — Ada Lovelace.',
         ]);
 
@@ -66,7 +66,7 @@ class DatosPruebaSeeder extends Seeder
             'semestre_ingreso' => 'I',
             'total_ingresantes' => 50,
             'duracion_esperada_anios' => 5,
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'observacion' => 'Promoción 2020 — Grace Hopper.',
         ]);
 
@@ -76,13 +76,13 @@ class DatosPruebaSeeder extends Seeder
             'semestre_ingreso' => 'I',
             'total_ingresantes' => 55,
             'duracion_esperada_anios' => 5,
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'observacion' => 'Promoción 2021 — Margaret Hamilton.',
         ]);
 
         // 3. Objetivos educacionales del programa (los tres oficiales de Ingeniería Informática)
         $oe1 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'codigo' => 'OE1',
             'titulo' => 'Proyectos multidisciplinarios',
             'descripcion' => 'Participar en proyectos multidisciplinarios para resolver problemas computacionales en diferentes ámbitos de la sociedad.',
@@ -90,7 +90,7 @@ class DatosPruebaSeeder extends Seeder
         ]);
 
         $oe2 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'codigo' => 'OE2',
             'titulo' => 'Educación continua',
             'descripcion' => 'Educarse de manera continua en sus competencias profesionales y de investigación.',
@@ -98,17 +98,17 @@ class DatosPruebaSeeder extends Seeder
         ]);
 
         $oe3 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
-            'id_plan_curricular' => $plan2017Id,
+            'id_plan_curricular' => $plan2018Id,
             'codigo' => 'OE3',
             'titulo' => 'Responsabilidad social y ética',
             'descripcion' => 'Aplicar la Ciencia de la Computación con responsabilidad social y ética para contribuir al desarrollo sostenible de la región y del país.',
             'vigente' => true,
         ]);
 
-        // 4. Competencias del plan 2017
+        // 4. Competencias del plan 2018
         DB::table('seguimiento_egresado.competencia')->insertOrIgnore([
             [
-                'id_plan_curricular' => $plan2017Id,
+                'id_plan_curricular' => $plan2018Id,
                 'codigo' => 'CG1',
                 'nombre' => 'Comunicación Efectiva',
                 'tipo' => 'GENERAL',
@@ -117,7 +117,7 @@ class DatosPruebaSeeder extends Seeder
                 'vigente' => true,
             ],
             [
-                'id_plan_curricular' => $plan2017Id,
+                'id_plan_curricular' => $plan2018Id,
                 'codigo' => 'CG2',
                 'nombre' => 'Trabajo en Equipo Multidisciplinario',
                 'tipo' => 'GENERAL',
@@ -126,7 +126,7 @@ class DatosPruebaSeeder extends Seeder
                 'vigente' => true,
             ],
             [
-                'id_plan_curricular' => $plan2017Id,
+                'id_plan_curricular' => $plan2018Id,
                 'codigo' => 'CE1',
                 'nombre' => 'Diseño y Construcción de Software',
                 'tipo' => 'ESPECIFICA',
@@ -895,7 +895,7 @@ class DatosPruebaSeeder extends Seeder
         DB::table('seguimiento_egresado.mejora_curricular')->insertOrIgnore([
             [
                 'codigo' => 'MC-2023-01',
-                'id_plan_curricular' => $plan2017Id,
+                'id_plan_curricular' => $plan2018Id,
                 'titulo' => 'Actualización de la línea curricular de Cloud Computing y DevOps',
                 'tipo' => 'PERFIL',
                 'origen_seguimiento' => true,
@@ -915,7 +915,7 @@ class DatosPruebaSeeder extends Seeder
             ],
             [
                 'codigo' => 'MC-2024-01',
-                'id_plan_curricular' => $plan2017Id,
+                'id_plan_curricular' => $plan2018Id,
                 'titulo' => 'Inclusión obligatoria de Pruebas Automatizadas y Calidad de Software (QA)',
                 'tipo' => 'PERFIL',
                 'origen_seguimiento' => true,
@@ -935,7 +935,7 @@ class DatosPruebaSeeder extends Seeder
             ],
             [
                 'codigo' => 'MC-2025-01',
-                'id_plan_curricular' => $plan2017Id,
+                'id_plan_curricular' => $plan2018Id,
                 'titulo' => 'Laboratorio de Inteligencia Artificial Generativa y MLOps',
                 'tipo' => 'OTRA',
                 'origen_seguimiento' => true,

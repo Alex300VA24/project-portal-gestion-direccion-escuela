@@ -93,8 +93,8 @@ class EgresadosDemoSeeder extends Seeder
             return (int) $existente;
         }
 
-        $plan = DB::table('seguimiento_egresado.plan_curricular')->orderBy('id')->value('id')
-            ?? DB::table('seguimiento_egresado.plan_curricular')->insertGetId(['codigo_version' => 'Plan 2017', 'vigencia_desde' => '2017-03-01', 'estado' => 'VIGENTE']);
+        $plan = DB::table('seguimiento_egresado.plan_curricular')->where('estado', 'VIGENTE')->orderBy('id')->value('id')
+            ?? DB::table('seguimiento_egresado.plan_curricular')->insertGetId(['codigo_version' => 'Plan 2018', 'vigencia_desde' => '2018-03-01', 'estado' => 'VIGENTE']);
 
         return (int) DB::table('seguimiento_egresado.cohorte')->insertGetId([
             'codigo_promocion' => $codigo, 'anio_ingreso' => $anio, 'semestre_ingreso' => 'I', 'total_ingresantes' => 60, 'id_plan_curricular' => $plan,

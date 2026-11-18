@@ -339,7 +339,7 @@ class PadronController extends Controller
             }
             $cohorte = new Cohorte;
             $cohorte->semestre_ingreso = 'I';
-            $cohorte->id_plan_curricular = PlanCurricular::where('codigo_version', 'Plan 2017')->value('id')
+            $cohorte->id_plan_curricular = PlanCurricular::where('estado', 'VIGENTE')->value('id')
                 ?? PlanCurricular::first()?->id
                 ?? 1;
         }
