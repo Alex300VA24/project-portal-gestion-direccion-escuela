@@ -91,7 +91,7 @@
     {{-- ① OPINIÓN SOBRE CADA EGRESADO --}}
     <section class="sg-panel sg-bloque" aria-labelledby="sg-emp-desempeno">
       <div class="sg-emp-cab">
-        <h2 class="sg-section-title" id="sg-emp-desempeno" style="margin: 0;">Opinión de la empresa sobre cada egresado <span class="sg-badge">cuenta para I5</span></h2>
+        <h2 class="sg-section-title" id="sg-emp-desempeno" style="margin: 0;">Opinión de la empresa sobre cada egresado</h2>
         @if ($puedeGenerar && $abierta)
           <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}"
                 data-sg-confirmar="Se generará un enlace para cada egresado que aún no lo tiene o cuyo enlace venció. ¿Continuar?">
@@ -165,7 +165,7 @@
 
     {{-- ② DEMANDA DE HABILIDADES --}}
     <section class="sg-panel sg-bloque" aria-labelledby="sg-emp-mercado">
-      <h2 class="sg-section-title" id="sg-emp-mercado">Demanda de habilidades (encuesta general) <span class="sg-badge">no cuenta para I5</span></h2>
+      <h2 class="sg-section-title" id="sg-emp-mercado">Demanda de habilidades (encuesta general)</h2>
       <p class="sg-help">No es sobre un egresado: pregunta a cualquier empresa qué habilidades busca. Cada enlace admite una sola respuesta, así que genera uno por empresa.</p>
       @if ($puedeGenerar && $abierta)
         <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}" class="sg-emp-lote">
@@ -251,7 +251,6 @@
       <article class="sg-kpi">
         <h3 class="sg-kpi-head">Encuestas de mercado</h3>
         <p class="sg-kpi-valor">{{ $resumen['mercado'] }}</p>
-        <p class="sg-kpi-pie">No cuentan para I5</p>
         <p class="sg-kpi-meta">{{ $periodoTexto }} · {{ $corteTexto }}<br>Fuente: Encuesta empresarial</p>
       </article>
     </div>
