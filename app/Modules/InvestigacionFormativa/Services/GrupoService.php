@@ -466,6 +466,7 @@ final class GrupoService
      */
     public function listarGruposDeSeccion(
         int $idSeccion,
+        ?int $idLinea = null,
         ?string $busqueda = null,
         int $porPagina = 20,
     ): LengthAwarePaginator {
@@ -491,6 +492,7 @@ final class GrupoService
             ->leftJoin('core.persona as per', 'per.id_persona', '=', 'e.id_persona')
             ->leftJoinSub($avances, 'av', 'av.id_grupo', '=', 'g.id_grupo')
             ->where('g.id_seccion', $idSeccion)
+            ->when($idLinea !== null, fn ($query) => $query->where('p.id_linea', $idLinea))
             ->when($termino !== null, fn ($query) => $query->whereRaw(
                 '(g.nombre ILIKE ? OR p.titulo ILIKE ?)',
                 [$termino, $termino],
