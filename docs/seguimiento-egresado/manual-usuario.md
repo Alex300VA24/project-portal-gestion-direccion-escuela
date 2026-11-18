@@ -109,7 +109,7 @@ Es el registro de si se lograron los objetivos del programa y de qué se cambia 
    - **I6** = cantidad de cambios **implementados**, con **fecha** y **documento de respaldo** (resolución o acta). Cada uno suma 1.
 5. **Planes de acción (F5 y F7)**: los planes de vinculación con los egresados y de mejora de la inserción laboral, con su avance. Con avance de 100 % se marcan como cumplidos; si no, el informe muestra el plazo.
 
-Los botones **Descargar F5, F7, F8, F9, F10 y F11 (CSV)** entregan cada formato oficial de la UNT: promoción o cohorte, año y semestre, fecha de informe, el cuadro del formato, conclusiones, toma de decisiones y la línea de **V° B° del Director de Escuela**. Los cambios de «otro tipo» salen en el formato F10.
+Los botones **Descargar F5, F7, F8, F9, F10 y F11 (Excel)** entregan cada formato oficial de la UNT en un libro de Excel con **una hoja por informe** (por promoción y periodo, o por periodo): promoción o cohorte, año y semestre, fecha de informe, el cuadro del formato, conclusiones, toma de decisiones y la línea de **V° B° del Director de Escuela**. Los cambios de «otro tipo» salen en el formato F10.
 
 
 ---

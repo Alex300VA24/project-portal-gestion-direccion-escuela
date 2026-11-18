@@ -86,8 +86,8 @@
     <h2 class="sg-section-title" id="t-cambios" style="margin: 0;">4. Cambios que se deben hacer (F10 y F11)</h2>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
       @if ($puedeRegistrar)<button type="button" class="sg-button" onclick="abrirCambio(null)">+ Registrar cambio</button>@endif
-      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F10') }}">Descargar F10 (CSV)</a>
-      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F11') }}">Descargar F11 (CSV)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F10') }}">Descargar F10 (Excel)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F11') }}">Descargar F11 (Excel)</a>
     </div>
   </div>
   <p class="sg-help" style="margin-bottom: 10px;">Registro de lo que «dice» hoy y lo que «debe decir» en el perfil de egreso o en los objetivos. <strong>Cada cambio implementado, con su documento de respaldo, suma 1 al indicador I6</strong> (hoy: {{ $resumen['i6'] }}).</p>
@@ -135,8 +135,8 @@
     <h2 class="sg-section-title" id="t-planes" style="margin: 0;">5. Planes de acción (F5 y F7)</h2>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
       @if ($puedeRegistrar)<button type="button" class="sg-button" onclick="abrirPlan(null)">+ Registrar plan</button>@endif
-      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F5') }}">Descargar F5 (CSV)</a>
-      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F7') }}">Descargar F7 (CSV)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F5') }}">Descargar F5 (Excel)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F7') }}">Descargar F7 (Excel)</a>
     </div>
   </div>
   <p class="sg-help" style="margin-bottom: 10px;">Actividades para vincularse con los egresados (F5) y para mejorar su inserción laboral (F7), con su avance.</p>

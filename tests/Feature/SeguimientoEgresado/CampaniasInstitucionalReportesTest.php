@@ -559,24 +559,6 @@ class CampaniasInstitucionalReportesTest extends TestCase
         $this->assertStringContainsString('COMPLETADA', $content);
     }
 
-    public function test_exportar_indicadores_i1_i6_csv_respeta_denominador_oficial_y_conteo_i6(): void
-    {
-        $response = $this->get(route('seguimiento-egresado.reportes.indicadores.csv'));
-
-        $response->assertOk();
-        $content = $response->streamedContent();
-
-        $this->assertStringContainsString('REPORTE CONSOLIDADO DE INDICADORES OFICIALES (I1 - I6)', $content);
-        $this->assertStringContainsString('I1', $content);
-        $this->assertStringContainsString('I2', $content);
-        $this->assertStringContainsString('I3', $content);
-        $this->assertStringContainsString('I4', $content);
-        $this->assertStringContainsString('I5', $content);
-        $this->assertStringContainsString('I6', $content);
-        $this->assertStringContainsString('Denominador oficial = objetivos educacionales vigentes de cada promoción evaluada', $content);
-        $this->assertStringContainsString('No corresponde (conteo absoluto)', $content);
-    }
-
     // =========================================================================
     // S3-16 · Cubrir y documentar formatos F1–F11
     // =========================================================================
@@ -588,37 +570,73 @@ class CampaniasInstitucionalReportesTest extends TestCase
         $this->get(route('seguimiento-egresado.campanias'))->assertDontSee('Matriz de Formatos');
     }
 
-    public function test_formatos_f1_a_f11_generan_efectivamente(): void
+    public function test_solo_se_entregan_los_formatos_de_la_evaluacion_institucional_en_excel(): void
     {
-        foreach (['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11'] as $fmt) {
-            $response = $this->get(route('seguimiento-egresado.reportes.formato', $fmt));
-            $response->assertOk();
-            $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
+        foreach (['F5', 'F7', 'F8', 'F9', 'F10', 'F11'] as $codigo) {
+            $respuesta = $this->get(route('seguimiento-egresado.reportes.formato', $codigo))->assertOk();
+            $this->assertStringContainsString('.xlsx', $respuesta->headers->get('Content-Disposition'), $codigo);
         }
+        // Los demás formatos y el CSV consolidado ya no existen.
+        foreach (['F1', 'F2', 'F3', 'F4', 'F6', 'F12'] as $codigo) {
+            $this->get('/seguimiento-egresado/reportes/formato/'.$codigo)->assertNotFound();
+        }
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('seguimiento-egresado.reportes.indicadores.csv'));
     }
 
-    private function formato(string $codigo): string
+    /**
+     * Abre el .xlsx de un formato y devuelve sus hojas: nombre => filas, cada fila con el texto de sus celdas.
+     *
+     * @return array<string, list<list<string>>>
+     */
+    private function formato(string $codigo): array
     {
-        $respuesta = $this->get(route('seguimiento-egresado.reportes.formato', $codigo));
-        $respuesta->assertOk();
+        $respuesta = $this->get(route('seguimiento-egresado.reportes.formato', $codigo))->assertOk();
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($respuesta->baseResponse->getFile()->getPathname()));
 
-        return $respuesta->streamedContent();
+        $libro = new \DOMDocument;
+        $libro->loadXML($zip->getFromName('xl/workbook.xml'));
+        $hojas = [];
+        foreach ($libro->getElementsByTagName('sheet') as $i => $hoja) {
+            $xml = new \DOMDocument;
+            $this->assertTrue($xml->loadXML($zip->getFromName('xl/worksheets/sheet'.($i + 1).'.xml')));
+            $filas = [];
+            foreach ($xml->getElementsByTagName('row') as $fila) {
+                $celdas = [];
+                foreach ($fila->getElementsByTagName('c') as $celda) {
+                    $celdas[] = $celda->textContent;
+                }
+                $filas[] = $celdas;
+            }
+            $hojas[$hoja->getAttribute('name')] = $filas;
+        }
+        $zip->close();
+
+        return $hojas;
+    }
+
+    /** Todo el libro como texto: una línea por fila, celdas separadas por «|». */
+    private function textoDe(array $hojas): string
+    {
+        return collect($hojas)->flatten(1)->map(fn ($fila) => implode('|', $fila))->implode("\n");
     }
 
     public function test_f8_marca_el_nivel_de_logro_de_cada_objetivo_oficial_de_la_promocion(): void
     {
-        $contenido = $this->formato('F8');
+        $hojas = $this->formato('F8');
+        $texto = $this->textoDe($hojas);
 
-        $this->assertStringContainsString('INFORME DE LOGRO DE LOS OBJETIVOS EDUCACIONALES', $contenido);
-        $this->assertStringContainsString('"PROMOCION O COHORTE:","Promoción 2018"', $contenido);
-        $this->assertStringContainsString('"AÑO Y SEMESTRE:",2023-II', $contenido);
-        $this->assertStringContainsString('"OBJETIVOS EDUCACIONALES","MUY BUENO",BUENO,REGULAR,MALO,"MUY MALO"', $contenido);
-        $this->assertStringContainsString('"OE1 · Participar en proyectos multidisciplinarios', $contenido);
-        $this->assertStringContainsString(',X,,,,', $contenido, 'OE1 quedó en MUY BUENO');
-        $this->assertStringContainsString('CONCLUSIONES:', $contenido);
-        $this->assertStringContainsString('TOMA DE DECISIONES:', $contenido);
-        $this->assertStringContainsString('V° B° DIRECTOR DE ESCUELA PROFESIONAL', $contenido);
-        $this->assertStringNotContainsString('OE4', $contenido);
+        $this->assertArrayHasKey('Prom 2018 2023-II', $hojas, 'una hoja por promoción y periodo');
+        $this->assertStringContainsString('INFORME DE LOGRO DE LOS OBJETIVOS EDUCACIONALES', $texto);
+        $this->assertStringContainsString("PROMOCIÓN O COHORTE:|Promoción 2018", $texto);
+        $this->assertStringContainsString("AÑO Y SEMESTRE:|2023-II", $texto);
+        $this->assertStringContainsString('OBJETIVOS EDUCACIONALES|MUY BUENO|BUENO|REGULAR|MALO|MUY MALO', $texto);
+        $this->assertMatchesRegularExpression('/^OE1 · Participar en proyectos multidisciplinarios.*\|X\|\|\|\|$/m', $texto, 'OE1 quedó en MUY BUENO');
+        $this->assertMatchesRegularExpression('/^OE2 · .*\|\|X\|\|\|$/m', $texto, 'OE2 quedó en BUENO');
+        $this->assertStringContainsString('CONCLUSIONES:', $texto);
+        $this->assertStringContainsString('TOMA DE DECISIONES:', $texto);
+        $this->assertStringContainsString('V° B° DIRECTOR DE ESCUELA PROFESIONAL', $texto);
+        $this->assertStringNotContainsString('OE4', $texto);
     }
 
     public function test_f9_separa_las_competencias_genericas_de_las_especificas(): void
@@ -627,13 +645,13 @@ class CampaniasInstitucionalReportesTest extends TestCase
         $competencias = Competencia::where('vigente', true)->pluck('id')->all();
         $this->post(route('seguimiento-egresado.institucional.informe-competencias'), $this->datosDeInforme('validar', $this->nivelesDe($competencias, 'BUENO'), 2018))->assertRedirect();
 
-        $contenido = $this->formato('F9');
+        $texto = $this->textoDe($this->formato('F9'));
 
-        $this->assertStringContainsString('INFORME DEL NIVEL DE LOGRO DE LAS COMPETENCIAS', $contenido);
-        $this->assertStringContainsString('COMPETENCIAS GENERICAS', $contenido);
-        $this->assertStringContainsString('COMPETENCIAS ESPECIFICAS', $contenido);
-        $this->assertStringContainsString('CG1 · Comunicación Efectiva', $contenido);
-        $this->assertStringContainsString('Validado por la Dirección', $contenido);
+        $this->assertStringContainsString('INFORME DEL NIVEL DE LOGRO DE LAS COMPETENCIAS', $texto);
+        $this->assertStringContainsString('COMPETENCIAS GENÉRICAS', $texto);
+        $this->assertStringContainsString('COMPETENCIAS ESPECÍFICAS', $texto);
+        $this->assertStringContainsString('CG1 · Comunicación Efectiva', $texto);
+        $this->assertStringContainsString('Validado por la Dirección', $texto);
     }
 
     public function test_f10_y_f11_muestran_dice_debe_decir_y_si_cuentan_para_i6(): void
@@ -643,14 +661,14 @@ class CampaniasInstitucionalReportesTest extends TestCase
             'estado' => 'IMPLEMENTADA', 'documento_referencia' => 'Resolución N.° 031-2026', 'fecha_implementacion' => now('America/Lima')->toDateString(),
         ]))->assertRedirect();
 
-        $f11 = $this->formato('F11');
-        $f10 = $this->formato('F10');
+        $f11 = $this->textoDe($this->formato('F11'));
+        $f10 = $this->textoDe($this->formato('F10'));
 
         $this->assertStringContainsString('INFORME SOBRE CAMBIOS (MEJORAS) DE LOS OBJETIVOS EDUCACIONALES', $f11);
-        $this->assertStringContainsString('DICE,"DEBE DECIR"', $f11);
+        $this->assertStringContainsString('OBJETIVOS EDUCACIONALES|DICE|DEBE DECIR', $f11);
         $this->assertStringContainsString('Redacción del objetivo de educación continua (Objetivos educacionales)', $f11);
         $this->assertStringContainsString('Resolución N.° 031-2026', $f11);
-        $this->assertStringContainsString('"CUENTA PARA I6"', $f11);
+        $this->assertStringContainsString('CUENTA PARA I6', $f11);
         $this->assertStringContainsString('INFORME SOBRE CAMBIOS (MEJORAS) DEL PERFIL DE EGRESO', $f10);
         $this->assertStringContainsString('MC-2023-01 · Actualización de la línea curricular de Cloud Computing y DevOps (Perfil de egreso)', $f10);
         $this->assertStringContainsString('Resolución de Decanato R-0210-2023-D-FACINF', $f10);
@@ -665,16 +683,36 @@ class CampaniasInstitucionalReportesTest extends TestCase
         $this->post($ruta, ['titulo' => 'Premiación a egresados destacados', 'tipo' => 'VINCULACION', 'estado' => 'EVALUADA', 'actividad' => 'Ceremonia anual.', 'grado_cumplimiento' => 100]);
         $this->post($ruta, ['titulo' => 'Feria laboral', 'tipo' => 'INSERCION', 'estado' => 'EN_EJECUCION', 'actividad' => 'Feria con empresas aliadas.', 'grado_cumplimiento' => 40, 'fecha_limite' => '2027-03-31']);
 
-        $f5 = $this->formato('F5');
-        $f7 = $this->formato('F7');
+        $f5 = $this->textoDe($this->formato('F5'));
+        $f7 = $this->textoDe($this->formato('F7'));
 
-        $this->assertStringContainsString('INFORME SEMESTRAL Y ANUAL SOBRE LA EVALUACION DE RESULTADOS DE PLANES DE ACCION', $f5);
-        $this->assertStringContainsString('Premiación a egresados destacados",X,,', $f5, 'cumplido: marca SI');
+        $this->assertStringContainsString('INFORME SEMESTRAL Y ANUAL SOBRE LA EVALUACIÓN DE RESULTADOS DE PLANES DE ACCIÓN', $f5);
+        $this->assertMatchesRegularExpression('/^PA-\d{4}-\d{2} · Premiación a egresados destacados\|X\|\|/m', $f5, 'cumplido: marca SÍ');
         $this->assertStringNotContainsString('Feria laboral', $f5);
-        $this->assertStringContainsString('INFORME ESTADISTICO SEMESTRAL Y ANUAL DE LA MEJORA DE LA INSERCION LABORAL DE LOS EGRESADOS', $f7);
-        $this->assertStringContainsString('Feria laboral",,X,', $f7, 'no cumplido: marca NO');
+        $this->assertStringContainsString('INFORME ESTADÍSTICO SEMESTRAL Y ANUAL DE LA MEJORA DE LA INSERCIÓN LABORAL DE LOS EGRESADOS', $f7);
+        $this->assertMatchesRegularExpression('/^PA-\d{4}-\d{2} · Feria laboral\|\|X\|/m', $f7, 'no cumplido: marca NO');
         $this->assertStringContainsString('Plazo: 31/03/2027', $f7);
         $this->assertStringNotContainsString('Premiación a egresados destacados', $f7);
+    }
+
+    public function test_un_formato_sin_registros_se_entrega_con_su_encabezado_y_un_aviso(): void
+    {
+        $hojas = $this->formato('F7');
+
+        $this->assertSame(['Sin datos'], array_keys($hojas));
+        $this->assertStringContainsString('Aún no hay planes de acción registrados.', $this->textoDe($hojas));
+    }
+
+    public function test_sin_zip_el_libro_se_entrega_como_texto_con_punto_y_coma_y_sin_formulas(): void
+    {
+        $hoja = new \App\Modules\SeguimientoEgresado\Services\Reportes\HojaExcel('Prueba', [20, 20]);
+        $hoja->fila([['Título', 1], ['=HACK()', 6]])->vacia()->fila([['Otra', 6]]);
+
+        $texto = (new \App\Modules\SeguimientoEgresado\Services\Reportes\LibroExcel)->aCsv([$hoja]);
+
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $texto);
+        $this->assertStringContainsString("Título;'=HACK()", $texto);
+        $this->assertStringNotContainsString(';=HACK()', $texto);
     }
 
     public function test_reporte_generado_registra_auditoria_con_hash_sha256(): void

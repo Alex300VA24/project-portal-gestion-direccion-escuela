@@ -81,8 +81,7 @@ Route::prefix('seguimiento-egresado')
         // Reportes y formatos institucionales F1 a F11
         Route::get('/reportes/campanias/csv', [ReportesController::class, 'exportarCampaniasCsv'])->middleware($interna('reportes.exportar'))->name('reportes.campanias.csv');
         Route::get('/reportes/campanias/{id}/invitaciones/csv', [ReportesController::class, 'exportarInvitacionesCsv'])->middleware($interna('reportes.exportar'))->name('reportes.invitaciones.csv');
-        Route::get('/reportes/indicadores/csv', [ReportesController::class, 'exportarIndicadoresCsv'])->middleware($interna('reportes.exportar'))->name('reportes.indicadores.csv');
-        Route::get('/reportes/formato/{codigo}', [ReportesController::class, 'exportarFormato'])->middleware($interna('reportes.exportar'))->name('reportes.formato');
+        Route::get('/reportes/formato/{codigo}', [ReportesController::class, 'exportarFormato'])->middleware($interna('reportes.exportar'))->where('codigo', 'F(5|7|8|9|10|11)')->name('reportes.formato');
 
         // Encuesta empresarial e indicadores
         Route::get('/empresas', [EmpresasController::class, 'index'])->middleware($interna('empresas.resultados'))->name('empresas');

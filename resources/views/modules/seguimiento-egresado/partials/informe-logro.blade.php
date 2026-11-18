@@ -13,7 +13,7 @@
     <h2 class="sg-section-title" id="t-{{ $id }}" style="margin: 0;">{{ $numero }}. {{ $titulo }}</h2>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
       @if ($puedeRegistrar)<button type="button" class="sg-button" onclick="abrirInforme_{{ $id }}(null)">+ Nuevo informe</button>@endif
-      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', $formato) }}">Descargar {{ $formato }} (CSV)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', $formato) }}">Descargar {{ $formato }} (Excel)</a>
     </div>
   </div>
   <p class="sg-help" style="margin-bottom: 10px;">{{ $ayuda }}</p>
