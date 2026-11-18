@@ -114,6 +114,10 @@ Las respuestas de encuesta se cuentan por cabecera. El promedio de una pregunta 
 
 Los reportes limitan las secciones al alcance antes de leer sus datos. El resumen lee los conjuntos por lote; no consulta cada tabla dentro del bucle de secciones. Los comentarios se paginan y se renderizan escapados, sin identidad del estudiante.
 
+El tablero de dirección acepta `escuela`, `periodo`, `curso` y `linea`. El filtro de línea incluye las secciones con al menos un proyecto de esa línea. Dentro de esas secciones, los grupos, las decisiones y los conteos por umbral se restringen a la línea. La encuesta es un dato por sección: no se desagrega por línea y sus totales cubren las secciones incluidas completas. Un `curso` o una `linea` fuera del alcance devuelve 403.
+
+Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos son estadística descriptiva; no son los tres indicadores oficiales de Calidad ni un indicador de satisfacción. Si la base es cero, no se calcula un porcentaje.
+
 ## Archivos: estado actual y trabajo pendiente
 
 El proveedor enlaza `ArchivoGateway` con `UnavailableArchivoGateway`. Sus métodos `crear` y `buscar` lanzan `ArchivoNoDisponible`. No existen rutas de carga o descarga funcionales. Tampoco existe aún el comando propuesto `investigacion:auditar-archivos`.
@@ -146,6 +150,6 @@ El Dockerfile crea dependencias sin paquetes de desarrollo, compila Vite y sirve
 
 ## Reglas implementadas y límites de aceptación
 
-Los formularios de configuración, rúbrica, cronograma, grupos, evaluación, encuesta y resultados corresponden a las interfaces requeridas. Las restricciones de membresía fija, versiones, congelación, promedio sin ponderación y publicación sin reapertura son decisiones locales propuestas. Falta su validación académica; no se describen como una norma institucional.
+Los formularios de configuración, rúbrica, cronograma, grupos, evaluación, encuesta y resultados corresponden a las interfaces requeridas. Las restricciones de membresía fija, versiones, congelación, promedio sin ponderación y publicación sin reapertura son decisiones locales propuestas. Falta su validación académica; no se describen como una norma institucional. El tablero de dirección usa conteos descriptivos; no se presentan como indicadores oficiales ni como metas.
 
 La demostración prueba los flujos disponibles con PostgreSQL y Firefox. La aceptación completa sigue pendiente de G4, su recorrido de archivos y evaluación, la confirmación de contratos compartidos y la revisión de seguridad dedicada que fue diferida. No se ocultan estos límites mediante archivos o notas de ejemplo en la aplicación.

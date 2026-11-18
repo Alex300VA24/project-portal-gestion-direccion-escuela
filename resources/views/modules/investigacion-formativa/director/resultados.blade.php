@@ -10,7 +10,7 @@
                     Periodo {{ $seccion->periodo->codigo }} · Estado académico: {{ $seccion->estado }}
                 </p>
                 <p class="if-actions" style="margin-top: 14px;">
-                    <a class="if-link" href="{{ route('investigacion-formativa.director.index', request()->only(['escuela', 'periodo'])) }}">
+                    <a class="if-link" href="{{ route('investigacion-formativa.director.index', request()->only(['escuela', 'periodo', 'curso', 'linea'])) }}">
                         Volver al resumen e historial por periodo
                     </a>
                 </p>
@@ -21,8 +21,15 @@
             <a class="if-link" href="#encuesta">Encuesta</a>
             <a class="if-link" href="#calificaciones">Calificaciones</a>
             <a class="if-link" href="#decisiones">Decisiones docentes</a>
-            <a class="if-link" href="{{ route('investigacion-formativa.director.index', ['periodo' => $seccion->periodo->codigo]) }}">Historial del periodo</a>
+            <a class="if-link" href="{{ route('investigacion-formativa.director.index', array_filter(['periodo' => $seccion->periodo->codigo, 'escuela' => request('escuela'), 'curso' => request('curso'), 'linea' => request('linea')])) }}">Historial del periodo</a>
         </nav>
+
+        @if (request()->filled('linea'))
+            <p class="if-note">
+                Las calificaciones y las decisiones están filtradas por línea de investigación.
+                La encuesta corresponde a la sección completa y no se desagrega por línea.
+            </p>
+        @endif
 
         <section id="encuesta" class="if-panel if-stack" style="margin-top: 20px; padding: 22px;" aria-labelledby="titulo-encuesta">
             <h2 id="titulo-encuesta" class="if-section-title">Resultados de la encuesta</h2>
@@ -73,7 +80,7 @@
             </p>
 
             <form class="if-form-grid" method="GET" action="{{ route('investigacion-formativa.director.resultados', $seccion) }}">
-                @foreach (request()->only(['escuela', 'periodo']) as $nombre => $valor)
+                @foreach (request()->only(['escuela', 'periodo', 'curso', 'linea']) as $nombre => $valor)
                     <input type="hidden" name="{{ $nombre }}" value="{{ $valor }}">
                 @endforeach
                 <div class="if-field">
@@ -207,7 +214,11 @@
                     @endif
                 </p>
             @else
-                <p>La sección no tiene un trabajo destacado vigente.</p>
+                <p>
+                    {{ request()->filled('linea')
+                        ? 'La sección no tiene un trabajo destacado vigente para la línea filtrada.'
+                        : 'La sección no tiene un trabajo destacado vigente.' }}
+                </p>
             @endif
         </section>
 @endsection

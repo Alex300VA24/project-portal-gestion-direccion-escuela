@@ -434,6 +434,17 @@ html[data-contrast="alto"][data-theme="dark"] .if-body {
     .if-inline-stats div { flex: 1 1 50%; border-bottom: 1px solid var(--portal-border); }
 }
 
+.if-chart { display: grid; gap: 14px; margin-top: 14px; }
+.if-chart-row { display: grid; gap: 4px; }
+.if-chart-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--portal-ink); font-size: 13px; }
+.if-chart-value { font-family: 'Fira Code', monospace; font-weight: 600; }
+.if-chart-track { height: 10px; overflow: hidden; background: var(--portal-surface-alt); border: 1px solid var(--portal-border); border-radius: 999px; }
+.if-chart-fill { display: block; height: 100%; background: var(--portal-green); border-radius: 999px; }
+.if-chart-fill.is-secondary { background: var(--portal-navy); }
+.if-chart-legend { margin: 0; color: var(--portal-muted); font-size: 12px; }
+.if-chart-title { margin: 0 0 8px; color: var(--portal-ink); font-size: 14px; font-weight: 700; }
+.if-question-chart + .if-question-chart { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--portal-border); }
+
 .if-table { width: 100%; border-collapse: collapse; }
 .if-table th,
 .if-table td { padding: 12px 16px; text-align: left; vertical-align: top; }

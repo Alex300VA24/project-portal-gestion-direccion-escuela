@@ -3,6 +3,7 @@
 namespace Tests\Feature\InvestigacionFormativa;
 
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
+use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
 use App\Modules\InvestigacionFormativa\Services\ReporteService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -139,6 +140,23 @@ final class ReportesTest extends TestCase
         $this->assertSame(75.0, $reporte->participacion_porcentaje);
         $resumen = $this->resumen();
         $this->assertSame(3, $resumen->totales->respuestas);
+        $this->assertSame(3, $resumen->encuesta->respuestas);
+        $this->assertSame(4, $resumen->encuesta->roster_activo);
+        $this->assertSame(75.0, $resumen->encuesta->participacion_porcentaje);
+        $this->assertSame(1, $resumen->encuesta->secciones_con_encuesta);
+        $this->assertSame(1, $resumen->encuesta->secciones_con_respuestas);
+        $this->assertSame(1, $resumen->encuesta->escala_min);
+        $this->assertSame(5, $resumen->encuesta->escala_max);
+        $this->assertCount(2, $resumen->encuesta->preguntas);
+        $primera = $resumen->encuesta->preguntas[0];
+        $this->assertSame(3, $primera->respuestas);
+        $this->assertSame('3.00', $primera->valor_promedio);
+        $this->assertSame([1, 0, 1, 0, 1], array_column($primera->distribucion, 'conteo'));
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index'))
+            ->assertOk()
+            ->assertSee('Escala 1–5')
+            ->assertSee('estadística descriptiva');
     }
 
     public function test_los_retiros_cambian_el_denominador_sin_limitar_la_tasa(): void
@@ -153,6 +171,234 @@ final class ReportesTest extends TestCase
             ->assertOk()->assertSee('300%')->assertSee('Puede superar el 100% después de retiros');
         DB::table('investigacion_formativa.participante_seccion')->where('id_seccion', 9901)->update(['estado' => 'retirado']);
         $this->assertNull($this->reporte()->participacion_porcentaje);
+        $this->assertNull($this->resumen()->encuesta->participacion_porcentaje);
+        $this->actingAs($this->datos['users']['director'])->get($this->ruta())
+            ->assertOk()
+            ->assertSee('No calculable');
+    }
+
+    public function test_agrupa_proyectos_por_linea_y_separa_completos_de_pendientes(): void
+    {
+        DB::table('core.linea_investigacion')->insert([
+            'id_linea' => 9803,
+            'id_escuela' => 920,
+            'codigo' => 'LIN-C',
+            'nombre' => 'Línea C',
+            'estado' => 'Activo',
+        ]);
+
+        $completo = $this->proyecto();
+        foreach ([1, 2, 3] as $unidad) {
+            $this->evaluar($completo, $unidad, [4, 4, 2]);
+        }
+
+        $pendiente = $this->otroProyecto('Proyecto pendiente de línea C', null, 9803);
+        $this->evaluar($pendiente, 1, [4, 4, 2]);
+
+        $resumen = $this->resumen();
+        $porLinea = [];
+        foreach ($resumen->lineas_resumen as $linea) {
+            $porLinea[$linea->id_linea] = $linea;
+        }
+
+        $this->assertSame(1, $porLinea[9801]->total);
+        $this->assertSame(1, $porLinea[9801]->completos);
+        $this->assertSame(0, $porLinea[9801]->pendientes);
+        $this->assertSame(1, $porLinea[9803]->total);
+        $this->assertSame(0, $porLinea[9803]->completos);
+        $this->assertSame(1, $porLinea[9803]->pendientes);
+        $this->assertSame(2, $resumen->totales->proyectos);
+        $this->assertSame(1, $resumen->totales->proyectos_completos);
+        $this->assertSame(1, $resumen->totales->proyectos_pendientes);
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index'))
+            ->assertOk()
+            ->assertSee('Proyectos por línea de investigación')
+            ->assertSee('Línea A')
+            ->assertSee('Línea C')
+            ->assertSee('Completos 1')
+            ->assertSee('Pendientes 1');
+    }
+
+    public function test_los_umbrales_de_nota_son_estrictos_y_superpuestos(): void
+    {
+        $exacto16 = $this->proyecto();
+        $exacto18 = $this->otroProyecto('Exacto 18');
+        $mayor18 = $this->otroProyecto('Mayor 18');
+        $incompleto = $this->otroProyecto('Incompleto');
+
+        foreach ([1, 2, 3] as $unidad) {
+            $this->evaluar($exacto16, $unidad, [4, 3, 1]);
+            $this->evaluar($exacto18, $unidad, [4, 4, 1]);
+            $this->evaluar($mayor18, $unidad, [4, 4, 2]);
+
+            if ($unidad < 3) {
+                $this->evaluar($incompleto, $unidad, [4, 4, 2]);
+            }
+        }
+
+        $resumen = $this->resumen();
+        $this->assertSame(4, $resumen->totales->proyectos);
+        $this->assertSame(3, $resumen->totales->proyectos_completos);
+        $this->assertSame(1, $resumen->totales->proyectos_pendientes);
+        $this->assertSame(2, $resumen->totales->mayores_16);
+        $this->assertSame(1, $resumen->totales->mayores_18);
+        $this->assertSame(3, $resumen->umbrales->base);
+        $this->assertSame(2, $resumen->umbrales->mayores_16);
+        $this->assertSame(1, $resumen->umbrales->mayores_18);
+
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index'))
+            ->assertOk()
+            ->assertSee('Los umbrales se superponen')
+            ->assertSee('No son intervalos excluyentes')
+            ->assertDontSee('16 a 18')
+            ->assertDontSee('18 a 20');
+    }
+
+    public function test_filtra_por_curso_y_linea_y_conserva_los_filtros_en_los_enlaces(): void
+    {
+        DB::table('core.curso')->insert([
+            'id_curso' => 9703,
+            'codigo' => 'IF-503',
+            'nombre' => 'Investigación Formativa III',
+            'creditos' => 3,
+            'estado' => 'Activo',
+        ]);
+        DB::table('core.curso_plan')->insert([
+            'id_curso_plan' => 9503,
+            'id_plan' => 950,
+            'id_curso' => 9703,
+            'ciclo' => 5,
+            'tipo' => 'Obligatorio',
+            'id_area' => 960,
+            'creditos_requeridos' => 0,
+        ]);
+        DB::table('core.seccion')->insert([
+            'id_seccion' => 9903,
+            'id_periodo' => 202602,
+            'id_curso_plan' => 9503,
+            'codigo' => 'C',
+            'capacidad' => 30,
+            'id_docente_responsable' => 9801,
+            'estado' => 'Activa',
+        ]);
+        DB::table('core.linea_investigacion')->insert([
+            'id_linea' => 9803,
+            'id_escuela' => 920,
+            'codigo' => 'LIN-C',
+            'nombre' => 'Línea C',
+            'estado' => 'Activo',
+        ]);
+        $this->crearTipoProducto();
+        $this->otroProyecto('Proyecto de línea C', null, 9803);
+
+        $porCurso = $this->resumen(null, 9703);
+        $this->assertSame([9903], array_column($porCurso->secciones, 'id_seccion'));
+        $this->assertSame(9703, $porCurso->filtros->curso);
+        $this->assertContains(9703, array_column($porCurso->cursos, 'id_curso'));
+
+        $porLinea = $this->resumen(null, null, 9803);
+        $this->assertSame([9901], array_column($porLinea->secciones, 'id_seccion'));
+        $this->assertSame(9803, $porLinea->filtros->linea);
+        $this->assertCount(1, $porLinea->lineas_resumen);
+        $this->assertSame(9803, $porLinea->lineas_resumen[0]->id_linea);
+        $this->assertSame(1, $porLinea->totales->proyectos);
+
+        $pagina = $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index', ['curso' => 9701, 'linea' => 9803]))
+            ->assertOk();
+        $this->assertSame([9901], array_column($pagina->viewData('secciones'), 'id_seccion'));
+        $this->assertStringContainsString('curso=9701', $pagina->getContent());
+        $this->assertStringContainsString('linea=9803', $pagina->getContent());
+    }
+
+    public function test_rechaza_curso_y_linea_fuera_del_alcance(): void
+    {
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index', ['curso' => 99999]))
+            ->assertForbidden();
+
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index', ['linea' => 9802]))
+            ->assertForbidden();
+    }
+
+    public function test_la_aprobacion_no_se_deduce_del_estado_del_titulo(): void
+    {
+        $proyecto = $this->proyecto();
+        foreach ([1, 2, 3] as $unidad) {
+            $this->evaluar($proyecto, $unidad, [4, 4, 2]);
+        }
+
+        $this->assertSame(1, $this->resumen()->totales->proyectos_completos);
+        $this->assertSame(0, $this->resumen()->totales->aprobados);
+        $this->assertSame(0, $this->resumen()->totales->destacados);
+
+        $actor = app(AccesoInvestigacionService::class)->resolver($this->datos['users']['docente_a']);
+        $decisiones = app(DecisionTrabajoService::class);
+        $decisiones->aprobar($actor, $proyecto, 0);
+        $decisiones->seleccionar($actor, $proyecto, 0);
+
+        $resumen = $this->resumen();
+        $this->assertSame(1, $resumen->totales->aprobados);
+        $this->assertSame(1, $resumen->totales->destacados);
+        $this->assertSame(1, $resumen->decisiones->aprobados);
+        $this->assertSame(1, $resumen->decisiones->destacados);
+
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index'))
+            ->assertOk()
+            ->assertSee('Aprobación y trabajo destacado')
+            ->assertSee('Trabajos aprobados')
+            ->assertSee('La aprobación es una decisión explícita del docente');
+    }
+
+    public function test_los_resultados_por_seccion_filtran_por_linea_y_lo_avisan(): void
+    {
+        DB::table('core.linea_investigacion')->insert([
+            'id_linea' => 9803,
+            'id_escuela' => 920,
+            'codigo' => 'LIN-C',
+            'nombre' => 'Línea C',
+            'estado' => 'Activo',
+        ]);
+
+        $proyectoA = $this->proyecto();
+        $proyectoB = $this->otroProyecto('Proyecto de línea C', null, 9803);
+
+        foreach ([1, 2, 3] as $unidad) {
+            $this->evaluar($proyectoA, $unidad, [4, 4, 2]);
+            $this->evaluar($proyectoB, $unidad, [4, 3, 1]);
+        }
+
+        $docente = app(AccesoInvestigacionService::class)->resolver($this->datos['users']['docente_a']);
+        $decisiones = app(DecisionTrabajoService::class);
+        $decisiones->aprobar($docente, $proyectoB, 0);
+        $decisiones->seleccionar($docente, $proyectoB, 0);
+
+        $director = app(AccesoInvestigacionService::class)->resolver($this->datos['users']['director']);
+        $servicio = app(ReporteService::class);
+
+        $lineaC = $servicio->porSeccion($director, 9901, 1, 10, 9803);
+        $this->assertCount(1, $lineaC->grupos);
+        $this->assertSame($proyectoB, $lineaC->grupos[0]->id_proyecto);
+        $this->assertSame($proyectoB, $lineaC->seleccion_destacada->id_proyecto);
+        $this->assertSame(1, $lineaC->aprobados_count);
+        $this->assertSame(1, $lineaC->destacados_count);
+
+        $lineaA = $servicio->porSeccion($director, 9901, 1, 10, 9801);
+        $this->assertCount(1, $lineaA->grupos);
+        $this->assertSame($proyectoA, $lineaA->grupos[0]->id_proyecto);
+        $this->assertNull($lineaA->seleccion_destacada);
+        $this->assertSame(0, $lineaA->aprobados_count);
+        $this->assertSame(0, $lineaA->destacados_count);
+
+        $this->actingAs($this->datos['users']['director'])
+            ->get($this->ruta().'?linea=9803')
+            ->assertOk()
+            ->assertSee('filtradas por línea de investigación')
+            ->assertSee('Proyecto de línea C');
     }
 
     public function test_pagina_comentarios_sin_identidades_y_conserva_filtros_y_tamano(): void
@@ -237,9 +483,15 @@ final class ReportesTest extends TestCase
         return app(ReporteService::class)->porSeccion(app(AccesoInvestigacionService::class)->resolver($this->datos['users']['director']), 9901);
     }
 
-    private function resumen(?string $periodo = null): object
+    private function resumen(?string $periodo = null, ?int $idCurso = null, ?int $idLinea = null): object
     {
-        return app(ReporteService::class)->resumenDirector(app(AccesoInvestigacionService::class)->resolver($this->datos['users']['director']), null, $periodo);
+        return app(ReporteService::class)->resumenDirector(
+            app(AccesoInvestigacionService::class)->resolver($this->datos['users']['director']),
+            null,
+            $periodo,
+            $idCurso,
+            $idLinea,
+        );
     }
 
     private function ruta(int $seccion = 9901): string
@@ -254,20 +506,29 @@ final class ReportesTest extends TestCase
         $this->configurarSeccionCompleta(9901);
         $rubrica = DB::table('investigacion_formativa.seccion_configuracion')->where('id_seccion', 9901)->value('id_rubrica');
         foreach ([2 => 4, 3 => 2] as $orden => $maximo) {
-            DB::table('investigacion_formativa.criterio')->insert([
+            $idCriterio = DB::table('investigacion_formativa.criterio')->insertGetId([
                 'id_rubrica' => $rubrica, 'descripcion' => 'Criterio '.$orden, 'orden' => $orden, 'puntaje_maximo' => $maximo,
-            ]);
+            ], 'id_criterio');
+
+            foreach ([1, 2, 3, 4] as $nivel) {
+                DB::table('investigacion_formativa.criterio_nivel')->insert([
+                    'id_criterio' => $idCriterio,
+                    'nivel' => $nivel,
+                    'descripcion' => 'Nivel '.$nivel,
+                    'puntaje' => min($nivel, $maximo),
+                ]);
+            }
         }
 
         return $this->otroProyecto('Primero', 9951);
     }
 
-    private function otroProyecto(string $nombre, ?int $grupo = null): int
+    private function otroProyecto(string $nombre, ?int $grupo = null, int $idLinea = 9801): int
     {
         $grupo ??= DB::table('investigacion_formativa.grupo')->insertGetId(['id_seccion' => 9901, 'nombre' => $nombre], 'id_grupo');
 
         return DB::table('investigacion_formativa.proyecto')->insertGetId([
-            'id_grupo' => $grupo, 'id_linea' => 9801, 'id_tipo_producto' => 9981,
+            'id_grupo' => $grupo, 'id_linea' => $idLinea, 'id_tipo_producto' => 9981,
             'titulo' => $nombre, 'estado' => 'Aceptado', 'version' => 1,
         ], 'id_proyecto');
     }

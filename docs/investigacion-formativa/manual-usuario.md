@@ -11,7 +11,7 @@ Si no puede entrar, solicite que revisen su cuenta, su vinculación académica y
 ## Dirección de escuela
 
 1. Abra el resumen de dirección. Verá las escuelas asignadas a su cuenta.
-2. Seleccione escuela o periodo y aplique el filtro. La lista incluye secciones históricas.
+2. Seleccione escuela, periodo, curso o línea de investigación y aplique el filtro. La lista incluye secciones históricas.
 3. Abra «Ver cursos y habilitar secciones» para permitir el trabajo en una sección.
 4. Revise el curso, periodo, sección y docente antes de cambiar su estado.
 5. Abra la encuesta de la sección para preparar las preguntas.
@@ -21,6 +21,10 @@ Si no puede entrar, solicite que revisen su cuenta, su vinculación académica y
 9. Abra «Ver resultados» para consultar respuestas, comentarios y calificaciones.
 
 «Habilitada» permite las operaciones del módulo si también se cumplen sus requisitos. «Deshabilitada» detiene las escrituras y conserva los datos. El estado académico de una sección es un dato distinto. Las secciones cerradas siguen disponibles en resultados e historial.
+
+El resumen muestra conteos descriptivos: proyectos por línea, proyectos completos por umbral y decisiones docentes. «> 16» y «> 18» se superponen: un proyecto con nota mayor a 18 también cuenta en mayor a 16. Las barras y tablas describen los datos registrados; no son indicadores oficiales ni metas. Si no hay datos, la pantalla muestra un estado vacío y no inventa ceros ni promedios.
+
+El filtro de línea restringe los grupos, las notas y las decisiones a esa línea. La encuesta se prepara por sección y no se desagrega por línea; los totales de encuesta cubren las secciones incluidas completas.
 
 Los comentarios se muestran sin nombres de estudiantes. Son confidenciales, no anónimos: el sistema conserva la identidad de quien responde para evitar envíos duplicados.
 

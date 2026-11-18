@@ -203,21 +203,45 @@ final class DecisionTrabajoService
      * Conteos de aprobaciones y trabajos destacados por sección, sin consultas
      * proporcionales al número de secciones.
      *
+     * Cuando se pasan proyectos permitidos, solo cuenta las aprobaciones de
+     * esos proyectos y conserva la selección únicamente si pertenece al
+     * conjunto. Se usa para reportes filtrados por línea de investigación.
+     *
      * @param  list<int>  $idsSecciones
+     * @param  array<int, list<int>>|null  $proyectosPermitidos
      * @return array<int, object{aprobados: int, destacados: int, seleccion: object|null}>
      */
-    public function resumenesPorSecciones(array $idsSecciones): array
+    public function resumenesPorSecciones(array $idsSecciones, ?array $proyectosPermitidos = null): array
     {
         $estados = $this->cargarEstados($idsSecciones);
         $resumenes = [];
 
         foreach ($idsSecciones as $idSeccion) {
             $estado = $estados[(int) $idSeccion];
+            $aprobados = $estado->aprobados;
+            $destacados = $estado->destacado === null ? 0 : 1;
+            $seleccion = $estado->seleccion_info;
+
+            if ($proyectosPermitidos !== null) {
+                $permitidos = $proyectosPermitidos[(int) $idSeccion] ?? [];
+                $aprobados = 0;
+
+                foreach ($estado->aprobaciones as $idProyecto => $vigente) {
+                    if ($vigente && in_array((int) $idProyecto, $permitidos, true)) {
+                        $aprobados++;
+                    }
+                }
+
+                if ($seleccion !== null && ! in_array((int) $seleccion->id_proyecto, $permitidos, true)) {
+                    $seleccion = null;
+                    $destacados = 0;
+                }
+            }
 
             $resumenes[(int) $idSeccion] = (object) [
-                'aprobados' => $estado->aprobados,
-                'destacados' => $estado->destacado === null ? 0 : 1,
-                'seleccion' => $estado->seleccion_info,
+                'aprobados' => $aprobados,
+                'destacados' => $destacados,
+                'seleccion' => $seleccion,
             ];
         }
 

@@ -47,6 +47,7 @@ final class ReporteService
         int $idSeccion,
         int $paginaComentarios = 1,
         int $porPaginaComentarios = 10,
+        ?int $idLinea = null,
     ): object {
         $this->exigirSeccionVisible($actor, $idSeccion);
 
@@ -99,13 +100,26 @@ final class ReporteService
             ? round($respuestasCount / $rosterActivo * 100, 2)
             : null;
 
-        $grupos = $this->notasPorSecciones([$idSeccion]);
+        $grupos = $this->notasPorSecciones([$idSeccion], $idLinea);
         $decisiones = $this->decisiones->estadoDeSeccion($idSeccion);
 
         foreach ($grupos as $grupo) {
             $estadoGrupo = $decisiones->por_grupo[(int) $grupo->id_grupo] ?? null;
             $grupo->aprobado = $estadoGrupo?->aprobado ?? false;
             $grupo->destacado = $estadoGrupo?->destacado ?? false;
+        }
+
+        $seleccion = $decisiones->seleccion;
+
+        if ($idLinea !== null && $seleccion !== null) {
+            $idsProyectosVisibles = array_map(
+                static fn (object $grupo): int => (int) $grupo->id_proyecto,
+                $grupos,
+            );
+
+            if (! in_array((int) $seleccion->id_proyecto, $idsProyectosVisibles, true)) {
+                $seleccion = null;
+            }
         }
 
         $notas = array_values(array_filter(
@@ -121,6 +135,13 @@ final class ReporteService
             $suma = array_sum($notas);
             $promedio = $this->calificacion->formatear($this->promedioEntero($suma, count($notas)));
         }
+
+        $aprobadosCount = $idLinea === null
+            ? $decisiones->aprobados
+            : count(array_filter($grupos, static fn (object $grupo): bool => $grupo->aprobado));
+        $destacadosCount = $idLinea === null
+            ? $decisiones->destacados
+            : count(array_filter($grupos, static fn (object $grupo): bool => $grupo->destacado));
 
         return (object) [
             'id_seccion' => $idSeccion,
@@ -141,9 +162,9 @@ final class ReporteService
                 : array_values(array_filter($grupos, static fn (object $grupo): bool => $grupo->nota_final === $peor)),
             'promedio_curso' => $promedio,
             'promedio_denominador' => count($notas),
-            'aprobados_count' => $decisiones->aprobados,
-            'destacados_count' => $decisiones->destacados,
-            'seleccion_destacada' => $decisiones->seleccion,
+            'aprobados_count' => $aprobadosCount,
+            'destacados_count' => $destacadosCount,
+            'seleccion_destacada' => $seleccion,
             'entregas_evaluadas' => array_reduce(
                 $grupos,
                 static fn (int $acumulado, object $grupo): int => $acumulado + (int) $grupo->entregas_evaluadas,
@@ -156,9 +177,12 @@ final class ReporteService
      * @return object{
      *     escuelas: list<object{id_escuela: int, nombre: string}>,
      *     periodos: list<string>,
-     *     filtros: object{escuela: int|null, periodo: string|null},
+     *     cursos: list<object{id_curso: int, codigo: string, nombre: string}>,
+     *     lineas: list<object{id_linea: int, codigo: string, nombre: string}>,
+     *     filtros: object{escuela: int|null, periodo: string|null, curso: int|null, linea: int|null},
      *     secciones: list<object{
      *         id_seccion: int,
+     *         id_curso: int,
      *         seccion: string,
      *         curso: string,
      *         periodo: string,
@@ -177,13 +201,58 @@ final class ReporteService
      *         aprobados: int,
      *         destacados: int
      *     }>,
-     *     totales: object{secciones: int, habilitadas: int, grupos: int, evaluaciones: int, respuestas: int, aprobados: int, destacados: int}
+     *     lineas_resumen: list<object{
+     *         id_linea: int,
+     *         codigo: string,
+     *         nombre: string,
+     *         total: int,
+     *         completos: int,
+     *         pendientes: int,
+     *         mayores_16: int,
+     *         mayores_18: int
+     *     }>,
+     *     umbrales: object{base: int, mayores_16: int, mayores_18: int},
+     *     encuesta: object{
+     *         respuestas: int,
+     *         roster_activo: int,
+     *         participacion_porcentaje: float|null,
+     *         secciones_con_encuesta: int,
+     *         secciones_con_respuestas: int,
+     *         escala_min: int,
+     *         escala_max: int,
+     *         preguntas: list<object{
+     *             texto: string,
+     *             orden: int,
+     *             respuestas: int,
+     *             valor_promedio: string|null,
+     *             distribucion: list<object{valor: int, conteo: int}>
+     *         }>
+     *     },
+     *     decisiones: object{aprobados: int, destacados: int},
+     *     totales: object{
+     *         secciones: int,
+     *         habilitadas: int,
+     *         grupos: int,
+     *         evaluaciones: int,
+     *         respuestas: int,
+     *         aprobados: int,
+     *         destacados: int,
+     *         proyectos: int,
+     *         proyectos_completos: int,
+     *         proyectos_pendientes: int,
+     *         mayores_16: int,
+     *         mayores_18: int,
+     *         roster_activo: int,
+     *         participacion_porcentaje: float|null
+     *     }
      * }
      */
     public function resumenDirector(
         ActorInvestigacion $actor,
         ?int $idEscuela = null,
         ?string $periodo = null,
+        ?int $idCurso = null,
+        ?int $idLinea = null,
     ): object {
         if (! $actor->tieneRol('director_escuela')
             || ! $actor->user->can('investigacion-formativa.reports.view')) {
@@ -202,9 +271,32 @@ final class ReporteService
             throw new AccesoDenegado('El periodo solicitado no pertenece a su alcance de dirección.');
         }
 
-        $seccionesBase = $this->seccionesDirectorio($actor->user->id, $idEscuela, $periodo);
+        $seccionesPermitidas = $this->seccionesDirectorio($actor->user->id, null, null);
+        $cursos = $this->cursosDeSecciones($seccionesPermitidas);
+        $lineas = $this->lineasDeSecciones(array_column($seccionesPermitidas, 'id_seccion'));
+
+        if ($idCurso !== null && ! in_array($idCurso, array_column($cursos, 'id_curso'), true)) {
+            throw new AccesoDenegado('El curso solicitado no pertenece a su alcance de dirección.');
+        }
+
+        if ($idLinea !== null && ! in_array($idLinea, array_column($lineas, 'id_linea'), true)) {
+            throw new AccesoDenegado('La línea solicitada no pertenece a su alcance de dirección.');
+        }
+
+        $seccionesBase = $this->seccionesDirectorio(
+            $actor->user->id,
+            $idEscuela,
+            $periodo,
+            $idCurso,
+            $idLinea,
+        );
 
         $filas = [];
+        $lineasResumen = [];
+        $proyectosTotales = 0;
+        $proyectosCompletos = 0;
+        $mayores16 = 0;
+        $mayores18 = 0;
         $totales = (object) [
             'secciones' => 0,
             'habilitadas' => 0,
@@ -213,6 +305,13 @@ final class ReporteService
             'respuestas' => 0,
             'aprobados' => 0,
             'destacados' => 0,
+            'proyectos' => 0,
+            'proyectos_completos' => 0,
+            'proyectos_pendientes' => 0,
+            'mayores_16' => 0,
+            'mayores_18' => 0,
+            'roster_activo' => 0,
+            'participacion_porcentaje' => null,
         ];
 
         $ids = array_column($seccionesBase, 'id_seccion');
@@ -225,8 +324,20 @@ final class ReporteService
         $roster = DB::table('investigacion_formativa.participante_seccion')
             ->whereIn('id_seccion', $ids)->where('estado', 'activo')->groupBy('id_seccion')
             ->selectRaw('id_seccion, count(*) as cantidad')->pluck('cantidad', 'id_seccion');
-        $gruposPorSeccion = collect($this->notasPorSecciones($ids))->groupBy('id_seccion');
-        $resumenDecisiones = $this->decisiones->resumenesPorSecciones($ids);
+        $gruposPorSeccion = collect($this->notasPorSecciones($ids, $idLinea))->groupBy('id_seccion');
+        $proyectosPorSeccion = [];
+
+        foreach ($gruposPorSeccion as $idSeccion => $grupos) {
+            $proyectosPorSeccion[(int) $idSeccion] = array_values(array_filter(array_map(
+                static fn (object $grupo): ?int => $grupo->id_proyecto === null ? null : (int) $grupo->id_proyecto,
+                $grupos->all(),
+            ), static fn (?int $idProyecto): bool => $idProyecto !== null));
+        }
+
+        $resumenDecisiones = $this->decisiones->resumenesPorSecciones(
+            $ids,
+            $idLinea === null ? null : $proyectosPorSeccion,
+        );
 
         foreach ($seccionesBase as $seccion) {
             $idSeccion = (int) $seccion->id_seccion;
@@ -251,8 +362,52 @@ final class ReporteService
             $aprobados = $decisionSeccion?->aprobados ?? 0;
             $destacados = $decisionSeccion?->destacados ?? 0;
 
+            foreach ($grupos as $grupo) {
+                if ($grupo->id_proyecto === null) {
+                    continue;
+                }
+
+                $proyectosTotales++;
+                $idLineaProyecto = (int) $grupo->id_linea;
+
+                if (! isset($lineasResumen[$idLineaProyecto])) {
+                    $lineasResumen[$idLineaProyecto] = (object) [
+                        'id_linea' => $idLineaProyecto,
+                        'codigo' => (string) $grupo->linea_codigo,
+                        'nombre' => (string) $grupo->linea_nombre,
+                        'total' => 0,
+                        'completos' => 0,
+                        'pendientes' => 0,
+                        'mayores_16' => 0,
+                        'mayores_18' => 0,
+                    ];
+                }
+
+                $lineasResumen[$idLineaProyecto]->total++;
+
+                if ($grupo->nota_final_centesimas === null) {
+                    $lineasResumen[$idLineaProyecto]->pendientes++;
+
+                    continue;
+                }
+
+                $proyectosCompletos++;
+                $lineasResumen[$idLineaProyecto]->completos++;
+
+                if ($grupo->nota_final_centesimas > 1600) {
+                    $mayores16++;
+                    $lineasResumen[$idLineaProyecto]->mayores_16++;
+                }
+
+                if ($grupo->nota_final_centesimas > 1800) {
+                    $mayores18++;
+                    $lineasResumen[$idLineaProyecto]->mayores_18++;
+                }
+            }
+
             $filas[] = (object) [
                 'id_seccion' => $idSeccion,
+                'id_curso' => (int) $seccion->id_curso,
                 'seccion' => (string) $seccion->seccion,
                 'curso' => (string) $seccion->curso,
                 'periodo' => (string) $seccion->periodo,
@@ -281,25 +436,217 @@ final class ReporteService
             $totales->grupos += count($grupos);
             $totales->evaluaciones += $entregasEvaluadas;
             $totales->respuestas += $respuestasCount;
+            $totales->roster_activo += $rosterActivo;
             $totales->aprobados += $aprobados;
             $totales->destacados += $destacados;
         }
 
+        usort($lineasResumen, static fn (object $a, object $b): int => strcmp($a->nombre, $b->nombre) ?: strcmp($a->codigo, $b->codigo));
+
+        $totales->proyectos = $proyectosTotales;
+        $totales->proyectos_completos = $proyectosCompletos;
+        $totales->proyectos_pendientes = $proyectosTotales - $proyectosCompletos;
+        $totales->mayores_16 = $mayores16;
+        $totales->mayores_18 = $mayores18;
+        $totales->participacion_porcentaje = $totales->roster_activo > 0
+            ? round($totales->respuestas / $totales->roster_activo * 100, 2)
+            : null;
+
         return (object) [
             'escuelas' => $escuelas,
             'periodos' => $periodos,
+            'cursos' => $cursos,
+            'lineas' => $lineas,
             'filtros' => (object) [
                 'escuela' => $idEscuela,
                 'periodo' => $periodo,
+                'curso' => $idCurso,
+                'linea' => $idLinea,
             ],
             'secciones' => $filas,
+            'lineas_resumen' => array_values($lineasResumen),
+            'umbrales' => (object) [
+                'base' => $proyectosCompletos,
+                'mayores_16' => $mayores16,
+                'mayores_18' => $mayores18,
+            ],
+            'encuesta' => $this->resumenEncuesta($ids, $respuestas, $roster, $encuestas),
+            'decisiones' => (object) [
+                'aprobados' => $totales->aprobados,
+                'destacados' => $totales->destacados,
+            ],
             'totales' => $totales,
         ];
     }
 
     /**
+     * @param  list<object{id_curso: int, curso_codigo: string, curso: string}>  $secciones
+     * @return list<object{id_curso: int, codigo: string, nombre: string}>
+     */
+    private function cursosDeSecciones(array $secciones): array
+    {
+        $cursos = [];
+
+        foreach ($secciones as $seccion) {
+            $idCurso = (int) $seccion->id_curso;
+
+            if (! isset($cursos[$idCurso])) {
+                $cursos[$idCurso] = (object) [
+                    'id_curso' => $idCurso,
+                    'codigo' => (string) $seccion->curso_codigo,
+                    'nombre' => (string) $seccion->curso,
+                ];
+            }
+        }
+
+        usort($cursos, static fn (object $a, object $b): int => strcmp($a->nombre, $b->nombre) ?: strcmp($a->codigo, $b->codigo));
+
+        return array_values($cursos);
+    }
+
+    /**
+     * @param  list<int>  $idsSecciones
+     * @return list<object{id_linea: int, codigo: string, nombre: string}>
+     */
+    private function lineasDeSecciones(array $idsSecciones): array
+    {
+        if ($idsSecciones === []) {
+            return [];
+        }
+
+        return DB::table('investigacion_formativa.grupo as g')
+            ->join('investigacion_formativa.proyecto as p', 'p.id_grupo', '=', 'g.id_grupo')
+            ->join('core.linea_investigacion as l', 'l.id_linea', '=', 'p.id_linea')
+            ->whereIn('g.id_seccion', $idsSecciones)
+            ->distinct()
+            ->orderBy('l.nombre')
+            ->orderBy('l.codigo')
+            ->get(['l.id_linea', 'l.codigo', 'l.nombre'])
+            ->map(static fn (object $fila): object => (object) [
+                'id_linea' => (int) $fila->id_linea,
+                'codigo' => (string) $fila->codigo,
+                'nombre' => (string) $fila->nombre,
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $idsSecciones
+     * @param  Collection<int, int|string>  $respuestas
+     * @param  Collection<int, int|string>  $roster
+     * @param  Collection<int, object{estado: string}>  $encuestas
+     */
+    private function resumenEncuesta(array $idsSecciones, $respuestas, $roster, $encuestas): object
+    {
+        $totalRespuestas = (int) $respuestas->sum();
+        $totalRoster = (int) $roster->sum();
+
+        return (object) [
+            'respuestas' => $totalRespuestas,
+            'roster_activo' => $totalRoster,
+            'participacion_porcentaje' => $totalRoster > 0
+                ? round($totalRespuestas / $totalRoster * 100, 2)
+                : null,
+            'secciones_con_encuesta' => $encuestas->count(),
+            'secciones_con_respuestas' => $respuestas->filter(
+                static fn (int|string $cantidad): bool => (int) $cantidad > 0,
+            )->count(),
+            'escala_min' => 1,
+            'escala_max' => 5,
+            'preguntas' => $this->preguntasEncuesta($idsSecciones),
+        ];
+    }
+
+    /**
+     * @param  list<int>  $idsSecciones
+     * @return list<object{
+     *     texto: string,
+     *     orden: int,
+     *     respuestas: int,
+     *     valor_promedio: string|null,
+     *     distribucion: list<object{valor: int, conteo: int}>
+     * }>
+     */
+    private function preguntasEncuesta(array $idsSecciones): array
+    {
+        if ($idsSecciones === []) {
+            return [];
+        }
+
+        $filas = DB::table('investigacion_formativa.encuesta_pregunta as ep')
+            ->join('investigacion_formativa.encuesta as e', 'e.id_encuesta', '=', 'ep.id_encuesta')
+            ->leftJoin('investigacion_formativa.encuesta_respuesta_item as i', function ($join): void {
+                $join->on('i.id_encuesta', '=', 'ep.id_encuesta')
+                    ->on('i.id_pregunta', '=', 'ep.id_pregunta');
+            })
+            ->whereIn('e.id_seccion', $idsSecciones)
+            ->groupBy('ep.texto', 'ep.orden', 'i.valor')
+            ->orderBy('ep.orden')
+            ->orderBy('ep.texto')
+            ->orderBy('i.valor')
+            ->selectRaw('ep.texto as texto, ep.orden as orden, i.valor as valor, count(i.valor) as conteo')
+            ->get();
+
+        $preguntas = [];
+
+        foreach ($filas as $fila) {
+            $clave = $fila->texto.'|'.$fila->orden;
+
+            if (! isset($preguntas[$clave])) {
+                $preguntas[$clave] = (object) [
+                    'texto' => (string) $fila->texto,
+                    'orden' => (int) $fila->orden,
+                    'respuestas' => 0,
+                    'valor_promedio' => null,
+                    'distribucion' => [
+                        1 => 0,
+                        2 => 0,
+                        3 => 0,
+                        4 => 0,
+                        5 => 0,
+                    ],
+                ];
+            }
+
+            if ($fila->valor === null) {
+                continue;
+            }
+
+            $valor = (int) $fila->valor;
+            $conteo = (int) $fila->conteo;
+            $preguntas[$clave]->distribucion[$valor] += $conteo;
+            $preguntas[$clave]->respuestas += $conteo;
+        }
+
+        $resultado = [];
+
+        foreach ($preguntas as $pregunta) {
+            $suma = 0;
+
+            foreach ($pregunta->distribucion as $valor => $conteo) {
+                $suma += $valor * $conteo;
+            }
+
+            $pregunta->valor_promedio = $pregunta->respuestas > 0
+                ? $this->calificacion->formatear($this->promedioEntero($suma * 100, $pregunta->respuestas))
+                : null;
+            $pregunta->distribucion = array_map(
+                static fn (int $valor, int $conteo): object => (object) ['valor' => $valor, 'conteo' => $conteo],
+                array_keys($pregunta->distribucion),
+                array_values($pregunta->distribucion),
+            );
+
+            $resultado[] = $pregunta;
+        }
+
+        return $resultado;
+    }
+
+    /**
      * @return list<object{
      *     id_seccion: int,
+     *     id_curso: int,
+     *     curso_codigo: string,
      *     seccion: string,
      *     curso: string,
      *     periodo: string,
@@ -309,8 +656,13 @@ final class ReporteService
      *     habilitada: bool
      * }>
      */
-    private function seccionesDirectorio(int $userId, ?int $idEscuela, ?string $periodo): array
-    {
+    private function seccionesDirectorio(
+        int $userId,
+        ?int $idEscuela,
+        ?string $periodo,
+        ?int $idCurso = null,
+        ?int $idLinea = null,
+    ): array {
         return DB::table('investigacion_formativa.director_escuela as d')
             ->join('core.escuela_profesional as e', 'e.id_escuela', '=', 'd.id_escuela')
             ->join('core.plan_estudios as pe', 'pe.id_escuela', '=', 'e.id_escuela')
@@ -325,11 +677,23 @@ final class ReporteService
             ->where('d.activo', true)
             ->when($idEscuela !== null, static fn ($query) => $query->where('d.id_escuela', $idEscuela))
             ->when($periodo !== null, static fn ($query) => $query->where('p.codigo', $periodo))
+            ->when($idCurso !== null, static fn ($query) => $query->where('c.id_curso', $idCurso))
+            ->when($idLinea !== null, static fn ($query) => $query->whereExists(
+                static function ($subconsulta) use ($idLinea): void {
+                    $subconsulta->selectRaw('1')
+                        ->from('investigacion_formativa.grupo as g')
+                        ->join('investigacion_formativa.proyecto as p', 'p.id_grupo', '=', 'g.id_grupo')
+                        ->whereColumn('g.id_seccion', 's.id_seccion')
+                        ->where('p.id_linea', $idLinea);
+                },
+            ))
             ->orderByDesc('p.fecha_inicio')
             ->orderBy('c.codigo')
             ->orderBy('s.codigo')
             ->get([
                 's.id_seccion',
+                'c.id_curso',
+                'c.codigo as curso_codigo',
                 's.codigo as seccion',
                 'c.nombre as curso',
                 'p.codigo as periodo',
@@ -340,6 +704,8 @@ final class ReporteService
             ])
             ->map(static fn (object $fila): object => (object) [
                 'id_seccion' => (int) $fila->id_seccion,
+                'id_curso' => (int) $fila->id_curso,
+                'curso_codigo' => (string) $fila->curso_codigo,
                 'seccion' => (string) $fila->seccion,
                 'curso' => (string) $fila->curso,
                 'periodo' => (string) $fila->periodo,
@@ -431,9 +797,21 @@ final class ReporteService
 
     /**
      * @param  list<int>  $idsSecciones
-     * @return list<object{id_grupo: int, id_seccion: int, nombre: string, entregas_evaluadas: int, nota_final: string|null, nota_final_centesimas: int|null, notas_unidades: array<int, string|null>}>
+     * @return list<object{
+     *     id_grupo: int,
+     *     id_seccion: int,
+     *     id_proyecto: int|null,
+     *     id_linea: int|null,
+     *     linea_codigo: string|null,
+     *     linea_nombre: string|null,
+     *     nombre: string,
+     *     entregas_evaluadas: int,
+     *     nota_final: string|null,
+     *     nota_final_centesimas: int|null,
+     *     notas_unidades: array<int, string|null>
+     * }>
      */
-    private function notasPorSecciones(array $idsSecciones): array
+    private function notasPorSecciones(array $idsSecciones, ?int $idLinea = null): array
     {
         $entregables = DB::table('investigacion_formativa.entregable')
             ->whereIn('id_seccion', $idsSecciones)
@@ -445,14 +823,28 @@ final class ReporteService
 
         $grupos = DB::table('investigacion_formativa.grupo as g')
             ->leftJoin('investigacion_formativa.proyecto as p', 'p.id_grupo', '=', 'g.id_grupo')
+            ->leftJoin('core.linea_investigacion as l', 'l.id_linea', '=', 'p.id_linea')
             ->whereIn('g.id_seccion', $idsSecciones)
+            ->when($idLinea !== null, static fn ($query) => $query->where('p.id_linea', $idLinea))
             ->orderBy('g.id_grupo')
-            ->get(['g.id_grupo', 'g.id_seccion', 'g.nombre', 'p.id_proyecto']);
+            ->get([
+                'g.id_grupo',
+                'g.id_seccion',
+                'g.nombre',
+                'p.id_proyecto',
+                'p.id_linea',
+                'l.codigo as linea_codigo',
+                'l.nombre as linea_nombre',
+            ]);
 
         if ($grupos->isEmpty() || $entregables->isEmpty()) {
             return $grupos->map(static fn (object $grupo): object => (object) [
                 'id_grupo' => (int) $grupo->id_grupo,
                 'id_seccion' => (int) $grupo->id_seccion,
+                'id_proyecto' => $grupo->id_proyecto === null ? null : (int) $grupo->id_proyecto,
+                'id_linea' => $grupo->id_linea === null ? null : (int) $grupo->id_linea,
+                'linea_codigo' => $grupo->linea_codigo === null ? null : (string) $grupo->linea_codigo,
+                'linea_nombre' => $grupo->linea_nombre === null ? null : (string) $grupo->linea_nombre,
                 'nombre' => (string) $grupo->nombre,
                 'entregas_evaluadas' => 0,
                 'nota_final' => null,
@@ -461,7 +853,10 @@ final class ReporteService
             ])->all();
         }
 
-        $idsProyectos = $grupos->pluck('id_proyecto')->map(static fn (mixed $id): int => (int) $id)->all();
+        $idsProyectos = $grupos->pluck('id_proyecto')
+            ->filter(static fn (mixed $id): bool => $id !== null)
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
 
         $entregas = DB::table('investigacion_formativa.entrega')
             ->whereIn('id_proyecto', $idsProyectos)
@@ -539,6 +934,10 @@ final class ReporteService
             $resultado[] = (object) [
                 'id_grupo' => (int) $grupo->id_grupo,
                 'id_seccion' => (int) $grupo->id_seccion,
+                'id_proyecto' => $grupo->id_proyecto === null ? null : (int) $grupo->id_proyecto,
+                'id_linea' => $grupo->id_linea === null ? null : (int) $grupo->id_linea,
+                'linea_codigo' => $grupo->linea_codigo === null ? null : (string) $grupo->linea_codigo,
+                'linea_nombre' => $grupo->linea_nombre === null ? null : (string) $grupo->linea_nombre,
                 'nombre' => (string) $grupo->nombre,
                 'entregas_evaluadas' => count($notas),
                 'nota_final_centesimas' => $final,

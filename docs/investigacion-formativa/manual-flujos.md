@@ -146,17 +146,20 @@ Reinicio: use un lote nuevo. No existe una acción de borrado o reapertura para 
 
 Actor: director. Datos iniciales: escuela asignada y periodos reales con secciones.
 
-1. Abra el resumen de dirección y seleccione escuela o periodo.
-2. Abra «Ver resultados» de una sección.
-3. Consulte la encuesta, sus promedios y la distribución por pregunta.
-4. Cambie de página o tamaño en comentarios. Los filtros deben conservarse.
-5. Consulte las notas por unidad, la nota final y todos los empates.
-6. Consulte los conteos de trabajos aprobados y destacados, y el trabajo destacado de la sección.
-7. Vuelva al historial y abra una sección cerrada de otro periodo.
+1. Abra el resumen de dirección y seleccione escuela, periodo, curso o línea de investigación.
+2. Revise los totales y las tarjetas descriptivas: proyectos por línea, umbrales de nota y decisiones docentes.
+3. Abra «Ver resultados» de una sección.
+4. Consulte la encuesta, sus promedios y la distribución por pregunta. Con un filtro de línea activo, la encuesta sigue siendo de la sección completa.
+5. Cambie de página o tamaño en comentarios. Los filtros deben conservarse.
+6. Consulte las notas por unidad, la nota final y todos los empates.
+7. Consulte los conteos de trabajos aprobados y destacados, y el trabajo destacado de la sección.
+8. Vuelva al historial y abra una sección cerrada de otro periodo.
 
 Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye.
 
-Ruta negativa: escuela fuera del alcance, sección ajena o permiso ausente. Se devuelve 403. Una consulta válida sin datos muestra un estado vacío. No existen tendencias ni notas de ejemplo en las pantallas reales.
+El tablero muestra barras y tablas equivalentes. «> 16» y «> 18» son umbrales estrictos y superpuestos: un proyecto con nota mayor a 18 también cuenta en mayor a 16. La base de ambos es el total de proyectos completos. Los conteos son estadística descriptiva, no los tres indicadores oficiales de Calidad. La línea restringe grupos, notas y decisiones; no desagrega la encuesta, que se prepara por sección.
+
+Ruta negativa: escuela, curso o línea fuera del alcance, sección ajena o permiso ausente. Se devuelve 403. Una consulta válida sin datos muestra un estado vacío. No existen tendencias ni notas de ejemplo en las pantallas reales.
 
 ## Verificación de navegador
 

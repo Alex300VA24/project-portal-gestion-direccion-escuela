@@ -34,6 +34,8 @@ final class DirectorController extends Controller
         $filtros = $request->validate([
             'escuela' => ['nullable', 'integer'],
             'periodo' => ['nullable', 'string', 'max:20'],
+            'curso' => ['nullable', 'integer'],
+            'linea' => ['nullable', 'integer'],
         ]);
 
         $idEscuela = isset($filtros['escuela']) && $filtros['escuela'] !== null && $filtros['escuela'] !== ''
@@ -42,9 +44,15 @@ final class DirectorController extends Controller
         $periodo = isset($filtros['periodo']) && trim((string) $filtros['periodo']) !== ''
             ? trim((string) $filtros['periodo'])
             : null;
+        $idCurso = isset($filtros['curso']) && $filtros['curso'] !== null && $filtros['curso'] !== ''
+            ? (int) $filtros['curso']
+            : null;
+        $idLinea = isset($filtros['linea']) && $filtros['linea'] !== null && $filtros['linea'] !== ''
+            ? (int) $filtros['linea']
+            : null;
 
         try {
-            $reporte = $this->reportes->resumenDirector($actor, $idEscuela, $periodo);
+            $reporte = $this->reportes->resumenDirector($actor, $idEscuela, $periodo, $idCurso, $idLinea);
         } catch (AccesoDenegado $exception) {
             abort(403, $exception->getMessage());
         }
@@ -52,11 +60,19 @@ final class DirectorController extends Controller
         return view('modules.investigacion-formativa.director.index', [
             'escuelas' => $reporte->escuelas,
             'periodos' => $reporte->periodos,
+            'cursos' => $reporte->cursos,
+            'lineas' => $reporte->lineas,
             'secciones' => $reporte->secciones,
+            'lineas_resumen' => $reporte->lineas_resumen,
+            'umbrales' => $reporte->umbrales,
+            'encuesta' => $reporte->encuesta,
+            'decisiones' => $reporte->decisiones,
             'totales' => $reporte->totales,
             'filtros' => [
                 'escuela' => $idEscuela,
                 'periodo' => $periodo,
+                'curso' => $idCurso,
+                'linea' => $idLinea,
             ],
         ]);
     }
@@ -107,15 +123,17 @@ final class DirectorController extends Controller
 
         $pagina = max(1, $request->integer('comentarios', 1));
         $porPagina = min(100, max(1, $request->integer('por_pagina', 10)));
+        $idLinea = $request->filled('linea') ? (int) $request->input('linea') : null;
 
         $reporte = $this->reportes->porSeccion(
             $actor,
             (int) $seccion->id_seccion,
             $pagina,
             $porPagina,
+            $idLinea,
         );
 
-        $reporte->comentarios->appends($request->only(['por_pagina', 'escuela', 'periodo']));
+        $reporte->comentarios->appends($request->only(['por_pagina', 'escuela', 'periodo', 'curso', 'linea']));
         $seccion->load(['periodo', 'cursoPlan.curso']);
 
         return view('modules.investigacion-formativa.director.resultados', [
