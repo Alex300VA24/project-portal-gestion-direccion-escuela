@@ -58,6 +58,38 @@ class CalculadoraIndicadoresTest extends TestCase
         $this->assertSame(30, $total->denominador);
     }
 
+    public function test_i1_global_no_cuenta_las_promociones_que_aun_estan_en_curso(): void
+    {
+        $concluida = $this->cohorte(10, 2018);
+        $enCurso = $this->cohorte(10, CarbonImmutable::now(FiltroIndicadores::ZONA)->year - 2); // egresa dentro de 3 años
+        $this->egresado($concluida);
+        $this->egresado($enCurso);
+        $this->egresado($enCurso);
+
+        $total = $this->calculadora->i1(new FiltroIndicadores);
+        $this->assertSame(1, $total->numerador);
+        $this->assertSame(10, $total->denominador);
+        $this->assertStringContainsString('aún en curso', $total->nota);
+
+        // Al elegir esa promoción se ve su avance, avisando que es parcial.
+        $propia = $this->calculadora->i1(new FiltroIndicadores($enCurso));
+        $this->assertSame(2, $propia->numerador);
+        $this->assertSame(10, $propia->denominador);
+        $this->assertStringContainsString('aún está en curso', $propia->nota);
+
+        $filas = collect($this->calculadora->i1PorCohorte(new FiltroIndicadores))->keyBy('id_cohorte');
+        $this->assertFalse($filas[$concluida]['en_curso']);
+        $this->assertTrue($filas[$enCurso]['en_curso']);
+        $this->assertSame('Promoción 2018', $filas[$concluida]['etiqueta']);
+    }
+
+    public function test_i1_sin_promociones_en_curso_no_trae_aviso(): void
+    {
+        $this->egresado($this->cohorte(10, 2018));
+
+        $this->assertNull($this->calculadora->i1(new FiltroIndicadores)->nota);
+    }
+
     public function test_i1_sin_ingresantes_es_sin_datos_y_no_cero(): void
     {
         $this->cohorte(0);

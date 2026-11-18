@@ -86,13 +86,38 @@ class DashboardIndicadoresTest extends TestCase
         }
     }
 
+    public function test_los_filtros_hablan_de_promocion_anios_desde_el_egreso_y_datos_hasta(): void
+    {
+        $this->cohorte(10, 2019);
+
+        $this->get(route('seguimiento-egresado.indicadores'))->assertOk()
+            ->assertSee('Todas las promociones')->assertSee('Promoción 2019')
+            ->assertSee('Años desde el egreso')->assertSee('Datos hasta')
+            ->assertDontSee('Fecha de corte')->assertDontSee('Todas las cohortes');
+    }
+
+    public function test_el_grafico_de_objetivos_cuenta_el_ultimo_informe_validado_de_cada_promocion(): void
+    {
+        $plan = $this->plan();
+        $cohorte = $this->cohorte(10, 2018, $plan);
+        $objetivo = $this->objetivo($plan);
+        $this->evaluarObjetivo($objetivo, $cohorte, 'MALO', periodo: '2024-II', fecha: '2024-12-01');
+        $this->evaluarObjetivo($objetivo, $cohorte, 'BUENO', periodo: '2025-II', fecha: '2025-12-01');
+
+        $objetivos = app(SeriesDashboard::class)->direccion(new FiltroIndicadores)['objetivos'];
+
+        $this->assertCount(1, $objetivos);
+        $this->assertSame(1, $objetivos[0]['evaluaciones'], 'solo el informe más reciente');
+        $this->assertSame(1, $objetivos[0]['logradas']);
+    }
+
     public function test_cada_indicador_muestra_periodo_corte_formula_y_fuente(): void
     {
         $this->sembrarDemo();
 
         $respuesta = $this->get(route('seguimiento-egresado.indicadores', ['horizonte' => 3]))->assertOk();
 
-        $respuesta->assertSee('Últimos 3 años')->assertSee('Corte '.now('America/Lima')->format('d/m/Y'));
+        $respuesta->assertSee('Últimos 3 años')->assertSee('Datos hasta '.now('America/Lima')->format('d/m/Y'));
         foreach (['I1', 'I2', 'I3', 'I4', 'I5', 'I6'] as $codigo) {
             $ficha = FichasIndicadores::de($codigo);
             $respuesta->assertSee($codigo)->assertSee($ficha['formula'])->assertSee($ficha['fuente']);
@@ -104,7 +129,7 @@ class DashboardIndicadoresTest extends TestCase
         $this->sembrarDemo();
 
         $respuesta = $this->get(route('seguimiento-egresado.indicadores'))->assertOk();
-        $corte = 'Corte '.now('America/Lima')->format('d/m/Y');
+        $corte = 'Datos hasta '.now('America/Lima')->format('d/m/Y');
 
         foreach (['I1', 'I2', 'I3', 'I4', 'I5', 'I6'] as $codigo) {
             $respuesta->assertSee('Histórico hasta '.now('America/Lima')->year.' · '.$corte)
@@ -112,7 +137,7 @@ class DashboardIndicadoresTest extends TestCase
         }
 
         $respuesta->assertSee('N=', false)->assertSee('Cobertura')
-            ->assertSee('cohortes')->assertSee('campañas');
+            ->assertSee('promociones')->assertSee('campañas');
     }
 
     public function test_paneles_de_gestion_y_direccion_usan_datos_reales(): void
@@ -123,7 +148,7 @@ class DashboardIndicadoresTest extends TestCase
 
         $respuesta = $this->get(route('seguimiento-egresado.indicadores'))->assertOk();
 
-        $respuesta->assertSee('Gestión diaria')->assertSee('Importaciones pendientes')->assertSee('En 1 cohorte')
+        $respuesta->assertSee('Gestión diaria')->assertSee('Importaciones pendientes')->assertSee('En 1 promoción')
             ->assertSee('Ir a campañas')->assertSee(route('seguimiento-egresado.padron'), false);
 
         $this->entrarComo('DIRECTOR');
@@ -177,7 +202,7 @@ class DashboardIndicadoresTest extends TestCase
     public function test_sin_datos_los_graficos_lo_dicen_y_no_dibujan(): void
     {
         $this->get(route('seguimiento-egresado.indicadores'))->assertOk()
-            ->assertSee('No hay cohortes para este filtro.')
+            ->assertSee('No hay promociones para este filtro.')
             ->assertDontSee('data-sg-grafico', false);
     }
 
@@ -247,14 +272,15 @@ class DashboardIndicadoresTest extends TestCase
         $this->assertStringContainsString('<v>'.$i2->numerador.'</v>', $hoja);
     }
 
-    public function test_el_excel_no_ejecuta_texto_registrado_como_formula(): void
+    public function test_el_excel_nombra_la_promocion_por_su_anio_y_no_trae_formulas(): void
     {
         $cohorte = $this->cohorte(10);
         DB::table('seguimiento_egresado.cohorte')->where('id', $cohorte)->update(['codigo_promocion' => '=HACK()&<x>']);
 
         $hoja = $this->hojaExcel(['cohorte' => $cohorte]);
 
-        $this->assertStringContainsString('=HACK()&amp;&lt;x&gt;', $hoja);
+        $this->assertStringContainsString('Promoción 2018', $hoja);
+        $this->assertStringNotContainsString('HACK', $hoja);
         $this->assertStringNotContainsString('<f>', $hoja);
     }
 
@@ -273,7 +299,7 @@ class DashboardIndicadoresTest extends TestCase
         $csv = $this->leerCsv();
 
         $this->assertSame(['I1', 'I2', 'I3', 'I4', 'I5', 'I6'], array_keys($csv['filas']));
-        $this->assertSame('Todas las cohortes', $csv['encabezado']['Cohorte']);
+        $this->assertSame('Todas las promociones', $csv['encabezado']['Promoción']);
         $this->assertSame(now('America/Lima')->format('d/m/Y'), $csv['encabezado']['Fecha de corte']);
         $this->assertNotEmpty($csv['encabezado']['Generado']);
         $this->assertSame('Sin datos', $csv['filas']['I2']['Resultado']);
@@ -292,12 +318,12 @@ class DashboardIndicadoresTest extends TestCase
         $this->assertSame('No corresponde', $fila['Denominador']);
     }
 
-    public function test_el_csv_neutraliza_formulas_de_texto_registrado(): void
+    public function test_el_csv_nombra_la_promocion_por_su_anio_y_no_trae_el_codigo_registrado(): void
     {
         $cohorte = $this->cohorte(10);
         DB::table('seguimiento_egresado.cohorte')->where('id', $cohorte)->update(['codigo_promocion' => '=HACK()']);
 
-        $this->assertSame("'=HACK()", $this->leerCsv(['cohorte' => $cohorte])['encabezado']['Cohorte']);
+        $this->assertSame('Promoción 2018', $this->leerCsv(['cohorte' => $cohorte])['encabezado']['Promoción']);
     }
 
     public function test_la_semilla_demo_cubre_los_tres_horizontes_y_empresas(): void

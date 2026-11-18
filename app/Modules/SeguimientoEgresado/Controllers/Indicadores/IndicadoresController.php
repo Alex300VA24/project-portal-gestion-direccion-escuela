@@ -28,7 +28,7 @@ class IndicadoresController extends Controller
             'indicadores' => $indicadores,
             'error' => false,
             'verGestion' => $this->puede($request, 'campanias.administrar'),
-            'verDireccion' => $this->puede($request, 'institucional.registrar'),
+            'verDireccion' => $this->puede($request, 'institucional.validar'),
         ];
 
         try {
@@ -98,7 +98,7 @@ class IndicadoresController extends Controller
             $fila(['Seguimiento al Egresado - Ingeniería Informática - Universidad Nacional de Trujillo']);
             $fila(['Reporte de indicadores I1 a I6']);
             $fila([]);
-            $fila(['Cohorte', $indicadores['I1']->cohorte]);
+            $fila(['Promoción', $indicadores['I1']->cohorte]);
             $fila(['Periodo', $filtro->periodo()]);
             $fila(['Fecha de corte', $filtro->corte->format('d/m/Y')]);
             $fila(['Generado', $generado]);

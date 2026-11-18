@@ -47,12 +47,25 @@ final class CalculadoraIndicadores
         return $resultados;
     }
 
-    /** I1: egresados de la promoción / ingresantes de la promoción. Se suman las cohortes del filtro. */
+    /**
+     * I1: egresados de la promoción / ingresantes de la promoción. En el total solo entran las promociones que ya cumplieron su
+     * duración (ingreso + años de la carrera): las que siguen cursando no tienen aún a todos sus egresados y bajarían el resultado.
+     * Al elegir una promoción en curso se muestra su avance con el aviso.
+     */
     public function i1(FiltroIndicadores $filtro): ResultadoIndicador
     {
-        $cohortes = $this->i1PorCohorte($filtro);
+        $todas = $this->i1PorCohorte($filtro);
+        $enCurso = array_values(array_filter($todas, fn ($c) => $c['en_curso']));
+        $cohortes = $filtro->cohorteId === null ? array_values(array_filter($todas, fn ($c) => ! $c['en_curso'])) : $todas;
         $numerador = (int) array_sum(array_column($cohortes, 'numerador'));
         $denominador = (int) array_sum(array_column($cohortes, 'denominador'));
+
+        $nota = match (true) {
+            $enCurso === [] => null,
+            $filtro->cohorteId !== null => 'Esta promoción aún está en curso: el resultado es parcial.',
+            count($enCurso) === 1 => 'No incluye la promoción '.$enCurso[0]['anio_ingreso'].' (aún en curso).',
+            default => 'No incluye las promociones '.implode(', ', array_column($enCurso, 'anio_ingreso')).' (aún en curso).',
+        };
 
         return $this->resultado('I1', $filtro, $denominador > 0 ? ResultadoIndicador::CALCULADO : ResultadoIndicador::SIN_DATOS, [
             'valor' => ResultadoIndicador::porcentaje($numerador, $denominador),
@@ -60,13 +73,14 @@ final class CalculadoraIndicadores
             'denominador' => $denominador,
             'poblacionElegible' => $denominador,
             'n' => $numerador,
+            'nota' => $nota,
         ]);
     }
 
     /**
      * Una fila por cohorte. Con horizonte se toman las cohortes cuyo egreso esperado cae en la ventana.
      *
-     * @return list<array{id_cohorte:int, cohorte:string, anio_ingreso:int, numerador:int, denominador:int, valor:?float}>
+     * @return list<array{id_cohorte:int, cohorte:string, etiqueta:string, anio_ingreso:int, en_curso:bool, numerador:int, denominador:int, valor:?float}>
      */
     public function i1PorCohorte(FiltroIndicadores $filtro): array
     {
@@ -87,13 +101,15 @@ final class CalculadoraIndicadores
 
                 return $egresoEsperado >= $filtro->desde()->year && $egresoEsperado <= $filtro->corte->year;
             })
-            ->map(function ($c) use ($egresados) {
+            ->map(function ($c) use ($egresados, $filtro) {
                 $numerador = (int) ($egresados[$c->id] ?? 0);
 
                 return [
                     'id_cohorte' => (int) $c->id,
                     'cohorte' => $c->codigo_promocion,
+                    'etiqueta' => 'Promoción '.$c->anio_ingreso,
                     'anio_ingreso' => (int) $c->anio_ingreso,
+                    'en_curso' => $c->anio_ingreso + ($c->duracion_esperada_anios ?? 5) > $filtro->corte->year,
                     'numerador' => $numerador,
                     'denominador' => (int) $c->total_ingresantes,
                     'valor' => ResultadoIndicador::porcentaje($numerador, (int) $c->total_ingresantes),
@@ -216,7 +232,7 @@ final class CalculadoraIndicadores
             'valor' => $hayRegistros ? (float) $cantidad : null,
             'numerador' => $hayRegistros ? $cantidad : null,
             'n' => $hayRegistros ? $cantidad : null,
-            'nota' => $filtro->cohorteId ? 'Se mide para todo el programa; no depende de la cohorte.' : null,
+            'nota' => $filtro->cohorteId ? 'Se mide para todo el programa; no depende de la promoción.' : null,
         ]);
     }
 
@@ -476,7 +492,7 @@ final class CalculadoraIndicadores
             formula: $ficha['formula'],
             unidad: $ficha['unidad'],
             fuente: $ficha['fuente'],
-            cohorte: $filtro->cohorteId ? 'Cohorte '.$filtro->cohorteId : 'Todas las cohortes',
+            cohorte: $filtro->cohorteId ? 'Promoción elegida' : 'Todas las promociones',
             periodo: $filtro->periodo(),
             fechaCorte: $filtro->fechaCorte(),
             estado: ResultadoIndicador::ERROR,
@@ -486,9 +502,11 @@ final class CalculadoraIndicadores
     private function etiquetaCohorte(FiltroIndicadores $filtro): string
     {
         if ($filtro->cohorteId === null) {
-            return 'Todas las cohortes';
+            return 'Todas las promociones';
         }
 
-        return (string) (DB::table('seguimiento_egresado.cohorte')->where('id', $filtro->cohorteId)->value('codigo_promocion') ?? 'Cohorte no registrada');
+        $anio = DB::table('seguimiento_egresado.cohorte')->where('id', $filtro->cohorteId)->value('anio_ingreso');
+
+        return $anio === null ? 'Promoción no registrada' : 'Promoción '.$anio;
     }
 }

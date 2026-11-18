@@ -87,7 +87,7 @@ final class ExcelIndicadores
         $fila++;
 
         foreach ([
-            'Cohorte' => $indicadores['I1']->cohorte,
+            'Promoción' => $indicadores['I1']->cohorte,
             'Periodo' => $filtro->periodo(),
             'Fecha de corte' => $filtro->corte->format('d/m/Y'),
             'Generado' => $generado,

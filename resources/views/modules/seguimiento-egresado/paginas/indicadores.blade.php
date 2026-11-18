@@ -5,7 +5,7 @@
   $formato = fn (?float $v) => $v === null ? '—' : number_format($v, 1, ',', '.');
   $conUnidad = fn (\App\Modules\SeguimientoEgresado\Services\Indicadores\ResultadoIndicador $r) => $r->valor === null ? $r->etiquetaEstado() : ($r->unidad === '%' ? $formato($r->valor).' %' : number_format($r->valor, 0).' '.$r->unidad);
   $fecha = fn (?string $f) => $f ? \Carbon\CarbonImmutable::parse($f)->format('d/m/Y') : '—';
-  $baseNota = $indicadores['I1']->cohorte.' · '.$filtro->periodo().' · Corte '.$fecha($filtro->fechaCorte());
+  $baseNota = $indicadores['I1']->cohorte.' · '.$filtro->periodo().' · Datos hasta '.$fecha($filtro->fechaCorte());
   $coberturaTexto = fn (?float $c) => $c === null ? 'Cobertura sin datos' : 'Cobertura '.$formato($c).' %';
   $hayFiltros = $filtro->cohorteId || $filtro->horizonte || ! $filtro->esCorteDeHoy();
   $consulta = array_filter(['cohorte' => $filtro->cohorteId, 'horizonte' => $filtro->horizonte, 'corte' => $filtro->esCorteDeHoy() ? null : $filtro->fechaCorte()]);
@@ -27,16 +27,16 @@
 <form class="sg-panel sg-bloque" method="get" action="{{ route('seguimiento-egresado.indicadores') }}" aria-label="Filtros del tablero">
   <div class="sg-filters sg-ind-filtros">
     <div class="sg-field">
-      <label class="sg-label" for="cohorte">Cohorte</label>
+      <label class="sg-label" for="cohorte">Promoción</label>
       <select class="sg-select" id="cohorte" name="cohorte">
-        <option value="">Todas las cohortes</option>
+        <option value="">Todas las promociones</option>
         @foreach ($cohortes as $c)
-          <option value="{{ $c->id }}" @selected($filtro->cohorteId === (int) $c->id)>{{ $c->codigo_promocion }}</option>
+          <option value="{{ $c->id }}" @selected($filtro->cohorteId === (int) $c->id)>Promoción {{ $c->anio_ingreso }}</option>
         @endforeach
       </select>
     </div>
     <div class="sg-field">
-      <label class="sg-label" for="horizonte">Horizonte</label>
+      <label class="sg-label" for="horizonte">Años desde el egreso</label>
       <select class="sg-select" id="horizonte" name="horizonte">
         <option value="">Todo el histórico</option>
         @foreach (\App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::HORIZONTES as $h)
@@ -45,7 +45,7 @@
       </select>
     </div>
     <div class="sg-field">
-      <label class="sg-label" for="corte">Fecha de corte</label>
+      <label class="sg-label" for="corte">Datos hasta</label>
       <input class="sg-input" id="corte" name="corte" type="date" value="{{ $filtro->fechaCorte() }}" max="{{ now(\App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores::ZONA)->toDateString() }}">
     </div>
     <div class="sg-actions">
@@ -72,7 +72,7 @@
       <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.indicadores.exportar', $consulta) }}">Exportar a Excel</a>
     </div>
   </div>
-  <p class="sg-criterio" role="status">{{ $baseNota }} · {{ count($i1PorCohorte) }} {{ count($i1PorCohorte) === 1 ? 'cohorte' : 'cohortes' }} · {{ count($campanias) }} {{ count($campanias) === 1 ? 'campaña' : 'campañas' }}</p>
+  <p class="sg-criterio" role="status">{{ $baseNota }} · {{ count($i1PorCohorte) }} {{ count($i1PorCohorte) === 1 ? 'promoción' : 'promociones' }} · {{ count($campanias) }} {{ count($campanias) === 1 ? 'campaña' : 'campañas' }}</p>
   <div class="sg-kpis">
     @foreach ($indicadores as $r)
       <article @class(['sg-kpi', 'sg-kpi-programa' => in_array($r->codigo, ['I3', 'I5', 'I6'], true)])>
@@ -80,15 +80,18 @@
         @if ($r->valor === null)
           <p class="sg-kpi-sin">{{ $r->etiquetaEstado() }}</p>
           <p class="sg-kpi-pie">{{ $r->explicacionEstado() }}</p>
+          @if ($r->nota)<p class="sg-kpi-pie">{{ $r->nota }}</p>@endif
         @elseif ($r->unidad === '%')
           <p class="sg-kpi-valor">{{ $formato($r->valor) }} <small>%</small></p>
           <div class="sg-kpi-barra" aria-hidden="true"><span style="width: {{ min(100, $r->valor) }}%"></span></div>
           <p class="sg-kpi-pie">{{ $r->numerador }} de {{ $r->denominador }}@if ($r->cobertura !== null) · Cobertura {{ $formato($r->cobertura) }} %@endif</p>
+          @if ($r->nota)<p class="sg-kpi-pie">{{ $r->nota }}</p>@endif
         @else
           <p class="sg-kpi-valor">{{ number_format($r->valor, 0) }} <small>{{ $r->unidad }}</small></p>
           <p class="sg-kpi-pie">Cantidad absoluta</p>
+          @if ($r->nota)<p class="sg-kpi-pie">{{ $r->nota }}</p>@endif
         @endif
-        <p class="sg-kpi-meta">{{ $r->periodo }} · Corte {{ $fecha($r->fechaCorte) }}<br>Fuente: {{ $r->fuente }}</p>
+        <p class="sg-kpi-meta">{{ $r->periodo }} · Datos hasta {{ $fecha($r->fechaCorte) }}<br>Fuente: {{ $r->fuente }}</p>
       </article>
     @endforeach
   </div>
@@ -107,7 +110,7 @@
       <div class="sg-kpi sg-kpi-compacta">
         <p class="sg-kpi-head">Egresados sin contacto vigente</p>
         <p class="sg-kpi-valor">{{ $gestion['sin_contacto'] }}</p>
-        <p class="sg-kpi-pie">En {{ $gestion['cohortes_sin_contacto'] }} {{ $gestion['cohortes_sin_contacto'] === 1 ? 'cohorte' : 'cohortes' }} · {{ $resumen['registrados'] }} registrados</p>
+        <p class="sg-kpi-pie">En {{ $gestion['cohortes_sin_contacto'] }} {{ $gestion['cohortes_sin_contacto'] === 1 ? 'promoción' : 'promociones' }} · {{ $resumen['registrados'] }} registrados</p>
         <p class="sg-kpi-accion"><a class="sg-link" href="{{ route('seguimiento-egresado.padron') }}">Revisar expedientes</a></p>
       </div>
       <div class="sg-kpi sg-kpi-compacta">
@@ -133,11 +136,11 @@
 
   $graficoI1 = [
     'tipo' => 'bar', 'unidad' => '%', 'maximo' => 100,
-    'etiquetas' => array_column($i1PorCohorte, 'cohorte'),
+    'etiquetas' => array_map(fn ($c) => $c['etiqueta'].($c['en_curso'] ? ' · en curso' : ''), $i1PorCohorte),
     'series' => [[
       'nombre' => 'I1', 'color' => 'navy', 'valores' => array_column($i1PorCohorte, 'valor'),
       'textos' => array_map(fn ($c) => $c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %', $i1PorCohorte),
-      'detalles' => array_map(fn ($c) => $c['numerador'].' de '.$c['denominador'].' ingresantes', $i1PorCohorte),
+      'detalles' => array_map(fn ($c) => $c['numerador'].' de '.$c['denominador'].' ingresantes'.($c['en_curso'] ? ' · aún en curso, no entra al total' : ''), $i1PorCohorte),
     ]],
   ];
 
@@ -170,7 +173,7 @@
   ];
   $graficoCobertura = [
     'tipo' => 'bar', 'horizontal' => true, 'apilado' => true, 'unidad' => '%', 'maximo' => 100,
-    'etiquetas' => array_map(fn ($c) => $c['periodo'].' · '.($c['horizonte'] ? $c['horizonte'].($c['horizonte'] === 1 ? ' año' : ' años') : 'sin horizonte'), $campanias),
+    'etiquetas' => array_map(fn ($c) => $c['periodo'].' · '.($c['horizonte'] ? $c['horizonte'].($c['horizonte'] === 1 ? ' año' : ' años') : 'sin plazo'), $campanias),
     'series' => [
       $serieCobertura('Respondieron', 'respondieron', 'verde'),
       $serieCobertura('Pendientes', 'pendientes', 'ambar', true),
@@ -201,7 +204,7 @@
     'tipo' => 'bar', 'horizontal' => true, 'unidad' => 'n',
     'etiquetas' => array_map(fn ($o) => $o['codigo'].' '.$o['titulo'], $objetivos),
     'series' => [[
-      'nombre' => 'Evaluaciones con logro bueno o muy bueno', 'color' => 'dorado',
+      'nombre' => 'Promociones con logro bueno o muy bueno', 'color' => 'dorado',
       'valores' => array_column($objetivos, 'logradas'),
       'textos' => array_map(fn ($o) => $o['logradas'].' de '.$o['evaluaciones'], $objetivos),
     ]],
@@ -213,14 +216,14 @@
     <div class="sg-section-title"><h2 id="sg-ind-comparar">Comparaciones y tendencias</h2></div>
     <div class="sg-graficos">
       @include('modules.seguimiento-egresado.partials.grafico', [
-        'id' => 'sg-graf-i1', 'titulo' => 'I1 por cohorte', 'nota' => 'N='.($indicadores['I1']->denominador ?? 0).' ingresantes', 'detalle' => $baseNota,
-        'config' => $graficoI1, 'columnas' => ['Cohorte', 'Egresados', 'Ingresantes', 'I1'],
-        'filas' => array_map(fn ($c) => [$c['cohorte'], $c['numerador'], $c['denominador'], $c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %'], $i1PorCohorte),
-        'vacio' => $i1PorCohorte === [] ? ['Sin datos', 'No hay cohortes para este filtro.'] : null,
+        'id' => 'sg-graf-i1', 'titulo' => 'I1 por promoción', 'nota' => 'N='.($indicadores['I1']->denominador ?? 0).' ingresantes', 'detalle' => $baseNota,
+        'config' => $graficoI1, 'columnas' => ['Promoción', 'Egresados', 'Ingresantes', 'I1'],
+        'filas' => array_map(fn ($c) => [$c['etiqueta'].($c['en_curso'] ? ' (en curso)' : ''), $c['numerador'], $c['denominador'], $c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %'], $i1PorCohorte),
+        'vacio' => $i1PorCohorte === [] ? ['Sin datos', 'No hay promociones para este filtro.'] : null,
       ])
       @include('modules.seguimiento-egresado.partials.grafico', [
-        'id' => 'sg-graf-horizontes', 'titulo' => 'Comparación a 3, 5 y 10 años', 'nota' => 'N y cobertura por horizonte', 'detalle' => $indicadores['I1']->cohorte.' · Corte '.$fecha($filtro->fechaCorte()),
-        'config' => $graficoHorizontes, 'columnas' => ['Horizonte', 'Encuestados', 'Cobertura', 'I2', 'I4'],
+        'id' => 'sg-graf-horizontes', 'titulo' => 'Comparación a 3, 5 y 10 años', 'nota' => 'N y cobertura según los años desde el egreso', 'detalle' => $indicadores['I1']->cohorte.' · Datos hasta '.$fecha($filtro->fechaCorte()),
+        'config' => $graficoHorizontes, 'columnas' => ['Años desde el egreso', 'Encuestados', 'Cobertura', 'I2', 'I4'],
         'filas' => collect($horizontes)->map(fn ($h) => [$h['horizonte'].' años', $h['i2']->n ?? 0, $h['i2']->cobertura === null ? 'Sin datos' : $formato($h['i2']->cobertura).' %', $h['i2']->valor === null ? $h['i2']->etiquetaEstado() : $formato($h['i2']->valor).' %', $h['i4']->valor === null ? $h['i4']->etiquetaEstado() : $formato($h['i4']->valor).' %'])->all(),
         'vacio' => $horizontesConDatos->isEmpty() ? $sinMedicion : null,
       ])
@@ -273,7 +276,7 @@
     </div>
     <div class="sg-graficos">
       @include('modules.seguimiento-egresado.partials.grafico', [
-        'id' => 'sg-graf-i6', 'titulo' => 'I6 por año', 'nota' => 'N='.array_sum($i6PorAnio).' mejoras', 'detalle' => 'Implementadas con evidencia · Todo el programa · '.$filtro->periodo().' · Corte '.$fecha($filtro->fechaCorte()),
+        'id' => 'sg-graf-i6', 'titulo' => 'I6 por año', 'nota' => 'N='.array_sum($i6PorAnio).' mejoras', 'detalle' => 'Implementadas con evidencia · Todo el programa · '.$filtro->periodo().' · Datos hasta '.$fecha($filtro->fechaCorte()),
         'config' => $graficoI6, 'columnas' => ['Año', 'Mejoras'],
         'filas' => array_map(fn ($a, $v) => [$a, $v], array_keys($i6PorAnio), array_values($i6PorAnio)),
         'vacio' => $i6PorAnio === [] ? ['Sin mejoras', 'No hay mejoras implementadas en este periodo.'] : null,
@@ -290,7 +293,7 @@
     </div>
     @if ($verDireccion)
       <dialog class="sg-modal" id="sg-modal-evidencias" aria-labelledby="sg-modal-evidencias-titulo">
-        @include('modules.seguimiento-egresado.partials.modal-apertura', ['id' => 'sg-modal-evidencias', 'titulo' => 'Evidencia de las mejoras', 'detalle' => $filtro->periodo().' · Corte '.$fecha($filtro->fechaCorte())])
+        @include('modules.seguimiento-egresado.partials.modal-apertura', ['id' => 'sg-modal-evidencias', 'titulo' => 'Evidencia de las mejoras', 'detalle' => $filtro->periodo().' · Datos hasta '.$fecha($filtro->fechaCorte())])
         <div class="sg-modal-cuerpo">
           @if (($direccion['mejoras'] ?? []) === [])
             <div class="sg-empty"><h3>Sin mejoras</h3><p>No hay mejoras implementadas en este periodo.</p></div>

@@ -63,8 +63,11 @@ final class SeriesDashboard
             ->where('ev.fecha_evaluacion', '<=', $filtro->fechaCorte())
             ->when($filtro->desde(), fn ($q, $desde) => $q->where('ev.fecha_evaluacion', '>=', $desde->toDateString()))
             ->when($filtro->cohorteId, fn ($q, $id) => $q->where('ev.id_cohorte', $id))
-            ->orderBy('o.codigo')
-            ->get(['o.codigo', 'o.titulo', 'nl.codigo as nivel'])
+            ->orderByDesc('ev.fecha_evaluacion')
+            ->get(['ev.id_cohorte', 'ev.periodo', 'o.codigo', 'o.titulo', 'nl.codigo as nivel'])
+            // Igual que I3: de cada promoción cuenta su último informe validado.
+            ->pipe(fn (Collection $filas) => $filas->filter(fn ($f) => $f->periodo === $filas->firstWhere('id_cohorte', $f->id_cohorte)->periodo))
+            ->sortBy('codigo')
             ->groupBy('codigo')
             ->map(fn (Collection $filas, string $codigo) => [
                 'codigo' => $codigo,
