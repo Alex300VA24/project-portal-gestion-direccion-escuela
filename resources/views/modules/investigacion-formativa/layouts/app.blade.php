@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" x-data="ifShell()" :class="{ 'overflow-hidden': navigationOpen || a11yOpen }" @keydown.escape.window="a11yOpen = false">
+<html lang="es" x-data="ifShell" :class="{ 'overflow-hidden': navigationOpen || a11yOpen }" @keydown.escape.window="a11yOpen = false">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,6 +9,27 @@
     <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
     <script>
         (() => { const d = document.documentElement.dataset, s = localStorage; d.theme = s.getItem('portal-theme') || 'light'; d.contrast = s.getItem('portal-contrast') || 'normal'; d.fontSize = s.getItem('portal-font-size') || 'normal'; })();
+        document.addEventListener('alpine:init', () => {
+            window.Alpine.data('ifShell', () => {
+                const root = document.documentElement;
+                const sizes = ['normal', 'grande', 'xl'];
+                return {
+                    navigationOpen: false, userOpen: false, a11yOpen: false, trigger: null,
+                    fontSizes: sizes, fontNames: ['Normal', 'Grande (115%)', 'Muy grande (130%)'],
+                    fontIndex: Math.max(0, sizes.indexOf(root.dataset.fontSize)),
+                    contrast: root.dataset.contrast === 'alto', dark: root.dataset.theme === 'dark',
+                    fontLabel() { return this.fontNames[this.fontIndex]; },
+                    stepFont(delta) { this.fontIndex = Math.min(sizes.length - 1, Math.max(0, this.fontIndex + delta)); root.dataset.fontSize = sizes[this.fontIndex]; localStorage.setItem('portal-font-size', sizes[this.fontIndex]); },
+                    toggleContrast() { this.contrast = !this.contrast; root.dataset.contrast = this.contrast ? 'alto' : 'normal'; localStorage.setItem('portal-contrast', root.dataset.contrast); },
+                    toggleTheme() { this.dark = !this.dark; root.dataset.theme = this.dark ? 'dark' : 'light'; localStorage.setItem('portal-theme', root.dataset.theme); },
+                    resetA11y() { this.fontIndex = 0; this.contrast = false; this.dark = false; root.dataset.fontSize = 'normal'; root.dataset.contrast = 'normal'; root.dataset.theme = 'light'; ['portal-font-size', 'portal-contrast', 'portal-theme'].forEach((k) => localStorage.removeItem(k)); },
+                    openA11y() { this.trigger = document.activeElement; this.a11yOpen = true; this.$nextTick(() => this.$refs.a11yDialog.focus()); },
+                    trapFocus(e) { const f = [...this.$refs.a11yDialog.querySelectorAll('button:not([disabled])')]; if (!f.length) return; const first = f[0], last = f[f.length - 1]; if (e.shiftKey && (document.activeElement === first || document.activeElement === this.$refs.a11yDialog)) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } },
+                    init() { this.$watch('a11yOpen', (open) => { if (!open && this.trigger) { this.trigger.focus(); } }); },
+                };
+            });
+        });
+        window.portalToggleTheme = () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; localStorage.setItem('portal-theme', next); };
     </script>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
@@ -117,27 +138,6 @@
             </div>
         </section>
     </div>
-    <script>
-        function ifShell() {
-            const root = document.documentElement;
-            const sizes = ['normal', 'grande', 'xl'];
-            return {
-                navigationOpen: false, userOpen: false, a11yOpen: false, trigger: null,
-                fontSizes: sizes, fontNames: ['Normal', 'Grande (115%)', 'Muy grande (130%)'],
-                fontIndex: Math.max(0, sizes.indexOf(root.dataset.fontSize)),
-                contrast: root.dataset.contrast === 'alto', dark: root.dataset.theme === 'dark',
-                fontLabel() { return this.fontNames[this.fontIndex]; },
-                stepFont(delta) { this.fontIndex = Math.min(sizes.length - 1, Math.max(0, this.fontIndex + delta)); root.dataset.fontSize = sizes[this.fontIndex]; localStorage.setItem('portal-font-size', sizes[this.fontIndex]); },
-                toggleContrast() { this.contrast = !this.contrast; root.dataset.contrast = this.contrast ? 'alto' : 'normal'; localStorage.setItem('portal-contrast', root.dataset.contrast); },
-                toggleTheme() { this.dark = !this.dark; root.dataset.theme = this.dark ? 'dark' : 'light'; localStorage.setItem('portal-theme', root.dataset.theme); },
-                resetA11y() { this.fontIndex = 0; this.contrast = false; this.dark = false; root.dataset.fontSize = 'normal'; root.dataset.contrast = 'normal'; root.dataset.theme = 'light'; ['portal-font-size', 'portal-contrast', 'portal-theme'].forEach((k) => localStorage.removeItem(k)); },
-                openA11y() { this.trigger = document.activeElement; this.a11yOpen = true; this.$nextTick(() => this.$refs.a11yDialog.focus()); },
-                trapFocus(e) { const f = [...this.$refs.a11yDialog.querySelectorAll('button:not([disabled])')]; if (!f.length) return; const first = f[0], last = f[f.length - 1]; if (e.shiftKey && (document.activeElement === first || document.activeElement === this.$refs.a11yDialog)) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } },
-                init() { this.$watch('a11yOpen', (open) => { if (!open && this.trigger) { this.trigger.focus(); } }); },
-            };
-        }
-        window.portalToggleTheme = () => { const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; localStorage.setItem('portal-theme', next); };
-    </script>
     @livewireScriptConfig
 </body>
 </html>
