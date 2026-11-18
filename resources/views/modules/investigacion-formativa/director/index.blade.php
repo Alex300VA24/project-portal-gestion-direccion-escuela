@@ -78,6 +78,14 @@
                     <dt>Respuestas</dt>
                     <dd>{{ $totales->respuestas }}</dd>
                 </div>
+                <div>
+                    <dt>Trabajos aprobados</dt>
+                    <dd>{{ $totales->aprobados }}</dd>
+                </div>
+                <div>
+                    <dt>Trabajos destacados</dt>
+                    <dd>{{ $totales->destacados }}</dd>
+                </div>
             </dl>
 
             <p class="if-note" style="margin-top: 12px;">
@@ -110,6 +118,7 @@
                                 <th scope="col">Docente</th>
                                 <th scope="col">Estado</th>
                                 <th scope="col">Respuestas</th>
+                                <th scope="col">Decisiones</th>
                                 <th scope="col" class="if-table-actions"><span class="sr-only">Acciones</span></th>
                             </tr>
                         </thead>
@@ -130,6 +139,9 @@
                                         @if ($seccion->roster_activo > 0)
                                             · {{ $seccion->participacion_porcentaje }}% de {{ $seccion->roster_activo }} activos
                                         @endif
+                                    </td>
+                                    <td data-label="Decisiones">
+                                        {{ $seccion->aprobados }} aprobados · {{ $seccion->destacados }} destacados
                                     </td>
                                     <td data-label="Acciones" class="if-table-actions">
                                         <a

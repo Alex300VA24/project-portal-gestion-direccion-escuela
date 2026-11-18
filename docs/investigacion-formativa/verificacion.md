@@ -17,6 +17,8 @@ Fecha: 18 de noviembre de 2026. Este registro distingue funciones verificadas, c
 | Generador de demostración | 2 aprobadas, 28 aserciones | Topología, conservación de cuentas, contraseña local y cuatro CSV válidos en modo de validación. Incluidas en la suite completa. |
 | Reportes | 12 aprobadas, 79 aserciones | Última versión, notas parciales, empates, redondeo, conteos, retiros, historial y consultas por lote. Incluidas en la suite completa. |
 | Concurrencia exclusiva | 1 aprobada, 69 aserciones | Ejecutada por separado en `portal_gestion_direccion_test_concurrency_20261118133129`. La lógica concurrente del dominio no cambió después. |
+| Decisiones de trabajo (Packet C) | 10 aprobadas, 90 aserciones | Aprobación explícita, rechazo sin las tres unidades evaluadas, reemplazo y retiro del trabajo destacado con historial, evidencia desactualizada, formulario con versión antigua, dos selecciones con la misma versión, denegaciones por docente ajeno y sección cerrada, y salida en el reporte del director. |
+| Suite completa tras Packet C | 274 aprobadas, 3 omitidas, 1286 aserciones | Base exclusiva `portal_gestion_direccion_test_packetc_20261118134344`, migrada con `migrate` y luego `module:migrate`. Las tres omitidas son las pruebas que exigen una base `_test_demo_` o el indicador de concurrencia. |
 | Chromium 157.0.8103.78 con ChromeDriver 157.0.8103.78 | 247 comprobaciones aprobadas | Formularios reales; persistencia tras recarga e inicio de sesión; 38 capturas de página en dos anchos, incluidos 390 px reales. |
 | HTML de navegador | 38 páginas, 318 IDs, 132 etiquetas, 797 controles | Etiquetas cerradas, IDs únicos y referencias ARIA. Las tres coincidencias de texto `id` son enlaces de plantilla Alpine `:id`, no IDs renderizados. |
 | JavaScript incluido | 79 scripts con sintaxis válida | Extraídos del HTML capturado y revisados con `node --check`; sin errores y sin `getElementById` sin destino. |
@@ -31,7 +33,7 @@ La última ejecución recorre una misma sección desde su habilitación y config
 
 Después, la secretaría prepara las preguntas, guarda el borrador y publica la encuesta de la sección `incompleta`; no puede cerrarla. Un integrante responde con comentario, la dirección ve el agregado `4.00` y los comentarios confidenciales sin el nombre del estudiante, y cierra la encuesta.
 
-Esta ampliación modifica el recorrido de navegador y su documentación. La lógica de dominio cambió solo en el filtro de línea de investigación de la lista de grupos; el resto de los cambios son pruebas, configuración y documentación. Los resultados de la suite y del navegador indicados arriba corresponden a la ejecución del 18 de noviembre de 2026.
+Esta ampliación modifica el recorrido de navegador y su documentación. La lógica de dominio cambió solo en el filtro de línea de investigación de la lista de grupos; el resto de los cambios son pruebas, configuración y documentación. Los resultados de la suite y del navegador indicados arriba corresponden a la ejecución del 18 de noviembre de 2026. Las decisiones de aprobación y trabajo destacado se verificaron con pruebas funcionales; su recorrido de navegador se completa en la etapa de aceptación final.
 
 ## Trazabilidad de las 14 pantallas
 
@@ -41,17 +43,17 @@ Las páginas de origen corresponden al informe de interfaces. Las rutas Blade so
 |---|---|---|---|
 | Página 3 | Habilitar cursos | `director/cursos.blade.php`; `DirectorController::habilitacion` | Pruebas de configuración aprobadas; habilitación, deshabilitación y persistencia comprobadas en Firefox. |
 | Página 4 | Diseñar encuesta | `director/encuesta.blade.php`; `EncuestaService` | Guardar y publicar mediante formularios reales; cierre mediante formulario real y pruebas de conflictos aprobadas. |
-| Página 5 | Resultados | `director/resultados.blade.php`; `ReporteService::porSeccion` | Encuesta en Firefox; calificaciones y empates con datos independientes de prueba. |
-| Página 6 | Resumen e historial | `director/index.blade.php`; `ReporteService::resumenDirector` | Periodos reales y sección cerrada en Firefox; filtros y consultas por lote en pruebas. |
+| Página 5 | Resultados | `director/resultados.blade.php`; `ReporteService::porSeccion`; `DecisionTrabajoService::estadoDeSeccion` | Encuesta en Firefox; calificaciones y empates con datos independientes de prueba. Aprobados, destacados y trabajo destacado de la sección verificados en pruebas funcionales. |
+| Página 6 | Resumen e historial | `director/index.blade.php`; `ReporteService::resumenDirector` | Periodos reales y sección cerrada en Firefox; filtros y consultas por lote en pruebas. Totales y conteos por sección de aprobados y destacados verificados en pruebas funcionales. |
 | Página 7 | Cursos del docente | `docente/cursos.blade.php` | Firefox y pruebas de asignación. |
 | Página 8 | Competencias | `docente/competencias.blade.php`; `ConfiguracionService::guardarCompetencias` | Guardado, lectura posterior y cambio de sesión verificados en Firefox y pruebas funcionales. |
 | Página 9 | Rúbrica | `docente/rubrica.blade.php`; `ConfiguracionService::guardarRubrica` | Guardado de los cuatro niveles y persistencia en Firefox; validaciones en pruebas funcionales. |
 | Página 10 | Cronograma | `docente/cronograma.blade.php`; `ConfiguracionService::guardarCronograma` | Guardado, persistencia en hora de Lima y rechazo de fechas fuera de orden en Firefox y pruebas funcionales. |
 | Página 11 | Grupos del docente | `docente/grupos.blade.php` | Firefox y pruebas de pertenencia. |
-| Página 12 | Revisar grupo y evaluar | `docente/grupo.blade.php`; `GrupoService::revisarTitulo`; `EvaluacionService::guardar` | Solicitud de cambio, motivo, corrección del coordinador y aceptación final verificados en Firefox. Evaluación con entregas de prueba aprobada; recorrido real de entrega/evaluación pendiente de G4. |
+| Página 12 | Revisar grupo y evaluar | `docente/grupo.blade.php`; `GrupoService::revisarTitulo`; `EvaluacionService::guardar`; `DecisionTrabajoService` | Solicitud de cambio, motivo, corrección del coordinador y aceptación final verificados en Firefox. Evaluación con entregas de prueba aprobada; recorrido real de entrega/evaluación pendiente de G4. Aprobación final, selección manual del trabajo destacado, reemplazo, retiro e indicador de evidencia desactualizada verificados en pruebas funcionales. |
 | Página 13 | Cursos del estudiante | `alumno/cursos.blade.php` | Firefox y pruebas de configuración incompleta. |
 | Página 14 | Crear grupo | `alumno/grupo-crear.blade.php`; `GrupoService::crear` | Creación, validación de campos y persistencia en Firefox; atomicidad en pruebas. |
-| Página 15 | Trabajo del estudiante | `alumno/grupo.blade.php` | Título corregido, historial y ausencia de controles de edición para el integrante verificados en Firefox. Carga y descarga pendientes; pantalla parcialmente cubierta. |
+| Página 15 | Trabajo del estudiante | `alumno/grupo.blade.php` | Título corregido, historial y ausencia de controles de edición para el integrante verificados en Firefox. Carga y descarga pendientes; pantalla parcialmente cubierta. Los indicadores de trabajo aprobado y destacado se verifican en pruebas funcionales. |
 | Página 16 | Encuesta individual | `alumno/encuesta.blade.php`; `EncuestaService::responder` | Envío y persistencia en Firefox; validaciones, duplicados y transacción en pruebas. |
 
 ## Trazabilidad de reglas
@@ -86,6 +88,7 @@ Los códigos B01–B24 identifican los requisitos y decisiones de implementació
 | B24: no cambiar notas de matrícula | Servicios y esquema propio | Pruebas de aislamiento de esquema y revisión de escrituras | No se escriben notas de matrícula. |
 | Cálculo y clasificación | `CalificacionService`; `ReporteService` | `test_un_proyecto_completo_ocupa_ambos_extremos`; `test_el_promedio_del_curso_redondea_medios_hacia_arriba` | Verificada con expectativas numéricas independientes. |
 | Conteos y denominadores | `ReporteService` | `test_cuenta_cabeceras_y_calcula_la_media_por_pregunta`; `test_los_retiros_cambian_el_denominador_sin_limitar_la_tasa` | Verificada. |
+| Aprobación final y trabajo destacado | `DecisionTrabajoService`; `DecisionController` | `DecisionesTrabajoTest::test_la_aprobacion_final_exige_las_tres_unidades_evaluadas_y_registra_evidencia`; `test_la_seleccion_manual_reemplaza_al_anterior_y_conserva_el_historial`; `test_la_evidencia_cambiada_marca_las_decisiones_desactualizadas` | Verificada con datos de prueba. Son decisiones explícitas del docente; no se deducen de la nota. |
 
 ## Pendientes que impiden la aceptación completa
 

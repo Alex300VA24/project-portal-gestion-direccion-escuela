@@ -17,6 +17,7 @@ final class ReporteService
         private readonly AccesoInvestigacionService $acceso,
         private readonly DatosAcademicosService $datos,
         private readonly CalificacionService $calificacion,
+        private readonly DecisionTrabajoService $decisiones,
     ) {}
 
     /**
@@ -28,13 +29,16 @@ final class ReporteService
      *     participacion_porcentaje: float|null,
      *     preguntas: list<object{id_pregunta: int, texto: string, orden: int, valor_promedio: string|null, distribucion: list<object{valor: int, conteo: int}>}>,
      *     comentarios: LengthAwarePaginator<int, object{comentario: string, respondida_en: string}>,
-     *     grupos: list<object{id_grupo: int, nombre: string, entregas_evaluadas: int, nota_final: string|null}>,
+     *     grupos: list<object{id_grupo: int, nombre: string, entregas_evaluadas: int, nota_final: string|null, aprobado: bool, destacado: bool}>,
      *     mejor_nota: string|null,
      *     peor_nota: string|null,
      *     grupos_mejor: list<object{id_grupo: int, nombre: string, nota_final: string}>,
      *     grupos_peor: list<object{id_grupo: int, nombre: string, nota_final: string}>,
      *     promedio_curso: string|null,
      *     promedio_denominador: int,
+     *     aprobados_count: int,
+     *     destacados_count: int,
+     *     seleccion_destacada: object{id_proyecto: int, id_grupo: int, nombre: string, titulo: string, desactualizada: bool, decidido_en: string|null}|null,
      *     entregas_evaluadas: int,
      * }
      */
@@ -96,6 +100,13 @@ final class ReporteService
             : null;
 
         $grupos = $this->notasPorSecciones([$idSeccion]);
+        $decisiones = $this->decisiones->estadoDeSeccion($idSeccion);
+
+        foreach ($grupos as $grupo) {
+            $estadoGrupo = $decisiones->por_grupo[(int) $grupo->id_grupo] ?? null;
+            $grupo->aprobado = $estadoGrupo?->aprobado ?? false;
+            $grupo->destacado = $estadoGrupo?->destacado ?? false;
+        }
 
         $notas = array_values(array_filter(
             array_map(static fn (object $grupo): ?int => $grupo->nota_final_centesimas, $grupos),
@@ -130,6 +141,9 @@ final class ReporteService
                 : array_values(array_filter($grupos, static fn (object $grupo): bool => $grupo->nota_final === $peor)),
             'promedio_curso' => $promedio,
             'promedio_denominador' => count($notas),
+            'aprobados_count' => $decisiones->aprobados,
+            'destacados_count' => $decisiones->destacados,
+            'seleccion_destacada' => $decisiones->seleccion,
             'entregas_evaluadas' => array_reduce(
                 $grupos,
                 static fn (int $acumulado, object $grupo): int => $acumulado + (int) $grupo->entregas_evaluadas,
@@ -159,9 +173,11 @@ final class ReporteService
      *         entregas_evaluadas: int,
      *         grupos_con_nota: int,
      *         mejor_nota: string|null,
-     *         peor_nota: string|null
+     *         peor_nota: string|null,
+     *         aprobados: int,
+     *         destacados: int
      *     }>,
-     *     totales: object{secciones: int, habilitadas: int, grupos: int, evaluaciones: int, respuestas: int}
+     *     totales: object{secciones: int, habilitadas: int, grupos: int, evaluaciones: int, respuestas: int, aprobados: int, destacados: int}
      * }
      */
     public function resumenDirector(
@@ -195,6 +211,8 @@ final class ReporteService
             'grupos' => 0,
             'evaluaciones' => 0,
             'respuestas' => 0,
+            'aprobados' => 0,
+            'destacados' => 0,
         ];
 
         $ids = array_column($seccionesBase, 'id_seccion');
@@ -208,6 +226,7 @@ final class ReporteService
             ->whereIn('id_seccion', $ids)->where('estado', 'activo')->groupBy('id_seccion')
             ->selectRaw('id_seccion, count(*) as cantidad')->pluck('cantidad', 'id_seccion');
         $gruposPorSeccion = collect($this->notasPorSecciones($ids))->groupBy('id_seccion');
+        $resumenDecisiones = $this->decisiones->resumenesPorSecciones($ids);
 
         foreach ($seccionesBase as $seccion) {
             $idSeccion = (int) $seccion->id_seccion;
@@ -228,6 +247,9 @@ final class ReporteService
                 array_map(static fn (object $grupo): ?int => $grupo->nota_final_centesimas, $grupos),
                 static fn (?int $nota): bool => $nota !== null,
             ));
+            $decisionSeccion = $resumenDecisiones[$idSeccion] ?? null;
+            $aprobados = $decisionSeccion?->aprobados ?? 0;
+            $destacados = $decisionSeccion?->destacados ?? 0;
 
             $filas[] = (object) [
                 'id_seccion' => $idSeccion,
@@ -250,6 +272,8 @@ final class ReporteService
                 'grupos_con_nota' => $gruposConNota,
                 'mejor_nota' => $notas === [] ? null : $this->calificacion->formatear(max($notas)),
                 'peor_nota' => $notas === [] ? null : $this->calificacion->formatear(min($notas)),
+                'aprobados' => $aprobados,
+                'destacados' => $destacados,
             ];
 
             $totales->secciones++;
@@ -257,6 +281,8 @@ final class ReporteService
             $totales->grupos += count($grupos);
             $totales->evaluaciones += $entregasEvaluadas;
             $totales->respuestas += $respuestasCount;
+            $totales->aprobados += $aprobados;
+            $totales->destacados += $destacados;
         }
 
         return (object) [

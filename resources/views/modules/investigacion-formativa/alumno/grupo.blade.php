@@ -59,9 +59,23 @@
                         </p>
                     </div>
 
-                    @if ($esCoordinador)
-                        <span class="if-tag">Eres coordinador</span>
-                    @endif
+                    <div class="if-actions">
+                        @if ($esCoordinador)
+                            <span class="if-tag">Eres coordinador</span>
+                        @endif
+
+                        @if ($decision?->aprobado)
+                            <span class="if-status is-success" data-aprobacion="vigente">Trabajo aprobado</span>
+                        @elseif ($decision?->aprobacion_desactualizada)
+                            <span class="if-status is-warning" data-aprobacion="desactualizada">Aprobación desactualizada</span>
+                        @endif
+
+                        @if ($decision?->destacado)
+                            <span class="if-status is-success" data-destacado="vigente">Trabajo destacado</span>
+                        @elseif ($decision?->seleccion_desactualizada)
+                            <span class="if-status is-warning" data-destacado="desactualizado">Selección desactualizada</span>
+                        @endif
+                    </div>
                 </div>
 
                 @if ($detalle->proyecto !== null)

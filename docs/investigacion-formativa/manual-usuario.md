@@ -53,6 +53,19 @@ La creación de entregas desde la pantalla de estudiante sigue pendiente. Cuando
 
 Las observaciones anteriores permanecen en el historial. Una nueva versión de entrega sin evaluar aparece pendiente; no hereda la nota anterior.
 
+### Aprobar el trabajo y elegir el trabajo destacado
+
+La ficha del grupo tiene un panel separado para las decisiones finales del docente.
+
+1. Confirme que las tres unidades tienen su versión más reciente evaluada.
+2. Pulse «Aprobar trabajo final». La aprobación es una decisión explícita; no se toma de la nota ni del estado del título.
+3. Para destacar un trabajo, primero debe tener una aprobación vigente.
+4. Pulse «Marcar como trabajo destacado». La selección es manual y reemplaza a la anterior.
+5. Para quitar la marca, pulse «Retirar selección» y escriba un motivo si corresponde.
+6. Revise los historiales de aprobación y de selección. Conservan actor, fecha, versión y la evidencia usada.
+
+Si una entrega o evaluación cambia, la aprobación y la selección aparecen como desactualizadas. Confirme de nuevo la aprobación antes de volver a destacar el trabajo. Una nota alta no selecciona el trabajo por sí sola.
+
 ## Coordinador del grupo
 
 1. Abra «Mis cursos» y elija una sección habilitada y completamente configurada.
@@ -77,7 +90,8 @@ No intente registrar archivos por otra pantalla. La carga y descarga aún no est
 2. Consulte el título, los integrantes y el historial de revisión.
 3. Revise las evaluaciones y observaciones disponibles.
 4. Acuerde los cambios con el coordinador. La edición del título corresponde a esa cuenta.
-5. Responda su propia encuesta cuando esté publicada.
+5. Revise los indicadores «Trabajo aprobado» y «Trabajo destacado». Solo aparecen cuando el docente registró esa decisión.
+6. Responda su propia encuesta cuando esté publicada.
 
 La encuesta es individual. Pertenecer al mismo grupo no permite responder por otra persona.
 
@@ -99,6 +113,8 @@ La nota de cada unidad usa una escala de 0 a 20. «Pendiente» significa que fal
 La nota final se calcula cuando las tres unidades vigentes tienen evaluación. El promedio del curso y las mejores y peores notas incluyen solo esos proyectos completos. Se muestran todos los empates. Si solo hay un proyecto completo, aparece tanto en mejor como en peor posición.
 
 Estas reglas son la configuración actual del módulo. No sustituyen una nota oficial de matrícula ni implican que se haya aprobado una regla institucional de ponderación.
+
+La aprobación final y el trabajo destacado no forman parte de la nota. Son decisiones del docente responsable y se muestran aparte de la clasificación por promedio.
 
 ## Mensajes frecuentes
 

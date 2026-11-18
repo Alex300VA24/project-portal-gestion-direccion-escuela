@@ -21,6 +21,7 @@ Las rutas de esta tabla son relativas a `app/Modules/InvestigacionFormativa/`, s
 | `Services/GrupoService.php` | Grupo atómico, membresía fija, título y revisiones. |
 | `Services/EvaluacionService.php` | Evaluación por entrega, corrección y observaciones históricas. |
 | `Services/EncuestaService.php` | Borrador, publicación, cierre y respuestas individuales. |
+| `Services/DecisionTrabajoService.php` | Aprobación final, selección manual del trabajo destacado, historial y evidencia versionada. |
 | `Services/ReporteService.php` | Resultados por sección, promedio, empates e historial real. |
 | `Services/CalificacionService.php` | Normalización y promedios con centésimas enteras. |
 | `Models/`, `Policies/` | Tablas del módulo y autorización de sus recursos. |
@@ -55,18 +56,19 @@ La lectura sigue las flechas desde el formulario hasta los datos y vuelve a la p
 
 ## Esquema y propiedad de datos
 
-El esquema `investigacion_formativa` tiene 22 tablas. Las claves académicas referencian `core`; los usuarios académicos y módulos referencian `seguridad`. `public.users` es la identidad de inicio de sesión. El catálogo compartido de archivos pertenece a `comun`.
+El esquema `investigacion_formativa` tiene 24 tablas. Las claves académicas referencian `core`; los usuarios académicos y módulos referencian `seguridad`. `public.users` es la identidad de inicio de sesión. El catálogo compartido de archivos pertenece a `comun`.
 
 | Grupo | Tablas |
 |---|---|
-| Identidad y configuración | `identidad_usuario`, `director_escuela`, `seccion_configuracion`, `participante_seccion`, `competencia_seccion` |
+| Identidad y configuración | `identidad_usuario`, `director_escuela`, `secretaria_escuela`, `seccion_configuracion`, `participante_seccion`, `competencia_seccion` |
 | Proyecto | `tipo_producto`, `grupo`, `grupo_estudiante`, `proyecto`, `revision_titulo` |
 | Evaluación | `rubrica`, `criterio`, `criterio_nivel`, `entregable`, `entrega`, `evaluacion`, `evaluacion_criterio`, `observacion` |
 | Encuesta | `encuesta`, `encuesta_pregunta`, `encuesta_respuesta`, `encuesta_respuesta_item` |
+| Decisiones | `decision_trabajo` |
 
-La base impide múltiples grupos del mismo estudiante en una sección y múltiples coordinadores por grupo. La creación del servicio incluye al coordinador como integrante. Las encuestas tienen unicidad por sección y por estudiante; las claves compuestas de los ítems impiden mezclar preguntas y respuestas de encuestas distintas.
+La base impide múltiples grupos del mismo estudiante en una sección y múltiples coordinadores por grupo. La creación del servicio incluye al coordinador como integrante. Las encuestas tienen unicidad por sección y por estudiante; las claves compuestas de los ítems impiden mezclar preguntas y respuestas de encuestas distintas. `decision_trabajo` es un registro append-only: cada fila guarda tipo, acción, actor, fecha, versión y la instantánea de las tres unidades.
 
-Los cambios no alteran las notas oficiales de matrícula. La migración base del módulo y 18 migraciones posteriores describen el estado actual. Las migraciones posteriores se agregan sin reescribir el historial de otros módulos.
+Los cambios no alteran las notas oficiales de matrícula. La migración base del módulo y 20 migraciones posteriores describen el estado actual. Las migraciones posteriores se agregan sin reescribir el historial de otros módulos.
 
 ## Contratos de integración
 
@@ -91,6 +93,7 @@ La configuración de sección es el primer punto de serialización de las escrit
 | Editar o revisar título | Configuración; proyecto bloqueado; versión esperada; cambio e historial atómicos. |
 | Evaluar | Configuración; proyecto; entrega; evaluación. Se reemplazan los criterios actuales y se conservan observaciones anteriores. |
 | Encuesta | Configuración; encuesta. Publicación, cierre y respuesta usan el mismo orden. Cabecera e ítems de respuesta se guardan juntos. |
+| Decidir aprobación o selección | Configuración; nueva comprobación del docente; versión esperada; evidencia vigente; inserción append-only. La sección se bloquea antes de comparar la versión. |
 | Importar padrón | Bloqueo de configuración por sección antes de aplicar sus estados. No elimina integrantes históricos. |
 
 Los conflictos de edición devuelven 409 en los flujos que tienen recuperación de formulario. Recargar permite comparar el estado vigente; no se considera correcto sobrescribirlo silenciosamente. La prueba de concurrencia usa procesos y conexiones PostgreSQL separados, con barreras de bloqueo.
@@ -104,6 +107,8 @@ Ejemplo independiente: máximos `4 + 4 + 2 = 10`; seleccionados `3 + 2 + 1 = 6`;
 La versión más alta de cada entrega determina el avance vigente. Si esa versión no tiene evaluación, la unidad está pendiente. Una evaluación antigua permanece en el historial, pero no sustituye a la vigente.
 
 Solo los proyectos con tres unidades evaluadas tienen nota final. La clasificación incluye todos los empates y los ordena por ID de grupo. El promedio del curso excluye proyectos incompletos e indica el denominador. Con un solo proyecto elegible, mejor y peor coinciden y la pantalla lo explica.
+
+La aprobación final y el trabajo destacado no se calculan a partir de la nota. `DecisionTrabajoService` exige una decisión explícita del docente responsable. Cada decisión guarda una huella canónica de `id_entrega`, `version_entrega`, `id_evaluacion` y `version_evaluacion` de las tres unidades. Si la evidencia actual difiere, la decisión se marca como desactualizada hasta que el docente la confirme. La selección del trabajo destacado es única por sección y conserva el historial de reemplazos y retiros.
 
 Las respuestas de encuesta se cuentan por cabecera. El promedio de una pregunta usa sus ítems reales; no usa el total del padrón. La distribución cuenta valores de 1 a 5. La participación es `100 × respuestas / participantes_activos_actuales`; puede superar el 100% tras retiros. Si el denominador es cero, no hay tasa calculable.
 

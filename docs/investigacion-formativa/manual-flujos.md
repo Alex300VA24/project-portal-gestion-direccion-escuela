@@ -106,6 +106,24 @@ Ruta negativa: criterio ausente o ajeno, nivel inválido, docente distinto o ver
 
 Reinicio: ejecute la prueba en una base nueva o use otro proyecto de prueba. No sustituya archivos ni evaluaciones para reiniciar.
 
+## 4b. Aprobación final y trabajo destacado
+
+Actor: docente responsable. Datos iniciales: las tres unidades con su versión más reciente evaluada. Este recorrido se verifica con datos de prueba en `DecisionesTrabajoTest`; el recorrido de navegador se completa en la aceptación final.
+
+1. Abra el grupo y confirme que las tres unidades están evaluadas en su versión más reciente.
+2. Pulse «Aprobar trabajo final».
+3. Pulse «Marcar como trabajo destacado» en un grupo con aprobación vigente.
+4. Repita la selección con otro grupo. El trabajo anterior deja de estar destacado, pero su registro permanece en el historial.
+5. Retire la selección indicando un motivo.
+6. Cambie una entrega o evaluación. La aprobación y la selección deben aparecer como desactualizadas.
+7. Confirme la aprobación y vuelva a seleccionar.
+
+Resultado: cada decisión guarda actor, fecha, versión y la instantánea de las tres unidades. La selección es manual: no se elige por la nota más alta. El historial conserva reemplazos y retiros.
+
+Ruta negativa: falta una unidad evaluada, no hay aprobación vigente, la sección está cerrada o deshabilitada, el docente no es el responsable o la versión del formulario está desactualizada. La decisión no se registra.
+
+Reinicio: use una base nueva o continúe el historial con una decisión nueva. No borre filas de `decision_trabajo`.
+
 ## 5. Encuesta individual
 
 Actor inicial: director. Datos iniciales: sección habilitada y padrón activo.
@@ -133,7 +151,8 @@ Actor: director. Datos iniciales: escuela asignada y periodos reales con seccion
 3. Consulte la encuesta, sus promedios y la distribución por pregunta.
 4. Cambie de página o tamaño en comentarios. Los filtros deben conservarse.
 5. Consulte las notas por unidad, la nota final y todos los empates.
-6. Vuelva al historial y abra una sección cerrada de otro periodo.
+6. Consulte los conteos de trabajos aprobados y destacados, y el trabajo destacado de la sección.
+7. Vuelva al historial y abra una sección cerrada de otro periodo.
 
 Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye.
 

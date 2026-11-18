@@ -165,6 +165,196 @@
                 </form>
             </section>
 
+            <section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-decisiones">
+                <h2 id="titulo-decisiones" class="if-section-title">Aprobación final y trabajo destacado</h2>
+                <p class="if-note">
+                    La aprobación final es una decisión explícita del docente responsable. No se deduce de la nota
+                    ni del estado del título. La selección del trabajo destacado es manual y se registra aparte de la
+                    mejor nota.
+                </p>
+
+                @php
+                    $aprobado = $estadoDecision?->aprobado ?? false;
+                    $aprobacionDesactualizada = $estadoDecision?->aprobacion_desactualizada ?? false;
+                    $destacado = $estadoDecision?->destacado ?? false;
+                    $seleccionDesactualizada = $estadoDecision?->seleccion_desactualizada ?? false;
+                @endphp
+
+                <div class="if-actions" style="margin-top: 10px;">
+                    @if ($aprobado)
+                        <span class="if-status is-success" data-aprobacion="vigente">Trabajo aprobado</span>
+                    @elseif ($aprobacionDesactualizada)
+                        <span class="if-status is-warning" data-aprobacion="desactualizada">Aprobación desactualizada</span>
+                    @else
+                        <span class="if-status is-neutral" data-aprobacion="pendiente">Sin aprobación final</span>
+                    @endif
+
+                    @if ($destacado)
+                        <span class="if-status is-success" data-destacado="vigente">Trabajo destacado de la sección</span>
+                    @elseif ($seleccionDesactualizada)
+                        <span class="if-status is-warning" data-destacado="desactualizado">Selección desactualizada</span>
+                    @endif
+                </div>
+
+                @if ($aprobacionDesactualizada)
+                    <div class="if-warning-note">
+                        La evidencia de entrega o evaluación cambió desde la aprobación. Confirme la aprobación
+                        para que cuente como vigente.
+                    </div>
+                @endif
+
+                @if ($puedeDecidir)
+                    <form
+                        class="if-fieldset if-stack"
+                        method="POST"
+                        action="{{ route('investigacion-formativa.docente.decisiones.aprobar', [$seccion, $grupo]) }}"
+                    >
+                        @csrf
+                        <input name="version" type="hidden" value="{{ $versionAprobacion }}">
+
+                        <div class="if-actions">
+                            <button class="if-button" type="submit">
+                                {{ $aprobacionDesactualizada ? 'Confirmar aprobación' : 'Aprobar trabajo final' }}
+                            </button>
+                        </div>
+                        <p class="if-note">
+                            Requiere las tres unidades con su versión más reciente evaluada. Si una unidad cambia,
+                            la aprobación vigente queda desactualizada.
+                        </p>
+                    </form>
+                @else
+                    <p class="if-note">
+                        La sección está cerrada, deshabilitada o incompleta: las decisiones quedan en solo lectura.
+                    </p>
+                @endif
+
+                <h3 class="if-section-title">Trabajo destacado</h3>
+
+                @if ($seleccion !== null && (int) $seleccion->id_grupo !== (int) $grupo->id_grupo)
+                    <p>
+                        Trabajo destacado actual:
+                        <strong>{{ $seleccion->nombre }}</strong> · {{ $seleccion->titulo }}
+                        @if ($seleccion->desactualizada)
+                            <span class="if-status is-warning">desactualizado</span>
+                        @endif
+                    </p>
+                @endif
+
+                @if ($puedeDecidir && ($aprobado || $seleccionDesactualizada))
+                    <form
+                        class="if-fieldset if-stack"
+                        method="POST"
+                        action="{{ route('investigacion-formativa.docente.decisiones.seleccionar', [$seccion, $grupo]) }}"
+                    >
+                        @csrf
+                        <input name="version" type="hidden" value="{{ $versionSeleccion }}">
+
+                        <div class="if-actions">
+                            <button class="if-button" type="submit">
+                                {{ $seleccionDesactualizada ? 'Confirmar selección' : ($destacado ? 'Mantener como destacado' : 'Marcar como trabajo destacado') }}
+                            </button>
+                        </div>
+                    </form>
+                @elseif ($puedeDecidir)
+                    <p class="if-note">
+                        Solo un trabajo con aprobación final vigente puede marcarse como destacado.
+                    </p>
+                @endif
+
+                @if ($puedeDecidir && $destacado)
+                    <form
+                        class="if-fieldset if-stack"
+                        method="POST"
+                        action="{{ route('investigacion-formativa.docente.decisiones.retirar', [$seccion, $grupo]) }}"
+                    >
+                        @csrf
+                        @method('DELETE')
+                        <input name="version" type="hidden" value="{{ $versionSeleccion }}">
+
+                        <div class="if-field">
+                            <label for="motivo-retiro">Motivo del retiro (opcional)</label>
+                            <textarea id="motivo-retiro" maxlength="2000" name="motivo" rows="2">{{ old('motivo') }}</textarea>
+                        </div>
+
+                        <div class="if-actions">
+                            <button class="if-button if-button-danger" type="submit">Retirar selección</button>
+                        </div>
+                    </form>
+                @endif
+
+                @if ($historialAprobacion !== [])
+                    <details class="if-card" style="margin-top: 16px;">
+                        <summary class="if-card-title">Historial de aprobación</summary>
+                        <div class="if-table-wrap" style="margin-top: 10px;">
+                            <table class="if-table">
+                                <caption class="sr-only">Decisiones de aprobación final del trabajo</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Decisión</th>
+                                        <th scope="col">Versión</th>
+                                        <th scope="col">Actor</th>
+                                        <th scope="col">Fecha</th>
+                                        <th scope="col">Evidencia actual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($historialAprobacion as $decision)
+                                        <tr>
+                                            <td data-label="Decisión">{{ $decision->accion === 'retirar' ? 'Retirada' : 'Aprobación' }}</td>
+                                            <td data-label="Versión">{{ $decision->version }}</td>
+                                            <td data-label="Actor">{{ $decision->actor }}</td>
+                                            <td data-label="Fecha">
+                                                {{ \Carbon\CarbonImmutable::parse($decision->decidido_en)->setTimezone('America/Lima')->format('d/m/Y H:i') }}
+                                            </td>
+                                            <td data-label="Evidencia actual">
+                                                {{ $decision->desactualizada ? 'La evidencia cambió' : 'Coincide con la evidencia actual' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                @endif
+
+                @if ($historialSeleccion !== [])
+                    <details class="if-card" style="margin-top: 16px;">
+                        <summary class="if-card-title">Historial de selección del trabajo destacado</summary>
+                        <div class="if-table-wrap" style="margin-top: 10px;">
+                            <table class="if-table">
+                                <caption class="sr-only">Decisiones de selección del trabajo destacado de la sección</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Decisión</th>
+                                        <th scope="col">Grupo</th>
+                                        <th scope="col">Versión</th>
+                                        <th scope="col">Actor</th>
+                                        <th scope="col">Fecha</th>
+                                        <th scope="col">Motivo / evidencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($historialSeleccion as $decision)
+                                        <tr>
+                                            <td data-label="Decisión">{{ $decision->accion === 'retirar' ? 'Retiro' : 'Selección' }}</td>
+                                            <td data-label="Grupo">{{ $decision->grupo }}</td>
+                                            <td data-label="Versión">{{ $decision->version }}</td>
+                                            <td data-label="Actor">{{ $decision->actor }}</td>
+                                            <td data-label="Fecha">
+                                                {{ \Carbon\CarbonImmutable::parse($decision->decidido_en)->setTimezone('America/Lima')->format('d/m/Y H:i') }}
+                                            </td>
+                                            <td data-label="Motivo / evidencia">
+                                                {{ $decision->motivo ?? ($decision->desactualizada ? 'Evidencia desactualizada' : '—') }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                @endif
+            </section>
+
             @if ($detalle->historial !== [])
                 <section style="margin-top: 22px;" aria-labelledby="titulo-historial">
                     <h2 id="titulo-historial" class="if-section-title">Historial de revisiones</h2>

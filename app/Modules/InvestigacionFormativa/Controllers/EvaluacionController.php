@@ -3,6 +3,7 @@
 namespace App\Modules\InvestigacionFormativa\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\InvestigacionFormativa\Controllers\Concerns\PreparaDecisionesTrabajo;
 use App\Modules\InvestigacionFormativa\Exceptions\AccesoDenegado;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
@@ -10,6 +11,8 @@ use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Models\Grupo;
 use App\Modules\InvestigacionFormativa\Requests\GuardarEvaluacionRequest;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
+use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
+use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
 use App\Modules\InvestigacionFormativa\Services\EvaluacionService;
 use App\Modules\InvestigacionFormativa\Services\GrupoService;
 use App\Modules\InvestigacionFormativa\Support\ActorInvestigacion;
@@ -21,8 +24,12 @@ use Illuminate\Support\Facades\Gate;
 
 final class EvaluacionController extends Controller
 {
+    use PreparaDecisionesTrabajo;
+
     public function __construct(
         private readonly AccesoInvestigacionService $acceso,
+        private readonly ConfiguracionService $configuracion,
+        private readonly DecisionTrabajoService $decisiones,
         private readonly EvaluacionService $evaluaciones,
         private readonly GrupoService $grupos,
     ) {}
@@ -80,12 +87,15 @@ final class EvaluacionController extends Controller
         ?string $conflicto,
         int $status,
     ): Response {
+        $detalle = $this->grupos->detalleGrupo((int) $grupo->id_grupo);
+
         return response()->view('modules.investigacion-formativa.docente.grupo', [
             'seccion' => $seccion,
             'grupo' => $grupo,
-            'detalle' => $this->grupos->detalleGrupo((int) $grupo->id_grupo),
+            'detalle' => $detalle,
             'evaluaciones' => $this->evaluaciones->detalleEntregasDeGrupo((int) $grupo->id_grupo),
             'conflicto' => $conflicto,
+            ...$this->datosDecisiones($this->decisiones, $this->configuracion, $seccion, $grupo, $detalle),
         ], $status);
     }
 

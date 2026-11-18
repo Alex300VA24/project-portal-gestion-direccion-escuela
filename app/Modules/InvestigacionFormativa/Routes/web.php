@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\InvestigacionFormativa\Controllers\ConfiguracionController;
+use App\Modules\InvestigacionFormativa\Controllers\DecisionController;
 use App\Modules\InvestigacionFormativa\Controllers\DirectorController;
 use App\Modules\InvestigacionFormativa\Controllers\EncuestaController;
 use App\Modules\InvestigacionFormativa\Controllers\EvaluacionController;
@@ -91,6 +92,15 @@ Route::prefix('investigacion-formativa')
 
                 Route::patch('/docente/secciones/{seccion}/grupos/{grupo}/titulo', [GrupoController::class, 'revisarTitulo'])
                     ->name('docente.titulos.update');
+
+                Route::post('/docente/secciones/{seccion}/grupos/{grupo}/aprobacion', [DecisionController::class, 'aprobar'])
+                    ->name('docente.decisiones.aprobar');
+
+                Route::post('/docente/secciones/{seccion}/grupos/{grupo}/destacado', [DecisionController::class, 'seleccionar'])
+                    ->name('docente.decisiones.seleccionar');
+
+                Route::delete('/docente/secciones/{seccion}/grupos/{grupo}/destacado', [DecisionController::class, 'retirar'])
+                    ->name('docente.decisiones.retirar');
             });
 
             Route::middleware('permission:investigacion-formativa.groups.create')->group(function () {

@@ -20,6 +20,7 @@
         <nav class="if-actions" aria-label="Secciones de resultados">
             <a class="if-link" href="#encuesta">Encuesta</a>
             <a class="if-link" href="#calificaciones">Calificaciones</a>
+            <a class="if-link" href="#decisiones">Decisiones docentes</a>
             <a class="if-link" href="{{ route('investigacion-formativa.director.index', ['periodo' => $seccion->periodo->codigo]) }}">Historial del periodo</a>
         </nav>
 
@@ -122,6 +123,7 @@
                                 @endforeach
                                 <th scope="col">Evaluadas</th>
                                 <th scope="col">Nota final</th>
+                                <th scope="col">Decisión docente</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -133,6 +135,16 @@
                                     @endforeach
                                     <td data-label="Evaluadas">{{ $grupo->entregas_evaluadas }}/3</td>
                                     <td data-label="Nota final">{{ $grupo->nota_final ?? 'Pendiente' }}</td>
+                                    <td data-label="Decisión docente">
+                                        @if ($grupo->aprobado)
+                                            <span class="if-status is-success">Aprobado</span>
+                                        @else
+                                            <span class="if-status is-neutral">Sin aprobación</span>
+                                        @endif
+                                        @if ($grupo->destacado)
+                                            <span class="if-status is-success">Destacado</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -164,6 +176,38 @@
                 <p class="if-note">
                     Se incluyen todos los empates. Los proyectos incompletos quedan fuera del promedio y de la clasificación.
                 </p>
+            @endif
+        </section>
+
+        <section id="decisiones" class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-decisiones">
+            <h2 id="titulo-decisiones" class="if-section-title">Aprobación final y trabajo destacado</h2>
+            <p class="if-note">
+                La aprobación final es una decisión explícita del docente responsable. El trabajo destacado se
+                selecciona de forma manual; no es la nota más alta ni se deduce de las calificaciones.
+            </p>
+
+            <dl class="if-inline-stats" aria-label="Decisiones registradas en la sección">
+                <div>
+                    <dt>Trabajos aprobados</dt>
+                    <dd>{{ $reporte->aprobados_count }}</dd>
+                </div>
+                <div>
+                    <dt>Trabajos destacados</dt>
+                    <dd>{{ $reporte->destacados_count }}</dd>
+                </div>
+            </dl>
+
+            @if ($reporte->seleccion_destacada !== null)
+                <p>
+                    Trabajo destacado de la sección:
+                    <strong>{{ $reporte->seleccion_destacada->nombre }}</strong> ·
+                    {{ $reporte->seleccion_destacada->titulo }}
+                    @if ($reporte->seleccion_destacada->desactualizada)
+                        <span class="if-status is-warning">Selección desactualizada</span>
+                    @endif
+                </p>
+            @else
+                <p>La sección no tiene un trabajo destacado vigente.</p>
             @endif
         </section>
 @endsection

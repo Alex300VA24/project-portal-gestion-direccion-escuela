@@ -83,7 +83,20 @@
                                 <td data-label="Grupo"><strong>{{ $grupo->nombre }}</strong></td>
                                 <td data-label="Coordinador">{{ $grupo->coordinador ?? 'Sin coordinador' }}</td>
                                 <td data-label="Título propuesto">{{ $grupo->titulo ?? 'Sin título' }}</td>
-                                <td data-label="Estado">{{ $grupo->estado ?? '—' }}</td>
+                                <td data-label="Estado">
+                                    {{ $grupo->estado ?? '—' }}
+                                    @php $decisionGrupo = $decisiones[$grupo->id_grupo] ?? null; @endphp
+                                    @if ($decisionGrupo?->aprobado)
+                                        <span class="if-status is-success" data-aprobado="1">Aprobado</span>
+                                    @elseif ($decisionGrupo?->aprobacion_desactualizada)
+                                        <span class="if-status is-warning">Aprobación desactualizada</span>
+                                    @endif
+                                    @if ($decisionGrupo?->destacado)
+                                        <span class="if-status is-success" data-destacado="1">Destacado</span>
+                                    @elseif ($decisionGrupo?->seleccion_desactualizada)
+                                        <span class="if-status is-warning">Selección desactualizada</span>
+                                    @endif
+                                </td>
                                 <td data-label="Avances">{{ $grupo->entregados }} de 3</td>
                                 <td data-label="Acción">
                                     <a

@@ -51,6 +51,8 @@ Todas las rutas siguientes usan el prefijo `/investigacion-formativa`. Los valor
 | Encuesta del director: editar, guardar, publicar, cerrar | `surveys.manage` | `SeccionPolicy::gestionarEncuesta` o `EncuestaPolicy::gestionar`, según el recurso. |
 | Cursos y configuración del docente | `configuration.manage` | Docente responsable y `SeccionPolicy::configurar` para guardar. |
 | Grupos y revisión del título por docente | `groups.review` | `GrupoPolicy::view` y `GrupoPolicy::revisarTitulo`. |
+| `POST /docente/secciones/{seccion}/grupos/{grupo}/aprobacion` | `groups.review` | `GrupoPolicy::revisarTitulo`; el servicio exige docente responsable, sección activa y habilitada, las tres unidades evaluadas en su versión más reciente y la versión esperada. |
+| `POST` o `DELETE /docente/secciones/{seccion}/grupos/{grupo}/destacado` | `groups.review` | `GrupoPolicy::revisarTitulo`; el servicio exige aprobación vigente, sección activa y habilitada, evidencia vigente y la versión esperada. |
 | `PUT /docente/secciones/{seccion}/grupos/{grupo}/entregas/{entrega}/evaluacion` | `evaluations.manage` | `GrupoPolicy::evaluar`; el servicio comprueba sección, grupo, entrega y rúbrica. |
 | Crear grupo del estudiante | `groups.create` | `SeccionPolicy::crearGrupo`, padrón activo y comprobaciones atómicas del servicio. |
 | `GET /alumno/secciones/{seccion}/mi-grupo` | Ninguno adicional | Grupo exacto del estudiante en la sección. |
@@ -67,6 +69,7 @@ Consulte `Routes/web.php` y `Requests/` para las firmas completas. El servidor c
 - Coordinación: además debe ser el coordinador registrado del grupo exacto. Un rol de alumno no concede coordinación.
 - Encuesta: cada respuesta nueva exige padrón activo, sección habilitada y encuesta publicada. La identidad se conserva para impedir duplicados.
 - Historial: `SeccionPolicy::verResultados` usa `puedeVerResultados`, que admite secciones cerradas dentro de la escuela asignada. Las operaciones de escritura conservan sus comprobaciones de sección activa.
+- Decisiones docentes: la aprobación final y la selección del trabajo destacado son decisiones explícitas del docente responsable. No se deducen de la nota, del estado del título ni de la posición en la clasificación. Se guardan en `investigacion_formativa.decision_trabajo` con actor, fecha y la instantánea de las versiones de entrega y evaluación usadas.
 
 `ProyectoPolicy::view` y `EntregaPolicy::download` resuelven el grupo del proyecto. No autorizan cualquier grupo por compartir sección. La política de descarga permanece como contrato previo; no hay un endpoint de descarga disponible.
 
