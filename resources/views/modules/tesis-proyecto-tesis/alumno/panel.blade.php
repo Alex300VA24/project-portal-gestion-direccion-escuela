@@ -49,7 +49,7 @@
             </article>
             <article class="tz-card">
                 <span class="tz-eyebrow">Observaciones pendientes</span>
-                <strong style="font-size: 1.6rem; color: {{ $pendientes > 0 ? '#8a3f06' : 'var(--tz-navy)' }}">{{ $pendientes }}</strong>
+                <strong style="font-size: 1.6rem; color: {{ $pendientes > 0 ? 'var(--tz-warning)' : 'var(--tz-navy)' }}">{{ $pendientes }}</strong>
                 @if ($pendientes > 0 && app('router')->has('tesis-proyecto-tesis.alumno.observaciones'))
                     <a href="{{ route('tesis-proyecto-tesis.alumno.observaciones') }}">Levantar observaciones →</a>
                 @else

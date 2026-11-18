@@ -13,7 +13,7 @@
         <article class="tz-card tz-stat"><strong>{{ $cifras['activas'] }}</strong><span class="tz-muted">Investigaciones activas</span></article>
         <article class="tz-card tz-stat"><strong>{{ $cifras['proyecto'] }}</strong><span class="tz-muted">En proyecto (9.º ciclo)</span></article>
         <article class="tz-card tz-stat"><strong>{{ $cifras['tesis'] }}</strong><span class="tz-muted">En tesis (10.º ciclo)</span></article>
-        <article class="tz-card tz-stat"><strong style="color: {{ $cifras['accion'] ? '#8a3f06' : 'var(--tz-navy)' }}">{{ $cifras['accion'] }}</strong><span class="tz-muted">Esperan tu acción</span></article>
+        <article class="tz-card tz-stat"><strong style="color: {{ $cifras['accion'] ? 'var(--tz-warning)' : 'var(--tz-navy)' }}">{{ $cifras['accion'] }}</strong><span class="tz-muted">Esperan tu acción</span></article>
     </div>
 
     <div class="tz-grid-2">

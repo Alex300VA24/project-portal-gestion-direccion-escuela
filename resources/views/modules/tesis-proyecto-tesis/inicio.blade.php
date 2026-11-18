@@ -6,7 +6,7 @@
             <p class="tz-eyebrow">Gestión de Tesis</p>
             <h1>Bienvenido, {{ $nombre }}</h1>
             @if ($roles !== [])
-                <p>Tu cuenta tiene más de un rol en este módulo. Elige con cuál quieres trabajar; puedes cambiarlo luego desde la barra superior.</p>
+                <p>Tu cuenta tiene más de un rol en este módulo. Elige con cuál quieres trabajar; puedes cambiarlo luego con «Cambiar rol», en tu menú de usuario arriba a la derecha.</p>
             @endif
         </div>
     </div>

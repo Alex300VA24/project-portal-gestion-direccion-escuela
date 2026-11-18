@@ -16,13 +16,13 @@
                 <strong style="color: var(--tz-green); font-size: 1.3rem">✓ Conforme</strong>
                 <span class="tz-muted">Verificada el {{ $verificacion->revisado_en->format('d/m/Y') }}</span>
             @else
-                <strong style="color: #8a3f06; font-size: 1.3rem">Pendiente</strong>
+                <strong style="color: var(--tz-warning); font-size: 1.3rem">Pendiente</strong>
                 <a href="{{ route('tesis-proyecto-tesis.asesor.verificar', $proyecto) }}">Verificar con la rúbrica →</a>
             @endif
         </article>
         <article class="tz-card">
             <span class="tz-eyebrow">Observaciones abiertas</span>
-            <strong style="font-size: 1.3rem; color: {{ $abiertas ? '#8a3f06' : 'var(--tz-green)' }}">{{ $abiertas }}</strong>
+            <strong style="font-size: 1.3rem; color: {{ $abiertas ? 'var(--tz-warning)' : 'var(--tz-green)' }}">{{ $abiertas }}</strong>
             <span class="tz-muted">{{ $abiertas ? 'Deben quedar levantadas' : 'Todas levantadas' }}</span>
         </article>
         <article class="tz-card">
