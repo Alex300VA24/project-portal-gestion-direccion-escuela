@@ -42,7 +42,7 @@ final class ProyectoService
         return Proyecto::query()
             ->whereIn('id_proyecto', $ids)
             ->orderByRaw('CASE WHEN estado IN (?) THEN 1 ELSE 0 END', [Estados::TESIS_APROBADA])
-            ->orderByDesc('registrado_en')
+            ->orderByDesc('registrado_en')->orderByDesc('id_proyecto')
             ->first();
     }
 

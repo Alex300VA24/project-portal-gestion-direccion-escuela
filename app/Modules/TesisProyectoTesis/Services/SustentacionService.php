@@ -34,7 +34,7 @@ final class SustentacionService
     /** @return Collection<int, Proyecto> */
     public function porProgramar(): Collection
     {
-        return Proyecto::query()->whereIn('estado', self::PROGRAMABLES)->orderBy('registrado_en')
+        return Proyecto::query()->whereIn('estado', self::PROGRAMABLES)->orderBy('registrado_en')->orderBy('id_proyecto')
             ->get(['id_proyecto', 'uuid', 'codigo', 'titulo', 'estado', 'etapa']);
     }
 
@@ -42,7 +42,7 @@ final class SustentacionService
     public function recientes(int $limite = 20): Collection
     {
         return Sustentacion::query()->with('proyecto:id_proyecto,uuid,codigo,titulo,estado')
-            ->orderByDesc('fecha_hora')->limit($limite)
+            ->orderByDesc('fecha_hora')->orderByDesc('id_sustentacion')->limit($limite)
             ->get(['id_sustentacion', 'uuid', 'id_proyecto', 'fecha_hora', 'hora_fin', 'id_ambiente', 'estado', 'numero_intento', 'total_aprobatorios', 'resultado', 'modo_resultado', 'mencion_honrosa']);
     }
 
@@ -184,7 +184,7 @@ final class SustentacionService
         $proyectos = JuradoProyecto::query()->where('id_docente', $idDocente)->where('estado', 'Activo')->pluck('id_proyecto');
 
         return Sustentacion::query()->whereIn('id_proyecto', $proyectos)->with('proyecto:id_proyecto,uuid,codigo,titulo,estado')
-            ->orderByDesc('fecha_hora')
+            ->orderByDesc('fecha_hora')->orderByDesc('id_sustentacion')
             ->get(['id_sustentacion', 'uuid', 'id_proyecto', 'fecha_hora', 'id_ambiente', 'estado', 'numero_intento', 'resultado', 'modo_resultado']);
     }
 

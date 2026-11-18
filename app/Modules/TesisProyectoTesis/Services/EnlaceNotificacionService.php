@@ -96,7 +96,7 @@ final class EnlaceNotificacionService
                 : route(self::P.'secretaria.sustentaciones'),
             'dictamen.generado', 'acta.generada', 'acta.informada' => ($a = Acta::query()->where('id_proyecto', $p->id_proyecto)
                 ->when($evento !== 'acta.informada', fn ($q) => $q->where('tipo', $evento === 'dictamen.generado' ? 'Dictamen' : 'Sustentacion'))
-                ->orderByDesc('emitida_en')->first())
+                ->orderByDesc('emitida_en')->orderByDesc('id_acta')->first())
                 ? route(self::P.'secretaria.actas.ver', $a)
                 : route(self::P.'secretaria.actas'),
             default => route(self::P.'secretaria.resoluciones'),

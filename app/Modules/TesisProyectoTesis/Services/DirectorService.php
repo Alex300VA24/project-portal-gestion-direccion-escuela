@@ -25,7 +25,7 @@ final class DirectorService
         $conSolicitud = Solicitud::query()->where('estado', 'Pendiente')->pluck('id_proyecto')->all();
         $accion = [];
 
-        foreach ($activos->sortBy('registrado_en') as $p) {
+        foreach ($activos->sortBy([['registrado_en', 'asc'], ['id_proyecto', 'asc']]) as $p) {
             if ($p->estado === Estados::REGISTRADO && ! in_array($p->id_proyecto, $conSolicitud, true)) {
                 $accion[] = ['tipo' => 'Solicitar asesor', 'variante' => 'warning', 'proyecto' => $p, 'boton' => 'Solicitar',
                     'url' => route('tesis-proyecto-tesis.director.asesor.solicitar', $p), 'detalle' => 'registrado '.$p->registrado_en->diffForHumans()];
@@ -94,7 +94,7 @@ final class DirectorService
             ->with(['asesorActivo:id_asesor,id_proyecto,id_docente', 'integrantesActivos'])
             ->when($estado, fn ($q) => $q->where('estado', $estado))
             ->when($buscar, fn ($q) => $q->where(fn ($w) => $w->where('codigo', 'ilike', '%'.$buscar.'%')->orWhere('titulo', 'ilike', '%'.$buscar.'%')))
-            ->orderByDesc('registrado_en')
+            ->orderByDesc('registrado_en')->orderByDesc('id_proyecto')
             ->get(['id_proyecto', 'uuid', 'codigo', 'titulo', 'etapa', 'estado', 'id_linea', 'registrado_en']);
 
         $docentes = $this->identidad->docentes($lista->pluck('asesorActivo.id_docente')->filter()->values()->all());

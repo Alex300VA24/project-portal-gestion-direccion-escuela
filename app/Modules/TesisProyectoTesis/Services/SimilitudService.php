@@ -56,7 +56,7 @@ final class SimilitudService
         return ReporteSimilitud::query()
             ->join('tesis.entrega as e', 'e.id_entrega', '=', 'tesis.reporte_similitud.id_entrega')
             ->where('e.id_proyecto', $proyecto->id_proyecto)
-            ->orderByDesc('tesis.reporte_similitud.generado_en')
+            ->orderByDesc('tesis.reporte_similitud.generado_en')->orderByDesc('tesis.reporte_similitud.id_reporte')
             ->get(['tesis.reporte_similitud.uuid', 'tesis.reporte_similitud.porcentaje', 'tesis.reporte_similitud.resultado', 'tesis.reporte_similitud.generado_en', 'tesis.reporte_similitud.indicaciones', 'e.version', 'e.etapa']);
     }
 

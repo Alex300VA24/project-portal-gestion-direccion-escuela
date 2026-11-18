@@ -62,7 +62,7 @@ final class ActaService
     {
         return Acta::query()->with('proyecto:id_proyecto,uuid,codigo,titulo,estado')
             ->orderByRaw('CASE WHEN id_archivo_firmado IS NULL THEN 0 ELSE 1 END')
-            ->orderByDesc('emitida_en')
+            ->orderByDesc('emitida_en')->orderByDesc('id_acta')
             ->get(['id_acta', 'uuid', 'id_proyecto', 'id_sustentacion', 'tipo', 'numero', 'resultado', 'condicion', 'emitida_en', 'id_archivo_firmado', 'firmada_en', 'informado_director_en']);
     }
 

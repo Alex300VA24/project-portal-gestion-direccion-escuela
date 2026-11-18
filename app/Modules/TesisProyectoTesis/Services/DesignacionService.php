@@ -36,14 +36,14 @@ final class DesignacionService
             ->where('estado', 'Pendiente')
             ->where('id_tipo_solicitud', $this->idTipo(Parametros::TIPO_SOLICITUD_ASESOR))
             ->with('proyecto:id_proyecto,uuid,codigo,titulo,id_linea,estado,etapa')
-            ->orderBy('presentada_en')
+            ->orderBy('presentada_en')->orderBy('id_solicitud')
             ->get(['id_solicitud', 'uuid', 'id_proyecto', 'presentada_en', 'asunto', 'detalle', 'id_docente_sugerido']);
     }
 
     public function resolucionesRecientes(int $limite = 8)
     {
         return Resolucion::query()->with('solicitud.proyecto:id_proyecto,codigo')
-            ->orderByDesc('registrado_en')->limit($limite)
+            ->orderByDesc('registrado_en')->orderByDesc('id_resolucion')->limit($limite)
             ->get(['id_resolucion', 'uuid', 'numero', 'fecha', 'id_solicitud', 'registrado_en']);
     }
 

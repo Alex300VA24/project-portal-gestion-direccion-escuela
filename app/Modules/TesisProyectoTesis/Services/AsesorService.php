@@ -23,7 +23,7 @@ final class AsesorService
         $proyectos = Proyecto::query()->whereIn('id_proyecto', $ids)
             ->when($etapa, fn ($q) => $q->where('etapa', $etapa))
             ->with('integrantesActivos')
-            ->orderByDesc('registrado_en')
+            ->orderByDesc('registrado_en')->orderByDesc('id_proyecto')
             ->get(['id_proyecto', 'uuid', 'codigo', 'titulo', 'etapa', 'estado', 'id_linea']);
 
         $entregas = Entrega::query()->whereIn('id_proyecto', $proyectos->pluck('id_proyecto'))

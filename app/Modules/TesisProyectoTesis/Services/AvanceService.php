@@ -85,7 +85,7 @@ final class AvanceService
             ->when($etapa, fn ($q) => $q->where('e.etapa', $etapa))
             ->with(['criterio:id_criterio,orden,descripcion', 'entregaCorreccion:id_entrega,uuid,version,numero_semana'])
             ->orderByRaw("CASE tesis.observacion.estado WHEN 'Pendiente' THEN 0 WHEN 'Respondida' THEN 1 ELSE 2 END")
-            ->orderBy('r.revisado_en')
+            ->orderBy('r.revisado_en')->orderBy('tesis.observacion.id_observacion')
             ->get([
                 'tesis.observacion.id_observacion', 'tesis.observacion.uuid', 'tesis.observacion.id_revision', 'tesis.observacion.descripcion',
                 'tesis.observacion.estado', 'tesis.observacion.id_criterio', 'tesis.observacion.seccion_documento',
