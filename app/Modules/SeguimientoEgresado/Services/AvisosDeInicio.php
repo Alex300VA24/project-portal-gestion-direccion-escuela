@@ -20,7 +20,7 @@ final class AvisosDeInicio
     /**
      * @return array{avisos: list<array<string, mixed>>, total: int}
      */
-    public function obtener(int $maximo = 5): array
+    public function obtener(int $maximo = 6): array
     {
         try {
             $avisos = [...$this->campaniasAbiertas(), ...$this->contactoInicialEnPlazo()];

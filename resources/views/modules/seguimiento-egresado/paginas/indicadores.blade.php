@@ -138,8 +138,8 @@
     'tipo' => 'bar', 'unidad' => '%', 'maximo' => 100,
     'etiquetas' => array_map(fn ($c) => $c['etiqueta'].($c['en_curso'] ? ' · en curso' : ''), $i1PorCohorte),
     'series' => [[
-      'nombre' => 'I1', 'color' => 'navy', 'valores' => array_column($i1PorCohorte, 'valor'),
-      'textos' => array_map(fn ($c) => $c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %', $i1PorCohorte),
+      'nombre' => 'I1', 'color' => 'navy', 'valores' => array_map(fn ($c) => $c['en_curso'] ? null : $c['valor'], $i1PorCohorte),
+      'textos' => array_map(fn ($c) => $c['en_curso'] ? 'En curso' : ($c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %'), $i1PorCohorte),
       'detalles' => array_map(fn ($c) => $c['numerador'].' de '.$c['denominador'].' ingresantes'.($c['en_curso'] ? ' · aún en curso, no entra al total' : ''), $i1PorCohorte),
     ]],
   ];
@@ -218,7 +218,7 @@
       @include('modules.seguimiento-egresado.partials.grafico', [
         'id' => 'sg-graf-i1', 'titulo' => 'I1 por promoción', 'nota' => 'N='.($indicadores['I1']->denominador ?? 0).' ingresantes', 'detalle' => $baseNota,
         'config' => $graficoI1, 'columnas' => ['Promoción', 'Egresados', 'Ingresantes', 'I1'],
-        'filas' => array_map(fn ($c) => [$c['etiqueta'].($c['en_curso'] ? ' (en curso)' : ''), $c['numerador'], $c['denominador'], $c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %'], $i1PorCohorte),
+        'filas' => array_map(fn ($c) => [$c['etiqueta'], $c['numerador'], $c['denominador'], $c['en_curso'] ? 'En curso' : ($c['valor'] === null ? 'Sin datos' : $formato($c['valor']).' %')], $i1PorCohorte),
         'vacio' => $i1PorCohorte === [] ? ['Sin datos', 'No hay promociones para este filtro.'] : null,
       ])
       @include('modules.seguimiento-egresado.partials.grafico', [

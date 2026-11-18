@@ -26,7 +26,7 @@ class SeguimientoEgresadoSeeder extends Seeder
     {
         DB::transaction(function () {
             $this->personal();
-            $this->call([DatosPruebaSeeder::class, EmpresasIndicadoresDemoSeeder::class, EgresadosDemoSeeder::class]);
+            $this->call([DatosPruebaSeeder::class, EmpresasIndicadoresDemoSeeder::class, EgresadosDemoSeeder::class, PadronSinteticoSeeder::class]);
         });
     }
 

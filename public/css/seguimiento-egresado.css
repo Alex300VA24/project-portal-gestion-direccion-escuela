@@ -262,8 +262,11 @@
 }
 
 /* Portada: campañas por cerrar. */
-.sg-aviso { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(180px, 1fr) 152px; gap: var(--sg-space-4); align-items: center; padding: var(--sg-space-4) var(--sg-space-5); background: var(--sg-surface); border: var(--sg-stroke); border-left: 4px solid var(--sg-success); border-radius: var(--sg-radius); }
-.sg-aviso + .sg-aviso { margin-top: var(--sg-space-3); }
+.sg-avisos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sg-space-3); }
+.sg-aviso { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info boton" "avance avance"; gap: var(--sg-space-3) var(--sg-space-4); align-items: start; padding: var(--sg-space-4) var(--sg-space-5); background: var(--sg-surface); border: var(--sg-stroke); border-left: 4px solid var(--sg-success); border-radius: var(--sg-radius); }
+.sg-aviso-info { grid-area: info; min-width: 0; }
+.sg-aviso-avance { grid-area: avance; }
+.sg-aviso > .sg-button { grid-area: boton; }
 .sg-aviso-urgente { border-left-color: var(--sg-warning); }
 .sg-aviso h3 { margin: 0 0 2px; font-size: 16px; font-weight: 700; }
 .sg-aviso p { margin: 0; color: var(--sg-muted); font-size: var(--sg-text-sm); }
@@ -274,4 +277,20 @@
 .sg-aviso-avance strong { color: var(--sg-text); }
 .sg-aviso-vacio { display: flex; align-items: center; justify-content: space-between; gap: var(--sg-space-4); flex-wrap: wrap; padding: var(--sg-space-4) var(--sg-space-5); }
 .sg-aviso-vacio p { margin: 0; color: var(--sg-muted); }
-@media (max-width: 760px) { .sg-aviso { grid-template-columns: minmax(0, 1fr); } .sg-aviso .sg-button { justify-self: start; } }
+@media (max-width: 900px) { .sg-avisos { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 520px) { .sg-aviso { grid-template-columns: minmax(0, 1fr); grid-template-areas: "info" "avance" "boton"; } .sg-aviso > .sg-button { justify-self: start; } }
+
+/* Ventana «Ver respuesta»: compacta, por grupos y solo con lo que se respondió. */
+.sg-resp-cab h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.sg-resp-cab p { margin: 2px 0 0; color: var(--sg-muted); font-size: var(--sg-text-sm); }
+.sg-resp-grupo { margin-top: var(--sg-space-5); padding-top: var(--sg-space-4); border-top: var(--sg-stroke); }
+.sg-resp-grupo h3 { margin: 0 0 var(--sg-space-3); color: var(--sg-accent); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.sg-resp-dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sg-space-3) var(--sg-space-5); margin: 0; }
+.sg-resp-dl dt { color: var(--sg-muted); font-size: 12px; }
+.sg-resp-dl dd { margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.sg-resp-lista { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 var(--sg-space-2); }
+.sg-resp-lista > span:first-child { flex: 0 0 100%; color: var(--sg-muted); font-size: 12px; }
+.sg-resp-formacion { margin: 0; padding-left: 18px; font-size: 14px; }
+@media (max-width: 520px) { .sg-resp-dl { grid-template-columns: minmax(0, 1fr); } }
+.sg-table .sg-button[data-respuesta] { min-height: 36px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+.sg-tabla-detalle :is(th, td) { padding: 10px 8px; font-size: 13px; }

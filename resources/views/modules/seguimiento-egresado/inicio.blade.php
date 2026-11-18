@@ -18,6 +18,7 @@
       <a class="sg-link" href="{{ route('seguimiento-egresado.campanias') }}">Ver todas las campañas ({{ $avisos['total'] }})</a>
     @endif
   </div>
+  @if ($avisos['avisos'] !== [])<div class="sg-avisos">@endif
   @forelse ($avisos['avisos'] as $aviso)
     <article @class(['sg-aviso', 'sg-aviso-urgente' => $aviso['urgente']])>
       <div class="sg-aviso-info">
@@ -44,6 +45,7 @@
       @if ($puedeAdministrar)<a class="sg-button" href="{{ route('seguimiento-egresado.campanias') }}">Ir a campañas</a>@endif
     </div>
   @endforelse
+  @if ($avisos['avisos'] !== [])</div>@endif
 </section>
 @endisset
 @foreach ([

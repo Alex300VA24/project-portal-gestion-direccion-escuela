@@ -39,19 +39,19 @@ class PortadaTest extends TestCase
             ->assertDontSee('esquema de datos');
     }
 
-    public function test_se_muestran_hasta_cinco_ordenadas_por_la_que_cierra_primero(): void
+    public function test_se_muestran_hasta_seis_ordenadas_por_la_que_cierra_primero(): void
     {
         $this->entrarComo();
-        foreach (range(1, 7) as $n) {
+        foreach (range(1, 8) as $n) {
             $this->campaniaDeEgresados("Campaña número {$n}", $n + 1, 1, 0);
         }
 
         $respuesta = $this->get(route('seguimiento-egresado.index'))->assertOk()
-            ->assertSee('Ver todas las campañas (7)');
-        foreach (range(1, 5) as $n) {
+            ->assertSee('Ver todas las campañas (8)');
+        foreach (range(1, 6) as $n) {
             $respuesta->assertSee("Campaña número {$n}");
         }
-        $respuesta->assertDontSee('Campaña número 6')->assertDontSee('Campaña número 7');
+        $respuesta->assertDontSee('Campaña número 7')->assertDontSee('Campaña número 8');
     }
 
     public function test_la_que_cierra_en_una_semana_o_menos_se_marca_como_urgente(): void

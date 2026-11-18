@@ -14,6 +14,7 @@ use App\Modules\SeguimientoEgresado\Controllers\Invitaciones\ContactoInicialCont
 use App\Modules\SeguimientoEgresado\Controllers\PadronController;
 use App\Modules\SeguimientoEgresado\Controllers\PromocionController;
 use App\Modules\SeguimientoEgresado\Controllers\ReportesController;
+use App\Modules\SeguimientoEgresado\Controllers\RespuestasController;
 use App\Modules\SeguimientoEgresado\Controllers\SeguimientoEgresadoController;
 use App\Modules\SeguimientoEgresado\Middleware\RequiereCapacidad;
 use App\Modules\SeguimientoEgresado\Middleware\SincronizaEstadoDeCampanias;
@@ -65,6 +66,7 @@ Route::prefix('seguimiento-egresado')
         // Campañas e invitaciones
         Route::get('/campanias', [CampaniasController::class, 'index'])->middleware($interna('campanias.consultar'))->name('campanias');
         Route::get('/campanias/{id}/detalle', [CampaniasController::class, 'detalle'])->whereNumber('id')->middleware($interna('campanias.consultar'))->name('campanias.detalle');
+        Route::get('/campanias/respuesta/{invitacion}', [RespuestasController::class, 'egresado'])->whereNumber('invitacion')->middleware($interna('seguimiento.consultar'))->name('campanias.respuesta');
         Route::post('/campanias', [CampaniasController::class, 'store'])->middleware($interna('campanias.administrar'))->name('campanias.store');
         Route::put('/campanias/{id}', [CampaniasController::class, 'update'])->middleware($interna('campanias.administrar'))->name('campanias.update');
         Route::post('/campanias/{id}/emitir-invitaciones', [CampaniasController::class, 'emitirInvitaciones'])->middleware($interna('campanias.administrar'))->name('campanias.emitir-invitaciones');
@@ -85,6 +87,7 @@ Route::prefix('seguimiento-egresado')
 
         // Encuesta empresarial e indicadores
         Route::get('/empresas', [EmpresasController::class, 'index'])->middleware($interna('empresas.resultados'))->name('empresas');
+        Route::get('/empresas/respuesta/{invitacion}', [RespuestasController::class, 'empresa'])->whereNumber('invitacion')->middleware($interna('empresas.resultados'))->name('empresas.respuesta');
         Route::post('/empresas/enlaces', [EmpresasController::class, 'generarEnlace'])->middleware($interna('campanias.administrar'))->name('empresas.enlaces');
         Route::post('/empresas/enlaces/lote', [EmpresasController::class, 'generarLote'])->middleware($interna('campanias.administrar'))->name('empresas.enlaces.lote');
         Route::post('/empresas/enlaces/{id}/renovar', [EmpresasController::class, 'renovarEnlace'])->whereNumber('id')->middleware($interna('campanias.administrar'))->name('empresas.enlaces.renovar');

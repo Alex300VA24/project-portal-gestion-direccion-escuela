@@ -10,6 +10,7 @@ use App\Modules\SeguimientoEgresado\Models\Egresado;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
 use App\Modules\SeguimientoEgresado\Services\Accesos\EnlaceInvitacion;
+use App\Modules\SeguimientoEgresado\Services\Accesos\SesionAcceso;
 use App\Modules\SeguimientoEgresado\Services\CatalogosDeCampania;
 use App\Modules\SeguimientoEgresado\Services\EstadoDeCampanias;
 use App\Modules\SeguimientoEgresado\Services\Invitaciones\EnvioDeEnlaces;
@@ -372,6 +373,7 @@ class CampaniasController extends Controller
             'campania' => $campania,
             'resumen' => $resumen,
             'invitaciones' => $invitaciones,
+            'puedeVerRespuestas' => (bool) SesionAcceso::desde(request())->actual()?->puede('seguimiento.consultar'),
             'pendientesConvocables' => $invitaciones->where('estado', 'PENDIENTE')->where('expira_en', '>', now())->count(),
             'empresas' => ['enlaces' => (clone $empresas)->count(), 'respondieron' => (clone $empresas)->where('estado', 'COMPLETADA')->count()],
             'promociones' => app(CatalogosDeCampania::class)->promociones(),

@@ -133,7 +133,7 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
             'tipo' => $tipo,
             'finalidad' => 'SEGUIMIENTO',
             'horizonte_anios' => $horizonte,
-            'descripcion' => 'Campaña ficticia para demostración.',
+            'descripcion' => 'Seguimiento a los egresados de la promoción.',
             'periodo' => $periodo,
             'fecha_inicio' => $inicio,
             'fecha_fin' => $fin,
@@ -349,7 +349,7 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
             'fecha_respuesta' => $fecha->format('Y-m-d H:i:sP'),
             'id_nivel_satisfaccion' => $nivel ? $this->catalogo('cat_nivel_satisfaccion', $nivel) : null,
             'id_sector_empresa' => $this->catalogo('cat_sector_empresa', $sectores[$posicion % 5]),
-            'cargo_informante' => 'Responsable ficticio',
+            'cargo_informante' => 'Jefe de Tecnología',
             'organizacion_informada' => $organizacion,
         ]);
 

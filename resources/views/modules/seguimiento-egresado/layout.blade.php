@@ -127,6 +127,7 @@
   })();
 </script>
 @include('modules.seguimiento-egresado.partials.dialogo')
+@include('modules.seguimiento-egresado.partials.respuesta-dialogo')
 @stack('scripts')
 </body>
 </html>

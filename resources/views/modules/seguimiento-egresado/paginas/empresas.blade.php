@@ -133,7 +133,7 @@
                   </td>
                   <td>
                     @if ($fila->estado === 'respondida')
-                      <span class="sg-badge sg-badge-success">✓ Respondió</span>
+                      <button type="button" class="sg-button sg-button-secondary" data-respuesta="{{ route('seguimiento-egresado.empresas.respuesta', $fila->invitacion->id) }}">Ver respuesta</button>
                     @elseif ($puedeGenerar && $abierta)
                       @if ($fila->estado === 'sin_enlace')
                         <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces') }}">
@@ -198,7 +198,7 @@
                   <td>{{ $m->organizacion_informada ?: '—' }}</td>
                   <td>
                     @if ($m->estado_fila === 'respondida')
-                      <span class="sg-badge sg-badge-success">✓ Respondió</span>
+                      <button type="button" class="sg-button sg-button-secondary" data-respuesta="{{ route('seguimiento-egresado.empresas.respuesta', $m->id) }}">Ver respuesta</button>
                     @elseif ($puedeGenerar && $abierta)
                       <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $m->id) }}"
                             @if ($m->estado_fila === 'pendiente') data-sg-confirmar="{{ $m->enviado_en ? 'Ya entregaste este enlace. Si generas uno nuevo, el anterior dejará de funcionar.' : 'Si generas un enlace nuevo, el anterior dejará de funcionar.' }} ¿Continuar?" @endif>

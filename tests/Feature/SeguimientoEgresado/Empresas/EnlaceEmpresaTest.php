@@ -224,7 +224,8 @@ class EnlaceEmpresaTest extends TestCase
         $this->respuestaEmpresa($respondida['id'], null);
 
         $pagina = $this->paginaDe($campania)->assertOk();
-        $pagina->assertSee('Enlace nuevo')->assertSee('Ya entregaste este enlace')->assertSee('✓ Respondió');
+        $pagina->assertSee('Enlace nuevo')->assertSee('Ya entregaste este enlace')->assertSee('Ver respuesta')
+            ->assertSee(route('seguimiento-egresado.empresas.respuesta', $respondida['id'], false), false);
         $pagina->assertDontSee(route('seguimiento-egresado.empresas.enlaces.renovar', ['id' => $respondida['id']]), false);
     }
 

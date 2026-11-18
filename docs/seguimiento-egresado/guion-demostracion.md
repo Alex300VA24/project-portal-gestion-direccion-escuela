@@ -59,6 +59,19 @@ php artisan serve
 
 La imagen del portal no incluye la extensión PHP `zip`: la **importación de `.xlsx`** no funciona ahí (la fila se rechaza con «No se pudo leer el archivo»; no rompe nada) y el Excel de indicadores se entrega como CSV. Usar **CSV** para importar. Arreglarlo es agregar `zip` al `Dockerfile`, que es del proyecto principal.
 
+## 1b. Presentación con los datos de muestra (recomendada)
+
+En una **base nueva** y en un entorno local: `php artisan module:migrate all`, `php artisan db:seed` y `php artisan db:seed --class="App\Modules\SeguimientoEgresado\Database\Seeders\SeguimientoEgresadoSeeder"`. Con eso la base trae promociones con una tasa de egreso creíble (I1 entre 58 % y 78 %), campañas, encuestas, evaluación institucional y dos cosas **sin enviar** que se hacen en vivo. Los egresados de relleno usan correos `.test`: ninguno puede recibir un mensaje.
+
+| Paso | Qué se hace | Resultado esperado |
+|---|---|---|
+| A | Iniciar sesión como Secretaría → **Inicio** (campañas por cerrar), **Indicadores**, **Evaluación institucional** (con Dirección: validar un informe y ver cómo cambia I3). | Cifras y gráficas con datos; las promociones en curso se rotulan «En curso». |
+| B | **Contacto inicial.** Padrón → **Promoción 2019** → paso **2. Cargar a los alumnos** → elegir `docs/seguimiento-egresado/datos/alumnos-aptos-demo.csv` → paso **3. Enviar enlaces**. | Se cargan 6 alumnos. Los enlaces llegan **solo** a `acortegana@unitru.edu.pe` y `agamboaa@unitru.edu.pe` (la lista de correos permitidos); los otros cuatro (`.test`) quedan «No enviado» con su enlace en pantalla. |
+| C | **Campaña.** Campañas e invitaciones → **Seguimiento a egresados 2026-II** (ya creada, sin enviar) → **Ver detalle** → **Enviar invitaciones**. | El correo con el enlace llega a `alvaroenrique080199@gmail.com` y `arimanuelg544@gmail.com`. Quien no dejó su correo no se convoca y el aviso lo dice. |
+| D | Abrir el enlace recibido en el correo, responder la encuesta y volver a la campaña. | La invitación pasa a **COMPLETADA** y la barra de avance sube. |
+
+Los correos de los pasos B y C se envían de verdad: hace falta `MAIL_MAILER=smtp` con la contraseña de aplicación en el `.env` (ver [correo.md](correo.md)). Con `MAIL_MAILER=log` no sale nada y el enlace se entrega a mano.
+
 ## 2. Recorrido (Secretaría)
 
 Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimiento-egresado`).

@@ -76,6 +76,8 @@ La pantalla muestra todas las campañas (nombre, periodo, fechas, promociones, e
 2. Quien aún no dejó su contacto **no se convoca**: el aviso dice cuántos son y que deben completarlo desde su promoción en el Padrón. Quien ya tiene invitación se omite. Los alumnos que siguen como «Apto para egresar» tampoco se convocan.
 3. Los enlaces recién generados aparecen en el mismo detalle, una sola vez, con el estado del correo (**Copiar** para entregarlos a mano). Una campaña cerrada no permite enviar.
 
+**Ver una respuesta.** En la tabla del detalle, cada fila respondida tiene **Ver respuesta**: abre, encima de la misma ventana, la respuesta completa del egresado (situación laboral, residencia e idiomas, satisfacción, habilidades y formación posterior; solo lo que respondió). Se cierra con **Cerrar** y vuelves a la lista sin recargar nada. Solo la Secretaría ve las respuestas individuales de los egresados; la Dirección ve las cifras agregadas.
+
 **Seguir quién respondió.** La tabla del detalle muestra matrícula, egresado, promoción, fecha de envío, estado (PENDIENTE, RESPONDIDA o VENCIDA), fecha de respuesta, recordatorios enviados y la acción. **Descargar lista (CSV)** baja esa tabla.
 
 **Recordar.** **Recordar a los N pendientes** envía un recordatorio a todos los que aún no respondieron (después de confirmar); **Recordar** en una fila lo hace con uno solo. Cada recordatorio genera un **enlace nuevo y el anterior deja de funcionar**.
@@ -92,6 +94,7 @@ Las empresas responden con un enlace, sin cuenta. El sistema **no envía nada a 
    - Al generar, una ventana muestra egresado, empresa, contacto y enlace, con **Copiar** por fila, **Copiar todos** y **Descargar lista (CSV)**. **Se muestran una sola vez**: cópialos o descárgalos antes de cerrar.
    - **Enlace nuevo** genera otro y el anterior deja de funcionar; si ya lo entregaste, pide confirmación.
 3. **Demanda de habilidades** (encuesta general): no trata de un egresado. Indica **cuántos enlaces** necesitas y se generan uno por empresa (cada enlace admite una sola respuesta).
+   - En las filas respondidas, **Ver respuesta** abre en una ventana lo que contestó la empresa (quién responde, sector, satisfacción, comentario y habilidades).
 4. **Resultados**: los totales (cobertura, I5, encuestas de mercado) y las gráficas de habilidades más demandadas, aspectos por reforzar y satisfacción, de la campaña elegida.
 
 ### Indicadores I1 a I6

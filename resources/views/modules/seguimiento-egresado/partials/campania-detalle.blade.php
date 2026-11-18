@@ -127,7 +127,9 @@
               <td>{{ $respondio ? $fecha($respondio, 'd/m/Y H:i') : '—' }}</td>
               <td class="sg-numeric">{{ $inv->recordatorios_enviados }}</td>
               <td>
-                @if($respondida)
+                @if($respondida && ($puedeVerRespuestas ?? false) && $inv->medicion)
+                  <button type="button" class="sg-button sg-button-secondary" data-respuesta="{{ route('seguimiento-egresado.campanias.respuesta', $inv->id) }}">Ver respuesta</button>
+                @elseif($respondida)
                   <span class="sg-badge sg-badge-success">✓ Respondió</span>
                 @elseif($inv->estado === 'PENDIENTE' && ! $cerrada)
                   <form method="POST" action="{{ route('seguimiento-egresado.campanias.recordatorio', $inv->id) }}">
