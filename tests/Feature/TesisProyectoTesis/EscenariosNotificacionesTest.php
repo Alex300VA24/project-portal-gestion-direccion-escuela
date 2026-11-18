@@ -22,6 +22,14 @@ final class EscenariosNotificacionesTest extends TesisTestCase
         '09' => Estados::LISTO_SUSTENTAR, '10' => Estados::PROGRAMADO, '11' => Estados::SUSTENTADO,
     ];
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // PT-DEMO-08 está en la revisión intermedia (semana 8 o después): no debe depender del día en que se corre.
+        $this->irASemanaNueveDelPeriodo();
+    }
+
     private function p(string $n): Proyecto
     {
         return Proyecto::query()->where('codigo', EscenariosTesisSeeder::PREFIJO.$n)->firstOrFail();

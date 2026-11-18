@@ -129,6 +129,10 @@ final class EscenariosTesisSeeder extends Seeder
             Acta::query()->whereIn('id_proyecto', $ids)->pluck('id_archivo_firmado')->all(),
         );
 
+        // Primero las observaciones: cuelgan de una revisión (CASCADE) y apuntan a la entrega donde se corrigieron
+        // (SET NULL). Si el proyecto las borra en cascada, PostgreSQL puede aplicar el SET NULL después de borrar la
+        // revisión y fallar la FK según el orden físico de las filas (falla intermitente al reiniciar).
+        Observacion::query()->whereIn('id_revision', Revision::query()->whereIn('id_entrega', $entregas)->select('id_revision'))->delete();
         Acta::query()->whereIn('id_proyecto', $ids)->delete();
         Sustentacion::query()->whereIn('id_proyecto', $ids)->delete(); // resultados en cascada
         AsesorProyecto::query()->whereIn('id_proyecto', $ids)->delete();

@@ -134,7 +134,7 @@ final class BaseModuloTest extends TesisTestCase
     public function test_descarga_de_archivo_exige_relacion_con_el_proyecto(): void
     {
         $p = $this->proyecto(['alumno@portal.local']);
-        $idArchivo = app(ArchivoService::class)->guardar($this->pdf('f1.pdf'), $this->idUsuario('alumno@portal.local'));
+        $idArchivo = app(ArchivoService::class)->guardar($this->pdf('plan_de_tesis_lucia.pdf'), $this->idUsuario('alumno@portal.local'));
         $p->update(['id_archivo_documento' => $idArchivo]);
 
         $ruta = route('tesis-proyecto-tesis.archivos.descargar', ['proyecto', $p->uuid]);
@@ -146,8 +146,10 @@ final class BaseModuloTest extends TesisTestCase
         $this->como('alumno@portal.local')->get('/tesis-proyecto-tesis/archivos/proyecto/'.$p->id_proyecto)->assertNotFound();
 
         $ruta = DB::table('comun.archivo')->where('id_archivo', $idArchivo)->value('ruta_almacenamiento');
-        $this->assertStringStartsWith('tesis/', $ruta);
-        $this->assertStringNotContainsString('f1', $ruta);
+        // Nombre generado (uuid), nunca el del estudiante. Antes se comprobaba que no contuviera «f1»,
+        // pero un uuid hexadecimal lo contiene en ~11 % de los casos: la prueba fallaba al azar.
+        $this->assertMatchesRegularExpression('#^tesis/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$#', $ruta);
+        $this->assertStringNotContainsString('plan_de_tesis', $ruta);
         Storage::disk('local')->assertExists($ruta);
     }
 

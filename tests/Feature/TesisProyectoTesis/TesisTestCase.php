@@ -39,6 +39,18 @@ abstract class TesisTestCase extends TestCase
         $this->seed(TesisDatabaseSeeder::class);
     }
 
+    /**
+     * Fija el reloj en la semana 9 del periodo demo. Las reglas que dependen de la semana del ciclo
+     * (revisión intermedia desde la semana 8) dan así el mismo resultado cualquier día del año.
+     */
+    protected function irASemanaNueveDelPeriodo(): \App\Shared\Models\Core\PeriodoAcademico
+    {
+        $periodo = app(CatalogoService::class)->periodoActual();
+        $this->travelTo($periodo->fecha_inicio->copy()->addWeeks(8)->addDay()->setTime(10, 0));
+
+        return $periodo;
+    }
+
     protected function user(string $correo): User
     {
         return User::query()->where('email', $correo)->firstOrFail();

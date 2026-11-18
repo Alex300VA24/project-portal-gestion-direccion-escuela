@@ -111,9 +111,10 @@ final class JuradoDictamenTest extends TesisTestCase
 
     public function test_revision_intermedia_desde_semana_8_es_referencial_y_unica(): void
     {
+        $periodo = $this->irASemanaNueveDelPeriodo();
         $p = $this->proyecto(['alumno@portal.local'], Estados::EN_TESIS, Estados::ETAPA_TESIS, 'asesor@portal.local', $this->juradoDemo());
-        $p->update(['id_periodo_tesis' => app(\App\Modules\TesisProyectoTesis\Services\CatalogoService::class)->periodoActual()->id_periodo]);
-        $this->assertGreaterThanOrEqual(8, app(\App\Modules\TesisProyectoTesis\Services\SeguimientoService::class)->semanaActual($p), 'El periodo demo debe estar en la semana 8 o después.');
+        $p->update(['id_periodo_tesis' => $periodo->id_periodo]);
+        $this->assertSame(9, app(\App\Modules\TesisProyectoTesis\Services\SeguimientoService::class)->semanaActual($p), 'El reloj de la prueba está en la semana 9 del periodo.');
 
         // Sin entregas en Tesis no hay revisión intermedia.
         $this->assertNull(app(JuradoService::class)->modo($p, $this->idDocente('jurado1@portal.local')));
