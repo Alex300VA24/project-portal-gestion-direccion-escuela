@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Run: IF_DEMO_MANIFEST=... IF_DEMO_PASSWORD=... python3 tests/Browser/investigacion_formativa.py.
 
-Requires a running local application, geckodriver, and a fresh demo dataset.
+Requires a running local application, a WebDriver, and a fresh demo dataset.
 The script changes only demo data through the normal browser forms.
+
+Use IF_BROWSER=chromium for a true 390 pixel viewport. Firefox clamps the
+window to 500 pixels, so its narrow captures are reported as the measured
+width instead of the requested one.
 """
 
 import base64
@@ -30,19 +34,46 @@ class Browser:
         self.output.mkdir(parents=True, exist_ok=False)
         self.prefix = ""
         self.checks = []
+        self.viewports = []
+        self.comentario_largo = (
+            "Primera linea del comentario.\n"
+            "Segunda linea con un token largo sin espacios: " + "X" * 120
+        )
+        self.kind = os.environ.get("IF_BROWSER", "chromium").lower()
         session = self.call("POST", "/session", {
-            "capabilities": {"alwaysMatch": {
-                "browserName": "firefox",
-                "pageLoadStrategy": "eager",
-                "timeouts": {"pageLoad": 20000, "script": 10000, "implicit": 0},
-                "moz:firefoxOptions": {
-                    "binary": os.environ.get("FIREFOX_BINARY", "/usr/bin/firefox"),
-                    "args": ["-headless"],
-                },
-            }},
+            "capabilities": {"alwaysMatch": self.capabilities()},
         })
         self.prefix = "/session/" + session["sessionId"]
         self.version = session["capabilities"]["browserVersion"]
+
+    def capabilities(self):
+        if self.kind == "chromium":
+            binary = os.environ.get("CHROMIUM_BINARY", "")
+            options = {
+                "args": [
+                    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage",
+                    "--disable-gpu", "--hide-scrollbars", "--window-size=1280,950",
+                ],
+            }
+            if binary:
+                options["binary"] = binary
+            return {
+                "browserName": "chrome",
+                "pageLoadStrategy": "eager",
+                "timeouts": {"pageLoad": 20000, "script": 10000, "implicit": 0},
+                "goog:chromeOptions": options,
+            }
+        if self.kind != "firefox":
+            raise ValueError("IF_BROWSER must be chromium or firefox.")
+        return {
+            "browserName": "firefox",
+            "pageLoadStrategy": "eager",
+            "timeouts": {"pageLoad": 20000, "script": 10000, "implicit": 0},
+            "moz:firefoxOptions": {
+                "binary": os.environ.get("FIREFOX_BINARY", "/usr/bin/firefox"),
+                "args": ["-headless", "--width=1280", "--height=950"],
+            },
+        }
 
     def call(self, method, path, data=None, timeout=40):
         request = urllib.request.Request(
@@ -87,6 +118,14 @@ class Browser:
         self.call("POST", f"/element/{element_id}/clear", {})
         self.call("POST", f"/element/{element_id}/value", {"text": value})
 
+    def fill_multiline(self, selector, value):
+        self.js(
+            "const e = document.querySelector(arguments[0]);"
+            " e.value = arguments[1];"
+            " e.dispatchEvent(new Event('input', {bubbles:true}));",
+            selector, value,
+        )
+
     def click(self, selector):
         self.call("POST", f"/element/{self.element(selector)}/click", {})
 
@@ -106,18 +145,143 @@ class Browser:
         self.checks.append(name)
         print("PASS", name, flush=True)
 
-    def capture(self, name):
+    def computed(self, selector, prop):
+        return self.js(
+            "const e = document.querySelector(arguments[0]);"
+            " return e ? getComputedStyle(e).getPropertyValue(arguments[1]) : null;",
+            selector, prop,
+        )
+
+    def set_viewport(self, width, height=950):
+        """Set the viewport and return the measured inner width."""
+        if self.kind == "chromium":
+            self.call("POST", "/goog/cdp/execute", {
+                "cmd": "Emulation.setDeviceMetricsOverride",
+                "params": {"width": width, "height": height, "deviceScaleFactor": 1, "mobile": False},
+            })
+        self.call("POST", "/window/rect", {"width": width, "height": height})
+        time.sleep(0.25)
+        return int(self.js("return window.innerWidth"))
+
+    def capture(self, name, widths=(1280, 390)):
         (self.output / f"{name}.html").write_text(self.call("GET", "/source"))
-        for width in (1280, 390):
-            self.call("POST", "/window/rect", {"width": width, "height": 950})
-            time.sleep(0.15)
-            self.check(f"{name}: body width {width}", lambda: self.js(
+        for width in widths:
+            actual = self.set_viewport(width)
+            self.viewports.append({"captura": name, "requested": width, "actual": actual})
+            self.check(f"{name}: viewport requested {width} actual {actual}", lambda: self.js(
+                "return window.innerWidth") == width)
+            self.check(f"{name}: no horizontal overflow at {actual}", lambda: self.js(
                 "return document.documentElement.scrollWidth <= window.innerWidth+1",
             ))
-            (self.output / f"{name}-{width}.png").write_bytes(
+            (self.output / f"{name}-{actual}.png").write_bytes(
                 base64.b64decode(self.call("GET", "/screenshot")),
             )
-        self.call("POST", "/window/rect", {"width": 1280, "height": 950})
+        self.set_viewport(1280)
+
+    def check_theme(self):
+        """Confirm the theme and contrast controls change the rendered colors."""
+        light = {
+            "body": self.computed("body", "background-color"),
+            "topbar": self.computed(".if-topbar", "background-color"),
+            "avatar": self.computed(".if-avatar", "color"),
+            "avatar_bg": self.computed(".if-avatar", "background-color"),
+        }
+        self.click('header.if-topbar button[aria-label="Cambiar tema de color"]')
+        self.wait(lambda: self.computed("body", "background-color") != light["body"])
+        dark = {
+            "body": self.computed("body", "background-color"),
+            "topbar": self.computed(".if-topbar", "background-color"),
+            "avatar": self.computed(".if-avatar", "color"),
+            "avatar_bg": self.computed(".if-avatar", "background-color"),
+        }
+        self.check("Theme toggle changes the body background", lambda: dark["body"] != light["body"])
+        self.check("Theme toggle changes the topbar background", lambda: dark["topbar"] != light["topbar"])
+        self.check("Dark theme changes the avatar foreground", lambda: dark["avatar"] != light["avatar"])
+        self.check("Dark theme changes the avatar background", lambda: dark["avatar_bg"] != light["avatar_bg"])
+        (self.output / "tema-oscuro.png").write_bytes(
+            base64.b64decode(self.call("GET", "/screenshot")),
+        )
+
+        self.click(".if-user-trigger")
+        self.wait(lambda: self.js("return !!document.querySelector('.if-menu-a11y')"))
+        self.click(".if-menu-a11y")
+        self.wait(lambda: self.js("return !!document.querySelector('button[aria-label=\"Alternar alto contraste\"]')"))
+        self.click('button[aria-label="Alternar alto contraste"]')
+        self.wait(lambda: self.js("return document.documentElement.dataset.contrast") == "alto")
+        contrast = {
+            "body": self.computed("body", "background-color"),
+            "topbar": self.computed(".if-topbar", "background-color"),
+            "avatar": self.computed(".if-avatar", "color"),
+        }
+        self.check("High contrast changes the body background", lambda: contrast["body"] != dark["body"])
+        self.check("High contrast changes the avatar foreground", lambda: contrast["avatar"] != dark["avatar"])
+        (self.output / "alto-contraste.png").write_bytes(
+            base64.b64decode(self.call("GET", "/screenshot")),
+        )
+        self.click(".quality-reset")
+        self.wait(lambda: self.js("return document.documentElement.dataset.contrast") == "normal")
+        self.check("Preferences reset returns the light body background", lambda: self.computed(
+            "body", "background-color") == light["body"])
+
+    def check_brand(self):
+        """Confirm the sidebar brand name and caption use separate lines."""
+        self.check("Brand name and caption use separate lines", lambda: self.js("""
+            const strong = document.querySelector('.if-brand strong');
+            const small = document.querySelector('.if-brand small');
+            if (!strong || !small) return false;
+            const a = strong.getBoundingClientRect();
+            const b = small.getBoundingClientRect();
+            return getComputedStyle(strong).display === 'block'
+                && getComputedStyle(small).display === 'block'
+                && b.top >= a.bottom - 1;
+        """))
+
+    def check_comment_layout(self):
+        """Confirm the survey comment keeps its line break and wraps long tokens."""
+        actual = self.set_viewport(390)
+        self.viewports.append({"captura": "comentario-confirmacion", "requested": 390, "actual": actual})
+        self.check(f"Comment layout: viewport requested 390 actual {actual}", lambda: self.js(
+            "return window.innerWidth") == 390)
+        self.check("Comment keeps its line break", lambda: self.js("""
+            const q = document.querySelector('.if-quote');
+            if (!q) return false;
+            const line = parseFloat(getComputedStyle(q).lineHeight) || 20;
+            return getComputedStyle(q).whiteSpace === 'pre-wrap' && q.clientHeight >= line * 1.8;
+        """))
+        self.check("Long comment token stays inside the block", lambda: self.js("""
+            const q = document.querySelector('.if-quote');
+            return !!q && q.scrollWidth <= q.clientWidth + 1;
+        """))
+        self.check("Comment page has no horizontal overflow", lambda: self.js(
+            "return document.documentElement.scrollWidth <= window.innerWidth+1",
+        ))
+        (self.output / "comentario-confirmacion-390.png").write_bytes(
+            base64.b64decode(self.call("GET", "/screenshot")),
+        )
+        self.set_viewport(1280)
+
+    def check_rubric_criterion(self):
+        """Confirm the rubric editor adds and removes styled criteria."""
+        before = self.js("return document.querySelectorAll('#criterios [data-criterio]').length")
+        self.click("#agregar-criterio")
+        self.wait(lambda: self.js(
+            "return document.querySelectorAll('#criterios [data-criterio]').length") == before + 1)
+        self.check("Rubric adds a criterion with styled fields", lambda: self.js("""
+            const fieldsets = document.querySelectorAll('#criterios [data-criterio]');
+            const last = fieldsets[fieldsets.length - 1];
+            if (!last) return false;
+            const area = last.querySelector('textarea');
+            const score = last.querySelector('input[type=number]');
+            if (!area || !score) return false;
+            return !!area.closest('.if-field') && !!score.closest('.if-field')
+                && area.getBoundingClientRect().width > 0
+                && score.getBoundingClientRect().width > 0;
+        """))
+        self.js("document.querySelector('#criterios [data-criterio]:last-child [data-quitar-criterio]').click()")
+        self.wait(lambda: self.js(
+            "return document.querySelectorAll('#criterios [data-criterio]').length") == before)
+        self.check("Rubric removes the added criterion", lambda: self.js(
+            "return document.querySelectorAll('#criterios [data-criterio]').length") == before)
 
     def login(self, name):
         self.call("DELETE", "/cookie")
@@ -157,6 +321,13 @@ class Browser:
         self.check("Rubric persists", lambda: self.js(
             'return document.getElementById("rubrica-nombre").value',
         ) == "Rúbrica creada en navegador")
+        self.check_rubric_criterion()
+        self.button("Guardar rúbrica")
+        self.wait(lambda: "Rúbrica guardada." in self.text())
+        self.section("docente", "rubrica", name)
+        self.check("Rubric keeps one criterion after add and remove", lambda: self.js(
+            'return document.querySelectorAll("#criterios [data-criterio]").length',
+        ) == 1)
         self.capture("rubrica-guardada-" + name)
 
         self.section("docente", "cronograma", name)
@@ -237,8 +408,21 @@ class Browser:
 
     def current_title(self):
         return self.js(
-            'return document.querySelector("section[aria-labelledby=titulo-propuesta] > p").textContent.trim()',
+            'return document.querySelector("[data-titulo-propuesto]").textContent.trim()',
         )
+
+    def check_secretary(self):
+        """Confirm the secretary workspace lists the assigned sections."""
+        self.login("secretaria-a")
+        self.visit("/investigacion-formativa/secretaria")
+        self.check("Secretary workspace lists the assigned school", lambda: "Escuelas asignadas" in self.text())
+        self.check("Secretary workspace lists the sections", lambda: "Secciones habilitadas" in self.text())
+        self.capture("secretaria-secciones")
+        section_id = self.manifest["secciones"]["completa"]
+        self.visit(f"/investigacion-formativa/secretaria/secciones/{section_id}/encuesta")
+        self.check("Secretary opens the survey workspace", lambda: "Encuesta de la sección" in self.text())
+        self.check("Secretary cannot close the survey", lambda: "Cerrar encuesta" not in self.text())
+        self.capture("secretaria-encuesta")
 
     def review_title(self, href):
         reason = "Delimitar el estudio a los procesos de matrícula."
@@ -295,6 +479,8 @@ class Browser:
     def run(self):
         self.prepare_presentation()
         self.login("coordinador")
+        self.check_brand()
+        self.check_theme()
         self.capture("alumno-cursos")
         self.section("alumno", "grupo/crear")
         self.capture("grupo-crear")
@@ -370,7 +556,7 @@ class Browser:
                 document.querySelector('input[name="'+name+'"][value="5"]').click();
             }
         """)
-        self.fill("textarea[name=comentario]", "El trabajo permitió organizar el proceso de investigación.")
+        self.fill_multiline("textarea[name=comentario]", self.comentario_largo)
         self.click("main button[type=submit]")
         self.wait(lambda: "Respuesta registrada" in self.text())
         self.capture("alumno-encuesta-confirmada")
@@ -384,6 +570,7 @@ class Browser:
         self.capture("director-resultados")
         self.check("Survey report", lambda: "5.00" in self.text() and "Comentarios confidenciales" in self.text())
         self.check("Report omits respondent name", lambda: "Demo integrante" not in self.text())
+        self.check_comment_layout()
         self.section("director", "encuesta")
         self.button("Cerrar encuesta")
         self.wait(lambda: "La encuesta se cerró" in self.text())
@@ -406,6 +593,7 @@ class Browser:
         self.section("director", "resultados", "historica")
         self.capture("director-historial")
         self.check("Closed history", lambda: "Cerrada" in self.text())
+        self.check_secretary()
         self.login("multirrol")
         self.capture("selector-multirrol")
         self.check("Workspace selector", lambda: "Docencia" in self.text() and "Estudiante" in self.text())
@@ -416,8 +604,11 @@ if __name__ == "__main__":
     try:
         browser.run()
         result = {
-            "browser": "Firefox " + browser.version, "passed": len(browser.checks),
-            "checks": browser.checks, "upload_download": "BLOCKED G4",
+            "browser": browser.kind.capitalize() + " " + browser.version,
+            "passed": len(browser.checks),
+            "checks": browser.checks,
+            "viewports": browser.viewports,
+            "upload_download": "BLOCKED G4",
             "evaluation_browser": "BLOCKED G4: no production delivery writer",
         }
         (browser.output / "results.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))

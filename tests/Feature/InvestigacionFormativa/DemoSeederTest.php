@@ -40,11 +40,11 @@ final class DemoSeederTest extends TestCase
             $this->seed(InvestigacionDemoSeeder::class);
             $lotes = glob($directorio.'/*', GLOB_ONLYDIR);
             $this->assertCount(1, $lotes);
-            foreach (['identidades', 'directores', 'participantes', 'competencias'] as $nombre) {
+            foreach (['identidades', 'directores', 'secretarias', 'participantes', 'competencias'] as $nombre) {
                 $this->artisan('investigacion:importar-'.$nombre, ['csv' => $lotes[0].'/'.$nombre.'.csv', '--dry-run' => true])->assertExitCode(0);
             }
             $manifest = json_decode(file_get_contents($lotes[0].'/demo.json'), true, flags: JSON_THROW_ON_ERROR);
-            $this->assertCount(11, $manifest['cuentas']);
+            $this->assertCount(12, $manifest['cuentas']);
             $this->assertStringNotContainsString('OnlyForDisposableTests123', file_get_contents($lotes[0].'/demo.json'));
         } finally {
             putenv('IF_DEMO_EXPORT_DIR');
@@ -59,7 +59,7 @@ final class DemoSeederTest extends TestCase
             }
         }
 
-        $this->assertSame(11, User::where('email', 'like', '%@demo.example.test')->count());
+        $this->assertSame(12, User::where('email', 'like', '%@demo.example.test')->count());
         $this->assertSame(2, DB::table('core.escuela_profesional')->where('codigo', 'like', 'IFD-%')->count());
         $this->assertSame(2, DB::table('core.periodo_academico')->where('anio', now()->year)->count());
         $this->assertSame(5, DB::table('core.seccion')->where('codigo', 'like', 'IFD-%')->count());
@@ -73,13 +73,17 @@ final class DemoSeederTest extends TestCase
         $multi = User::where('email', 'like', 'multirrol.%@demo.example.test')->firstOrFail();
         $this->assertTrue($multi->hasAllRoles(['profesor', 'alumno']));
         $this->assertTrue(Hash::check('OnlyForDisposableTests123', $multi->password));
+        $secretaria = User::where('email', 'like', 'secretaria-a.%@demo.example.test')->firstOrFail();
+        $this->assertTrue($secretaria->hasRole('secretaria'));
+        $this->assertSame(1, DB::table('investigacion_formativa.secretaria_escuela')
+            ->where('user_id', $secretaria->id)->where('activo', true)->count());
         foreach (['grupo', 'proyecto', 'entrega', 'evaluacion'] as $tabla) {
             $this->assertSame(0, DB::table('investigacion_formativa.'.$tabla)->count());
         }
         $this->assertSame(0, DB::table('comun.archivo')->count());
 
         $this->seed(InvestigacionDemoSeeder::class);
-        $this->assertSame(22, User::where('email', 'like', '%@demo.example.test')->count());
+        $this->assertSame(24, User::where('email', 'like', '%@demo.example.test')->count());
         $this->assertSame($password, $existente->fresh()->password);
         $this->assertSame($roles, $existente->fresh()->getRoleNames()->all());
     }
