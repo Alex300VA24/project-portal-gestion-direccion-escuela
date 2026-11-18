@@ -12,6 +12,8 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
   <title>@yield('title', 'Mi seguimiento') · Seguimiento al Egresado | UNT</title>
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('css/seguimiento-egresado.css') }}">
   @include('modules.seguimiento-egresado.egresado._estilos')
   @stack('styles')
@@ -23,7 +25,7 @@
   <aside class="sg-sidebar" aria-label="Módulo Seguimiento al Egresado">
     <div class="sg-sidebar-head">
       <a class="sg-brand" href="{{ $esEgresado ? route('seguimiento-egresado.egresado.inicio') : '#contenido' }}" aria-label="Seguimiento al Egresado">
-        <span class="sg-brand-symbol" aria-hidden="true">SE<span></span></span>
+        <img class="sg-brand-mark" src="{{ asset('img/logo-informatica.png') }}" alt="">
         <span class="sg-brand-copy"><strong>Seguimiento al Egresado</strong><small>Ingeniería Informática de la UNT</small></span>
       </a>
       @if ($esEgresado)

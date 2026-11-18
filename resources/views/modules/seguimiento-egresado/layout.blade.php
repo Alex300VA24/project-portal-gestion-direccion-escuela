@@ -6,6 +6,8 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="color-scheme" content="light">
   <title>@yield('title', 'Inicio') · Seguimiento al Egresado | UNT</title>
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('css/seguimiento-egresado.css') }}">
   @stack('styles')
 </head>
@@ -15,7 +17,7 @@
   <aside class="sg-sidebar" aria-label="Módulo Seguimiento al Egresado">
     <div class="sg-sidebar-head">
       <a class="sg-brand" href="{{ route('seguimiento-egresado.index') }}" aria-label="Seguimiento al Egresado · Inicio">
-        <span class="sg-brand-symbol" aria-hidden="true">SE<span></span></span>
+        <img class="sg-brand-mark" src="{{ asset('img/logo-informatica.png') }}" alt="">
         <span class="sg-brand-copy"><strong>Seguimiento al Egresado</strong><small>Ingeniería Informática de la UNT</small></span>
       </a>
       <button class="sg-menu-toggle" type="button" aria-label="Menú de navegación" aria-controls="sg-navigation" aria-expanded="false" hidden>
@@ -48,22 +50,30 @@
   </aside>
   <div class="sg-main-area">
     <header class="sg-topbar">
-      <nav class="sg-breadcrumb sg-container" aria-label="Ruta de navegación">
-        <ol>
-          <li><a href="{{ route('dashboard') }}">Portal</a></li>
-          @if(request()->routeIs('seguimiento-egresado.index'))
-            <li><span aria-current="page">Seguimiento al Egresado</span></li>
-          @else
-            <li><a href="{{ route('seguimiento-egresado.index') }}">Seguimiento al Egresado</a></li>
-            <li><span aria-current="page">@yield('section_name', 'Vista general')</span></li>
-          @endif
-        </ol>
-      </nav>
-      <div class="sg-user">
+      <div class="sg-container sg-topbar-inner">
+        <nav class="sg-breadcrumb" aria-label="Ruta de navegación">
+          <ol>
+            <li><a href="{{ route('dashboard') }}">Portal</a></li>
+            @if(request()->routeIs('seguimiento-egresado.index'))
+              <li><span aria-current="page">Seguimiento al Egresado</span></li>
+            @else
+              <li><a href="{{ route('seguimiento-egresado.index') }}">Seguimiento al Egresado</a></li>
+              <li><span aria-current="page">@yield('section_name', 'Vista general')</span></li>
+            @endif
+          </ol>
+        </nav>
         @auth
-          <span class="sg-user-name"><strong>{{ auth()->user()->name }}</strong><small>{{ \Illuminate\Support\Str::of(auth()->user()->getRoleNames()->first() ?? 'Usuario institucional')->replace('_', ' ') }}</small></span>
-          <a class="sg-button sg-button-secondary sg-user-action" href="{{ route('dashboard') }}">Cambiar de módulo</a>
-          <form method="POST" action="{{ route('logout') }}">@csrf<button class="sg-button sg-button-secondary sg-user-action" type="submit">Cerrar sesión</button></form>
+          <details class="sg-user-menu">
+            <summary class="sg-user-trigger" aria-label="Cuenta de {{ auth()->user()->name }}">
+              <span class="sg-avatar" aria-hidden="true">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr(auth()->user()->name, 0, 2)) }}</span>
+              <span class="sg-user-name"><strong>{{ auth()->user()->name }}</strong><small>{{ \Illuminate\Support\Str::of(auth()->user()->getRoleNames()->first() ?? 'Usuario institucional')->replace('_', ' ') }}</small></span>
+              <svg class="sg-user-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="sg-user-panel">
+              <a href="{{ route('dashboard') }}">Cambiar de módulo</a>
+              <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Cerrar sesión</button></form>
+            </div>
+          </details>
         @else
           <a class="sg-button sg-user-action" href="{{ route('login') }}">Iniciar sesión</a>
         @endauth
@@ -99,6 +109,13 @@
     sidebar.addEventListener('focusout', (event) => {
       if (!sidebar.contains(event.relatedTarget)) setOpen(false);
     });
+    const userMenu = document.querySelector('.sg-user-menu');
+    if (userMenu) {
+      document.addEventListener('click', (event) => { if (!userMenu.contains(event.target)) userMenu.removeAttribute('open'); });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && userMenu.hasAttribute('open')) { userMenu.removeAttribute('open'); userMenu.querySelector('summary').focus(); }
+      });
+    }
     mobile.addEventListener('change', () => {
       if (mobile.matches && navigation.contains(document.activeElement)) button.focus();
       setOpen(false);

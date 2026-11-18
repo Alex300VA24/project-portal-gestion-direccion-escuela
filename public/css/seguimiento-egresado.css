@@ -1,26 +1,26 @@
 /* Shared module styles. Scope every selector to .sg or use the sg- prefix. */
 .sg {
-  --sg-navy: #172554;
-  --sg-text: #15233d;
-  --sg-muted: #536078;
-  --sg-accent: #4f46e5;
+  --sg-navy: #17224d;
+  --sg-text: #141a33;
+  --sg-muted: #4a5170;
+  --sg-accent: #09613f;
   --sg-gold: #d7b877;
   --sg-nav-accent: #5ee0b3;
-  --sg-bg: #f5f5f0;
+  --sg-bg: #f4f4ef;
   --sg-surface: #fff;
-  --sg-soft: #eef0ff;
-  --sg-border: #dde1da;
+  --sg-soft: #eef0f3;
+  --sg-border: #dfe3ea;
   --sg-hover: #f0f1ec;
   --sg-focus: #2563eb;
-  --sg-danger: #c0362c;
-  --sg-success: #087f5b;
-  --sg-warning: #a65d00;
+  --sg-danger: #a11d12;
+  --sg-success: #0d7a50;
+  --sg-warning: #8a3f06;
   --sg-font: "Fira Sans", "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --sg-font-code: "Fira Code", ui-monospace, Consolas, monospace;
-  --sg-success-soft: #e7f7f0;
-  --sg-warning-soft: #fff3d8;
-  --sg-danger-soft: #ffebe8;
-  --sg-primary-hover: #066448;
+  --sg-success-soft: #e3f3ea;
+  --sg-warning-soft: #fcefdf;
+  --sg-danger-soft: #fde9e7;
+  --sg-primary-hover: #09613f;
   --sg-control-border: #7b8799;
   --sg-on-dark: #fff;
   --sg-sidebar-muted: #c7d2e6;
@@ -39,8 +39,8 @@
   --sg-space-6: 24px;
   --sg-space-8: 32px;
   --sg-space-10: 40px;
-  --sg-radius-sm: 4px;
-  --sg-radius: 8px;
+  --sg-radius-sm: 8px;
+  --sg-radius: 10px;
   --sg-stroke: 1px solid var(--sg-border);
   --sg-content-width: 1280px;
   --sg-gutter: 40px;
@@ -63,8 +63,7 @@
 .sg-sidebar { position: sticky; top: 0; align-self: start; height: 100vh; height: 100dvh; overflow-y: auto; background: var(--sg-navy); color: var(--sg-on-dark); padding: 28px 16px 24px; display: flex; flex-direction: column; gap: 32px; }
 .sg-sidebar-head { min-width: 0; }
 .sg-brand { display: flex; align-items: flex-start; gap: 12px; padding: 0 8px; }
-.sg-brand-symbol { width: 42px; height: 46px; flex: none; border: 1px solid var(--sg-sidebar-border); border-radius: var(--sg-radius); display: grid; place-content: center; font-size: 18px; font-weight: 650; letter-spacing: -1px; }
-.sg-brand-symbol > span { height: 2px; width: 16px; background: var(--sg-nav-accent); margin-top: 3px; }
+.sg-brand-mark { width: 48px; height: 48px; flex: none; object-fit: contain; }
 .sg-brand-copy { min-width: 0; }
 .sg-brand strong { display: block; font-size: 18px; font-weight: 600; line-height: 1.3; text-wrap: balance; }
 .sg-brand small { display: block; margin-top: 10px; color: var(--sg-sidebar-muted); font-size: 12px; line-height: 1.5; }
@@ -109,7 +108,7 @@
 
 /* Small shared UI vocabulary; behavior and business rules belong to each view. */
 .sg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sg-space-3); }
-.sg .sg-button { display: inline-flex; gap: 10px; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; background: var(--sg-success); color: var(--sg-on-dark); border: 1px solid var(--sg-success); border-radius: var(--sg-radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; transition: background-color .15s, border-color .15s; }
+.sg .sg-button { display: inline-flex; gap: 10px; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; background: var(--sg-success); color: var(--sg-on-dark); border: 1px solid var(--sg-success); border-radius: var(--sg-radius); font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; transition: background-color .15s, border-color .15s; }
 .sg .sg-button:hover { background: var(--sg-primary-hover); border-color: var(--sg-primary-hover); }
 .sg .sg-button-secondary { background: var(--sg-surface); color: var(--sg-accent); border-color: var(--sg-control-border); }
 .sg .sg-button-secondary:hover { background: var(--sg-hover); border-color: var(--sg-accent); }
@@ -175,7 +174,7 @@
   .sg-brand { padding: 0; gap: 10px; align-items: center; }
   .sg-brand strong { font-size: 16px; text-wrap: initial; }
   .sg-brand small { margin-top: 3px; font-size: 12px; }
-  .sg-brand-symbol { width: 36px; height: 40px; font-size: 16px; }
+  .sg-brand-mark { width: 40px; height: 40px; }
   .sg-menu-toggle { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; padding: 8px; background: transparent; border: 1px solid var(--sg-sidebar-border); border-radius: var(--sg-radius-sm); color: var(--sg-on-dark); cursor: pointer; font-size: 14px; }
   .sg-menu-toggle:hover { background: var(--sg-sidebar-hover); }
   .sg-navigation { margin-top: 20px; }
@@ -222,11 +221,31 @@
   .sg .sg-button, .sg .sg-tile, .sg .sg-alert { border: 1px solid ButtonText; }
 }
 
-/* Cuenta del portal en la barra superior (Secretaría y Dirección) */
-.sg-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-inline: var(--sg-space-6, 24px); }
-.sg-topbar .sg-breadcrumb { padding-inline: 0; }
-.sg-user { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-.sg-user-name { display: grid; text-align: right; line-height: 1.25; }
+/* Barra superior: una sola línea de 72 px; la cuenta es un menú compacto (igual que en Calidad). */
+.sg-topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--sg-space-4); height: 72px; }
+.sg-topbar .sg-breadcrumb { min-height: 0; padding: 0; min-width: 0; flex: 1 1 auto; }
+.sg-topbar .sg-breadcrumb ol { flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+.sg-topbar .sg-breadcrumb li { white-space: nowrap; }
+.sg-topbar .sg-breadcrumb li:last-child { min-width: 0; }
+.sg-topbar .sg-breadcrumb [aria-current] { overflow: hidden; text-overflow: ellipsis; }
+.sg-user-menu { position: relative; flex: none; }
+.sg-user-trigger { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 8px 4px 4px; border: 1px solid transparent; border-radius: var(--sg-radius); cursor: pointer; list-style: none; }
+.sg-user-trigger::-webkit-details-marker { display: none; }
+.sg-user-trigger:hover, .sg-user-menu[open] .sg-user-trigger { background: var(--sg-hover); border-color: var(--sg-border); }
+.sg-avatar { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--sg-navy); color: var(--sg-on-dark); font-size: 13px; font-weight: 700; }
+.sg-user-name { display: grid; text-align: left; line-height: 1.25; min-width: 0; }
+.sg-user-name strong { font-size: 14px; font-weight: 600; white-space: nowrap; }
 .sg-user-name small { color: var(--sg-muted); font-size: 12px; text-transform: capitalize; }
+.sg-user-chevron { flex: none; color: var(--sg-muted); transition: transform .15s; }
+.sg-user-menu[open] .sg-user-chevron { transform: rotate(180deg); }
+.sg-user-panel { position: absolute; z-index: 50; top: calc(100% + 8px); right: 0; min-width: 220px; padding: 6px; background: var(--sg-surface); border: var(--sg-stroke); border-radius: var(--sg-radius); box-shadow: 0 16px 44px rgba(23, 34, 77, .16); }
+.sg-user-panel a, .sg-user-panel button { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: var(--sg-radius-sm); background: transparent; color: var(--sg-text); font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
+.sg-user-panel a:hover, .sg-user-panel button:hover { background: var(--sg-hover); color: var(--sg-accent); }
 .sg-user-action { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+@media (max-width: 640px) {
+  .sg-user-name, .sg-user-chevron { display: none; }
+  .sg-user-trigger { padding: 4px; }
+  .sg-topbar .sg-breadcrumb li:not(:last-child) { display: none; }
+  .sg-topbar .sg-breadcrumb li:last-child::before { content: none; }
+}
 .sg-module-info { margin-top: var(--sg-space-6, 24px); }

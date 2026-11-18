@@ -7,6 +7,8 @@
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light">
   <title>@yield('title', 'Encuesta empresarial') · Universidad Nacional de Trujillo</title>
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('css/seguimiento-egresado.css') }}">
   <style>
     .sg .sg-input:focus-visible, .sg .sg-select:focus-visible, .sg .sg-textarea:focus-visible { outline-offset: 0; border-color: var(--sg-focus); }
@@ -15,7 +17,7 @@
     .sg-pub-cabecera, .sg-footer { flex: none; }
     .sg-pub-cabecera { background: var(--sg-navy); color: var(--sg-on-dark); }
     .sg-pub-cabecera div { display: flex; align-items: center; gap: var(--sg-space-3); max-width: 860px; margin: 0 auto; padding: var(--sg-space-3) var(--sg-space-4); }
-    .sg-pub-marca { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border: 1px solid var(--sg-sidebar-border); border-radius: var(--sg-radius); font-weight: 700; }
+    .sg-pub-marca { display: grid; place-items: center; flex: none; width: 36px; height: 36px; object-fit: contain; }
     .sg-pub-cabecera strong { display: block; line-height: 1.3; }
     .sg-pub-cabecera small { display: block; color: var(--sg-sidebar-muted); font-size: 12px; }
     .sg-pub-contenido { max-width: 860px; margin: 0 auto; padding: var(--sg-space-6) var(--sg-space-4) var(--sg-space-10); }
@@ -28,7 +30,7 @@
 <a class="sg-skip-link" href="#contenido">Saltar al contenido</a>
 <header class="sg-pub-cabecera">
   <div>
-    <span class="sg-pub-marca" aria-hidden="true">SE</span>
+    <img class="sg-pub-marca" src="{{ asset('img/logo-informatica.png') }}" alt="">
     <span><strong>Seguimiento al Egresado</strong><small>Ingeniería Informática · Universidad Nacional de Trujillo</small></span>
   </div>
 </header>

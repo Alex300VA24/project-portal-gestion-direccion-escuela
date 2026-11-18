@@ -11,7 +11,7 @@
   .sg-form-dialogo .sg-dialogo-pie { gap: 10px; padding: 8px 24px 22px; justify-content: flex-end; }
   .sg-form-dialogo .sg-fila-plan { display: flex; gap: 8px; align-items: center; }
   .sg-form-dialogo .sg-fila-plan select { flex: 1; }
-  .sg-form-dialogo .sg-error-formulario { color: var(--sg-danger, #c0362c); font-size: 13px; margin: 0; }
+  .sg-form-dialogo .sg-error-formulario { color: var(--sg-danger, #a11d12); font-size: 13px; margin: 0; }
 </style>
 
 <dialog class="sg-dialogo sg-form-dialogo" id="dlg-promocion" style="width: min(94vw, 460px);" aria-labelledby="dlg-promocion-titulo">
