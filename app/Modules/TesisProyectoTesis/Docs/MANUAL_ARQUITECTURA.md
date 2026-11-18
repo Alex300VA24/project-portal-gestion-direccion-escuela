@@ -69,7 +69,7 @@ app/Modules/TesisProyectoTesis/
 └── Support/            Estados, Parametros, Identidad (DTO), PdfSimple
 
 resources/views/modules/tesis-proyecto-tesis/
-├── layout.blade.php    marco del módulo dentro de <x-app-layout>: menú por rol y campana
+├── layout.blade.php    documento propio del módulo (como layouts.calidad): menú lateral por rol, barra superior con campana, tema y menú de usuario
 ├── inicio, portada     selección de rol / portada pública sin datos
 ├── alumno/  asesor/  director/  jurado/  secretaria/      una carpeta por carril
 └── partials/           estado, ficha, línea de tiempo, rúbrica, observación, estilos…
@@ -497,6 +497,12 @@ Resumen de las decisiones tomadas durante la implementación. Ante una duda se e
 - Controles de al menos 44 px y foco visible.
 - Los estados llevan siempre texto además del color.
 - Enlace «Saltar al contenido», etiquetas `label`/`legend` y roles ARIA en pestañas, barras de progreso y búsqueda.
+
+**Contenedor y tema**
+
+- `layout.blade.php` es un documento HTML propio, como `layouts.calidad`: `@vite`, `@livewireStyles` y `@livewireScriptConfig` según `docs/DESIGN.md`, sin cargar Alpine aparte y sin la barra del portal. Menú lateral fijo de 248 px (72 px plegado) y contenido a todo el ancho; solo los párrafos largos tienen ancho máximo.
+- El tema usa el mecanismo del portal: `data-theme` en `<html>` y la clave `portal-theme` de `localStorage`, leída en el `<head>` antes de pintar (con try/catch). Así la elección vale en todos los módulos.
+- Los colores son variables `--tz-*` con valor claro y oscuro (paleta oscura de `docs/DESIGN.md`). Los pares texto/fondo cumplen WCAG AA (4,5:1 en texto y 3:1 en bordes y foco) en ambos temas. Para lograrlo, en tema claro el foco usa `#b45f00` y el borde de campo `#7f889c`, en lugar de `#f2a900` y `#bbc2ce` (1,8–2:1). El menú lateral queda navy en los dos temas, como en Calidad, y el acta imprimible se ve siempre en papel blanco.
 
 ## Limitaciones conocidas
 

@@ -22,13 +22,17 @@ Esta guía explica cómo usar la sección **Gestión de Tesis** del portal de la
 1. Entra al portal con tu correo institucional y tu contraseña.
 2. Abre **Gestión de Tesis**. El sistema te lleva directamente a tu página de inicio según tu función.
    - Si eres docente y a la vez asesor y jurado, primero eliges con qué papel entrar: **Entrar como asesor** o **Entrar como jurado**.
-3. A la izquierda está el **menú** con tus opciones. Cada opción tiene un ícono, y la de la página en la que estás aparece resaltada. Un número amarillo junto a una opción indica cuántas cosas esperan tu atención.
+3. El módulo ocupa toda la pantalla. A la izquierda está el **menú**, con la marca **Gestión de Tesis** arriba y tus opciones debajo. Cada opción tiene un ícono, y la de la página en la que estás aparece resaltada. Un número amarillo junto a una opción indica cuántas cosas esperan tu atención.
    - El botón de tres rayas, arriba a la izquierda, **contrae el menú** para dejar solo los íconos y ganar espacio. Al pasar el mouse por un ícono, o al llegar a él con la tecla Tab, aparece su nombre. Pulsa el botón otra vez para **expandir el menú**. El portal recuerda tu elección en ese navegador.
+   - Al pie del menú, **Cambiar de módulo** te lleva a la lista de módulos del portal.
    - En el celular el menú está oculto: ábrelo con el mismo botón. Se cierra al elegir una opción, al tocar fuera de él o con la tecla Esc.
-4. Arriba a la derecha está la **campana** de avisos:
-   - el número indica los avisos sin leer;
-   - al pulsar un aviso («Ir a la acción →») llegas directamente a la pantalla donde debes actuar, y el aviso queda leído;
-   - **Marcar todas como leídas** limpia el contador.
+4. En la barra superior están, de izquierda a derecha:
+   - la ruta **Portal › Tesis y Proyecto de Tesis** (pulsa **Portal** para volver al inicio del portal);
+   - la **campana** de avisos: el número indica los avisos sin leer; al pulsar un aviso («Ir a la acción →») llegas directamente a la pantalla donde debes actuar, y el aviso queda leído; **Marcar todas como leídas** limpia el contador;
+   - el botón de **tema** (luna o sol), que cambia entre tema claro y oscuro. La elección se guarda en tu navegador y vale para todos los módulos del portal;
+   - tu **menú de usuario** (nombre y rol): **Mi perfil**, **Cambiar rol** (solo si tienes más de un rol en el módulo) y **Cerrar sesión**.
+
+![Barra superior con el menú de usuario abierto](img/barra-superior.png)
 
 > Los documentos se suben siempre en **PDF de hasta 10 MB**. Solo pueden abrirlos las personas que participan en ese proyecto.
 
