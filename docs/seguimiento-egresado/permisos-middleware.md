@@ -35,7 +35,7 @@ Fuente única: `App\Modules\SeguimientoEgresado\Support\Accesos\Capacidades::MAT
 | `indicadores.consultar` | | ✔ | ✔ |
 | `reportes.exportar` | | ✔ | ✔ |
 | `institucional.consultar` | | ✔ | ✔ |
-| `institucional.registrar` | | | ✔ |
+| `institucional.registrar` | | ✔ | ✔ |
 | `institucional.validar` | | | ✔ |
 
 Una capacidad que no existe se deniega siempre. Para agregar una, se añade a la matriz y a `tests/Unit/SeguimientoEgresado/Accesos/CapacidadesTest.php`.
@@ -130,7 +130,7 @@ Route::get('/egresado/contacto', [ContactoController::class, 'editar'])->middlew
 |---|---|
 | Padrón y contacto inicial | `padron.consultar` (ver), `padron.gestionar` (importar, guardar, generar enlaces) |
 | Campañas e invitaciones | `campanias.consultar` (ver), `campanias.administrar` (crear, editar, emitir, recordatorios) |
-| Evaluación institucional | `institucional.consultar` (ver), `institucional.registrar` (registrar) |
+| Evaluación institucional | `institucional.consultar` (ver), `institucional.registrar` (Secretaría y Dirección: informes en borrador, cambios propuestos, planes de acción), `institucional.validar` (solo Dirección: validar informes y aprobar, ejecutar, implementar o descartar cambios) |
 | Reportes | `reportes.exportar` |
 | Encuesta empresarial e indicadores | `empresas.resultados`, `campanias.administrar`, `indicadores.consultar`, `reportes.exportar` |
 | Área del egresado | `expediente.propio`, `campanias.responder`, `seguimiento.propio` |

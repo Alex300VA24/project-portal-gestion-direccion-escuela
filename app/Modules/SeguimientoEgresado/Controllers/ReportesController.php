@@ -5,11 +5,14 @@ namespace App\Modules\SeguimientoEgresado\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento;
 use App\Modules\SeguimientoEgresado\Models\Cohorte;
+use App\Modules\SeguimientoEgresado\Models\Competencia;
 use App\Modules\SeguimientoEgresado\Models\Egresado;
+use App\Modules\SeguimientoEgresado\Models\EvaluacionCompetencia;
 use App\Modules\SeguimientoEgresado\Models\EvaluacionOe;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Models\MedicionLaboral;
 use App\Modules\SeguimientoEgresado\Models\MejoraCurricular;
+use App\Modules\SeguimientoEgresado\Models\ObjetivoEducacional;
 use App\Modules\SeguimientoEgresado\Models\PlanAccion;
 use App\Modules\SeguimientoEgresado\Models\ReporteGenerado;
 use App\Modules\SeguimientoEgresado\Models\ReporteIndicador;
@@ -17,7 +20,6 @@ use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
 use App\Modules\SeguimientoEgresado\Services\Indicadores\CalculadoraIndicadores;
 use App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores;
 use App\Modules\SeguimientoEgresado\Services\Indicadores\ResultadoIndicador;
-use App\Modules\SeguimientoEgresado\Services\IndicadoresService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -256,7 +258,7 @@ class ReportesController extends Controller
             fputcsv($handle, ['Filtro Horizonte:', $filtro->horizonte ? $filtro->horizonte.' anos' : 'General']);
             fputcsv($handle, ['Periodo:', $filtro->periodo()]);
             fputcsv($handle, ['Fecha de corte oficial:', $fechaCorte]);
-            fputcsv($handle, ['Regla I3:', 'Denominador oficial = 4 OEs totales del programa (no solo evaluados)']);
+            fputcsv($handle, ['Regla I3:', 'Denominador oficial = objetivos educacionales vigentes de cada promoción evaluada (no solo los evaluados)']);
             fputcsv($handle, ['Regla I6:', 'Numero absoluto de mejoras implementadas atribuibles a seguimiento (no porcentaje)']);
             fputcsv($handle, []);
 
@@ -561,36 +563,10 @@ class ReportesController extends Controller
         }, 200, $headers);
     }
 
+    /** F5 · Informe semestral y anual de los resultados de los planes de acción de vinculación con los egresados. */
     private function generarFormatoF5(string $nombreArchivo, string $fechaCorte)
     {
-        $planes = PlanAccion::with(['competencia', 'objetivo'])->orderBy('periodo')->get();
-        $this->registrarAuditoriaReporte('FORMATO', 'F5', ['total' => $planes->count()], $nombreArchivo);
-
-        $headers = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$nombreArchivo}\""];
-
-        return new StreamedResponse(function () use ($planes, $fechaCorte) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - FORMATO F5: PLAN DE ACCION DE INSERCION LABORAL']);
-            fputcsv($handle, ['Fecha de corte:', $fechaCorte]);
-            fputcsv($handle, []);
-            fputcsv($handle, ['Codigo', 'Titulo del Plan', 'Tipo', 'Periodo', 'Estado', 'Actividad Programada', 'Meta Esperada', 'Responsable', 'Grado Cumplimiento']);
-
-            foreach ($planes as $p) {
-                fputcsv($handle, [
-                    $p->codigo,
-                    $p->titulo,
-                    $p->tipo,
-                    $p->periodo,
-                    $p->estado,
-                    $p->actividad,
-                    $p->meta_esperada,
-                    $p->responsable,
-                    $p->grado_cumplimiento ? $p->grado_cumplimiento.'%' : '—',
-                ]);
-            }
-            fclose($handle);
-        }, 200, $headers);
+        return $this->informeDePlanes('F5', $nombreArchivo, 'INFORME SEMESTRAL Y ANUAL SOBRE LA EVALUACION DE RESULTADOS DE PLANES DE ACCION', 'VINCULACION', 'PLANES DE ACCION DE VINCULACION CON LOS EGRESADOS');
     }
 
     private function generarFormatoF6(string $nombreArchivo, string $fechaCorte)
@@ -629,256 +605,223 @@ class ReportesController extends Controller
         }, 200, $headers);
     }
 
+    /** F7 · Informe estadístico semestral y anual de la mejora de la inserción laboral de los egresados. */
     private function generarFormatoF7(string $nombreArchivo, string $fechaCorte)
     {
-        $planes = PlanAccion::with(['competencia', 'objetivo'])
-            ->where('tipo', 'VINCULACION')
-            ->orderBy('periodo', 'desc')
-            ->get();
-
-        // Si aún no hay registrados como VINCULACION, incluir todos los planes institucionales disponibles
-        if ($planes->isEmpty()) {
-            $planes = PlanAccion::with(['competencia', 'objetivo'])->orderBy('periodo', 'desc')->get();
-        }
-
-        $this->registrarAuditoriaReporte('FORMATO', 'F7', ['total' => $planes->count()], $nombreArchivo);
-
-        $headers = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$nombreArchivo}\""];
-
-        return new StreamedResponse(function () use ($planes, $fechaCorte) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - FORMATO F7: PLANES DE VINCULACION, ALIANZAS Y CONVENIOS CON EMPLEADORES']);
-            fputcsv($handle, ['Fecha de corte:', $fechaCorte]);
-            fputcsv($handle, ['Fuente oficial:', 'Tabla plan_accion (tipo VINCULACION) y resoluciones decanales / convenios marco']);
-            fputcsv($handle, []);
-            fputcsv($handle, [
-                'Codigo Plan / Convenio',
-                'Denominacion del Plan / Alianza Estrategica',
-                'Tipo de Accion',
-                'Periodo Academico',
-                'Estado',
-                'Actividad Programada / Compromiso',
-                'Meta Esperada',
-                'Responsable Institucional',
-                'Grado Cumplimiento (%)',
-                'Fecha Limite',
-                'Documento de Referencia / Resolucion',
-            ]);
-
-            foreach ($planes as $p) {
-                fputcsv($handle, [
-                    $p->codigo,
-                    $p->titulo,
-                    $p->tipo,
-                    $p->periodo,
-                    $p->estado,
-                    $p->actividad,
-                    $p->meta_esperada ?? 'Alianza formalizada y activa',
-                    $p->responsable ?? 'Comisión de Vinculación y Prácticas Preprofesionales',
-                    ($p->grado_cumplimiento !== null ? $p->grado_cumplimiento.'%' : '0%'),
-                    $p->fecha_limite ?? '—',
-                    $p->documento_referencia ?? 'Resolución Directoral / Convenio Marco UNT',
-                ]);
-            }
-            fclose($handle);
-        }, 200, $headers);
+        return $this->informeDePlanes('F7', $nombreArchivo, 'INFORME ESTADISTICO SEMESTRAL Y ANUAL DE LA MEJORA DE LA INSERCION LABORAL DE LOS EGRESADOS', 'INSERCION', 'MEJORA DE LA INSERCION LABORAL');
     }
 
+    /** F8 · Informe de logro de los objetivos educacionales: un bloque por promoción y periodo. */
     private function generarFormatoF8(string $nombreArchivo, string $fechaCorte)
     {
-        $campaniasLong = CampaniaSeguimiento::with('cohortes', 'invitaciones.medicion')
-            ->where('horizonte_anios', 5)
-            ->get();
+        $objetivos = ObjetivoEducacional::orderBy('codigo')->get()->mapWithKeys(fn ($o) => [$o->id => ['nombre' => $o->codigo.' · '.$o->descripcion, 'grupo' => null]])->all();
 
-        $this->registrarAuditoriaReporte('FORMATO', 'F8', ['total' => $campaniasLong->count()], $nombreArchivo);
-
-        $headers = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$nombreArchivo}\""];
-
-        return new StreamedResponse(function () use ($campaniasLong, $fechaCorte) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - FORMATO F8: ESTUDIO LONGITUDINAL A 5 ANOS']);
-            fputcsv($handle, ['Fecha de corte:', $fechaCorte]);
-            fputcsv($handle, []);
-            fputcsv($handle, ['Campana Longitudinal', 'Periodo', 'Cohorte', 'Convocados', 'Respuestas', 'Cobertura', 'Estado']);
-
-            foreach ($campaniasLong as $c) {
-                $tot = $c->invitaciones->count();
-                $resp = $c->invitaciones->filter(fn ($i) => $i->estado === 'COMPLETADA' || $i->medicion !== null)->count();
-                fputcsv($handle, [
-                    $c->nombre,
-                    $c->periodo,
-                    $c->cohortes->pluck('codigo_promocion')->implode(', '),
-                    $tot,
-                    $resp,
-                    $tot > 0 ? round(($resp / $tot) * 100, 2).'%' : '0%',
-                    $c->estado,
-                ]);
-            }
-            fclose($handle);
-        }, 200, $headers);
+        return $this->informeDeLogro('F8', $nombreArchivo, 'INFORME DE LOGRO DE LOS OBJETIVOS EDUCACIONALES', EvaluacionOe::class, 'id_objetivo', 'OBJETIVOS EDUCACIONALES', $objetivos, true);
     }
 
+    /** F9 · Informe del nivel de logro de las competencias (genéricas y específicas). */
     private function generarFormatoF9(string $nombreArchivo, string $fechaCorte)
     {
-        $habilidades = DB::table('seguimiento_egresado.cat_habilidad as h')
-            ->join('seguimiento_egresado.cat_categoria_habilidad as ch', 'ch.id', '=', 'h.id_categoria')
-            ->select('h.id', 'h.codigo', 'h.nombre', 'ch.nombre as categoria')
-            ->orderBy('ch.nombre')
-            ->orderBy('h.nombre')
-            ->get();
+        $competencias = Competencia::orderBy('tipo')->orderBy('codigo')->get()->mapWithKeys(fn ($c) => [$c->id => [
+            'nombre' => $c->codigo.' · '.$c->nombre,
+            'grupo' => $c->tipo === 'GENERAL' ? 'COMPETENCIAS GENERICAS' : 'COMPETENCIAS ESPECIFICAS',
+        ]])->all();
 
-        // Conteo real de demandas y brechas según respuestas de empleadores
-        $demandasEmpresa = DB::table('seguimiento_egresado.respuesta_empresa_habilidad')
-            ->select('id_habilidad', 'tipo', DB::raw('count(*) as total'))
-            ->groupBy('id_habilidad', 'tipo')
-            ->get();
-
-        // Conteo real de fortalezas y brechas según egresados
-        $percepcionEgresados = DB::table('seguimiento_egresado.medicion_habilidad')
-            ->select('id_habilidad', 'tipo', DB::raw('count(*) as total'))
-            ->groupBy('id_habilidad', 'tipo')
-            ->get();
-
-        $empresaDemandas = [];
-        $empresaBrechas = [];
-        foreach ($demandasEmpresa as $d) {
-            if ($d->tipo === 'DEMANDA') {
-                $empresaDemandas[$d->id_habilidad] = (int) $d->total;
-            }
-            if ($d->tipo === 'BRECHA') {
-                $empresaBrechas[$d->id_habilidad] = (int) $d->total;
-            }
-        }
-
-        $egresadoFortalezas = [];
-        $egresadoBrechas = [];
-        foreach ($percepcionEgresados as $p) {
-            if ($p->tipo === 'FORTALEZA') {
-                $egresadoFortalezas[$p->id_habilidad] = (int) $p->total;
-            }
-            if ($p->tipo === 'BRECHA') {
-                $egresadoBrechas[$p->id_habilidad] = (int) $p->total;
-            }
-        }
-
-        $this->registrarAuditoriaReporte('FORMATO', 'F9', ['total' => $habilidades->count()], $nombreArchivo);
-
-        $headers = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$nombreArchivo}\""];
-
-        return new StreamedResponse(function () use ($habilidades, $empresaDemandas, $empresaBrechas, $egresadoFortalezas, $egresadoBrechas, $fechaCorte) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - FORMATO F9: MATRIZ DE HABILIDADES Y BRECHAS DEMANDADAS']);
-            fputcsv($handle, ['Fecha de corte:', $fechaCorte]);
-            fputcsv($handle, ['Criterio:', 'Cruce de demandas del sector productivo con percepcion formativa del egresado para retroalimentacion curricular']);
-            fputcsv($handle, []);
-            fputcsv($handle, [
-                'Codigo',
-                'Categoria de Habilidad',
-                'Denominacion',
-                'Demandada por Empleadores (Conteo)',
-                'Brecha Observada por Empleadores (Conteo)',
-                'Fortaleza Percibida por Egresados (Conteo)',
-                'Brecha Percibida por Egresados (Conteo)',
-                'Prioridad Curricular Sugerida',
-            ]);
-
-            foreach ($habilidades as $h) {
-                $demEmp = $empresaDemandas[$h->id] ?? 0;
-                $breEmp = $empresaBrechas[$h->id] ?? 0;
-                $forEg = $egresadoFortalezas[$h->id] ?? 0;
-                $breEg = $egresadoBrechas[$h->id] ?? 0;
-
-                $prioridad = ($demEmp > 0 || $breEmp > 0 || $breEg > 0)
-                    ? 'ALTA (Monitoreo continuo e integracion curricular)'
-                    : 'MEDIA (Contenido formativo basico)';
-
-                fputcsv($handle, [
-                    $h->codigo,
-                    $h->categoria,
-                    $h->nombre,
-                    $demEmp,
-                    $breEmp,
-                    $forEg,
-                    $breEg,
-                    $prioridad,
-                ]);
-            }
-            fclose($handle);
-        }, 200, $headers);
+        return $this->informeDeLogro('F9', $nombreArchivo, 'INFORME DEL NIVEL DE LOGRO DE LAS COMPETENCIAS', EvaluacionCompetencia::class, 'id_competencia', 'COMPETENCIAS', $competencias, false);
     }
 
+    /** F10 · Informe sobre cambios (mejoras) del perfil de egreso: «Dice» y «Debe decir». Incluye otros cambios del currículo. */
     private function generarFormatoF10(string $nombreArchivo, string $fechaCorte)
     {
-        $evaluaciones = EvaluacionOe::with(['objetivo', 'cohorte', 'nivelLogro', 'usuarioRegistro'])
-            ->orderBy('periodo')
-            ->get();
+        return $this->informeDeCambios('F10', $nombreArchivo, 'INFORME SOBRE CAMBIOS (MEJORAS) DEL PERFIL DE EGRESO', ['PERFIL', 'OTRA'], 'PERFIL DE EGRESO');
+    }
 
-        $this->registrarAuditoriaReporte('FORMATO', 'F10', ['total' => $evaluaciones->count()], $nombreArchivo);
+    /** F11 · Informe sobre cambios (mejoras) de los objetivos educacionales: «Dice» y «Debe decir». Cada uno implementado suma a I6. */
+    private function generarFormatoF11(string $nombreArchivo, string $fechaCorte)
+    {
+        return $this->informeDeCambios('F11', $nombreArchivo, 'INFORME SOBRE CAMBIOS (MEJORAS) DE LOS OBJETIVOS EDUCACIONALES', ['OE'], 'OBJETIVOS EDUCACIONALES');
+    }
 
+    // ---------------------------------------------------------------------------------------------------------------
+    // Piezas comunes de los formatos oficiales de la evaluación institucional (F5, F7, F8–F11)
+    // ---------------------------------------------------------------------------------------------------------------
+
+    private function csvOficial(string $nombreArchivo, callable $contenido): StreamedResponse
+    {
         $headers = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$nombreArchivo}\""];
 
-        return new StreamedResponse(function () use ($evaluaciones, $fechaCorte) {
+        return new StreamedResponse(function () use ($contenido) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - FORMATO F10: INFORME INSTITUCIONAL DE OBJETIVOS EDUCACIONALES']);
-            fputcsv($handle, ['Fecha de corte:', $fechaCorte]);
-            fputcsv($handle, ['Regla I3:', 'Denominador oficial = Total de OEs del programa (4 OEs oficiales)']);
-            fputcsv($handle, []);
-            fputcsv($handle, ['Codigo OE', 'Titulo del Objetivo', 'Cohorte Evaluada', 'Periodo', 'Meta (%)', 'Logro Alcanzado (%)', 'Estado Validacion', 'Nivel de Logro', 'Fuente de Evidencia', 'Acciones Derivadas']);
-
-            foreach ($evaluaciones as $e) {
-                fputcsv($handle, [
-                    $e->objetivo->codigo ?? 'OE',
-                    $e->objetivo->titulo ?? '—',
-                    $e->cohorte->codigo_promocion ?? '—',
-                    $e->periodo,
-                    $e->meta_porcentaje.'%',
-                    $e->logro_porcentaje.'%',
-                    $e->estado,
-                    $e->nivelLogro->nombre ?? 'BUENO',
-                    $e->fuente_evidencia ?? 'Informes F2 y F3',
-                    $e->acciones_derivadas ?? '—',
-                ]);
-            }
+            $contenido($handle);
             fclose($handle);
         }, 200, $headers);
     }
 
-    private function generarFormatoF11(string $nombreArchivo, string $fechaCorte)
+    /** Encabezado de los formatos: escuela, promoción o cohorte, año y semestre, fecha del informe. */
+    private function encabezadoOficial($handle, string $titulo, array $datos): void
     {
-        $mejoras = MejoraCurricular::with(['planCurricular', 'usuarioRegistro'])->orderByDesc('fecha_registro')->get();
-        $this->registrarAuditoriaReporte('FORMATO', 'F11', ['total' => $mejoras->count()], $nombreArchivo);
+        fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - ESCUELA PROFESIONAL - PREGRADO']);
+        fputcsv($handle, [$titulo]);
+        fputcsv($handle, ['ESCUELA PROFESIONAL:', 'Ingeniería Informática']);
+        foreach ($datos as $etiqueta => $valor) {
+            fputcsv($handle, [$etiqueta.':', $valor]);
+        }
+    }
 
-        $headers = ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => "attachment; filename=\"{$nombreArchivo}\""];
+    private function firmaOficial($handle): void
+    {
+        fputcsv($handle, []);
+        fputcsv($handle, ['V° B° DIRECTOR DE ESCUELA PROFESIONAL', '.....................................................']);
+        fputcsv($handle, []);
+    }
 
-        return new StreamedResponse(function () use ($mejoras, $fechaCorte) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['UNIVERSIDAD NACIONAL DE TRUJILLO - FORMATO F11: PLAN DE MEJORA CURRICULAR Y RETROALIMENTACION']);
-            fputcsv($handle, ['Fecha de corte:', $fechaCorte]);
-            fputcsv($handle, ['Regla I6:', 'Conteo de mejoras IMPLEMENTADAS con origen en el seguimiento al egresado']);
-            fputcsv($handle, []);
-            fputcsv($handle, ['Codigo', 'Plan Curricular', 'Titulo de la Mejora', 'Tipo', 'Estado', 'Origen Seguimiento', 'Fecha Registro', 'Fecha Implementacion', 'Documento Referencia', 'Avance (%)']);
+    private function fechaDeInforme(mixed $fecha): string
+    {
+        return $fecha ? \Illuminate\Support\Carbon::parse($fecha)->format('d/m/Y') : '—';
+    }
 
-            foreach ($mejoras as $m) {
-                fputcsv($handle, [
-                    $m->codigo,
-                    $m->planCurricular->codigo_version ?? 'Plan 2017',
-                    $m->titulo,
-                    $m->tipo,
-                    $m->estado,
-                    $m->origen_seguimiento ? 'SI (Acredita I6)' : 'NO',
-                    $m->fecha_registro,
-                    $m->fecha_implementacion ?? 'En tramite',
-                    $m->documento_referencia ?? 'Resolucion Directoral',
-                    ($m->grado_cumplimiento ?? 100).'%',
-                ]);
+    /**
+     * F8 y F9: por cada promoción y periodo, el nivel de logro de cada elemento marcado con una X en su columna.
+     *
+     * @param  array<int, array{nombre: string, grupo: ?string}>  $elementos
+     */
+    private function informeDeLogro(string $codigo, string $nombreArchivo, string $titulo, string $modelo, string $columna, string $etiquetaElementos, array $elementos, bool $conDecisiones)
+    {
+        $niveles = ['MUY_BUENO' => 'MUY BUENO', 'BUENO' => 'BUENO', 'REGULAR' => 'REGULAR', 'MALO' => 'MALO', 'MUY_MALO' => 'MUY MALO'];
+        $informes = $modelo::with(['cohorte', 'nivelLogro'])->get()
+            ->groupBy(fn ($f) => $f->id_cohorte.'|'.$f->periodo)
+            ->sortByDesc(fn ($g) => $g->first()->periodo.'|'.str_pad((string) $g->first()->cohorte?->anio_ingreso, 4, '0', STR_PAD_LEFT));
+
+        $this->registrarAuditoriaReporte('FORMATO', $codigo, ['total' => $informes->count()], $nombreArchivo);
+
+        return $this->csvOficial($nombreArchivo, function ($handle) use ($codigo, $titulo, $columna, $etiquetaElementos, $elementos, $niveles, $informes, $conDecisiones) {
+            if ($informes->isEmpty()) {
+                $this->encabezadoOficial($handle, $titulo, ['FORMATO' => $codigo]);
+                fputcsv($handle, []);
+                fputcsv($handle, ['Aún no hay informes registrados.']);
+
+                return;
             }
-            fclose($handle);
-        }, 200, $headers);
+
+            foreach ($informes as $grupo) {
+                $primero = $grupo->first();
+                $validado = $grupo->every(fn ($f) => $f->estado === 'VALIDADA');
+                $this->encabezadoOficial($handle, $titulo, [
+                    'PROMOCION O COHORTE' => 'Promoción '.($primero->cohorte?->anio_ingreso ?? '—'),
+                    'AÑO Y SEMESTRE' => $primero->periodo,
+                    'FECHA DE INFORME' => $this->fechaDeInforme($grupo->max('fecha_evaluacion')),
+                    'ESTADO' => $validado ? 'Validado por la Dirección' : 'Borrador, pendiente de validación',
+                ]);
+                fputcsv($handle, []);
+                fputcsv($handle, [$etiquetaElementos, ...array_values($niveles)]);
+
+                $porElemento = $grupo->keyBy(fn ($f) => (int) $f->{$columna});
+                $grupoActual = null;
+                foreach ($elementos as $id => $elemento) {
+                    if (! $porElemento->has($id)) {
+                        continue;
+                    }
+                    if ($elemento['grupo'] !== null && $elemento['grupo'] !== $grupoActual) {
+                        $grupoActual = $elemento['grupo'];
+                        fputcsv($handle, [$grupoActual]);
+                    }
+                    $nivel = $porElemento[$id]->nivelLogro?->codigo;
+                    fputcsv($handle, [$elemento['nombre'], ...array_map(fn ($c) => $nivel === $c ? 'X' : '', array_keys($niveles))]);
+                }
+
+                fputcsv($handle, []);
+                fputcsv($handle, ['CONCLUSIONES:', $primero->observacion ?? '']);
+                fputcsv($handle, ['TOMA DE DECISIONES:', $conDecisiones ? ($primero->acciones_derivadas ?? '') : '']);
+                $this->firmaOficial($handle);
+            }
+        });
+    }
+
+    /**
+     * F10 y F11: lo que «dice» hoy y lo que «debe decir», con el estado del cambio y el documento que lo respalda.
+     *
+     * @param  array<int, string>  $tipos
+     */
+    private function informeDeCambios(string $codigo, string $nombreArchivo, string $titulo, array $tipos, string $etiqueta)
+    {
+        $cambios = MejoraCurricular::whereIn('tipo', $tipos)->orderBy('periodo', 'desc')->orderByDesc('fecha_registro')->get()->groupBy('periodo');
+        $this->registrarAuditoriaReporte('FORMATO', $codigo, ['total' => $cambios->sum(fn ($g) => $g->count())], $nombreArchivo);
+        $estados = ['PROPUESTA' => 'Propuesta', 'EVALUACION' => 'En evaluación', 'APROBADA' => 'Aprobada', 'EN_EJECUCION' => 'En ejecución', 'IMPLEMENTADA' => 'Implementada', 'DESCARTADA' => 'Descartada'];
+        $tiposDeCambio = ['PERFIL' => 'Perfil de egreso', 'OE' => 'Objetivos educacionales', 'OTRA' => 'Otro cambio del currículo'];
+
+        return $this->csvOficial($nombreArchivo, function ($handle) use ($codigo, $titulo, $cambios, $etiqueta, $estados, $tiposDeCambio) {
+            if ($cambios->isEmpty()) {
+                $this->encabezadoOficial($handle, $titulo, ['FORMATO' => $codigo]);
+                fputcsv($handle, []);
+                fputcsv($handle, ['Aún no hay cambios registrados.']);
+
+                return;
+            }
+
+            foreach ($cambios as $periodo => $delPeriodo) {
+                $this->encabezadoOficial($handle, $titulo, [
+                    'AÑO Y SEMESTRE' => $periodo,
+                    'FECHA DE INFORME' => $this->fechaDeInforme($delPeriodo->max('fecha_registro')),
+                ]);
+                fputcsv($handle, []);
+                fputcsv($handle, [$etiqueta, 'DICE', 'DEBE DECIR', 'POR QUE SE CAMBIA', 'ESTADO', 'FECHA DE IMPLEMENTACION', 'DOCUMENTO DE RESPALDO', 'CUENTA PARA I6']);
+                foreach ($delPeriodo as $m) {
+                    $cuenta = $m->estado === 'IMPLEMENTADA' && $m->origen_seguimiento && $m->fecha_implementacion && ($m->documento_referencia || $m->origen_evidencia || $m->id_evidencia);
+                    fputcsv($handle, [
+                        $m->codigo.' · '.$m->titulo.' ('.($tiposDeCambio[$m->tipo] ?? $m->tipo).')',
+                        $m->dice ?? '—',
+                        $m->debe_decir ?? '—',
+                        $m->descripcion,
+                        $estados[$m->estado] ?? $m->estado,
+                        $this->fechaDeInforme($m->fecha_implementacion),
+                        $m->documento_referencia ?? '—',
+                        $cuenta ? 'Sí' : 'No',
+                    ]);
+                }
+                $this->firmaOficial($handle);
+            }
+        });
+    }
+
+    /**
+     * F5 y F7: por periodo, cada plan de acción con su grado de cumplimiento (Sí/No) y sus observaciones. Si no se cumplió,
+     * se muestra el plazo para el plan de mejora.
+     */
+    private function informeDePlanes(string $codigo, string $nombreArchivo, string $titulo, string $tipo, string $etiqueta)
+    {
+        $planes = PlanAccion::where('tipo', $tipo)->orderBy('periodo', 'desc')->orderBy('codigo')->get()->groupBy('periodo');
+        $this->registrarAuditoriaReporte('FORMATO', $codigo, ['total' => $planes->sum(fn ($g) => $g->count())], $nombreArchivo);
+
+        return $this->csvOficial($nombreArchivo, function ($handle) use ($codigo, $titulo, $planes, $etiqueta) {
+            if ($planes->isEmpty()) {
+                $this->encabezadoOficial($handle, $titulo, ['FORMATO' => $codigo]);
+                fputcsv($handle, []);
+                fputcsv($handle, ['Aún no hay planes de acción registrados.']);
+
+                return;
+            }
+
+            foreach ($planes as $periodo => $delPeriodo) {
+                $this->encabezadoOficial($handle, $titulo, [
+                    'AÑO Y SEMESTRE' => $periodo,
+                    'FECHA DE INFORME' => now(FiltroIndicadores::ZONA)->format('d/m/Y'),
+                ]);
+                fputcsv($handle, []);
+                fputcsv($handle, [$etiqueta, 'GRADO DE CUMPLIMIENTO: SI', 'GRADO DE CUMPLIMIENTO: NO', 'OBSERVACIONES (si no cumplió, proponer planes de mejora y con plazos)']);
+                foreach ($delPeriodo as $p) {
+                    $cumplido = $p->grado_cumplimiento !== null && (float) $p->grado_cumplimiento >= 100;
+                    $observaciones = array_filter([
+                        $p->actividad,
+                        $p->grado_cumplimiento !== null ? 'Avance: '.rtrim(rtrim(number_format((float) $p->grado_cumplimiento, 2, '.', ''), '0'), '.').' %' : null,
+                        $p->observacion,
+                        ! $cumplido && $p->fecha_limite ? 'Plazo: '.$this->fechaDeInforme($p->fecha_limite) : null,
+                    ]);
+                    fputcsv($handle, [$p->codigo.' · '.$p->titulo, $cumplido ? 'X' : '', $cumplido ? '' : 'X', implode(' | ', $observaciones)]);
+                }
+                $this->firmaOficial($handle);
+            }
+        });
     }
 
     /**
@@ -915,124 +858,5 @@ class ReportesController extends Controller
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
-    /**
-     * Matriz de correspondencia oficial F1 a F11 del procedimiento institucional.
-     */
-    private function obtenerMatrizFormatosF1F11(): array
-    {
-        return [
-            [
-                'codigo' => 'F1',
-                'nombre' => 'Padrón Oficial de Egresados y Grados Académicos',
-                'normativa' => 'Procedimiento Institucional UNT / SINEACE 34',
-                'fuente_bd' => 'egresado, historial_estado_academico, cohorte',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Registro nominal de egresados acreditados, fechas y resoluciones de bachiller y título profesional.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F2',
-                'nombre' => 'Ficha Individual de Inserción y Situación Laboral',
-                'normativa' => 'Procedimiento Institucional UNT / Indicador I2',
-                'fuente_bd' => 'medicion_laboral, cat_situacion_laboral, cat_area_profesional',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Condición de empleo, coincidencia de la labor profesional con el perfil y remuneraciones.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F3',
-                'nombre' => 'Encuesta de Apreciación de Empleadores sobre Desempeño',
-                'normativa' => 'Procedimiento Institucional UNT / Indicador I5 / ICACIT',
-                'fuente_bd' => 'respuesta_empresa, invitacion_empresa',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Evaluación del jefe inmediato respecto a competencias del egresado (exclusivo contexto DESEMPEÑO).',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F4',
-                'nombre' => 'Registro de Graduados, Titulados y Modalidad de Graduación',
-                'normativa' => 'Reglamento General de Grados y Títulos UNT',
-                'fuente_bd' => 'historial_estado_academico, cohorte',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Historial de resoluciones decanales y rectorales con fechas de expedición de grado.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F5',
-                'nombre' => 'Plan de Acción para Inserción y Vinculación Laboral',
-                'normativa' => 'Plan Estratégico Institucional / Estándar 35',
-                'fuente_bd' => 'plan_accion',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Actividades programadas por la escuela para mejorar la empleabilidad en áreas TI de alta demanda.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F6',
-                'nombre' => 'Reporte de Formación Continua, Posgrados y Certificaciones',
-                'normativa' => 'Procedimiento Institucional UNT / Criterio 36',
-                'fuente_bd' => 'formacion_posterior, cat_tipo_formacion',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Certificaciones internacionales de la industria (AWS, Scrum, Cisco) y maestrías/doctorados.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F7',
-                'nombre' => 'Alianzas Estratégicas, Convenios y Vinculación con Empleadores',
-                'normativa' => 'Procedimiento Institucional UNT / Estándar 35 SINEACE',
-                'fuente_bd' => 'plan_accion (tipo VINCULACION), resoluciones y convenios marco',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Planes de vinculación, alianzas estratégicas y convenios específicos con empresas del sector TI.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F8',
-                'nombre' => 'Estudio Longitudinal de Madurez Profesional (a 5 Años)',
-                'normativa' => 'Criterio ICACIT / Modelo de Calidad SINEACE',
-                'fuente_bd' => 'campania_seguimiento (horizonte=5), medicion_laboral',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Seguimiento a egresados con 5 años de graduación: cargos directivos, docencia y emprendimiento tecnológico.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F9',
-                'nombre' => 'Matriz de Habilidades Técnicas y Blandas Demandadas',
-                'normativa' => 'Comité Consultivo de Escuela / Informe F9',
-                'fuente_bd' => 'cat_habilidad, medicion_habilidad, respuesta_empresa_habilidad',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Brechas identificadas entre el perfil formativo y los requerimientos del sector productivo.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F10',
-                'nombre' => 'Informe Institucional de Objetivos Educacionales (I3)',
-                'normativa' => 'Acreditación ICACIT / Estándar 34 SINEACE',
-                'fuente_bd' => 'evaluacion_oe, objetivo_educacional',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Evaluación trianual del desempeño en el medio profesional validada por el Director de Escuela.',
-                'exportable' => true,
-            ],
-            [
-                'codigo' => 'F11',
-                'nombre' => 'Plan de Mejora Curricular y Retroalimentación Académica (I6)',
-                'normativa' => 'Directiva de Calidad UNT / Indicador I6',
-                'fuente_bd' => 'mejora_curricular, plan_curricular',
-                'estado' => 'IMPLEMENTADO',
-                'estado_badge' => 'sg-badge-success',
-                'descripcion' => 'Mejoras curriculares con resolución formal aprobada basadas en el seguimiento a egresados.',
-                'exportable' => true,
-            ],
-        ];
     }
 }

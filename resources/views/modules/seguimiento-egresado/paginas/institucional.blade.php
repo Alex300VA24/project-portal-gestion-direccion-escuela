@@ -2,782 +2,295 @@
 @section('title', 'Evaluación institucional')
 @section('section_name', 'Evaluación institucional')
 
+@push('styles')
+<style>
+  .sg-resumen-global { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: var(--sg-space-5); }
+  .sg-resumen-global > div { background: var(--sg-surface); border: var(--sg-stroke); border-radius: var(--sg-radius); padding: 12px 16px; }
+  .sg-resumen-global strong { display: block; font-size: 1.5rem; line-height: 1.2; }
+  .sg-resumen-global span { font-size: 13px; color: var(--sg-muted); }
+  .sg-emp-tabla th, .sg-emp-tabla td { white-space: nowrap; vertical-align: middle; padding-left: 10px; padding-right: 10px; }
+  .sg-emp-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .sg-objetivo { display: grid; grid-template-columns: 70px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sg-border); }
+  .sg-objetivo:first-of-type { border-top: 0; }
+  .sg-form-dialogo .sg-dialogo-cuerpo { text-align: left; padding: 24px 24px 8px; max-height: 70vh; overflow: auto; }
+  .sg-form-dialogo .sg-dialogo-pie { gap: 10px; padding: 8px 24px 22px; justify-content: flex-end; flex-wrap: wrap; }
+  .sg-form-dialogo .sg-campos { display: grid; gap: 14px; margin-top: 14px; }
+  .sg-form-dialogo .sg-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sg-celda-texto { white-space: normal !important; min-width: 220px; max-width: 320px; }
+  @media (max-width: 520px) { .sg-form-dialogo .sg-dos { grid-template-columns: 1fr; } }
+</style>
+@endpush
+
 @section('content')
-<section class="sg-heading" aria-labelledby="sg-institucional-title">
-  <div class="sg-kicker">ASEGURAMIENTO DE LA CALIDAD Y GESTIÓN DE DIRECCIÓN · SINEACE / ICACIT</div>
-  <h1 id="sg-institucional-title">Gestión y evaluación institucional</h1>
-  <p>Vista de Dirección de Escuela para la evaluación de Objetivos Educacionales (OE), monitoreo de competencias, registro de planes de acción y formalización de mejoras curriculares.</p>
-  <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <span class="sg-badge sg-badge-success">Módulo Oficial Activo</span>
-    <span class="sg-badge">Acreditación y Calidad</span>
-    <span class="sg-badge">Validación Oficial I3 e I6</span>
-    <a class="sg-button sg-button-secondary" style="padding: 4px 10px; min-height: 28px; font-size: 12px; margin-left: auto;" href="{{ route('seguimiento-egresado.reportes.formato', 'F10') }}">
-      @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
-      <span>Exportar Informe F10 (OE)</span>
-    </a>
-    <a class="sg-button sg-button-secondary" style="padding: 4px 10px; min-height: 28px; font-size: 12px;" href="{{ route('seguimiento-egresado.reportes.formato', 'F11') }}">
-      @include('modules.seguimiento-egresado.partials.icon', ['name' => 'chart'])
-      <span>Exportar Plan F11 (Mejoras)</span>
-    </a>
-  </div>
+@php
+  $fecha = fn ($v) => $v ? \Illuminate\Support\Carbon::parse($v)->format('d/m/Y') : '—';
+  $itemsOe = $objetivos->map(fn ($o) => ['id' => $o->id, 'codigo' => $o->codigo, 'nombre' => $o->titulo]);
+  $itemsComp = $competencias->map(fn ($c) => ['id' => $c->id, 'codigo' => $c->codigo, 'nombre' => $c->nombre]);
+  $estadosCambio = ['PROPUESTA' => ['Propuesta', ''], 'EVALUACION' => ['En evaluación', 'sg-badge-warning'], 'APROBADA' => ['Aprobada', 'sg-badge-warning'], 'EN_EJECUCION' => ['En ejecución', 'sg-badge-warning'], 'IMPLEMENTADA' => ['Implementada', 'sg-badge-success'], 'DESCARTADA' => ['Descartada', 'sg-badge-danger']];
+  $tiposCambio = ['PERFIL' => 'Perfil de egreso (F10)', 'OE' => 'Objetivos educacionales (F11)', 'OTRA' => 'Otro cambio del currículo'];
+  $estadosPlan = ['PLANIFICADA' => 'Planificado', 'EN_EJECUCION' => 'En ejecución', 'FINALIZADA' => 'Finalizado', 'EVALUADA' => 'Evaluado'];
+  $tiposPlan = ['VINCULACION' => 'Vinculación con egresados (F5)', 'INSERCION' => 'Inserción laboral (F7)'];
+  $estadosDireccion = ['APROBADA', 'EN_EJECUCION', 'IMPLEMENTADA', 'DESCARTADA'];
+@endphp
+
+<section class="sg-heading" aria-labelledby="sg-inst-title">
+  <h1 id="sg-inst-title">Evaluación institucional</h1>
+  <p>Aquí se registra si se lograron los objetivos del programa y qué cambios se hacen a partir de los resultados. Lo que prepara la Secretaría lo valida la Dirección.</p>
 </section>
 
-{{-- MENSAJES DE ESTADO / ALERTAS --}}
-@if($errors->any())
-  <div class="sg-alert sg-alert-danger" role="alert" style="margin-bottom: var(--sg-space-4);">
-    @include('modules.seguimiento-egresado.partials.icon', ['name' => 'info'])
-    <div>
-      <strong>Observaciones de validación institucional:</strong>
-      <ul style="margin: 4px 0 0; padding-left: 18px; font-size: 13px;">
-        @foreach($errors->all() as $error)
-          <li>{{ $error }}</li>
-        @endforeach
-      </ul>
-    </div>
-  </div>
-@endif
-
-{{-- AVISO INSTITUCIONAL Y REGLAS DE INDICADORES --}}
-<div class="sg-alert" role="note" style="margin-bottom: var(--sg-space-6);" aria-labelledby="sg-nota-institucional">
-  @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
+<div class="sg-resumen-global" aria-label="Resumen">
   <div>
-    <strong id="sg-nota-institucional">Reglas oficiales de acreditación:</strong>
-    <p>
-      • <strong>Indicador I3 (Objetivos Educacionales):</strong> El denominador oficial es el <strong>total de OEs del programa ({{ $totalOePlan }} OEs vigentes)</strong>, no únicamente los evaluados en la muestra. Solo computan OEs con evaluación en estado <code>VALIDADA</code> por Dirección.<br>
-      • <strong>Indicador I6 (Mejoras Curriculares):</strong> Se reporta como un <strong>conteo absoluto de mejoras</strong> con estado <code>IMPLEMENTADA</code> y <code>origen_seguimiento = TRUE</code> respaldadas con resolución de Consejo de Facultad (no en porcentaje).
-    </p>
+    <strong>{{ $resumen['i3_total'] ? $resumen['i3_logrados'].' de '.$resumen['i3_total'] : '—' }}</strong>
+    <span>objetivos logrados (I3){{ $resumen['i3_valor'] !== null ? ' · '.number_format($resumen['i3_valor'], 1, ',', '.').' %' : '' }}</span>
   </div>
+  <div>
+    <strong>{{ $resumen['competencias_conformes'] !== null ? $resumen['competencias_conformes'].' de '.$resumen['competencias_total'] : '—' }}</strong>
+    <span>competencias en nivel bueno o mejor</span>
+  </div>
+  <div><strong>{{ $resumen['i6'] }}</strong><span>{{ $resumen['i6'] === 1 ? 'cambio implementado' : 'cambios implementados' }} (I6)</span></div>
+  <div><strong>{{ $resumen['por_validar'] }}</strong><span>{{ $resumen['por_validar'] === 1 ? 'pendiente de la Dirección' : 'pendientes de la Dirección' }}</span></div>
 </div>
 
-{{-- TABLERO DE CONTROL DE DIRECCIÓN DE ESCUELA --}}
-<section class="sg-panel" aria-labelledby="sg-resumen-dir-title" style="margin-bottom: var(--sg-space-6);">
-  <div class="sg-section-title">
-    <div>
-      <h2 id="sg-resumen-dir-title">Tablero de control de la Dirección de Escuela</h2>
-      <p>Métricas de acreditación ICACIT / SINEACE consolidadas en base de datos.</p>
-    </div>
-    <span class="sg-badge">Periodo activo: {{ $periodoFiltro === 'todos' ? 'Consolidado histórico' : $periodoFiltro }}</span>
-  </div>
-
-  <div class="sg-metric-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sg-space-4); margin-top: var(--sg-space-3);">
-    <div style="background: var(--sg-soft); padding: var(--sg-space-4); border-radius: var(--sg-radius); border-left: 4px solid var(--sg-navy);">
-      <div style="font-size: var(--sg-text-sm); color: var(--sg-muted); font-weight: 600;">Objetivos Educacionales (I3)</div>
-      <div style="font-size: 26px; font-weight: 700; color: var(--sg-navy); margin-top: 4px;">
-        {{ $oeLogradosCount }} de {{ $totalOePlan }} logrados
-      </div>
-      <div style="font-size: 12px; color: var(--sg-success); font-weight: 600; margin-top: 4px;">
-        Denominador oficial: {{ $totalOePlan }} OEs del plan
-      </div>
-    </div>
-
-    <div style="background: var(--sg-soft); padding: var(--sg-space-4); border-radius: var(--sg-radius); border-left: 4px solid var(--sg-success);">
-      <div style="font-size: var(--sg-text-sm); color: var(--sg-muted); font-weight: 600;">Logro promedio de OEs</div>
-      <div style="font-size: 26px; font-weight: 700; color: var(--sg-success); margin-top: 4px;">{{ $logroPromedioOe }}%</div>
-      <div style="font-size: 12px; color: var(--sg-muted); margin-top: 4px;">Sobre evaluaciones validadas</div>
-    </div>
-
-    <div style="background: var(--sg-soft); padding: var(--sg-space-4); border-radius: var(--sg-radius); border-left: 4px solid var(--sg-warning);">
-      <div style="font-size: var(--sg-text-sm); color: var(--sg-muted); font-weight: 600;">Competencias del perfil</div>
-      <div style="font-size: 26px; font-weight: 700; color: var(--sg-warning); margin-top: 4px;">
-        {{ $competenciasConformes }} de {{ $totalCompetencias }} conformes
-      </div>
-      <div style="font-size: 12px; color: var(--sg-muted); margin-top: 4px;">Monitoreadas con empleadores</div>
-    </div>
-
-    <div style="background: var(--sg-soft); padding: var(--sg-space-4); border-radius: var(--sg-radius); border-left: 4px solid var(--sg-accent);">
-      <div style="font-size: var(--sg-text-sm); color: var(--sg-muted); font-weight: 600;">Mejoras Curriculares (I6)</div>
-      <div style="font-size: 26px; font-weight: 700; color: var(--sg-accent); margin-top: 4px;">
-        {{ $mejorasImplementadasI6 }} implementadas
-      </div>
-      <div style="font-size: 12px; color: var(--sg-muted); margin-top: 4px;">Atribuibles al seguimiento formal</div>
-    </div>
-  </div>
+{{-- 1 · OBJETIVOS EDUCACIONALES --}}
+<section class="sg-panel sg-bloque" id="objetivos" aria-labelledby="t-objetivos">
+  <h2 class="sg-section-title" id="t-objetivos">1. Objetivos educacionales del programa</h2>
+  <p class="sg-help" style="margin-bottom: 6px;">Lo que se espera que los egresados logren en su ejercicio profesional{{ $objetivos->first()?->planCurricular ? ' · '.$objetivos->first()->planCurricular->codigo_version : '' }}.</p>
+  @forelse ($objetivos as $objetivo)
+    <div class="sg-objetivo"><strong>{{ $objetivo->codigo }}</strong><span>{{ $objetivo->descripcion }}</span></div>
+  @empty
+    <p class="sg-help">Aún no hay objetivos registrados.</p>
+  @endforelse
 </section>
 
-{{-- SECCIÓN REGISTRAR EVALUACIÓN DE OE (EXPANDIBLE) --}}
-<details class="sg-panel" style="margin-bottom: var(--sg-space-6);" id="seccion-evaluar-oe">
-  <summary style="font-weight: 650; font-size: 16px; color: var(--sg-navy); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-    <span>➕ Dirección: Registrar o Validar Evaluación de Objetivo Educacional (OE) <span class="sg-badge sg-badge-success" style="margin-left: 8px;">Acredita I3</span></span>
-    <span style="font-size: 13px; color: var(--sg-accent); text-decoration: underline;">Mostrar / Ocultar formulario</span>
-  </summary>
-  <div style="margin-top: var(--sg-space-5); border-top: var(--sg-stroke); padding-top: var(--sg-space-4);">
-    <p style="font-size: 14px; color: var(--sg-muted); margin-bottom: var(--sg-space-4);">
-      Permite al Director registrar formalmente la evaluación trianual de un OE para una cohorte y periodo determinado.
-    </p>
+{{-- 2 · INFORME DE LOGRO DE LOS OBJETIVOS (F8) --}}
+@include('modules.seguimiento-egresado.partials.informe-logro', [
+  'id' => 'oe', 'anclaje' => 'logro', 'numero' => 2, 'titulo' => 'Informe de logro de los objetivos (F8)',
+  'ayuda' => 'Por cada promoción y periodo, el nivel de logro de cada objetivo. Con los informes validados se calcula el indicador I3.',
+  'items' => $itemsOe, 'informes' => $informesOe, 'niveles' => $niveles, 'promociones' => $promociones, 'periodos' => $periodos,
+  'ruta' => route('seguimiento-egresado.institucional.informe-logro'), 'conDecisiones' => true, 'formato' => 'F8',
+  'puedeRegistrar' => $puedeRegistrar, 'puedeValidar' => $puedeValidar,
+])
 
-    <form method="POST" action="{{ route('seguimiento-egresado.institucional.guardar-oe') }}">
-      @csrf
-      <div class="sg-form-grid">
-        <div class="sg-field">
-          <label class="sg-label" for="oe-id">Objetivo Educacional (OE) *</label>
-          <select class="sg-select" id="oe-id" name="id_objetivo" required>
-            @foreach($objetivosEducacionales as $oe)
-              <option value="{{ $oe->id }}">{{ $oe->codigo }} — {{ $oe->titulo }}</option>
-            @endforeach
-          </select>
-        </div>
+{{-- 3 · INFORME DE COMPETENCIAS (F9) --}}
+@include('modules.seguimiento-egresado.partials.informe-logro', [
+  'id' => 'comp', 'anclaje' => 'competencias', 'numero' => 3, 'titulo' => 'Informe de logro de las competencias (F9)',
+  'ayuda' => 'Lo mismo para las competencias genéricas y específicas del perfil de egreso.',
+  'items' => $itemsComp, 'informes' => $informesCompetencia, 'niveles' => $niveles, 'promociones' => $promociones, 'periodos' => $periodos,
+  'ruta' => route('seguimiento-egresado.institucional.informe-competencias'), 'conDecisiones' => false, 'formato' => 'F9',
+  'puedeRegistrar' => $puedeRegistrar, 'puedeValidar' => $puedeValidar,
+])
 
-        <div class="sg-field">
-          <label class="sg-label" for="oe-cohorte">Cohorte evaluada *</label>
-          <select class="sg-select" id="oe-cohorte" name="id_cohorte" required>
-            @foreach($cohortes as $coh)
-              <option value="{{ $coh->id }}">{{ $coh->codigo_promocion }} (Ingreso {{ $coh->anio_ingreso }})</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="oe-periodo">Periodo de evaluación *</label>
-          <input class="sg-input" type="text" id="oe-periodo" name="periodo" value="2024-II" required placeholder="Ej. 2024-II">
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="oe-nivel">Nivel de logro alcanzado *</label>
-          <select class="sg-select" id="oe-nivel" name="id_nivel_logro" required>
-            @foreach($nivelesLogro as $nl)
-              <option value="{{ $nl->id }}" {{ $nl->codigo === 'BUENO' ? 'selected' : '' }}>{{ $nl->nombre }}</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="oe-meta">Meta institucional (%) *</label>
-          <input class="sg-input" type="number" step="0.1" min="0" max="100" id="oe-meta" name="meta_porcentaje" value="75.0" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="oe-logro">Logro medido (%) *</label>
-          <input class="sg-input" type="number" step="0.1" min="0" max="100" id="oe-logro" name="logro_porcentaje" value="82.5" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="oe-estado">Estado de validación *</label>
-          <select class="sg-select" id="oe-estado" name="estado" required>
-            <option value="VALIDADA" selected>VALIDADA (Aprobada por Director de Escuela)</option>
-            <option value="BORRADOR">BORRADOR (Propuesta técnica)</option>
-          </select>
-          <p class="sg-help">Solo las evaluaciones VALIDADAS computan en I3.</p>
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="oe-fecha">Fecha de sesión / evaluación *</label>
-          <input class="sg-input" type="date" id="oe-fecha" name="fecha_evaluacion" value="{{ date('Y-m-d') }}" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="oe-fuente">Fuente documental y evidencias</label>
-          <input class="sg-input" type="text" id="oe-fuente" name="fuente_evidencia" value="Informe de Empleabilidad F2 y Encuesta Empresarial F3" placeholder="Informes F2, F3 o actas de comité consultivo">
-        </div>
-      </div>
-
-      <div class="sg-field" style="margin-top: var(--sg-space-4);">
-        <label class="sg-label" for="oe-acciones">Acciones derivadas y recomendaciones de mejora</label>
-        <textarea class="sg-textarea" id="oe-acciones" name="acciones_derivadas" rows="2" placeholder="Acciones acordadas para retroalimentar el plan curricular o la docencia."></textarea>
-      </div>
-
-      <div class="sg-actions" style="margin-top: var(--sg-space-5);">
-        <button class="sg-button" type="submit">
-          @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
-          <span>Guardar evaluación de OE</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</details>
-
-{{-- SECCIÓN REGISTRAR PLAN DE MEJORA CURRICULAR (EXPANDIBLE) --}}
-<details class="sg-panel" style="margin-bottom: var(--sg-space-6);" id="seccion-registrar-mejora">
-  <summary style="font-weight: 650; font-size: 16px; color: var(--sg-navy); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-    <span>➕ Dirección: Formalizar Plan de Mejora Curricular <span class="sg-badge sg-badge-success" style="margin-left: 8px;">Acredita I6</span></span>
-    <span style="font-size: 13px; color: var(--sg-accent); text-decoration: underline;">Mostrar / Ocultar formulario</span>
-  </summary>
-  <div style="margin-top: var(--sg-space-5); border-top: var(--sg-stroke); padding-top: var(--sg-space-4);">
-    <p style="font-size: 14px; color: var(--sg-muted); margin-bottom: var(--sg-space-4);">
-      Permite al Director registrar formalmente una mejora curricular atribuible al seguimiento de egresados, con su código, documento de resolución y estado.
-    </p>
-
-    <form method="POST" action="{{ route('seguimiento-egresado.institucional.guardar-mejora') }}">
-      @csrf
-      <div class="sg-form-grid">
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-codigo">Código identificador *</label>
-          <input class="sg-input" type="text" id="mejora-codigo" name="codigo" value="MC-{{ date('Y') }}-0{{ count($mejorasCurriculares) + 1 }}" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-plan">Plan curricular afectado *</label>
-          <select class="sg-select" id="mejora-plan" name="id_plan_curricular" required>
-            @foreach($planesCurriculares as $plan)
-              <option value="{{ $plan->id }}">{{ $plan->codigo_version }} ({{ $plan->estado }})</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-tipo">Tipo de modificación *</label>
-          <select class="sg-select" id="mejora-tipo" name="tipo" required>
-            <option value="PERFIL">Modificación del Perfil de Egreso</option>
-            <option value="OE">Ajuste de Objetivo Educacional</option>
-            <option value="OTRA">Actualización de Syllabus / Laboratorios</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-dice">Dice (texto actual) *</label>
-          <textarea class="sg-textarea" id="mejora-dice" name="dice" rows="2" placeholder="Texto vigente que se modifica">{{ old('dice') }}</textarea>
-          <p class="sg-help">Obligatorio salvo en la actualización de syllabus o laboratorios.</p>
-        </div>
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-debe-decir">Debe decir (texto propuesto) *</label>
-          <textarea class="sg-textarea" id="mejora-debe-decir" name="debe_decir" rows="2" placeholder="Texto que debe quedar">{{ old('debe_decir') }}</textarea>
-        </div>
-      </div>
-
-      <div class="sg-field" style="margin-top: var(--sg-space-4);">
-        <label class="sg-label" for="mejora-titulo">Título de la mejora curricular *</label>
-        <input class="sg-input" type="text" id="mejora-titulo" name="titulo" value="Modernización del laboratorio y syllabus de Cloud Computing y DevOps" required>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-estado">Estado del plan *</label>
-          <select class="sg-select" id="mejora-estado" name="estado" required>
-            <option value="IMPLEMENTADA" selected>IMPLEMENTADA (Con resolución y evidencia activa — Computa I6)</option>
-            <option value="EN_EJECUCION">EN EJECUCIÓN (Aprobada en proceso)</option>
-            <option value="APROBADA">APROBADA por Consejo de Facultad</option>
-            <option value="PROPUESTA">PROPUESTA (En formulación)</option>
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-origen">¿Se origina en el seguimiento al egresado? *</label>
-          <select class="sg-select" id="mejora-origen" name="origen_seguimiento" required>
-            <option value="1" selected>SÍ — Derivada de encuestas de egresados/empleadores</option>
-            <option value="0">NO — Iniciativa de otra fuente</option>
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-periodo">Periodo de aplicación</label>
-          <input class="sg-input" type="text" id="mejora-periodo" name="periodo" value="2024-I" placeholder="Ej. 2024-I">
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-doc">Documento oficial de respaldo</label>
-          <input class="sg-input" type="text" id="mejora-doc" name="documento_referencia" value="Resolución de Decanato R-0210-2024-D-FACINF" placeholder="Resolución Directoral o Acta de Consejo">
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-resp">Responsable asignado</label>
-          <input class="sg-input" type="text" id="mejora-resp" name="responsable" value="Comité Curricular y Área de Ingeniería de Software">
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-freg">Fecha de registro *</label>
-          <input class="sg-input" type="date" id="mejora-freg" name="fecha_registro" value="{{ date('Y-m-d') }}" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="mejora-fimp">Fecha de implementación</label>
-          <input class="sg-input" type="date" id="mejora-fimp" name="fecha_implementacion" value="{{ date('Y-m-d') }}">
-        </div>
-      </div>
-
-      <div class="sg-field" style="margin-top: var(--sg-space-4);">
-        <label class="sg-label" for="mejora-desc">Descripción y justificación técnica *</label>
-        <textarea class="sg-textarea" id="mejora-desc" name="descripcion" rows="2" required placeholder="Explique las brechas detectadas en los egresados y cómo esta mejora las subsana.">Actualización de contenidos para incorporar pipelines CI/CD y despliegue sobre Kubernetes a solicitud de empleadores.</textarea>
-      </div>
-
-      <div class="sg-actions" style="margin-top: var(--sg-space-5);">
-        <button class="sg-button" type="submit">
-          @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
-          <span>Registrar mejora curricular</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</details>
-
-{{-- SECCIÓN REGISTRAR EVALUACIÓN DE COMPETENCIA DEL PERFIL (EXPANDIBLE) --}}
-<details class="sg-panel" style="margin-bottom: var(--sg-space-6);" id="seccion-evaluar-competencia">
-  <summary style="font-weight: 650; font-size: 16px; color: var(--sg-navy); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-    <span>➕ Dirección: Registrar Evaluación de Competencia del Perfil <span class="sg-badge sg-badge-success" style="margin-left: 8px;">Criterio ICACIT</span></span>
-    <span style="font-size: 13px; color: var(--sg-accent); text-decoration: underline;">Mostrar / Ocultar formulario</span>
-  </summary>
-  <div style="margin-top: var(--sg-space-5); border-top: var(--sg-stroke); padding-top: var(--sg-space-4);">
-    <p style="font-size: 14px; color: var(--sg-muted); margin-bottom: var(--sg-space-4);">
-      Permite al Director registrar la evaluación de una competencia del perfil de egreso para una cohorte y periodo determinado.
-    </p>
-
-    <form method="POST" action="{{ route('seguimiento-egresado.institucional.guardar-competencia') }}">
-      @csrf
-      <div class="sg-form-grid">
-        <div class="sg-field">
-          <label class="sg-label" for="comp-id">Competencia del perfil *</label>
-          <select class="sg-select" id="comp-id" name="id_competencia" required>
-            @foreach($competencias as $c)
-              <option value="{{ $c->id }}">{{ $c->codigo }} — {{ $c->nombre }}</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="comp-cohorte">Cohorte evaluada *</label>
-          <select class="sg-select" id="comp-cohorte" name="id_cohorte" required>
-            @foreach($cohortes as $coh)
-              <option value="{{ $coh->id }}">{{ $coh->codigo_promocion }} (Ingreso {{ $coh->anio_ingreso }})</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="comp-periodo">Periodo de evaluación *</label>
-          <input class="sg-input" type="text" id="comp-periodo" name="periodo" value="2024-II" required placeholder="Ej. 2024-II">
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="comp-nivel">Nivel de logro alcanzado *</label>
-          <select class="sg-select" id="comp-nivel" name="id_nivel_logro" required>
-            @foreach($nivelesLogro as $nl)
-              <option value="{{ $nl->id }}" {{ $nl->codigo === 'BUENO' ? 'selected' : '' }}>{{ $nl->nombre }}</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="comp-logro">Logro alcanzado (%) *</label>
-          <input class="sg-input" type="number" id="comp-logro" name="logro_porcentaje" step="0.1" min="0" max="100" value="80.0" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="comp-estado">Estado de validación *</label>
-          <select class="sg-select" id="comp-estado" name="estado" required>
-            <option value="VALIDADA" selected>VALIDADA por Dirección</option>
-            <option value="BORRADOR">BORRADOR (En revisión)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="comp-fecha">Fecha de sesión / evaluación *</label>
-          <input class="sg-input" type="date" id="comp-fecha" name="fecha_evaluacion" value="{{ date('Y-m-d') }}" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="comp-fuente">Fuente documental y evidencias</label>
-          <input class="sg-input" type="text" id="comp-fuente" name="fuente_evidencia" value="Encuesta Empresarial de Desempeño y Evaluación de Jefes Directos">
-        </div>
-      </div>
-
-      <div class="sg-field" style="margin-top: var(--sg-space-4);">
-        <label class="sg-label" for="comp-obs">Observaciones y recomendaciones de mejora</label>
-        <textarea class="sg-textarea" id="comp-obs" name="observacion" rows="2" placeholder="Observaciones de Dirección sobre el desempeño observado."></textarea>
-      </div>
-
-      <div class="sg-actions" style="margin-top: var(--sg-space-5);">
-        <button class="sg-button" type="submit">
-          @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
-          <span>Guardar evaluación de competencia</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</details>
-
-{{-- SECCIÓN REGISTRAR PLAN DE ACCIÓN (INSERCIÓN / VINCULACIÓN / CONVENIOS - F5 Y F7) --}}
-<details class="sg-panel" style="margin-bottom: var(--sg-space-6);" id="seccion-registrar-plan">
-  <summary style="font-weight: 650; font-size: 16px; color: var(--sg-navy); cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-    <span>➕ Dirección: Formalizar Plan de Acción (Inserción / Vinculación / Convenios) <span class="sg-badge sg-badge-success" style="margin-left: 8px;">Formatos F5 y F7</span></span>
-    <span style="font-size: 13px; color: var(--sg-accent); text-decoration: underline;">Mostrar / Ocultar formulario</span>
-  </summary>
-  <div style="margin-top: var(--sg-space-5); border-top: var(--sg-stroke); padding-top: var(--sg-space-4);">
-    <p style="font-size: 14px; color: var(--sg-muted); margin-bottom: var(--sg-space-4);">
-      Permite al Director registrar formalmente un plan de acción para inserción laboral (F5) o de vinculación y convenios con empleadores (F7).
-    </p>
-
-    <form method="POST" action="{{ route('seguimiento-egresado.institucional.guardar-plan') }}">
-      @csrf
-      <div class="sg-form-grid">
-        <div class="sg-field">
-          <label class="sg-label" for="plan-codigo">Código identificador *</label>
-          <input class="sg-input" type="text" id="plan-codigo" name="codigo" value="PA-{{ date('Y') }}-0{{ count($planesAccion) + 1 }}" required>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="plan-tipo">Tipo de Plan *</label>
-          <select class="sg-select" id="plan-tipo" name="tipo" required>
-            <option value="VINCULACION" selected>VINCULACION (Alianzas y Convenios con Empresas — Formato F7)</option>
-            <option value="INSERCION">INSERCION (Bolsa de Trabajo y Empleabilidad — Formato F5)</option>
-            <option value="COMPETENCIA">COMPETENCIA (Refuerzo del Perfil de Egreso)</option>
-            <option value="EXTRACURRICULAR">EXTRACURRICULAR (Talleres y Certificaciones)</option>
-            <option value="INFRAESTRUCTURA">INFRAESTRUCTURA (Laboratorios Especializados)</option>
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="plan-periodo">Periodo de aplicación *</label>
-          <input class="sg-input" type="text" id="plan-periodo" name="periodo" value="2024-II" required placeholder="Ej. 2024-II">
-        </div>
-      </div>
-
-      <div class="sg-field" style="margin-top: var(--sg-space-4);">
-        <label class="sg-label" for="plan-titulo">Título del Plan / Alianza *</label>
-        <input class="sg-input" type="text" id="plan-titulo" name="titulo" value="Convenio Marco y Alianzas Estratégicas con Empresas del Sector TI para Prácticas y Empleabilidad" required>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="plan-estado">Estado del plan *</label>
-          <select class="sg-select" id="plan-estado" name="estado" required>
-            <option value="PLANIFICADA">PLANIFICADA</option>
-            <option value="EN_EJECUCION" selected>EN EJECUCIÓN (Aprobada)</option>
-            <option value="FINALIZADA">FINALIZADA</option>
-            <option value="EVALUADA">EVALUADA</option>
-          </select>
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="plan-cumplimiento">Grado de cumplimiento (%)</label>
-          <input class="sg-input" type="number" id="plan-cumplimiento" name="grado_cumplimiento" min="0" max="100" value="65">
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="plan-flimite">Fecha límite / cumplimiento</label>
-          <input class="sg-input" type="date" id="plan-flimite" name="fecha_limite" value="{{ date('Y-m-d', strtotime('+90 days')) }}">
-        </div>
-      </div>
-
-      <div class="sg-form-grid" style="margin-top: var(--sg-space-4);">
-        <div class="sg-field">
-          <label class="sg-label" for="plan-resp">Responsable asignado</label>
-          <input class="sg-input" type="text" id="plan-resp" name="responsable" value="Comisión de Vinculación y Prácticas Preprofesionales">
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="plan-doc">Documento de respaldo / Resolución</label>
-          <input class="sg-input" type="text" id="plan-doc" name="documento_referencia" value="Resolución de Decanato R-0045-2024-FACINF / Convenio Marco UNT">
-        </div>
-
-        <div class="sg-field">
-          <label class="sg-label" for="plan-meta">Meta esperada</label>
-          <input class="sg-input" type="text" id="plan-meta" name="meta_esperada" value="Formalizar 4 alianzas estratégicas e incorporar 25 egresados a proyectos empresariales">
-        </div>
-      </div>
-
-      <div class="sg-field" style="margin-top: var(--sg-space-4);">
-        <label class="sg-label" for="plan-actividad">Actividades programadas *</label>
-        <textarea class="sg-textarea" id="plan-actividad" name="actividad" rows="2" required placeholder="Detalle las actividades de vinculación o inserción laboral programadas.">Mesas de trabajo con empleadores de software regional, talleres de inserción profesional y jornadas de reclutamiento.</textarea>
-      </div>
-
-      <div class="sg-actions" style="margin-top: var(--sg-space-5);">
-        <button class="sg-button" type="submit">
-          @include('modules.seguimiento-egresado.partials.icon', ['name' => 'clipboard'])
-          <span>Registrar plan de acción</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</details>
-
-{{-- SECCIÓN 1: EVALUACIÓN DE OBJETIVOS EDUCACIONALES (I3) --}}
-<section class="sg-panel" aria-labelledby="sg-oe-title" style="margin-bottom: var(--sg-space-6);">
-  <div class="sg-section-title">
-    <div>
-      <span class="sg-kicker">DIMENSIÓN 1 · LOGRO DE OBJETIVOS EDUCACIONALES (I3)</span>
-      <h2 id="sg-oe-title">Evaluación de Objetivos Educacionales del Programa</h2>
-      <p>Logro alcanzado en el medio profesional contrastado con las metas del plan curricular.</p>
+{{-- 4 · CAMBIOS QUE SE DEBEN HACER (F10 / F11) --}}
+<section class="sg-panel sg-bloque" id="cambios" aria-labelledby="t-cambios">
+  <div class="sg-emp-cab">
+    <h2 class="sg-section-title" id="t-cambios" style="margin: 0;">4. Cambios que se deben hacer (F10 y F11)</h2>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      @if ($puedeRegistrar)<button type="button" class="sg-button" onclick="abrirCambio(null)">+ Registrar cambio</button>@endif
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F10') }}">Descargar F10 (CSV)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F11') }}">Descargar F11 (CSV)</a>
     </div>
-    <span class="sg-badge sg-badge-success">{{ count($evaluacionesOe) }} Evaluaciones registradas</span>
   </div>
-
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-labelledby="sg-oe-title">
-    <table class="sg-table">
-      <thead>
-        <tr>
-          <th scope="col" style="width: 80px;">Código</th>
-          <th scope="col" style="min-width: 240px;">Objetivo Educacional (OE)</th>
-          <th scope="col">Cohorte</th>
-          <th scope="col">Periodo</th>
-          <th scope="col" class="sg-numeric">Meta (%)</th>
-          <th scope="col" class="sg-numeric">Logro (%)</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Evidencia Oficial</th>
-        </tr>
-      </thead>
-      <tbody>
-        @forelse ($evaluacionesOe as $oeEval)
-          @php
-            $logrado = ($oeEval->logro_porcentaje >= $oeEval->meta_porcentaje) || in_array($oeEval->id_nivel_logro, [1, 2]);
-          @endphp
-          <tr>
-            <td style="font-weight: 700; color: var(--sg-navy);">{{ $oeEval->objetivo->codigo ?? 'OE' }}</td>
-            <td>
-              <div style="font-weight: 600; color: var(--sg-navy);">{{ $oeEval->objetivo->titulo ?? '—' }}</div>
-              <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">{{ $oeEval->objetivo->descripcion ?? '' }}</p>
-            </td>
-            <td><span class="sg-badge">{{ $oeEval->cohorte->codigo_promocion ?? '—' }}</span></td>
-            <td><span class="sg-badge">{{ $oeEval->periodo }}</span></td>
-            <td class="sg-numeric" style="font-weight: 600;">{{ number_format($oeEval->meta_porcentaje, 1) }}%</td>
-            <td class="sg-numeric">
-              <strong style="color: {{ $logrado ? 'var(--sg-success)' : 'var(--sg-warning)' }}; font-size: 15px;">
-                {{ number_format($oeEval->logro_porcentaje, 1) }}%
-              </strong>
-            </td>
-            <td>
-              <span class="sg-badge {{ $oeEval->estado === 'VALIDADA' ? 'sg-badge-success' : 'sg-badge-warning' }}">
-                {{ $oeEval->estado }}
-              </span>
-            </td>
-            <td style="font-size: 12px;">
-              <div style="font-weight: 600;">{{ $oeEval->fuente_evidencia ?? 'Informes F2 y F3' }}</div>
-              <div style="color: var(--sg-muted);">Evaluado: {{ date('d/m/Y', strtotime($oeEval->fecha_evaluacion)) }}</div>
-            </td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="8" style="text-align: center; color: var(--sg-muted); padding: var(--sg-space-4);">
-              No hay evaluaciones de OEs registradas para los filtros aplicados.
-            </td>
-          </tr>
-        @endforelse
-      </tbody>
-    </table>
-  </div>
+  <p class="sg-help" style="margin-bottom: 10px;">Registro de lo que «dice» hoy y lo que «debe decir» en el perfil de egreso o en los objetivos. <strong>Cada cambio implementado, con su documento de respaldo, suma 1 al indicador I6</strong> (hoy: {{ $resumen['i6'] }}).</p>
+  @if ($cambios->isEmpty())
+    <p class="sg-help">Aún no hay cambios registrados.</p>
+  @else
+    <div class="sg-table-wrap">
+      <table class="sg-table sg-emp-tabla">
+        <caption class="sg-sr-only">Cambios al perfil de egreso y a los objetivos educacionales</caption>
+        <thead><tr><th scope="col">Cambio</th><th scope="col">Qué cambia</th><th scope="col">Dice</th><th scope="col">Debe decir</th><th scope="col">Estado</th><th scope="col">Documento</th><th scope="col">Acción</th></tr></thead>
+        <tbody>
+          @foreach ($cambios as $cambio)
+            @php
+              [$estadoTexto, $estadoClase] = $estadosCambio[$cambio->estado] ?? [$cambio->estado, ''];
+              $bloqueado = ! $puedeValidar && in_array($cambio->estado, $estadosDireccion, true);
+              $datosCambio = [
+                  'id' => $cambio->id, 'tipo' => $cambio->tipo, 'titulo' => $cambio->titulo, 'dice' => $cambio->dice, 'debe_decir' => $cambio->debe_decir,
+                  'descripcion' => $cambio->descripcion, 'estado' => $cambio->estado, 'documento' => $cambio->documento_referencia,
+                  'fecha_implementacion' => $cambio->fecha_implementacion ? \Illuminate\Support\Carbon::parse($cambio->fecha_implementacion)->format('Y-m-d') : null,
+                  'origen' => (bool) $cambio->origen_seguimiento, 'codigo' => $cambio->codigo,
+              ];
+            @endphp
+            <tr>
+              <td class="sg-celda-texto"><strong>{{ $cambio->titulo }}</strong><br><span class="sg-help">{{ $cambio->codigo }}</span></td>
+              <td>{{ $tiposCambio[$cambio->tipo] ?? $cambio->tipo }}</td>
+              <td class="sg-celda-texto">{{ $cambio->dice ?: '—' }}</td>
+              <td class="sg-celda-texto">{{ $cambio->debe_decir ?: '—' }}</td>
+              <td>
+                <span class="sg-badge {{ $estadoClase }}">{{ $estadoTexto }}</span>
+                @if ($cambio->estado === 'IMPLEMENTADA')<span class="sg-help" style="display: block;">{{ $fecha($cambio->fecha_implementacion) }}{{ $cambio->origen_seguimiento && $cambio->documento_referencia ? ' · suma a I6' : '' }}</span>@endif
+              </td>
+              <td class="sg-celda-texto">{{ $cambio->documento_referencia ?: '—' }}</td>
+              <td><button type="button" class="sg-button sg-button-secondary" onclick="abrirCambio(@js($datosCambio))">{{ ($puedeRegistrar && ! $bloqueado) ? 'Editar' : 'Ver' }}</button></td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+  @endif
 </section>
 
-{{-- SECCIÓN 2: COMPETENCIAS DEL GRADUADO --}}
-<section class="sg-panel" aria-labelledby="sg-comp-title" style="margin-bottom: var(--sg-space-6);">
-  <div class="sg-section-title">
-    <div>
-      <span class="sg-kicker">DIMENSIÓN 2 · EVALUACIÓN DEL PERFIL DE EGRESO</span>
-      <h2 id="sg-comp-title">Monitoreo de Competencias del Perfil</h2>
-      <p>Apreciación de empleadores y autoevaluación del desempeño profesional en el sector TI.</p>
+{{-- 5 · PLANES DE ACCIÓN (F5 / F7) --}}
+<section class="sg-panel sg-bloque" id="planes" aria-labelledby="t-planes">
+  <div class="sg-emp-cab">
+    <h2 class="sg-section-title" id="t-planes" style="margin: 0;">5. Planes de acción (F5 y F7)</h2>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      @if ($puedeRegistrar)<button type="button" class="sg-button" onclick="abrirPlan(null)">+ Registrar plan</button>@endif
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F5') }}">Descargar F5 (CSV)</a>
+      <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.reportes.formato', 'F7') }}">Descargar F7 (CSV)</a>
     </div>
   </div>
-
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-labelledby="sg-comp-title">
-    <table class="sg-table">
-      <thead>
-        <tr>
-          <th scope="col" style="width: 70px;">Código</th>
-          <th scope="col">Competencia</th>
-          <th scope="col">Tipo</th>
-          <th scope="col">Plan Curricular</th>
-          <th scope="col">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        @forelse ($competencias as $comp)
-          <tr>
-            <td style="font-weight: 700; color: var(--sg-navy);">{{ $comp->codigo }}</td>
-            <td style="font-weight: 600;">{{ $comp->nombre }}</td>
-            <td><span class="sg-badge">{{ $comp->tipo ?? 'ESPECIFICA' }}</span></td>
-            <td><span class="sg-badge">{{ $comp->planCurricular->codigo_version ?? 'Plan 2017' }}</span></td>
-            <td><span class="sg-badge sg-badge-success">Monitoreada</span></td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--sg-muted); padding: var(--sg-space-4);">
-              No hay competencias registradas.
-            </td>
-          </tr>
-        @endforelse
-      </tbody>
-    </table>
-  </div>
+  <p class="sg-help" style="margin-bottom: 10px;">Actividades para vincularse con los egresados (F5) y para mejorar su inserción laboral (F7), con su avance.</p>
+  @if ($planesAccion->isEmpty())
+    <p class="sg-help">Aún no hay planes registrados.</p>
+  @else
+    <div class="sg-table-wrap">
+      <table class="sg-table sg-emp-tabla">
+        <thead><tr><th scope="col">Plan</th><th scope="col">Tipo</th><th scope="col">Estado</th><th scope="col">Avance</th><th scope="col">Fecha límite</th><th scope="col">Acción</th></tr></thead>
+        <tbody>
+          @foreach ($planesAccion as $plan)
+            @php $datosPlan = ['id' => $plan->id, 'titulo' => $plan->titulo, 'tipo' => $plan->tipo, 'estado' => $plan->estado, 'actividad' => $plan->actividad, 'responsable' => $plan->responsable, 'fecha_limite' => $plan->fecha_limite ? \Illuminate\Support\Carbon::parse($plan->fecha_limite)->format('Y-m-d') : null, 'grado' => $plan->grado_cumplimiento, 'observacion' => $plan->observacion]; @endphp
+            <tr>
+              <td class="sg-celda-texto"><strong>{{ $plan->titulo }}</strong><br><span class="sg-help">{{ $plan->codigo }}</span></td>
+              <td>{{ $tiposPlan[$plan->tipo] ?? $plan->tipo }}</td>
+              <td>{{ $estadosPlan[$plan->estado] ?? $plan->estado }}</td>
+              <td>{{ $plan->grado_cumplimiento !== null ? number_format($plan->grado_cumplimiento, 0).' %' : '—' }}</td>
+              <td>{{ $fecha($plan->fecha_limite) }}</td>
+              <td><button type="button" class="sg-button sg-button-secondary" onclick="abrirPlan(@js($datosPlan))">{{ $puedeRegistrar ? 'Editar' : 'Ver' }}</button></td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+  @endif
 </section>
 
-{{-- SECCIÓN 3: PLANES DE MEJORA CURRICULAR (I6) --}}
-<section class="sg-panel" aria-labelledby="sg-mejoras-title" style="margin-bottom: var(--sg-space-6);">
-  <div class="sg-section-title">
-    <div>
-      <span class="sg-kicker">DIMENSIÓN 3 · PLANES DE MEJORA CURRICULAR (I6)</span>
-      <h2 id="sg-mejoras-title">Mejoras Curriculares Implementadas</h2>
-      <p>Acciones formalizadas con resolución aprobada derivadas del seguimiento a egresados.</p>
-    </div>
-    <span class="sg-badge">{{ count($mejorasCurriculares) }} Planes registrados</span>
-  </div>
-
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-labelledby="sg-mejoras-title">
-    <table class="sg-table">
-      <thead>
-        <tr>
-          <th scope="col">Código / Mejora</th>
-          <th scope="col">Plan</th>
-          <th scope="col">Tipo</th>
-          <th scope="col">Estado</th>
-          <th scope="col">Origen Seguimiento</th>
-          <th scope="col">Documento Oficial</th>
-          <th scope="col">Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        @forelse ($mejorasCurriculares as $mej)
-          @php
-            $esMejoraSeleccionada = $mejoraSeleccionada && $mejoraSeleccionada->id === $mej->id;
-          @endphp
-          <tr style="{{ $esMejoraSeleccionada ? 'background: #edf4fb; font-weight: 550;' : '' }}">
-            <td>
-              <div style="font-weight: 600; color: var(--sg-navy);">{{ $mej->titulo }}</div>
-              <div style="font-size: 12px; font-family: monospace; color: var(--sg-muted);">{{ $mej->codigo }} · {{ $mej->responsable }}</div>
-            </td>
-            <td><span class="sg-badge">{{ $mej->planCurricular->codigo_version ?? 'Plan 2017' }}</span></td>
-            <td style="font-size: 13px;">{{ $mej->tipo }}</td>
-            <td>
-              <span class="sg-badge {{ $mej->estado === 'IMPLEMENTADA' ? 'sg-badge-success' : 'sg-badge-warning' }}">
-                {{ $mej->estado }}
-              </span>
-            </td>
-            <td>
-              @if($mej->origen_seguimiento)
-                <span class="sg-badge sg-badge-success">✓ Acredita I6</span>
-              @else
-                <span class="sg-badge">Otra fuente</span>
-              @endif
-            </td>
-            <td style="font-size: 12px;"><strong>{{ $mej->documento_referencia ?? 'En trámite' }}</strong></td>
-            <td>
-              <a class="sg-button sg-button-secondary" style="padding: 6px 10px; min-height: 32px; font-size: 12px;"
-                 href="{{ route('seguimiento-egresado.institucional', array_merge(request()->query(), ['mejora_id' => $mej->id])) }}#detalle-mejora">
-                @if($esMejoraSeleccionada) ✓ En auditoría @else Auditar @endif
-              </a>
-            </td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--sg-muted); padding: var(--sg-space-4);">
-              No hay mejoras curriculares registradas en la base de datos.
-            </td>
-          </tr>
-        @endforelse
-      </tbody>
-    </table>
-  </div>
-</section>
-
-{{-- FICHA DETALLADA DE LA MEJORA SELECCIONADA --}}
-@if($mejoraSeleccionada)
-<section class="sg-panel" id="detalle-mejora" aria-labelledby="sg-detalle-mejora-title" style="border: 2px solid #8da9c0;">
-  <div class="sg-section-title">
-    <div>
-      <span class="sg-kicker">FICHA DE AUDITORÍA Y TRAZABILIDAD DE LA MEJORA</span>
-      <h2 id="sg-detalle-mejora-title">{{ $mejoraSeleccionada->titulo }}</h2>
-      <p style="margin-top: 4px; color: var(--sg-muted);">
-        Código: <strong>{{ $mejoraSeleccionada->codigo }}</strong> | Plan: <strong>{{ $mejoraSeleccionada->planCurricular->codigo_version ?? 'Plan 2017' }}</strong> | Periodo: <strong>{{ $mejoraSeleccionada->periodo ?? 'Vigente' }}</strong>
-      </p>
-    </div>
-    <span class="sg-badge {{ $mejoraSeleccionada->estado === 'IMPLEMENTADA' ? 'sg-badge-success' : 'sg-badge-warning' }}" style="font-size: 14px; padding: 6px 12px;">
-      Estado: {{ $mejoraSeleccionada->estado }}
-    </span>
-  </div>
-
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--sg-space-4); margin-top: var(--sg-space-4);">
-    <div style="background: var(--sg-surface); border: var(--sg-stroke); border-radius: var(--sg-radius); padding: var(--sg-space-4);">
-      <h3 style="font-size: 14px; font-weight: 650; margin: 0 0 8px; color: var(--sg-navy);">Sustento documental y resolución oficial</h3>
-      <p style="font-size: 13px; color: var(--sg-text); margin: 0; line-height: 1.5;">{{ $mejoraSeleccionada->origen_evidencia ?? 'Informes anuales de seguimiento' }}</p>
-      <div style="margin-top: 12px; padding-top: 10px; border-top: var(--sg-stroke);">
-        <strong style="font-size: 12px; color: var(--sg-muted); display: block;">Documento de resolución:</strong>
-        <span style="font-size: 13px; font-weight: 600; color: var(--sg-navy);">{{ $mejoraSeleccionada->documento_referencia ?? 'En trámite de aprobación' }}</span>
+{{-- Ventana: cambio «Dice / Debe decir» --}}
+<dialog class="sg-dialogo sg-form-dialogo" id="dlg-cambio" style="width: min(94vw, 600px);" aria-labelledby="dlg-cambio-titulo">
+  <form method="POST" action="{{ route('seguimiento-egresado.institucional.cambio') }}" id="form-cambio">
+    @csrf
+    <input type="hidden" name="id" id="cambio-id">
+    <div class="sg-dialogo-cuerpo">
+      <h2 class="sg-dialogo-titulo" id="dlg-cambio-titulo">Registrar cambio</h2>
+      <p class="sg-dialogo-mensaje" style="white-space: normal;" id="cambio-aviso">Qué se cambia, qué dice hoy y cómo debe decir.</p>
+      <div class="sg-campos">
+        <div class="sg-field">
+          <label class="sg-label" for="cambio-tipo">¿Qué se cambia? *</label>
+          <select class="sg-select" id="cambio-tipo" name="tipo" required>
+            @foreach ($tiposCambio as $valor => $texto)<option value="{{ $valor }}">{{ $texto }}</option>@endforeach
+          </select>
+        </div>
+        <div class="sg-field"><label class="sg-label" for="cambio-titulo-in">Título *</label><input class="sg-input" id="cambio-titulo-in" name="titulo" maxlength="200" required></div>
+        <div class="sg-field" data-dice><label class="sg-label" for="cambio-dice">Dice *</label><textarea class="sg-textarea" id="cambio-dice" name="dice" rows="2" maxlength="2000"></textarea></div>
+        <div class="sg-field" data-dice><label class="sg-label" for="cambio-debe">Debe decir *</label><textarea class="sg-textarea" id="cambio-debe" name="debe_decir" rows="2" maxlength="2000"></textarea></div>
+        <div class="sg-field"><label class="sg-label" for="cambio-motivo">¿Por qué se hace? *</label><textarea class="sg-textarea" id="cambio-motivo" name="descripcion" rows="2" maxlength="2000" required></textarea></div>
+        <div class="sg-field">
+          <label class="sg-label" for="cambio-estado">Estado *</label>
+          <select class="sg-select" id="cambio-estado" name="estado" required>
+            @foreach ($estadosCambio as $valor => [$texto])
+              <option value="{{ $valor }}" @if (! $puedeValidar && in_array($valor, $estadosDireccion, true)) disabled @endif>{{ $texto }}{{ (! $puedeValidar && in_array($valor, $estadosDireccion, true)) ? ' (solo Dirección)' : '' }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="sg-dos" id="cambio-implementado" hidden>
+          <div class="sg-field"><label class="sg-label" for="cambio-documento">Documento de respaldo *</label><input class="sg-input" id="cambio-documento" name="documento_referencia" maxlength="200" placeholder="Resolución o acta"></div>
+          <div class="sg-field"><label class="sg-label" for="cambio-fecha">Fecha de implementación *</label><input class="sg-input" id="cambio-fecha" name="fecha_implementacion" type="date" max="{{ now()->toDateString() }}"></div>
+        </div>
+        <label style="display: flex; gap: 8px; align-items: center; font-size: 14px;"><input type="hidden" name="origen_seguimiento" value="0"><input type="checkbox" name="origen_seguimiento" value="1" id="cambio-origen" checked> Nace de los resultados del seguimiento a egresados</label>
       </div>
     </div>
+    <div class="sg-dialogo-pie">
+      <button type="button" class="sg-dialogo-secundario" onclick="document.getElementById('dlg-cambio').close()">Cerrar</button>
+      @if ($puedeRegistrar)<button type="submit" id="cambio-guardar">Guardar</button>@endif
+    </div>
+  </form>
+</dialog>
 
-    <div style="background: var(--sg-surface); border: var(--sg-stroke); border-radius: var(--sg-radius); padding: var(--sg-space-4);">
-      <h3 style="font-size: 14px; font-weight: 650; margin: 0 0 8px; color: var(--sg-navy);">Responsables institucionales asignados</h3>
-      <p style="font-size: 13px; color: var(--sg-text); margin: 0; line-height: 1.5;">{{ $mejoraSeleccionada->responsable ?? 'Comité Curricular' }}</p>
-      <div style="margin-top: 12px; padding-top: 10px; border-top: var(--sg-stroke);">
-        <strong style="font-size: 12px; color: var(--sg-muted); display: block;">Meta esperada:</strong>
-        <span style="font-size: 13px; color: var(--sg-success); font-weight: 600;">{{ $mejoraSeleccionada->meta_esperada ?? '100% de estudiantes capacitados' }}</span>
+{{-- Ventana: plan de acción --}}
+<dialog class="sg-dialogo sg-form-dialogo" id="dlg-plan-accion" style="width: min(94vw, 560px);" aria-labelledby="dlg-plan-titulo">
+  <form method="POST" action="{{ route('seguimiento-egresado.institucional.guardar-plan') }}" id="form-plan-accion">
+    @csrf
+    <input type="hidden" name="id" id="plan-id">
+    <div class="sg-dialogo-cuerpo">
+      <h2 class="sg-dialogo-titulo" id="dlg-plan-titulo">Registrar plan de acción</h2>
+      <div class="sg-campos">
+        <div class="sg-field"><label class="sg-label" for="plan-titulo-in">Nombre del plan *</label><input class="sg-input" id="plan-titulo-in" name="titulo" maxlength="200" required></div>
+        <div class="sg-dos">
+          <div class="sg-field"><label class="sg-label" for="plan-tipo">Tipo *</label><select class="sg-select" id="plan-tipo" name="tipo" required>@foreach ($tiposPlan as $v => $t)<option value="{{ $v }}">{{ $t }}</option>@endforeach</select></div>
+          <div class="sg-field"><label class="sg-label" for="plan-estado">Estado *</label><select class="sg-select" id="plan-estado" name="estado" required>@foreach ($estadosPlan as $v => $t)<option value="{{ $v }}">{{ $t }}</option>@endforeach</select></div>
+        </div>
+        <div class="sg-field"><label class="sg-label" for="plan-actividad">¿Qué se hará? *</label><textarea class="sg-textarea" id="plan-actividad" name="actividad" rows="2" maxlength="2000" required></textarea></div>
+        <div class="sg-dos">
+          <div class="sg-field"><label class="sg-label" for="plan-responsable">Responsable</label><input class="sg-input" id="plan-responsable" name="responsable" maxlength="160"></div>
+          <div class="sg-field"><label class="sg-label" for="plan-fecha">Fecha límite</label><input class="sg-input" id="plan-fecha" name="fecha_limite" type="date"></div>
+        </div>
+        <div class="sg-dos">
+          <div class="sg-field"><label class="sg-label" for="plan-grado">Avance (%)</label><input class="sg-input" id="plan-grado" name="grado_cumplimiento" type="number" min="0" max="100"></div>
+        </div>
+        <div class="sg-field"><label class="sg-label" for="plan-obs">Observaciones</label><textarea class="sg-textarea" id="plan-obs" name="observacion" rows="2" maxlength="2000"></textarea></div>
       </div>
     </div>
-  </div>
-
-  <div style="background: var(--sg-surface); border: var(--sg-stroke); border-radius: var(--sg-radius); padding: var(--sg-space-4); margin-top: var(--sg-space-4);">
-    <h3 style="font-size: 14px; font-weight: 650; margin: 0 0 8px; color: var(--sg-navy);">Acciones específicas aprobadas</h3>
-    <p style="font-size: 14px; color: var(--sg-text); margin: 0; line-height: 1.6;">
-      {{ $mejoraSeleccionada->descripcion }}
-    </p>
-  </div>
-</section>
-@endif
-
-{{-- SECCIÓN 4: PLANES DE ACCIÓN, VINCULACIÓN Y CONVENIOS (FORMATOS F5 Y F7) --}}
-<section class="sg-panel" aria-labelledby="sg-planes-title" style="margin-bottom: var(--sg-space-6);">
-  <div class="sg-section-title">
-    <div>
-      <span class="sg-kicker">DIMENSIÓN 4 · ACCIÓN INSTITUCIONAL Y VINCULACIÓN EMPRESARIAL</span>
-      <h2 id="sg-planes-title">Planes de Acción, Inserción y Convenios (F5 y F7)</h2>
-      <p>Planes de inserción laboral (F5) y convenios/alianzas de vinculación con empleadores (F7) registrados en el sistema institucional.</p>
+    <div class="sg-dialogo-pie">
+      <button type="button" class="sg-dialogo-secundario" onclick="document.getElementById('dlg-plan-accion').close()">Cerrar</button>
+      @if ($puedeRegistrar)<button type="submit">Guardar</button>@endif
     </div>
-    <div class="sg-actions">
-      <a class="sg-button sg-button-secondary" style="font-size: 12px; padding: 4px 10px;" href="{{ route('seguimiento-egresado.reportes.formato', 'F5') }}">
-        @include('modules.seguimiento-egresado.partials.icon', ['name' => 'chart'])
-        <span>Descargar F5 (CSV)</span>
-      </a>
-      <a class="sg-button sg-button-secondary" style="font-size: 12px; padding: 4px 10px;" href="{{ route('seguimiento-egresado.reportes.formato', 'F7') }}">
-        @include('modules.seguimiento-egresado.partials.icon', ['name' => 'chart'])
-        <span>Descargar F7 (CSV)</span>
-      </a>
-    </div>
-  </div>
+  </form>
+</dialog>
 
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-labelledby="sg-planes-title">
-    <table class="sg-table">
-      <thead>
-        <tr>
-          <th scope="col" style="width: 85px;">Código</th>
-          <th scope="col">Plan / Alianza Estratégica</th>
-          <th scope="col">Tipo</th>
-          <th scope="col">Periodo</th>
-          <th scope="col">Estado</th>
-          <th scope="col" class="sg-numeric">Avance (%)</th>
-          <th scope="col">Documento / Resolución</th>
-        </tr>
-      </thead>
-      <tbody>
-        @forelse ($planesAccion as $plan)
-          <tr>
-            <td style="font-weight: 700; color: var(--sg-navy);">{{ $plan->codigo }}</td>
-            <td>
-              <div style="font-weight: 600; color: var(--sg-navy);">{{ $plan->titulo }}</div>
-              <p style="font-size: 12px; color: var(--sg-muted); margin: 2px 0 0;">{{ $plan->actividad }}</p>
-            </td>
-            <td>
-              <span class="sg-badge {{ $plan->tipo === 'VINCULACION' ? 'sg-badge-success' : '' }}">
-                {{ $plan->tipo }}
-              </span>
-            </td>
-            <td><span class="sg-badge">{{ $plan->periodo }}</span></td>
-            <td>
-              <span class="sg-badge {{ $plan->estado === 'EN_EJECUCION' || $plan->estado === 'FINALIZADA' ? 'sg-badge-success' : 'sg-badge-warning' }}">
-                {{ $plan->estado }}
-              </span>
-            </td>
-            <td class="sg-numeric" style="font-weight: 600;">
-              {{ $plan->grado_cumplimiento !== null ? $plan->grado_cumplimiento . '%' : '—' }}
-            </td>
-            <td style="font-size: 12px;">{{ $plan->documento_referencia ?? 'Resolución Directoral' }}</td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--sg-muted); padding: var(--sg-space-4);">
-              No hay planes de acción registrados en la base de datos.
-            </td>
-          </tr>
-        @endforelse
-      </tbody>
-    </table>
-  </div>
-</section>
+<script>
+  (() => {
+    const poner = (id, v) => { const e = document.getElementById(id); if (e) e.value = v ?? ''; };
 
+    // ----- Cambio «Dice / Debe decir»
+    const dlgCambio = document.getElementById('dlg-cambio');
+    const tipo = document.getElementById('cambio-tipo');
+    const estado = document.getElementById('cambio-estado');
+    const actualizarCambio = () => {
+      document.querySelectorAll('#dlg-cambio [data-dice]').forEach((c) => {
+        c.hidden = tipo.value === 'OTRA';
+        c.querySelector('textarea').required = tipo.value !== 'OTRA';
+      });
+      const implementado = estado.value === 'IMPLEMENTADA';
+      document.getElementById('cambio-implementado').hidden = !implementado;
+      document.getElementById('cambio-documento').required = implementado;
+      document.getElementById('cambio-fecha').required = implementado;
+    };
+    tipo.addEventListener('change', actualizarCambio);
+    estado.addEventListener('change', actualizarCambio);
+    window.abrirCambio = (d) => {
+      document.getElementById('form-cambio').reset();
+      poner('cambio-id', d?.id);
+      document.getElementById('dlg-cambio-titulo').textContent = d ? 'Cambio ' + d.codigo : 'Registrar cambio';
+      if (d) {
+        tipo.value = d.tipo; poner('cambio-titulo-in', d.titulo); poner('cambio-dice', d.dice); poner('cambio-debe', d.debe_decir);
+        poner('cambio-motivo', d.descripcion); estado.value = d.estado; poner('cambio-documento', d.documento); poner('cambio-fecha', d.fecha_implementacion);
+        document.getElementById('cambio-origen').checked = !!d.origen;
+      }
+      const estadosDireccion = ['APROBADA', 'EN_EJECUCION', 'IMPLEMENTADA', 'DESCARTADA'];
+      const soloLectura = {{ $puedeRegistrar ? 'false' : 'true' }} || (d && {{ $puedeValidar ? 'false' : 'true' }} && estadosDireccion.includes(d.estado));
+      document.querySelectorAll('#form-cambio input:not([type=hidden]), #form-cambio select, #form-cambio textarea').forEach((c) => { c.disabled = soloLectura; });
+      if (!soloLectura) { [...estado.options].forEach((o) => { o.disabled = {{ $puedeValidar ? 'false' : 'true' }} && estadosDireccion.includes(o.value); }); }
+      const guardar = document.getElementById('cambio-guardar'); if (guardar) guardar.hidden = soloLectura;
+      document.getElementById('cambio-aviso').textContent = soloLectura ? 'Solo la Dirección puede modificar un cambio ya aprobado o implementado.' : 'Qué se cambia, qué dice hoy y cómo debe decir.';
+      actualizarCambio();
+      dlgCambio.showModal();
+    };
+    document.getElementById('form-cambio').addEventListener('submit', () => document.querySelectorAll('#form-cambio input, #form-cambio select, #form-cambio textarea').forEach((c) => { c.disabled = false; }));
+
+    // ----- Plan de acción
+    window.abrirPlan = (d) => {
+      document.getElementById('form-plan-accion').reset();
+      poner('plan-id', d?.id);
+      document.getElementById('dlg-plan-titulo').textContent = d ? 'Plan de acción' : 'Registrar plan de acción';
+      if (d) {
+        poner('plan-titulo-in', d.titulo); document.getElementById('plan-tipo').value = d.tipo; document.getElementById('plan-estado').value = d.estado;
+        poner('plan-actividad', d.actividad); poner('plan-responsable', d.responsable); poner('plan-fecha', d.fecha_limite); poner('plan-grado', d.grado); poner('plan-obs', d.observacion);
+      }
+      document.getElementById('dlg-plan-accion').showModal();
+    };
+
+    @if ($errors->any())
+      if (window.sgDialogo) window.sgDialogo({ tipo: 'error', mensaje: @json($errors->all()).join('\n') });
+    @endif
+  })();
+</script>
 @endsection

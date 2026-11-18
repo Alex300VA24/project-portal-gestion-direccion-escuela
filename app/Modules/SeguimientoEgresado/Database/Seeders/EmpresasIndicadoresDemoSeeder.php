@@ -64,6 +64,7 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
         $this->responderCampania($actual10, $egresados2011, $this->hoy->subDays(20), 'PENDIENTE', 3, 3);
 
         $this->evaluacionesOe($cohorte2019);
+        $this->evaluacionInstitucional();
         $this->encuestasEmpresa($anio, $inicioAbierta, $finAbierta, $egresados2018, $egresados2016);
     }
 
@@ -205,6 +206,74 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
         }
     }
 
+    /**
+     * Evaluación institucional 2026: informes de logro de objetivos (F8) y competencias (F9) de la promoción 2019, uno ya validado
+     * y otro en borrador, y dos cambios «Dice / Debe decir» (F11 y F10): el implementado suma a I6 y el que sigue en ejecución no.
+     */
+    private function evaluacionInstitucional(): void
+    {
+        $plan = (int) DB::table('seguimiento_egresado.objetivo_educacional')->where('vigente', true)->value('id_plan_curricular');
+        $c2019 = (int) DB::table('seguimiento_egresado.cohorte')->where('anio_ingreso', 2019)->value('id');
+        $c2020 = (int) DB::table('seguimiento_egresado.cohorte')->where('anio_ingreso', 2020)->value('id');
+        $objetivos = DB::table('seguimiento_egresado.objetivo_educacional')->where('vigente', true)->orderBy('codigo')->pluck('id', 'codigo');
+        $competencias = DB::table('seguimiento_egresado.competencia')->where('vigente', true)->orderBy('codigo')->pluck('id', 'codigo');
+        $anio = $this->hoy->year;
+
+        $informe = function (string $tabla, string $columna, array $niveles, array $ids, int $cohorte, string $estado, string $fecha, string $conclusiones, string $decisiones) use ($anio) {
+            foreach ($niveles as $codigo => $nivel) {
+                DB::table('seguimiento_egresado.'.$tabla)->insertOrIgnore(array_filter([
+                    $columna => $ids[$codigo], 'id_cohorte' => $cohorte, 'periodo' => $anio.'-I', 'id_nivel_logro' => $this->catalogo('cat_nivel_logro', $nivel),
+                    'estado' => $estado, 'observacion' => $conclusiones, 'acciones_derivadas' => $tabla === 'evaluacion_oe' ? $decisiones : null,
+                    'fecha_evaluacion' => $fecha, 'id_usuario_registro' => $this->usuario,
+                ], fn ($v) => $v !== null));
+            }
+        };
+
+        if ($c2019 && $objetivos->count() >= 3) {
+            $informe('evaluacion_oe', 'id_objetivo', ['OE1' => 'BUENO', 'OE2' => 'MUY_BUENO', 'OE3' => 'REGULAR'], $objetivos->all(), $c2019, 'VALIDADA', $anio.'-09-30',
+                'Los egresados participan en proyectos multidisciplinarios y se forman de manera continua; la aplicación con responsabilidad social es el aspecto más débil.',
+                'Reforzar proyectos con impacto social en los últimos ciclos.');
+            $informe('evaluacion_competencia', 'id_competencia', ['CG1' => 'BUENO', 'CG2' => 'MUY_BUENO', 'CE1' => 'BUENO'], $competencias->all(), $c2019, 'VALIDADA', $anio.'-09-30',
+                'Las competencias del perfil se alcanzan en nivel bueno o superior.', '');
+        }
+        if ($c2020 && $objetivos->count() >= 3) {
+            $informe('evaluacion_oe', 'id_objetivo', ['OE1' => 'BUENO', 'OE2' => 'BUENO', 'OE3' => 'BUENO'], $objetivos->all(), $c2020, 'BORRADOR', $anio.'-10-20',
+                'Informe preparado por Secretaría, pendiente de validación de la Dirección.', 'Por definir.');
+        }
+
+        DB::table('seguimiento_egresado.plan_accion')->insertOrIgnore([
+            [
+                'codigo' => 'PA-'.$anio.'-01', 'titulo' => 'Reconocimiento a egresados destacados', 'tipo' => 'VINCULACION', 'estado' => 'FINALIZADA', 'periodo' => $anio.'-I',
+                'actividad' => 'Ceremonia anual de reconocimiento a egresados con trayectoria destacada.', 'responsable' => 'Comisión de Vinculación',
+                'grado_cumplimiento' => 100, 'fecha_limite' => $anio.'-06-30', 'id_usuario_registro' => $this->usuario,
+            ],
+            [
+                'codigo' => 'PA-'.$anio.'-02', 'titulo' => 'Feria laboral con empresas aliadas', 'tipo' => 'INSERCION', 'estado' => 'EN_EJECUCION', 'periodo' => $anio.'-II',
+                'actividad' => 'Feria con empresas del sector tecnológico y bolsa de trabajo para egresados.', 'responsable' => 'Oficina de Prácticas y Empleabilidad',
+                'grado_cumplimiento' => 60, 'fecha_limite' => ($anio + 1).'-03-31', 'id_usuario_registro' => $this->usuario,
+            ],
+        ]);
+
+        DB::table('seguimiento_egresado.mejora_curricular')->insertOrIgnore([
+            [
+                'codigo' => 'MC-'.$anio.'-01', 'id_plan_curricular' => $plan, 'titulo' => 'Redacción del objetivo de educación continua', 'tipo' => 'OE', 'origen_seguimiento' => true,
+                'descripcion' => 'Los empleadores y egresados pidieron que el objetivo incluya la formación en gestión de proyectos.',
+                'estado' => 'IMPLEMENTADA', 'dice' => 'Educarse de manera continua en sus competencias profesionales y de investigación.',
+                'debe_decir' => 'Educarse de manera continua en sus competencias profesionales, de investigación y de gestión de proyectos.',
+                'fecha_registro' => $anio.'-03-10', 'fecha_implementacion' => $anio.'-09-14', 'periodo' => $anio.'-I', 'responsable' => 'Dirección de Escuela',
+                'documento_referencia' => 'Resolución de Consejo de Facultad N.° 031-'.$anio.'-FACINF', 'id_usuario_registro' => $this->usuario,
+            ],
+            [
+                'codigo' => 'MC-'.$anio.'-02', 'id_plan_curricular' => $plan, 'titulo' => 'Competencia de trabajo en equipo en el perfil de egreso', 'tipo' => 'PERFIL', 'origen_seguimiento' => true,
+                'descripcion' => 'Se propone precisar el nivel esperado de trabajo en equipo según la encuesta a empleadores.',
+                'estado' => 'EN_EJECUCION', 'dice' => 'Se integra y colabora en entornos diversos.',
+                'debe_decir' => 'Lidera y colabora en equipos multidisciplinarios, también en entornos remotos.',
+                'fecha_registro' => $anio.'-06-02', 'fecha_implementacion' => null, 'periodo' => $anio.'-II', 'responsable' => 'Comité de Calidad y Currículo',
+                'documento_referencia' => null, 'id_usuario_registro' => $this->usuario,
+            ],
+        ]);
+    }
+
     private function evaluacionesOe(int $cohorte): void
     {
         $plan = DB::table('seguimiento_egresado.cohorte')->where('id', $cohorte)->value('id_plan_curricular');
@@ -218,7 +287,7 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
                 'periodo' => ($this->hoy->year - 1).'-II',
                 'id_nivel_logro' => $this->catalogo('cat_nivel_logro', $niveles[$i % 4]),
                 'estado' => 'VALIDADA',
-                'observacion' => 'Evaluación ficticia para demostración.',
+                'observacion' => null,
                 'fecha_evaluacion' => ($this->hoy->year - 1).'-12-10',
                 'id_usuario_registro' => $this->usuario,
             ]);

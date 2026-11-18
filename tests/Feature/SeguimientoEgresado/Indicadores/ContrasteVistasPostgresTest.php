@@ -127,12 +127,15 @@ class ContrasteVistasPostgresTest extends TestCase
 
     public function test_i3_coincide_con_vw_i3_en_logrados_y_usa_el_total_oficial(): void
     {
-        $vista = DB::table('seguimiento_egresado.vw_i3_oe')->get();
+        // I3 toma el último informe validado de cada promoción: la vista trae uno por promoción y periodo.
+        $vista = DB::table('seguimiento_egresado.vw_i3_oe')->get()->sortByDesc('periodo')->unique('id_cohorte');
         $i3 = app(CalculadoraIndicadores::class)->i3(new FiltroIndicadores);
 
         $this->assertSame((int) $vista->sum('oe_logrados'), $i3->numerador);
         $this->assertSame((int) $vista->sum('oe_evaluados'), $i3->n);
-        $this->assertSame($vista->count() * 4, $i3->denominador);
+        $totalOe = (int) DB::table('seguimiento_egresado.objetivo_educacional')->where('vigente', true)->count();
+        $this->assertSame(3, $totalOe, 'los tres objetivos oficiales');
+        $this->assertSame($vista->count() * $totalOe, $i3->denominador);
     }
 
     public function test_i6_coincide_con_vw_i6_cuando_todas_tienen_evidencia(): void

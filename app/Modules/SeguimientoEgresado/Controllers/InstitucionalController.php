@@ -13,403 +13,307 @@ use App\Modules\SeguimientoEgresado\Models\ObjetivoEducacional;
 use App\Modules\SeguimientoEgresado\Models\PlanAccion;
 use App\Modules\SeguimientoEgresado\Models\PlanCurricular;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
-use App\Modules\SeguimientoEgresado\Services\IndicadoresService;
+use App\Modules\SeguimientoEgresado\Services\Accesos\SesionAcceso;
+use App\Modules\SeguimientoEgresado\Services\CatalogosDeCampania;
+use App\Modules\SeguimientoEgresado\Services\Indicadores\CalculadoraIndicadores;
+use App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores;
 use App\Modules\SeguimientoEgresado\Support\Esquema;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
+/**
+ * Evaluación institucional. Sigue el procedimiento oficial: la Dirección evalúa si se lograron los objetivos educacionales y las
+ * competencias (informes F8 y F9, de ahí sale I3), decide qué cambiar («Dice / Debe decir», F11 y F10) y cada cambio implementado
+ * con su documento suma 1 a I6. La Secretaría prepara los registros y la Dirección los valida.
+ */
 class InstitucionalController extends Controller
 {
-    /**
-     * Muestra la vista principal de Evaluación Institucional, OEs, Competencias y Mejoras Curriculares.
-     */
-    public function index(Request $request, IndicadoresService $indicadoresService)
+    /** Estados de un cambio que solo puede fijar la Dirección. */
+    private const ESTADOS_DE_DIRECCION = ['APROBADA', 'EN_EJECUCION', 'IMPLEMENTADA', 'DESCARTADA'];
+
+    public function index(Request $request, CalculadoraIndicadores $calculadora, CatalogosDeCampania $catalogos): View
     {
-        $periodoFiltro = $request->query('periodo', 'todos');
-        $estadoFiltro = $request->query('estado', 'todos');
-        $mejoraIdSeleccionada = $request->query('mejora_id');
+        $objetivos = ObjetivoEducacional::with('planCurricular')->where('vigente', true)->orderBy('codigo')->get();
+        $competencias = Competencia::where('vigente', true)->orderBy('tipo')->orderBy('codigo')->get();
+        $niveles = CatNivelLogro::where('activo', true)->orderBy('id')->get();
+        $idPlan = $objetivos->first()?->id_plan_curricular;
 
-        try {
-            // 1. Catálogos y datos base
-            $planesCurriculares = PlanCurricular::orderBy('vigencia_desde', 'desc')->get();
-            $planVigente = PlanCurricular::where('estado', 'VIGENTE')->first() ?? $planesCurriculares->first();
-            $cohortes = Cohorte::with('planCurricular')->orderBy('anio_ingreso', 'desc')->get();
-            $nivelesLogro = CatNivelLogro::where('activo', true)->get();
+        $informesOe = $this->informes(EvaluacionOe::class, 'id_objetivo', $objetivos->count());
+        $informesCompetencia = $this->informes(EvaluacionCompetencia::class, 'id_competencia', $competencias->count());
 
-            // 2. Objetivos Educacionales (OE) del plan vigente con sus evaluaciones
-            $objetivosEducacionales = ObjetivoEducacional::with(['planCurricular'])
-                ->where('vigente', true)
-                ->orderBy('codigo', 'asc')
-                ->get();
+        $filtro = new FiltroIndicadores;
+        $i3 = $calculadora->i3($filtro);
+        $i6 = $calculadora->i6($filtro);
 
-            $evaluacionesOeQuery = EvaluacionOe::with(['objetivo', 'cohorte', 'nivelLogro', 'usuarioRegistro']);
-            if ($periodoFiltro !== 'todos') {
-                $evaluacionesOeQuery->where('periodo', $periodoFiltro);
-            }
-            if ($estadoFiltro !== 'todos') {
-                $evaluacionesOeQuery->where('estado', strtoupper($estadoFiltro));
-            }
-            $evaluacionesOe = $evaluacionesOeQuery->orderBy('fecha_evaluacion', 'desc')->get();
+        $ultimoDeCompetencias = $informesCompetencia->where('estado', 'VALIDADA')->first();
 
-            // 3. Competencias del perfil con sus evaluaciones
-            $competencias = Competencia::with(['planCurricular'])
-                ->where('vigente', true)
-                ->orderBy('codigo', 'asc')
-                ->get();
-
-            $evaluacionesCompetenciaQuery = EvaluacionCompetencia::with(['competencia', 'cohorte', 'nivelLogro']);
-            if ($periodoFiltro !== 'todos') {
-                $evaluacionesCompetenciaQuery->where('periodo', $periodoFiltro);
-            }
-            $evaluacionesCompetencia = $evaluacionesCompetenciaQuery->orderBy('fecha_evaluacion', 'desc')->get();
-
-            // 4. Planes de acción (F5 y F7)
-            $planesAccion = PlanAccion::with(['competencia', 'objetivo'])
-                ->orderBy('fecha_limite', 'desc')
-                ->get();
-
-            // 5. Mejoras Curriculares (I6)
-            $mejorasQuery = MejoraCurricular::with(['planCurricular', 'usuarioRegistro']);
-            if ($estadoFiltro !== 'todos') {
-                $mejorasQuery->where('estado', strtoupper($estadoFiltro));
-            }
-            if ($periodoFiltro !== 'todos') {
-                $mejorasQuery->where('periodo', $periodoFiltro);
-            }
-            $mejorasCurriculares = $mejorasQuery->orderBy('fecha_registro', 'desc')->get();
-
-            // Mejora seleccionada para la ficha de detalle
-            $mejoraSeleccionada = null;
-            if (! empty($mejoraIdSeleccionada)) {
-                $mejoraSeleccionada = $mejorasCurriculares->firstWhere('id', (int) $mejoraIdSeleccionada)
-                    ?? $mejorasCurriculares->firstWhere('codigo', $mejoraIdSeleccionada);
-            }
-            if (! $mejoraSeleccionada && $mejorasCurriculares->isNotEmpty()) {
-                $mejoraSeleccionada = $mejorasCurriculares->first();
-            }
-
-            // 6. Métricas del Tablero de Dirección de Escuela
-            // Denominador oficial de I3: total de OEs vigentes del programa (4 OEs)
-            $totalOePlan = $objetivosEducacionales->count();
-
-            // Evaluaciones validadas
-            $evaluacionesValidadas = $evaluacionesOe->where('estado', 'VALIDADA');
-            $oeEvaluadosCount = $evaluacionesValidadas->count();
-
-            // OEs logrados (nivel BUENO o MUY_BUENO, o meta alcanzada)
-            $oeLogradosCount = $evaluacionesValidadas->filter(function ($e) {
-                return in_array($e->id_nivel_logro, [1, 2]) || ($e->logro_porcentaje >= $e->meta_porcentaje);
-            })->count();
-
-            $logroPromedioOe = $oeEvaluadosCount > 0
-                ? round($evaluacionesValidadas->avg('logro_porcentaje'), 1)
-                : 0.0;
-
-            // Indicador I6 oficial: conteo de mejoras implementadas atribuibles a seguimiento
-            $mejorasImplementadasI6 = MejoraCurricular::where('estado', 'IMPLEMENTADA')
-                ->where('origen_seguimiento', true)
-                ->count();
-
-            // Conteo de competencias monitoreadas
-            $totalCompetencias = $competencias->count();
-            $competenciasConformes = $evaluacionesCompetencia->filter(function ($c) {
-                return in_array($c->id_nivel_logro, [1, 2]) || ($c->logro_porcentaje >= 70.0);
-            })->count();
-
-            // Periodos únicos disponibles
-            $periodosDisponibles = EvaluacionOe::select('periodo')->distinct()->pluck('periodo')
-                ->merge(MejoraCurricular::select('periodo')->distinct()->pluck('periodo'))
-                ->filter()->unique()->values();
-
-            if ($periodosDisponibles->isEmpty()) {
-                $periodosDisponibles = collect(['2023-II', '2024-I', '2024-II', '2025-I', '2025-II', '2026-I']);
-            }
-
-        } catch (\Throwable $e) {
-            // Respaldo resiliente para pruebas sin BD local activa
-            $planesCurriculares = collect();
-            $cohortes = collect();
-            $nivelesLogro = collect();
-            $objetivosEducacionales = collect();
-            $evaluacionesOe = collect();
-            $competencias = collect();
-            $evaluacionesCompetencia = collect();
-            $planesAccion = collect();
-            $mejorasCurriculares = collect();
-            $mejoraSeleccionada = null;
-            $totalOePlan = 4;
-            $oeEvaluadosCount = 3;
-            $oeLogradosCount = 3;
-            $logroPromedioOe = 81.9;
-            $mejorasImplementadasI6 = 3;
-            $totalCompetencias = 5;
-            $competenciasConformes = 4;
-            $periodosDisponibles = collect(['2023-II', '2024-I', '2024-II', '2025-I', '2025-II', '2026-I']);
-        }
-
-        return view('modules.seguimiento-egresado.paginas.institucional', compact(
-            'planesCurriculares',
-            'cohortes',
-            'nivelesLogro',
-            'objetivosEducacionales',
-            'evaluacionesOe',
-            'competencias',
-            'evaluacionesCompetencia',
-            'planesAccion',
-            'mejorasCurriculares',
-            'mejoraSeleccionada',
-            'totalOePlan',
-            'oeEvaluadosCount',
-            'oeLogradosCount',
-            'logroPromedioOe',
-            'mejorasImplementadasI6',
-            'totalCompetencias',
-            'competenciasConformes',
-            'periodosDisponibles',
-            'periodoFiltro',
-            'estadoFiltro',
-            'mejoraIdSeleccionada'
-        ));
+        return view('modules.seguimiento-egresado.paginas.institucional', [
+            'objetivos' => $objetivos,
+            'competencias' => $competencias,
+            'niveles' => $niveles,
+            'informesOe' => $informesOe,
+            'informesCompetencia' => $informesCompetencia,
+            'cambios' => MejoraCurricular::orderByDesc('fecha_registro')->orderByDesc('id')->get(),
+            'planesAccion' => PlanAccion::orderByDesc('fecha_limite')->orderByDesc('id')->get(),
+            'promociones' => Cohorte::when($idPlan, fn ($q) => $q->where('id_plan_curricular', $idPlan))->orderByDesc('anio_ingreso')->get(['id', 'anio_ingreso']),
+            // Un informe describe un periodo ya cursado: no se ofrecen los futuros, pero sí los de los informes que ya existen.
+            'periodos' => $catalogos->periodos()->merge($informesOe->pluck('periodo'))->merge($informesCompetencia->pluck('periodo'))
+                ->filter(fn ($p) => $p <= $this->periodoActual())->unique()->sortDesc()->values(),
+            'resumen' => [
+                'i3_logrados' => $i3->numerador, 'i3_total' => $i3->denominador, 'i3_valor' => $i3->valor,
+                'competencias_conformes' => $ultimoDeCompetencias['logrados'] ?? null, 'competencias_total' => $ultimoDeCompetencias['total'] ?? $competencias->count(),
+                'i6' => (int) ($i6->valor ?? 0),
+                'por_validar' => $informesOe->where('estado', 'BORRADOR')->count() + $informesCompetencia->where('estado', 'BORRADOR')->count()
+                    + MejoraCurricular::whereIn('estado', ['PROPUESTA', 'EVALUACION'])->count(),
+            ],
+            'puedeRegistrar' => $this->puede($request, 'institucional.registrar'),
+            'puedeValidar' => $this->puede($request, 'institucional.validar'),
+        ]);
     }
 
-    /**
-     * Registra o actualiza la evaluación de un Objetivo Educacional (OE) por Dirección.
-     * Solo Director tiene facultad de validar formalmente el logro (I3).
-     */
-    public function guardarEvaluacionOe(Request $request)
+    /** Informe de logro de los objetivos educacionales (F8): un nivel por objetivo, para una promoción y un periodo. */
+    public function guardarInformeLogro(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'id_objetivo' => 'required|exists:'.Esquema::validar('objetivo_educacional').',id',
-            'id_cohorte' => 'required|exists:'.Esquema::validar('cohorte').',id',
-            'periodo' => 'required|string|max:35',
-            'id_nivel_logro' => 'required|exists:'.Esquema::validar('cat_nivel_logro').',id',
-            'meta_porcentaje' => 'required|numeric|min:0|max:100',
-            'logro_porcentaje' => 'required|numeric|min:0|max:100',
-            'estado' => 'required|in:BORRADOR,VALIDADA',
-            'fecha_evaluacion' => 'required|date',
-            'fuente_evidencia' => 'nullable|string|max:1000',
-            'acciones_derivadas' => 'nullable|string|max:1000',
-            'observacion' => 'nullable|string|max:1000',
+        return $this->guardarInforme($request, EvaluacionOe::class, 'id_objetivo', 'objetivo_educacional', true, 'El informe de logro de los objetivos');
+    }
+
+    /** Informe del nivel de logro de las competencias (F9). */
+    public function guardarInformeCompetencias(Request $request): RedirectResponse
+    {
+        return $this->guardarInforme($request, EvaluacionCompetencia::class, 'id_competencia', 'competencia', false, 'El informe de las competencias');
+    }
+
+    /** Cambio «Dice / Debe decir» (F10 perfil de egreso, F11 objetivos educacionales u otro). Implementado y con documento, suma a I6. */
+    public function guardarCambio(Request $request): RedirectResponse
+    {
+        $datos = $request->validate([
+            'id' => ['nullable', 'integer', 'exists:'.Esquema::validar('mejora_curricular').',id'],
+            'tipo' => ['required', 'in:PERFIL,OE,OTRA'],
+            'titulo' => ['required', 'string', 'max:200'],
+            'dice' => ['required_unless:tipo,OTRA', 'nullable', 'string', 'max:2000'],
+            'debe_decir' => ['required_unless:tipo,OTRA', 'nullable', 'string', 'max:2000'],
+            'descripcion' => ['required', 'string', 'max:2000'],
+            'estado' => ['required', 'in:PROPUESTA,EVALUACION,APROBADA,EN_EJECUCION,IMPLEMENTADA,DESCARTADA'],
+            'documento_referencia' => ['required_if:estado,IMPLEMENTADA', 'nullable', 'string', 'max:200'],
+            'fecha_implementacion' => ['required_if:estado,IMPLEMENTADA', 'nullable', 'date', 'before_or_equal:'.$this->hoy()->toDateString()],
+            'origen_seguimiento' => ['nullable', 'boolean'],
         ], [
-            'id_objetivo.required' => 'Debe seleccionar el Objetivo Educacional a evaluar.',
-            'id_cohorte.required' => 'Debe indicar la cohorte evaluada.',
-            'logro_porcentaje.required' => 'Debe ingresar el porcentaje de logro obtenido.',
-            'estado.required' => 'Indique si la evaluación queda en BORRADOR o es VALIDADA por Dirección.',
+            'tipo.required' => 'Elige qué se cambia.',
+            'titulo.required' => 'Escribe un título para el cambio.',
+            'dice.required_unless' => 'Escribe lo que dice hoy.',
+            'debe_decir.required_unless' => 'Escribe cómo debe decir.',
+            'descripcion.required' => 'Explica por qué se hace el cambio.',
+            'documento_referencia.required_if' => 'Un cambio implementado necesita el documento que lo respalda (resolución o acta).',
+            'fecha_implementacion.required_if' => 'Indica la fecha en que se implementó.',
+            'fecha_implementacion.before_or_equal' => 'La fecha de implementación no puede ser futura.',
         ]);
 
-        // Usuario con rol DIRECTOR (o el primer usuario interno disponible)
-        $directorId = UsuarioInterno::idActual() ?? 2;
-
-        DB::beginTransaction();
-        try {
-            $evaluacion = EvaluacionOe::updateOrCreate(
-                [
-                    'id_objetivo' => $validated['id_objetivo'],
-                    'id_cohorte' => $validated['id_cohorte'],
-                    'periodo' => $validated['periodo'],
-                ],
-                [
-                    'id_nivel_logro' => $validated['id_nivel_logro'],
-                    'estado' => $validated['estado'],
-                    'meta_porcentaje' => $validated['meta_porcentaje'],
-                    'logro_porcentaje' => $validated['logro_porcentaje'],
-                    'observacion' => $validated['observacion'] ?? null,
-                    'fuente_evidencia' => $validated['fuente_evidencia'] ?? null,
-                    'acciones_derivadas' => $validated['acciones_derivadas'] ?? null,
-                    'fecha_evaluacion' => $validated['fecha_evaluacion'],
-                    'id_usuario_registro' => $directorId,
-                ]
-            );
-
-            DB::commit();
-
-            $mensaje = $evaluacion->estado === 'VALIDADA'
-                ? 'Evaluación del Objetivo Educacional VALIDADA formalmente por Dirección de Escuela (apta para cómputo de I3).'
-                : 'Evaluación guardada en estado BORRADOR (pendiente de validación directiva).';
-
-            return redirect()->route('seguimiento-egresado.institucional', ['periodo' => $evaluacion->periodo])
-                ->with('success', $mensaje);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['general' => 'Error al registrar la evaluación del OE: '.$e->getMessage()]);
+        $existente = ! empty($datos['id']) ? MejoraCurricular::findOrFail($datos['id']) : null;
+        if (! $this->puede($request, 'institucional.validar') && (in_array($datos['estado'], self::ESTADOS_DE_DIRECCION, true) || ($existente && in_array($existente->estado, self::ESTADOS_DE_DIRECCION, true)))) {
+            return back()->withInput()->withErrors(['general' => 'Solo la Dirección aprueba, ejecuta o implementa un cambio. Déjalo como «Propuesta» o «En evaluación».']);
         }
+
+        $implementada = $datos['estado'] === 'IMPLEMENTADA';
+        $atributos = [
+            'tipo' => $datos['tipo'], 'titulo' => $datos['titulo'], 'descripcion' => $datos['descripcion'], 'estado' => $datos['estado'],
+            'dice' => $datos['tipo'] === 'OTRA' ? ($datos['dice'] ?? null) : $datos['dice'], 'debe_decir' => $datos['tipo'] === 'OTRA' ? ($datos['debe_decir'] ?? null) : $datos['debe_decir'],
+            'origen_seguimiento' => (bool) ($datos['origen_seguimiento'] ?? true),
+            'documento_referencia' => ($datos['documento_referencia'] ?? null) ?: null,
+            'fecha_implementacion' => $implementada ? $datos['fecha_implementacion'] : null,
+            'periodo' => $existente?->periodo ?? $this->periodoActual(),
+        ];
+        if (($datos['tipo'] === 'OTRA') && (($atributos['dice'] === null) !== ($atributos['debe_decir'] === null))) {
+            $atributos['dice'] = $atributos['debe_decir'] = null;
+        }
+
+        if ($existente) {
+            $existente->update($atributos);
+            $mejora = $existente;
+        } else {
+            $mejora = MejoraCurricular::create($atributos + [
+                'codigo' => $this->siguienteCodigo(MejoraCurricular::class, 'MC'),
+                'id_plan_curricular' => $this->planDeObjetivos(),
+                'fecha_registro' => $this->hoy()->toDateString(),
+                'id_usuario_registro' => UsuarioInterno::idActual() ?? 2,
+            ]);
+        }
+
+        $mensaje = $implementada && $mejora->origen_seguimiento
+            ? "El cambio {$mejora->codigo} quedó implementado y suma 1 a I6."
+            : "El cambio {$mejora->codigo} quedó guardado como «".$this->etiquetaDeEstado($mejora->estado)."».";
+
+        return redirect()->to(route('seguimiento-egresado.institucional').'#cambios')->with('success', $mensaje);
     }
 
-    /**
-     * Registra o actualiza la evaluación periódica de una competencia del perfil de egreso.
-     */
-    public function guardarEvaluacionCompetencia(Request $request)
+    /** Plan de acción de vinculación o de inserción laboral (F5 y F7). */
+    public function guardarPlanAccion(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'id_competencia' => 'required|exists:'.Esquema::validar('competencia').',id',
-            'id_cohorte' => 'required|exists:'.Esquema::validar('cohorte').',id',
-            'periodo' => 'required|string|max:35',
-            'id_nivel_logro' => 'required|exists:'.Esquema::validar('cat_nivel_logro').',id',
-            'logro_porcentaje' => 'required|numeric|min:0|max:100',
-            'estado' => 'required|in:BORRADOR,VALIDADA',
-            'fecha_evaluacion' => 'required|date',
-            'fuente_evidencia' => 'nullable|string|max:1000',
-            'observacion' => 'nullable|string|max:1000',
-        ]);
-
-        $directorId = UsuarioInterno::idActual() ?? 2;
-
-        DB::beginTransaction();
-        try {
-            EvaluacionCompetencia::updateOrCreate(
-                [
-                    'id_competencia' => $validated['id_competencia'],
-                    'id_cohorte' => $validated['id_cohorte'],
-                    'periodo' => $validated['periodo'],
-                ],
-                [
-                    'id_nivel_logro' => $validated['id_nivel_logro'],
-                    'estado' => $validated['estado'],
-                    'logro_porcentaje' => $validated['logro_porcentaje'],
-                    'observacion' => $validated['observacion'] ?? null,
-                    'fuente_evidencia' => $validated['fuente_evidencia'] ?? null,
-                    'fecha_evaluacion' => $validated['fecha_evaluacion'],
-                    'id_usuario_registro' => $directorId,
-                ]
-            );
-
-            DB::commit();
-
-            return redirect()->route('seguimiento-egresado.institucional')
-                ->with('success', 'Evaluación de la competencia registrada con éxito.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['general' => 'Error al registrar evaluación de competencia: '.$e->getMessage()]);
-        }
-    }
-
-    /**
-     * Registra una nueva mejora curricular atribuible al seguimiento de egresados (I6).
-     */
-    public function guardarMejoraCurricular(Request $request)
-    {
-        $validated = $request->validate([
-            'codigo' => 'required|string|max:30',
-            'id_plan_curricular' => 'required|exists:'.Esquema::validar('plan_curricular').',id',
-            'titulo' => 'required|string|max:200',
-            'tipo' => 'required|in:PERFIL,OE,OTRA',
-            'origen_seguimiento' => 'required|boolean',
-            'descripcion' => 'required|string',
-            'estado' => 'required|in:PROPUESTA,EVALUACION,APROBADA,EN_EJECUCION,IMPLEMENTADA,DESCARTADA',
-            'dice' => 'required_unless:tipo,OTRA|nullable|string',
-            'debe_decir' => 'required_unless:tipo,OTRA|nullable|string',
-            'fecha_registro' => 'required|date',
-            'fecha_implementacion' => 'required_if:estado,IMPLEMENTADA|nullable|date',
-            'periodo' => 'nullable|string|max:35',
-            'responsable' => 'nullable|string|max:160',
-            'meta_esperada' => 'nullable|string',
-            'origen_evidencia' => 'nullable|string',
-            'grado_cumplimiento' => 'nullable|numeric|min:0|max:100',
-            'documento_referencia' => 'nullable|string|max:200',
+        $datos = $request->validate([
+            'id' => ['nullable', 'integer', 'exists:'.Esquema::validar('plan_accion').',id'],
+            'titulo' => ['required', 'string', 'max:200'],
+            'tipo' => ['required', 'in:VINCULACION,INSERCION'],
+            'estado' => ['required', 'in:PLANIFICADA,EN_EJECUCION,FINALIZADA,EVALUADA'],
+            'actividad' => ['required', 'string', 'max:2000'],
+            'responsable' => ['nullable', 'string', 'max:160'],
+            'fecha_limite' => ['nullable', 'date'],
+            'grado_cumplimiento' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'observacion' => ['nullable', 'string', 'max:2000'],
         ], [
-            'codigo.required' => 'El código de la mejora curricular es obligatorio.',
-            'titulo.required' => 'Debe ingresar el título o denominación de la mejora.',
-            'id_plan_curricular.required' => 'Debe asociar la mejora a un plan curricular.',
-            'dice.required_unless' => 'Indique el texto actual («Dice») que se modifica.',
-            'debe_decir.required_unless' => 'Indique el texto propuesto («Debe decir»).',
-            'fecha_implementacion.required_if' => 'Una mejora implementada necesita su fecha de implementación.',
+            'titulo.required' => 'Escribe el nombre del plan.',
+            'tipo.required' => 'Elige si es de vinculación o de inserción laboral.',
+            'actividad.required' => 'Describe qué se hará.',
         ]);
 
-        // Solo una mejora implementada tiene fecha de implementación.
-        if ($validated['estado'] !== 'IMPLEMENTADA') {
-            $validated['fecha_implementacion'] = null;
+        $atributos = $datos + ['periodo' => $this->periodoActual()];
+        unset($atributos['id']);
+
+        if (! empty($datos['id'])) {
+            PlanAccion::findOrFail($datos['id'])->update($atributos);
+        } else {
+            PlanAccion::create($atributos + ['codigo' => $this->siguienteCodigo(PlanAccion::class, 'PA'), 'id_usuario_registro' => UsuarioInterno::idActual() ?? 2]);
         }
 
-        $directorId = UsuarioInterno::idActual() ?? 2;
+        return redirect()->to(route('seguimiento-egresado.institucional').'#planes')->with('success', 'El plan de acción quedó guardado.');
+    }
 
-        DB::beginTransaction();
-        try {
-            $mejora = MejoraCurricular::updateOrCreate(
-                ['codigo' => $validated['codigo']],
-                [
-                    'id_plan_curricular' => $validated['id_plan_curricular'],
-                    'titulo' => $validated['titulo'],
-                    'tipo' => $validated['tipo'],
-                    'origen_seguimiento' => $validated['origen_seguimiento'],
-                    'descripcion' => $validated['descripcion'],
-                    'estado' => $validated['estado'],
-                    'dice' => $validated['dice'] ?? null,
-                    'debe_decir' => $validated['debe_decir'] ?? null,
-                    'fecha_registro' => $validated['fecha_registro'],
-                    'fecha_implementacion' => $validated['fecha_implementacion'] ?? null,
-                    'periodo' => $validated['periodo'] ?? null,
-                    'responsable' => $validated['responsable'] ?? null,
-                    'meta_esperada' => $validated['meta_esperada'] ?? null,
-                    'origen_evidencia' => $validated['origen_evidencia'] ?? null,
-                    'grado_cumplimiento' => $validated['grado_cumplimiento'] ?? null,
-                    'documento_referencia' => $validated['documento_referencia'] ?? null,
-                    'id_usuario_registro' => $directorId,
-                ]
-            );
+    // ---------------------------------------------------------------------------------------------------------------
 
-            DB::commit();
+    private function guardarInforme(Request $request, string $modelo, string $columna, string $tablaItems, bool $conDecisiones, string $nombre): RedirectResponse
+    {
+        $datos = $request->validate([
+            'id_cohorte' => ['required', 'integer', 'exists:'.Esquema::validar('cohorte').',id'],
+            'periodo' => ['required', 'string', 'regex:/^\d{4}-(I|II)$/'],
+            'niveles' => ['required', 'array'],
+            'niveles.*' => ['required', 'integer', 'exists:'.Esquema::validar('cat_nivel_logro').',id'],
+            'observacion' => ['nullable', 'string', 'max:1000'],
+            'acciones_derivadas' => ['nullable', 'string', 'max:1000'],
+            'accion' => ['required', 'in:borrador,validar'],
+        ], [
+            'id_cohorte.required' => 'Elige la promoción.',
+            'periodo.required' => 'Elige el periodo.',
+            'periodo.regex' => 'Elige un periodo de la lista.',
+            'niveles.required' => 'Elige el nivel de logro de cada elemento.',
+        ]);
 
-            $mensaje = ($mejora->estado === 'IMPLEMENTADA' && $mejora->origen_seguimiento)
-                ? "Mejora Curricular \"{$mejora->codigo}\" registrada como IMPLEMENTADA. Computa en el Indicador Oficial I6."
-                : "Plan de mejora curricular \"{$mejora->codigo}\" guardado en estado {$mejora->estado}.";
-
-            return redirect()->route('seguimiento-egresado.institucional', ['mejora_id' => $mejora->id])
-                ->with('success', $mensaje);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['general' => 'Error al guardar la mejora curricular: '.$e->getMessage()]);
+        $cohorte = Cohorte::findOrFail($datos['id_cohorte']);
+        $ids = DB::table('seguimiento_egresado.'.$tablaItems)->where('vigente', true)->where('id_plan_curricular', $cohorte->id_plan_curricular)->orderBy('id')->pluck('id')->all();
+        if ($ids === []) {
+            throw ValidationException::withMessages(['id_cohorte' => 'El plan de estudios de esa promoción no tiene elementos vigentes que evaluar.']);
         }
+        foreach ($ids as $id) {
+            if (empty($datos['niveles'][$id])) {
+                throw ValidationException::withMessages(['niveles' => 'Elige el nivel de logro de todos los elementos.']);
+            }
+        }
+
+        $puedeValidar = $this->puede($request, 'institucional.validar');
+        if ($datos['accion'] === 'validar' && ! $puedeValidar) {
+            return back()->withInput()->withErrors(['general' => 'Solo la Dirección puede validar el informe. Guárdalo como borrador y avísale.']);
+        }
+        $yaValidado = $modelo::where('id_cohorte', $cohorte->id)->where('periodo', $datos['periodo'])->where('estado', 'VALIDADA')->exists();
+        if ($yaValidado && ! $puedeValidar) {
+            return back()->withInput()->withErrors(['general' => 'Este informe ya está validado. Solo la Dirección puede modificarlo.']);
+        }
+
+        $estado = $datos['accion'] === 'validar' ? 'VALIDADA' : 'BORRADOR';
+        $usuario = UsuarioInterno::idActual() ?? 2;
+
+        DB::transaction(function () use ($modelo, $columna, $ids, $datos, $cohorte, $estado, $usuario, $conDecisiones) {
+            foreach ($ids as $id) {
+                $modelo::updateOrCreate(
+                    [$columna => $id, 'id_cohorte' => $cohorte->id, 'periodo' => $datos['periodo']],
+                    array_filter([
+                        'id_nivel_logro' => (int) $datos['niveles'][$id], 'estado' => $estado, 'observacion' => $datos['observacion'] ?? null,
+                        'acciones_derivadas' => $conDecisiones ? ($datos['acciones_derivadas'] ?? null) : false,
+                        'fecha_evaluacion' => $this->hoy()->toDateString(), 'id_usuario_registro' => $usuario,
+                    ], fn ($v) => $v !== false),
+                );
+            }
+        });
+
+        return redirect()->to(route('seguimiento-egresado.institucional').($conDecisiones ? '#logro' : '#competencias'))->with('success', $estado === 'VALIDADA'
+            ? "{$nombre} de la promoción {$cohorte->anio_ingreso} ({$datos['periodo']}) quedó validado y ya cuenta en los indicadores."
+            : "{$nombre} de la promoción {$cohorte->anio_ingreso} ({$datos['periodo']}) quedó como borrador, pendiente de que la Dirección lo valide.");
     }
 
     /**
-     * Registra un plan de acción para inserción, vinculación o competencias (Formatos F5 y F7).
+     * Un informe por promoción y periodo, con el nivel de cada objetivo o competencia.
+     *
+     * @return Collection<int, array<string, mixed>>
      */
-    public function guardarPlanAccion(Request $request)
+    private function informes(string $modelo, string $columna, int $totalItems): Collection
     {
-        $validated = $request->validate([
-            'codigo' => 'required|string|max:30',
-            'titulo' => 'required|string|max:200',
-            'tipo' => 'required|in:VINCULACION,INSERCION,COMPETENCIA,EXTRACURRICULAR,INFRAESTRUCTURA',
-            'estado' => 'required|in:PLANIFICADA,EN_EJECUCION,FINALIZADA,EVALUADA',
-            'periodo' => 'required|string|max:35',
-            'actividad' => 'required|string',
-            'meta_esperada' => 'nullable|string',
-            'responsable' => 'nullable|string|max:160',
-            'origen_evidencia' => 'nullable|string',
-            'documento_referencia' => 'nullable|string|max:200',
-            'grado_cumplimiento' => 'nullable|numeric|min:0|max:100',
-            'fecha_limite' => 'nullable|date',
-            'observacion' => 'nullable|string',
-        ]);
+        return $modelo::with(['cohorte', 'nivelLogro'])->orderByDesc('fecha_evaluacion')->get()
+            ->groupBy(fn ($f) => $f->id_cohorte.'|'.$f->periodo)
+            ->map(function (Collection $grupo) use ($columna, $totalItems) {
+                $primero = $grupo->first();
 
-        $directorId = UsuarioInterno::idActual() ?? 2;
+                return [
+                    'cohorte_id' => (int) $primero->id_cohorte,
+                    'promocion' => $primero->cohorte?->anio_ingreso,
+                    'periodo' => $primero->periodo,
+                    'niveles' => $grupo->mapWithKeys(fn ($f) => [(int) $f->{$columna} => ['id' => (int) $f->id_nivel_logro, 'codigo' => $f->nivelLogro?->codigo, 'nombre' => $f->nivelLogro?->nombre]])->all(),
+                    'logrados' => $grupo->filter(fn ($f) => in_array($f->nivelLogro?->codigo, ['BUENO', 'MUY_BUENO'], true))->count(),
+                    'total' => max($totalItems, $grupo->count()),
+                    'estado' => $grupo->every(fn ($f) => $f->estado === 'VALIDADA') ? 'VALIDADA' : 'BORRADOR',
+                    'observacion' => $primero->observacion,
+                    'decisiones' => $primero->acciones_derivadas ?? null,
+                    'fecha' => $primero->fecha_evaluacion,
+                ];
+            })
+            ->sortByDesc(fn ($i) => $i['periodo'].'|'.str_pad((string) $i['promocion'], 4, '0', STR_PAD_LEFT))
+            ->values();
+    }
 
-        DB::beginTransaction();
-        try {
-            PlanAccion::updateOrCreate(
-                ['codigo' => $validated['codigo']],
-                array_merge($validated, ['id_usuario_registro' => $directorId])
-            );
-
-            DB::commit();
-
-            return redirect()->route('seguimiento-egresado.institucional')
-                ->with('success', 'Plan de acción institucional guardado correctamente.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['general' => 'Error al guardar el plan de acción: '.$e->getMessage()]);
+    /** Códigos como MC-2026-03: el siguiente número libre del año. */
+    private function siguienteCodigo(string $modelo, string $prefijo): string
+    {
+        $anio = $this->hoy()->year;
+        $n = $modelo::where('codigo', 'like', "{$prefijo}-{$anio}-%")->count() + 1;
+        while ($modelo::where('codigo', sprintf('%s-%d-%02d', $prefijo, $anio, $n))->exists()) {
+            $n++;
         }
+
+        return sprintf('%s-%d-%02d', $prefijo, $anio, $n);
+    }
+
+    /** Las fechas del módulo son las de Perú, igual que el corte de los indicadores. */
+    private function hoy(): CarbonImmutable
+    {
+        return CarbonImmutable::now(FiltroIndicadores::ZONA);
+    }
+
+    private function periodoActual(): string
+    {
+        $hoy = $this->hoy();
+
+        return $hoy->year.'-'.($hoy->month <= 7 ? 'I' : 'II');
+    }
+
+    private function planDeObjetivos(): int
+    {
+        return (int) (ObjetivoEducacional::where('vigente', true)->value('id_plan_curricular')
+            ?? PlanCurricular::where('estado', 'VIGENTE')->value('id')
+            ?? PlanCurricular::orderBy('id')->value('id'));
+    }
+
+    private function etiquetaDeEstado(string $estado): string
+    {
+        return ['PROPUESTA' => 'Propuesta', 'EVALUACION' => 'En evaluación', 'APROBADA' => 'Aprobada', 'EN_EJECUCION' => 'En ejecución', 'IMPLEMENTADA' => 'Implementada', 'DESCARTADA' => 'Descartada'][$estado] ?? $estado;
+    }
+
+    /** Sin el módulo de accesos integrado se permite; con él, según la capacidad del perfil. */
+    private function puede(Request $request, string $capacidad): bool
+    {
+        if (! class_exists(SesionAcceso::class)) {
+            return true;
+        }
+
+        return (bool) SesionAcceso::desde($request)->actual()?->puede($capacidad);
     }
 }

@@ -4,16 +4,21 @@ namespace Tests\Feature\SeguimientoEgresado;
 
 use App\Modules\SeguimientoEgresado\Database\Seeders\DatosPruebaSeeder;
 use App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento;
-use App\Modules\SeguimientoEgresado\Models\CatCanalEnvio;
 use App\Modules\SeguimientoEgresado\Models\Cohorte;
 use App\Modules\SeguimientoEgresado\Models\Competencia;
 use App\Modules\SeguimientoEgresado\Models\ContactoEgresado;
 use App\Modules\SeguimientoEgresado\Models\Egresado;
+use App\Modules\SeguimientoEgresado\Models\EvaluacionCompetencia;
+use App\Modules\SeguimientoEgresado\Models\EvaluacionOe;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
+use App\Modules\SeguimientoEgresado\Models\MejoraCurricular;
 use App\Modules\SeguimientoEgresado\Models\ObjetivoEducacional;
-use App\Modules\SeguimientoEgresado\Models\PlanCurricular;
+use App\Modules\SeguimientoEgresado\Models\PlanAccion;
 use App\Modules\SeguimientoEgresado\Models\ReporteGenerado;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
+use App\Modules\SeguimientoEgresado\Services\Indicadores\CalculadoraIndicadores;
+use App\Modules\SeguimientoEgresado\Services\Indicadores\FiltroIndicadores;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\SeguimientoEgresado\ComoPersonal;
 use Tests\Support\SeguimientoEgresado\UsaBaseDeDatos;
 use Tests\TestCase;
@@ -277,144 +282,249 @@ class CampaniasInstitucionalReportesTest extends TestCase
     }
 
     // =========================================================================
-    // S3-14 · Conectar evaluación de Dirección (OE, competencias, planes, mejoras)
+    // Evaluación institucional: informes de logro (F8, F9), cambios «Dice / Debe decir» (F10, F11) y planes de acción
+    // La Secretaría prepara los registros y la Dirección los valida; solo lo validado cuenta en I3 e I6.
     // =========================================================================
 
-    public function test_institucional_page_renders_with_director_kpis_and_records(): void
+    /** Nivel de logro (por código) de cada elemento: ['id del elemento' => id del nivel]. */
+    private function nivelesDe(array $ids, string $codigo): array
+    {
+        $nivel = (int) DB::table('seguimiento_egresado.cat_nivel_logro')->where('codigo', $codigo)->value('id');
+
+        return collect($ids)->mapWithKeys(fn ($id) => [(int) $id => $nivel])->all();
+    }
+
+    private function idsDeObjetivos(): array
+    {
+        return ObjetivoEducacional::where('vigente', true)->orderBy('codigo')->pluck('id')->all();
+    }
+
+    private function i3(): \App\Modules\SeguimientoEgresado\Services\Indicadores\ResultadoIndicador
+    {
+        return app(CalculadoraIndicadores::class)->i3(new FiltroIndicadores);
+    }
+
+    private function i6(): int
+    {
+        return (int) app(CalculadoraIndicadores::class)->i6(new FiltroIndicadores)->valor;
+    }
+
+    private function datosDeInforme(string $accion, array $niveles, int $anioIngreso = 2019): array
+    {
+        return [
+            'id_cohorte' => Cohorte::where('anio_ingreso', $anioIngreso)->value('id'),
+            'periodo' => '2026-I',
+            'niveles' => $niveles,
+            'observacion' => 'Conclusiones del comité.',
+            'acciones_derivadas' => 'Reforzar proyectos con impacto social.',
+            'accion' => $accion,
+        ];
+    }
+
+    private function datosDeCambio(array $cambios = []): array
+    {
+        return $cambios + [
+            'tipo' => 'OE',
+            'titulo' => 'Redacción del objetivo de educación continua',
+            'dice' => 'Educarse de manera continua en sus competencias profesionales y de investigación.',
+            'debe_decir' => 'Educarse de manera continua en sus competencias profesionales, de investigación y de gestión.',
+            'descripcion' => 'Los empleadores pidieron incluir la gestión de proyectos.',
+            'estado' => 'PROPUESTA',
+        ];
+    }
+
+    public function test_la_evaluacion_institucional_muestra_los_tres_objetivos_oficiales_y_el_resumen(): void
     {
         $response = $this->get(route('seguimiento-egresado.institucional'));
 
         $response->assertOk()
-            ->assertSee('Gestión y evaluación institucional')
-            ->assertSee('Tablero de control de la Dirección de Escuela')
-            ->assertSee('Objetivos Educacionales (I3)')
-            ->assertSee('Mejoras Curriculares (I6)')
-            ->assertSee('OE1')
-            ->assertSee('MC-2023-01');
+            ->assertSee('Evaluación institucional')
+            ->assertSee('Participar en proyectos multidisciplinarios')
+            ->assertSee('Aplicar la Ciencia de la Computación con responsabilidad social y ética')
+            ->assertSee('MC-2023-01')
+            ->assertSee('3 de 3')
+            ->assertDontSee('OE4');
+        $this->assertSame(3, ObjetivoEducacional::where('vigente', true)->count());
     }
 
-    public function test_guardar_evaluacion_oe_valida_por_director_y_computa_para_i3(): void
+    public function test_la_secretaria_deja_el_informe_en_borrador_y_no_cuenta_para_i3(): void
     {
-        $this->actingAs($this->director());
-        $oe = ObjetivoEducacional::first();
-        $cohorte = Cohorte::where('anio_ingreso', 2019)->first();
+        $antes = $this->i3();
 
-        $data = [
-            'id_objetivo' => $oe->id,
-            'id_cohorte' => $cohorte->id,
-            'periodo' => '2024-II',
-            'id_nivel_logro' => 1, // MUY_BUENO
-            'meta_porcentaje' => 80.0,
-            'logro_porcentaje' => 87.5,
-            'estado' => 'VALIDADA',
-            'fecha_evaluacion' => date('Y-m-d'),
-            'fuente_evidencia' => 'Informe de Empleabilidad F2 y Encuesta F3',
-            'acciones_derivadas' => 'Consolidar módulos de Cloud en el plan curricular.',
-        ];
+        $respuesta = $this->post(route('seguimiento-egresado.institucional.informe-logro'), $this->datosDeInforme('borrador', $this->nivelesDe($this->idsDeObjetivos(), 'MALO')));
 
-        $response = $this->post(route('seguimiento-egresado.institucional.guardar-oe'), $data);
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
-
-        $this->assertDatabaseHas('seguimiento_egresado.evaluacion_oe', [
-            'id_objetivo' => $oe->id,
-            'id_cohorte' => $cohorte->id,
-            'periodo' => '2024-II',
-            'estado' => 'VALIDADA',
-            'logro_porcentaje' => 87.5,
-        ]);
+        $respuesta->assertRedirect()->assertSessionHas('success');
+        $this->assertSame(3, EvaluacionOe::where('periodo', '2026-I')->where('estado', 'BORRADOR')->count());
+        $despues = $this->i3();
+        $this->assertSame($antes->numerador, $despues->numerador);
+        $this->assertSame($antes->denominador, $despues->denominador);
     }
 
-    public function test_guardar_mejora_curricular_computa_para_i6_con_origen_seguimiento(): void
+    public function test_la_secretaria_no_puede_validar_un_informe(): void
     {
-        $this->actingAs($this->director());
-        $plan = PlanCurricular::where('estado', 'VIGENTE')->first();
+        $respuesta = $this->post(route('seguimiento-egresado.institucional.informe-logro'), $this->datosDeInforme('validar', $this->nivelesDe($this->idsDeObjetivos(), 'BUENO')));
 
-        $data = [
-            'codigo' => 'MC-2025-QA-AUTO',
-            'id_plan_curricular' => $plan->id,
-            'titulo' => 'Automatización integral de pruebas de software en asignaturas del 7mo ciclo',
-            'tipo' => 'PERFIL',
-            'origen_seguimiento' => true, // Requisito I6
-            'descripcion' => 'Inclusión de Playwright y CI/CD ante requerimientos de empleadores de software.',
-            'estado' => 'IMPLEMENTADA', // Requisito I6
-            'dice' => 'Las pruebas de software se ejecutan a mano.',
-            'debe_decir' => 'Las pruebas de software se automatizan con integración continua.',
-            'fecha_registro' => date('Y-m-d'),
-            'fecha_implementacion' => date('Y-m-d'),
-            'periodo' => '2025-I',
-            'responsable' => 'Comisión de Acreditación',
-            'meta_esperada' => '100% de proyectos con pruebas automatizadas.',
-            'grado_cumplimiento' => 100.0,
-            'documento_referencia' => 'Resolución Directoral R-0045-2025-EII',
-        ];
-
-        $response = $this->post(route('seguimiento-egresado.institucional.guardar-mejora'), $data);
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
-
-        $this->assertDatabaseHas('seguimiento_egresado.mejora_curricular', [
-            'codigo' => 'MC-2025-QA-AUTO',
-            'estado' => 'IMPLEMENTADA',
-            'origen_seguimiento' => true,
-        ]);
+        $respuesta->assertSessionHasErrors('general');
+        $this->assertSame(0, EvaluacionOe::where('periodo', '2026-I')->count());
     }
 
-    public function test_guardar_evaluacion_competencia_persiste_en_base_de_datos(): void
+    public function test_la_direccion_valida_el_informe_y_entra_en_i3(): void
     {
         $this->actingAs($this->director());
-        $comp = Competencia::first();
-        $cohorte = Cohorte::first();
+        [$oe1, $oe2, $oe3] = $this->idsDeObjetivos();
+        $niveles = $this->nivelesDe([$oe1], 'BUENO') + $this->nivelesDe([$oe2], 'MUY_BUENO') + $this->nivelesDe([$oe3], 'REGULAR');
 
-        $data = [
-            'id_competencia' => $comp->id,
-            'id_cohorte' => $cohorte->id,
-            'periodo' => '2024-II',
-            'id_nivel_logro' => 1,
-            'logro_porcentaje' => 84.5,
-            'estado' => 'VALIDADA',
-            'fecha_evaluacion' => date('Y-m-d'),
-            'fuente_evidencia' => 'Encuesta Empresarial de Desempeño',
-            'observacion' => 'Excelente desempeño en integración continua.',
-        ];
+        $this->post(route('seguimiento-egresado.institucional.informe-logro'), $this->datosDeInforme('validar', $niveles))
+            ->assertRedirect()->assertSessionHas('success');
 
-        $response = $this->post(route('seguimiento-egresado.institucional.guardar-competencia'), $data);
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
+        $this->assertSame(3, EvaluacionOe::where('periodo', '2026-I')->where('estado', 'VALIDADA')->count());
+        // Promoción 2018: 3 de 3 (informe 2023-II); promoción 2019: 2 de 3 (informe 2026-I) → 5 de 6.
+        $i3 = $this->i3();
+        $this->assertSame(5, $i3->numerador);
+        $this->assertSame(6, $i3->denominador);
+    }
 
-        $this->assertDatabaseHas('seguimiento_egresado.evaluacion_competencia', [
-            'id_competencia' => $comp->id,
-            'id_cohorte' => $cohorte->id,
-            'periodo' => '2024-II',
-            'estado' => 'VALIDADA',
-        ]);
+    public function test_el_informe_pide_el_nivel_de_todos_los_objetivos(): void
+    {
+        $this->actingAs($this->director());
+        $ids = $this->idsDeObjetivos();
+        array_pop($ids);
+
+        $this->post(route('seguimiento-egresado.institucional.informe-logro'), $this->datosDeInforme('borrador', $this->nivelesDe($ids, 'BUENO')))
+            ->assertSessionHasErrors('niveles');
+
+        $this->assertSame(0, EvaluacionOe::where('periodo', '2026-I')->count());
+    }
+
+    public function test_el_periodo_del_informe_debe_ser_de_la_lista(): void
+    {
+        $datos = $this->datosDeInforme('borrador', $this->nivelesDe($this->idsDeObjetivos(), 'BUENO'));
+        $datos['periodo'] = '2026-III';
+
+        $this->post(route('seguimiento-egresado.institucional.informe-logro'), $datos)->assertSessionHasErrors('periodo');
+    }
+
+    public function test_un_informe_validado_solo_lo_modifica_la_direccion(): void
+    {
+        $this->actingAs($this->director());
+        $ids = $this->idsDeObjetivos();
+        $this->post(route('seguimiento-egresado.institucional.informe-logro'), $this->datosDeInforme('validar', $this->nivelesDe($ids, 'BUENO')));
+
+        $this->actingAs($this->secretaria());
+        $this->post(route('seguimiento-egresado.institucional.informe-logro'), $this->datosDeInforme('borrador', $this->nivelesDe($ids, 'MALO')))
+            ->assertSessionHasErrors('general');
+
+        $this->assertSame(3, EvaluacionOe::where('periodo', '2026-I')->where('estado', 'VALIDADA')->count());
+        $this->assertSame(0, EvaluacionOe::where('periodo', '2026-I')->whereHas('nivelLogro', fn ($q) => $q->where('codigo', 'MALO'))->count());
+    }
+
+    public function test_volver_a_guardar_un_informe_lo_actualiza_sin_duplicarlo(): void
+    {
+        $ids = $this->idsDeObjetivos();
+        $ruta = route('seguimiento-egresado.institucional.informe-logro');
+        $this->post($ruta, $this->datosDeInforme('borrador', $this->nivelesDe($ids, 'MALO')));
+        $this->post($ruta, $this->datosDeInforme('borrador', $this->nivelesDe($ids, 'BUENO')));
+
+        $this->assertSame(3, EvaluacionOe::where('periodo', '2026-I')->count());
+        $this->assertSame(3, EvaluacionOe::where('periodo', '2026-I')->whereHas('nivelLogro', fn ($q) => $q->where('codigo', 'BUENO'))->count());
+    }
+
+    public function test_el_informe_de_competencias_guarda_un_nivel_por_competencia(): void
+    {
+        $competencias = Competencia::where('vigente', true)->pluck('id')->all();
+
+        $this->post(route('seguimiento-egresado.institucional.informe-competencias'), $this->datosDeInforme('borrador', $this->nivelesDe($competencias, 'BUENO'), 2018))
+            ->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame(count($competencias), EvaluacionCompetencia::where('periodo', '2026-I')->where('estado', 'BORRADOR')->count());
+    }
+
+    public function test_la_secretaria_registra_un_cambio_como_propuesta(): void
+    {
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio())
+            ->assertRedirect()->assertSessionHas('success');
+
+        $cambio = MejoraCurricular::where('titulo', 'Redacción del objetivo de educación continua')->first();
+        $this->assertNotNull($cambio);
+        $this->assertSame('PROPUESTA', $cambio->estado);
+        $this->assertMatchesRegularExpression('/^MC-'.now()->year.'-\d{2}$/', $cambio->codigo);
+        $this->assertSame(ObjetivoEducacional::value('id_plan_curricular'), $cambio->id_plan_curricular);
+        $this->assertNull($cambio->fecha_implementacion);
+    }
+
+    public function test_la_secretaria_no_puede_aprobar_ni_implementar_un_cambio(): void
+    {
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio([
+            'estado' => 'IMPLEMENTADA', 'documento_referencia' => 'Resolución N.° 031-2026', 'fecha_implementacion' => now('America/Lima')->toDateString(),
+        ]))->assertSessionHasErrors('general');
+
+        $this->assertSame(0, MejoraCurricular::where('titulo', 'Redacción del objetivo de educación continua')->count());
+    }
+
+    public function test_un_cambio_implementado_necesita_documento_y_fecha(): void
+    {
+        $this->actingAs($this->director());
+
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio(['estado' => 'IMPLEMENTADA']))
+            ->assertSessionHasErrors(['documento_referencia', 'fecha_implementacion']);
+
+        $this->assertSame(0, MejoraCurricular::where('titulo', 'Redacción del objetivo de educación continua')->count());
+    }
+
+    public function test_un_cambio_implementado_por_la_direccion_suma_uno_a_i6(): void
+    {
+        $this->actingAs($this->director());
+        $antes = $this->i6();
+
+        $respuesta = $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio([
+            'estado' => 'IMPLEMENTADA', 'documento_referencia' => 'Resolución N.° 031-2026', 'fecha_implementacion' => now('America/Lima')->toDateString(),
+        ]));
+
+        $respuesta->assertRedirect()->assertSessionHas('success');
+        $this->assertStringContainsString('suma 1 a I6', session('success'));
+        $this->assertSame($antes + 1, $this->i6());
+    }
+
+    public function test_un_cambio_que_sigue_en_ejecucion_no_suma_a_i6(): void
+    {
+        $this->actingAs($this->director());
+        $antes = $this->i6();
+
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio(['tipo' => 'PERFIL', 'estado' => 'EN_EJECUCION']))
+            ->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame($antes, $this->i6());
+    }
+
+    public function test_un_cambio_de_otro_tipo_no_exige_dice_y_debe_decir(): void
+    {
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio(['tipo' => 'OTRA', 'dice' => null, 'debe_decir' => null]))
+            ->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame(1, MejoraCurricular::where('tipo', 'OTRA')->where('titulo', 'Redacción del objetivo de educación continua')->count());
+    }
+
+    public function test_un_cambio_de_objetivos_o_perfil_exige_dice_y_debe_decir(): void
+    {
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio(['dice' => null, 'debe_decir' => null]))
+            ->assertSessionHasErrors(['dice', 'debe_decir']);
     }
 
     public function test_guardar_plan_accion_persiste_en_base_de_datos(): void
     {
-        $this->actingAs($this->director());
-        $data = [
-            'codigo' => 'PA-TEST-2024-01',
-            'titulo' => 'Plan de Convenios Estratégicos con Sector TI',
+        $this->post(route('seguimiento-egresado.institucional.guardar-plan'), [
+            'titulo' => 'Convenios estratégicos con el sector TI',
             'tipo' => 'VINCULACION',
             'estado' => 'EN_EJECUCION',
-            'periodo' => '2024-II',
             'actividad' => 'Mesas de trabajo y convenios con gremios tecnológicos.',
-            'meta_esperada' => '5 convenios activos.',
             'responsable' => 'Comisión de Vinculación',
-            'grado_cumplimiento' => 60.0,
-            'documento_referencia' => 'Resolución Decanal R-098-2024',
-        ];
+            'grado_cumplimiento' => 60,
+        ])->assertRedirect()->assertSessionHas('success');
 
-        $response = $this->post(route('seguimiento-egresado.institucional.guardar-plan'), $data);
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
-
-        $this->assertDatabaseHas('seguimiento_egresado.plan_accion', [
-            'codigo' => 'PA-TEST-2024-01',
-            'tipo' => 'VINCULACION',
-            'estado' => 'EN_EJECUCION',
-        ]);
+        $plan = PlanAccion::where('titulo', 'Convenios estratégicos con el sector TI')->first();
+        $this->assertNotNull($plan);
+        $this->assertSame('VINCULACION', $plan->tipo);
+        $this->assertMatchesRegularExpression('/^PA-'.now()->year.'-\d{2}$/', $plan->codigo);
     }
 
     // =========================================================================
@@ -463,7 +573,7 @@ class CampaniasInstitucionalReportesTest extends TestCase
         $this->assertStringContainsString('I4', $content);
         $this->assertStringContainsString('I5', $content);
         $this->assertStringContainsString('I6', $content);
-        $this->assertStringContainsString('Denominador oficial = 4 OEs totales del programa', $content);
+        $this->assertStringContainsString('Denominador oficial = objetivos educacionales vigentes de cada promoción evaluada', $content);
         $this->assertStringContainsString('No corresponde (conteo absoluto)', $content);
     }
 
@@ -485,6 +595,86 @@ class CampaniasInstitucionalReportesTest extends TestCase
             $response->assertOk();
             $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
         }
+    }
+
+    private function formato(string $codigo): string
+    {
+        $respuesta = $this->get(route('seguimiento-egresado.reportes.formato', $codigo));
+        $respuesta->assertOk();
+
+        return $respuesta->streamedContent();
+    }
+
+    public function test_f8_marca_el_nivel_de_logro_de_cada_objetivo_oficial_de_la_promocion(): void
+    {
+        $contenido = $this->formato('F8');
+
+        $this->assertStringContainsString('INFORME DE LOGRO DE LOS OBJETIVOS EDUCACIONALES', $contenido);
+        $this->assertStringContainsString('"PROMOCION O COHORTE:","Promoción 2018"', $contenido);
+        $this->assertStringContainsString('"AÑO Y SEMESTRE:",2023-II', $contenido);
+        $this->assertStringContainsString('"OBJETIVOS EDUCACIONALES","MUY BUENO",BUENO,REGULAR,MALO,"MUY MALO"', $contenido);
+        $this->assertStringContainsString('"OE1 · Participar en proyectos multidisciplinarios', $contenido);
+        $this->assertStringContainsString(',X,,,,', $contenido, 'OE1 quedó en MUY BUENO');
+        $this->assertStringContainsString('CONCLUSIONES:', $contenido);
+        $this->assertStringContainsString('TOMA DE DECISIONES:', $contenido);
+        $this->assertStringContainsString('V° B° DIRECTOR DE ESCUELA PROFESIONAL', $contenido);
+        $this->assertStringNotContainsString('OE4', $contenido);
+    }
+
+    public function test_f9_separa_las_competencias_genericas_de_las_especificas(): void
+    {
+        $this->actingAs($this->director());
+        $competencias = Competencia::where('vigente', true)->pluck('id')->all();
+        $this->post(route('seguimiento-egresado.institucional.informe-competencias'), $this->datosDeInforme('validar', $this->nivelesDe($competencias, 'BUENO'), 2018))->assertRedirect();
+
+        $contenido = $this->formato('F9');
+
+        $this->assertStringContainsString('INFORME DEL NIVEL DE LOGRO DE LAS COMPETENCIAS', $contenido);
+        $this->assertStringContainsString('COMPETENCIAS GENERICAS', $contenido);
+        $this->assertStringContainsString('COMPETENCIAS ESPECIFICAS', $contenido);
+        $this->assertStringContainsString('CG1 · Comunicación Efectiva', $contenido);
+        $this->assertStringContainsString('Validado por la Dirección', $contenido);
+    }
+
+    public function test_f10_y_f11_muestran_dice_debe_decir_y_si_cuentan_para_i6(): void
+    {
+        $this->actingAs($this->director());
+        $this->post(route('seguimiento-egresado.institucional.cambio'), $this->datosDeCambio([
+            'estado' => 'IMPLEMENTADA', 'documento_referencia' => 'Resolución N.° 031-2026', 'fecha_implementacion' => now('America/Lima')->toDateString(),
+        ]))->assertRedirect();
+
+        $f11 = $this->formato('F11');
+        $f10 = $this->formato('F10');
+
+        $this->assertStringContainsString('INFORME SOBRE CAMBIOS (MEJORAS) DE LOS OBJETIVOS EDUCACIONALES', $f11);
+        $this->assertStringContainsString('DICE,"DEBE DECIR"', $f11);
+        $this->assertStringContainsString('Redacción del objetivo de educación continua (Objetivos educacionales)', $f11);
+        $this->assertStringContainsString('Resolución N.° 031-2026', $f11);
+        $this->assertStringContainsString('"CUENTA PARA I6"', $f11);
+        $this->assertStringContainsString('INFORME SOBRE CAMBIOS (MEJORAS) DEL PERFIL DE EGRESO', $f10);
+        $this->assertStringContainsString('MC-2023-01 · Actualización de la línea curricular de Cloud Computing y DevOps (Perfil de egreso)', $f10);
+        $this->assertStringContainsString('Resolución de Decanato R-0210-2023-D-FACINF', $f10);
+        // Un cambio de perfil no aparece en el informe de objetivos, ni uno de objetivos en el de perfil.
+        $this->assertStringNotContainsString('MC-2023-01', $f11);
+        $this->assertStringNotContainsString('Redacción del objetivo de educación continua', $f10);
+    }
+
+    public function test_f5_y_f7_listan_cada_plan_con_su_cumplimiento_si_o_no(): void
+    {
+        $ruta = route('seguimiento-egresado.institucional.guardar-plan');
+        $this->post($ruta, ['titulo' => 'Premiación a egresados destacados', 'tipo' => 'VINCULACION', 'estado' => 'EVALUADA', 'actividad' => 'Ceremonia anual.', 'grado_cumplimiento' => 100]);
+        $this->post($ruta, ['titulo' => 'Feria laboral', 'tipo' => 'INSERCION', 'estado' => 'EN_EJECUCION', 'actividad' => 'Feria con empresas aliadas.', 'grado_cumplimiento' => 40, 'fecha_limite' => '2027-03-31']);
+
+        $f5 = $this->formato('F5');
+        $f7 = $this->formato('F7');
+
+        $this->assertStringContainsString('INFORME SEMESTRAL Y ANUAL SOBRE LA EVALUACION DE RESULTADOS DE PLANES DE ACCION', $f5);
+        $this->assertStringContainsString('Premiación a egresados destacados",X,,', $f5, 'cumplido: marca SI');
+        $this->assertStringNotContainsString('Feria laboral', $f5);
+        $this->assertStringContainsString('INFORME ESTADISTICO SEMESTRAL Y ANUAL DE LA MEJORA DE LA INSERCION LABORAL DE LOS EGRESADOS', $f7);
+        $this->assertStringContainsString('Feria laboral",,X,', $f7, 'no cumplido: marca NO');
+        $this->assertStringContainsString('Plazo: 31/03/2027', $f7);
+        $this->assertStringNotContainsString('Premiación a egresados destacados', $f7);
     }
 
     public function test_reporte_generado_registra_auditoria_con_hash_sha256(): void

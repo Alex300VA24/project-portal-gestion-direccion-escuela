@@ -38,7 +38,7 @@ final class Capacidades
 
         // Objetivos educacionales, competencias, planes y mejoras
         'institucional.consultar' => [Perfil::Secretaria, Perfil::Director],
-        'institucional.registrar' => [Perfil::Director],
+        'institucional.registrar' => [Perfil::Secretaria, Perfil::Director],
         'institucional.validar' => [Perfil::Director],
     ];
 

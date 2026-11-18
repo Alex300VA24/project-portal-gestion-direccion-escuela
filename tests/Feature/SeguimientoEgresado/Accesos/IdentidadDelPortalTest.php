@@ -34,7 +34,8 @@ class IdentidadDelPortalTest extends TestCase
 
         $this->assertSame(Perfil::Secretaria, $identidad->perfil);
         $this->assertTrue($identidad->puede('padron.gestionar'));
-        $this->assertFalse($identidad->puede('institucional.registrar'));
+        $this->assertTrue($identidad->puede('institucional.registrar'));
+        $this->assertFalse($identidad->puede('institucional.validar'));
     }
 
     public function test_el_rol_director_escuela_del_portal_es_el_perfil_director(): void

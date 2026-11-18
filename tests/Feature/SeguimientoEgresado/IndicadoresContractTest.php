@@ -40,8 +40,8 @@ class IndicadoresContractTest extends TestCase
         $i3 = $service->getIndicadorI3();
 
         $this->assertSame('I3', $i3['codigo']);
-        // El total oficial de OEs del programa debe ser 4 según el seeder
-        $this->assertSame(4, $i3['total_oe_programa']);
+        // El programa tiene tres objetivos educacionales oficiales
+        $this->assertSame(3, $i3['total_oe_programa']);
     }
 
     public function test_indicador_i6_is_absolute_count_of_improvements(): void

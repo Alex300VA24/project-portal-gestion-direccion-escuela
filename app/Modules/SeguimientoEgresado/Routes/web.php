@@ -73,9 +73,9 @@ Route::prefix('seguimiento-egresado')
 
         // Evaluación institucional de Dirección
         Route::get('/institucional', [InstitucionalController::class, 'index'])->middleware($interna('institucional.consultar'))->name('institucional');
-        Route::post('/institucional/evaluacion-oe', [InstitucionalController::class, 'guardarEvaluacionOe'])->middleware($interna('institucional.registrar'))->name('institucional.guardar-oe');
-        Route::post('/institucional/evaluacion-competencia', [InstitucionalController::class, 'guardarEvaluacionCompetencia'])->middleware($interna('institucional.registrar'))->name('institucional.guardar-competencia');
-        Route::post('/institucional/mejora-curricular', [InstitucionalController::class, 'guardarMejoraCurricular'])->middleware($interna('institucional.registrar'))->name('institucional.guardar-mejora');
+        Route::post('/institucional/informe-logro', [InstitucionalController::class, 'guardarInformeLogro'])->middleware($interna('institucional.registrar'))->name('institucional.informe-logro');
+        Route::post('/institucional/informe-competencias', [InstitucionalController::class, 'guardarInformeCompetencias'])->middleware($interna('institucional.registrar'))->name('institucional.informe-competencias');
+        Route::post('/institucional/cambio', [InstitucionalController::class, 'guardarCambio'])->middleware($interna('institucional.registrar'))->name('institucional.cambio');
         Route::post('/institucional/plan-accion', [InstitucionalController::class, 'guardarPlanAccion'])->middleware($interna('institucional.registrar'))->name('institucional.guardar-plan');
 
         // Reportes y formatos institucionales F1 a F11

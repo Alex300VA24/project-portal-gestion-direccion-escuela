@@ -18,12 +18,12 @@ class CapacidadesTest extends TestCase
         );
     }
 
-    public function test_secretaria_gestiona_padron_y_campanias_pero_no_registra_ni_valida_lo_institucional(): void
+    public function test_secretaria_gestiona_padron_y_campanias_y_registra_lo_institucional_pero_no_lo_valida(): void
     {
         $this->assertTrue(Capacidades::permite(Perfil::Secretaria, 'padron.gestionar'));
         $this->assertTrue(Capacidades::permite(Perfil::Secretaria, 'campanias.administrar'));
         $this->assertTrue(Capacidades::permite(Perfil::Secretaria, 'institucional.consultar'));
-        $this->assertFalse(Capacidades::permite(Perfil::Secretaria, 'institucional.registrar'));
+        $this->assertTrue(Capacidades::permite(Perfil::Secretaria, 'institucional.registrar'));
         $this->assertFalse(Capacidades::permite(Perfil::Secretaria, 'institucional.validar'));
     }
 

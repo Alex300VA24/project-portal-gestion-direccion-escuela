@@ -80,36 +80,28 @@ class DatosPruebaSeeder extends Seeder
             'observacion' => 'Promoción 2021 — Margaret Hamilton.',
         ]);
 
-        // 3. Objetivos Educacionales (OE) para el plan 2017
+        // 3. Objetivos educacionales del programa (los tres oficiales de Ingeniería Informática)
         $oe1 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
             'id_plan_curricular' => $plan2017Id,
             'codigo' => 'OE1',
-            'titulo' => 'Desempeño Profesional y Soluciones de Software',
-            'descripcion' => 'Diseña, implementa y gestiona soluciones integrales de software de alto impacto y calidad.',
+            'titulo' => 'Proyectos multidisciplinarios',
+            'descripcion' => 'Participar en proyectos multidisciplinarios para resolver problemas computacionales en diferentes ámbitos de la sociedad.',
             'vigente' => true,
         ]);
 
         $oe2 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
             'id_plan_curricular' => $plan2017Id,
             'codigo' => 'OE2',
-            'titulo' => 'Liderazgo y Gestión de Proyectos Tecnológicos',
-            'descripcion' => 'Lidera equipos multidisciplinarios gestionando proyectos de TI con metodologías ágiles.',
+            'titulo' => 'Educación continua',
+            'descripcion' => 'Educarse de manera continua en sus competencias profesionales y de investigación.',
             'vigente' => true,
         ]);
 
         $oe3 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
             'id_plan_curricular' => $plan2017Id,
             'codigo' => 'OE3',
-            'titulo' => 'Innovación e Investigación Aplicada',
-            'descripcion' => 'Aplica innovación, inteligencia artificial y analítica para resolver desafíos del entorno.',
-            'vigente' => true,
-        ]);
-
-        $oe4 = DB::table('seguimiento_egresado.objetivo_educacional')->insertGetId([
-            'id_plan_curricular' => $plan2017Id,
-            'codigo' => 'OE4',
-            'titulo' => 'Ética y Aprendizaje Continuo',
-            'descripcion' => 'Actúa con responsabilidad social y ética, actualizando continuamente sus competencias.',
+            'titulo' => 'Responsabilidad social y ética',
+            'descripcion' => 'Aplicar la Ciencia de la Computación con responsabilidad social y ética para contribuir al desarrollo sostenible de la región y del país.',
             'vigente' => true,
         ]);
 

@@ -81,12 +81,35 @@ La pantalla muestra todas las campañas (nombre, periodo, fechas, promociones, e
 Las empresas responden con un enlace, sin cuenta. El sistema **no envía nada a la empresa**: la Secretaría copia el enlace y se lo entrega por su cuenta (al número que figura en la tabla).
 
 1. **Elige la campaña de empleadores** arriba (se propone la abierta). Los enlaces valen hasta el cierre de la campaña.
-2. **Opinión de la empresa sobre cada egresado** (cuenta para I5). La tabla lista a los egresados de las promociones de la campaña que **autorizaron contactar a su empresa**, con la empresa y el contacto del jefe que ellos mismos dejaron en su encuesta, y el estado de su enlace: *Sin enlace*, *Pendiente* (con su fecha y si ya se entregó), *Respondida* o *Vencida*.
+2. **Opinión de la empresa sobre cada egresado**. La tabla lista a los egresados de las promociones de la campaña que **autorizaron contactar a su empresa**, con la empresa y el contacto del jefe que ellos mismos dejaron en su encuesta, y el estado de su enlace: *Sin enlace*, *Pendiente* (con su fecha y si ya se entregó), *Respondida* o *Vencida*.
    - **Generar enlace** (en una fila) o **Generar los enlaces que faltan** (todos a la vez, con confirmación). No hay que escribir ningún dato.
    - Al generar, una ventana muestra egresado, empresa, contacto y enlace, con **Copiar** por fila, **Copiar todos** y **Descargar lista (CSV)**. **Se muestran una sola vez**: cópialos o descárgalos antes de cerrar.
    - **Enlace nuevo** genera otro y el anterior deja de funcionar; si ya lo entregaste, pide confirmación.
-3. **Demanda de habilidades** (encuesta general, no cuenta para I5): no trata de un egresado. Indica **cuántos enlaces** necesitas y se generan uno por empresa (cada enlace admite una sola respuesta).
+3. **Demanda de habilidades** (encuesta general): no trata de un egresado. Indica **cuántos enlaces** necesitas y se generan uno por empresa (cada enlace admite una sola respuesta).
 4. **Resultados**: los totales (cobertura, I5, encuestas de mercado) y las gráficas de habilidades más demandadas, aspectos por reforzar y satisfacción, de la campaña elegida.
+
+### Indicadores I1 a I6
+
+Un tablero con los seis indicadores oficiales, sus gráficas y el detalle de cómo se calculan. Se lee igual para Secretaría y Dirección (la Dirección ve además el logro por objetivo y la evidencia de las mejoras).
+
+- **Filtros**: **Promoción** (todas o una), **Años desde el egreso** (todo el histórico, 3, 5 o 10 años) y **Datos hasta** (la fecha hasta la que se toman los datos; por defecto, hoy). **Limpiar** vuelve a todo.
+- **I1 · Egresados por promoción**: egresados de la promoción entre sus ingresantes. En el total **solo entran las promociones que ya cumplieron su duración** (año de ingreso + años de la carrera); las que siguen cursando se muestran en la gráfica como «en curso» y el cuadro lo avisa («No incluye la promoción 2022 (aún en curso)»). Si eliges una promoción en curso, ves su avance con el aviso de que es parcial.
+- **I2 y I4** salen de la encuesta de seguimiento (no responder no cuenta como desempleo), **I5** de la encuesta empresarial sobre cada egresado, **I3** y **I6** de la **Evaluación institucional** (ver abajo).
+- **Cómo se calcula** muestra, por indicador, la fórmula, el numerador, el denominador y la fuente. **Exportar a Excel** descarga lo mismo que se ve, con el mismo filtro.
+
+### Evaluación institucional
+
+Es el registro de si se lograron los objetivos del programa y de qué se cambia a partir de los resultados. **La Secretaría prepara los registros y la Dirección los valida**: solo lo validado cuenta en los indicadores.
+
+1. **Objetivos educacionales**: los tres del programa (proyectos multidisciplinarios, educación continua, responsabilidad social y ética).
+2. **Informe de logro de los objetivos (F8)**: **+ Nuevo informe** → elegir la **promoción** y el **periodo** → el **nivel de logro** de cada objetivo (muy bueno, bueno, regular, malo, muy malo), conclusiones y toma de decisiones. Hay un informe por promoción y periodo. La Secretaría lo deja en **Guardar borrador**; la Dirección lo abre con **Revisar y validar** y usa **Guardar y validar**. Un informe validado solo lo modifica la Dirección.
+   - **I3** = objetivos con nivel bueno o muy bueno entre el total de objetivos de cada promoción evaluada, con el último informe validado de cada promoción. Así, «7 de 9» son 7 objetivos logrados entre 9 (3 promociones × 3 objetivos).
+3. **Informe de logro de las competencias (F9)**: igual, con las competencias genéricas y específicas del perfil de egreso.
+4. **Cambios que se deben hacer (F10 y F11)**: **+ Registrar cambio** → qué se cambia (perfil de egreso, objetivos educacionales u otro cambio del currículo), **qué dice hoy** y **cómo debe decir**, y por qué. La Secretaría los registra como **Propuesta** o **En evaluación**; la Dirección los **aprueba, pone en ejecución, implementa o descarta**.
+   - **I6** = cantidad de cambios **implementados**, con **fecha** y **documento de respaldo** (resolución o acta). Cada uno suma 1.
+5. **Planes de acción (F5 y F7)**: los planes de vinculación con los egresados y de mejora de la inserción laboral, con su avance. Con avance de 100 % se marcan como cumplidos; si no, el informe muestra el plazo.
+
+Los botones **Descargar F5, F7, F8, F9, F10 y F11 (CSV)** entregan cada formato oficial de la UNT: promoción o cohorte, año y semestre, fecha de informe, el cuadro del formato, conclusiones, toma de decisiones y la línea de **V° B° del Director de Escuela**. Los cambios de «otro tipo» salen en el formato F10.
 
 
 ---
