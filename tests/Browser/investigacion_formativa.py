@@ -127,15 +127,33 @@ class Browser:
         )
 
     def click(self, selector):
-        self.call("POST", f"/element/{self.element(selector)}/click", {})
+        # Click through a fresh DOM query so Alpine re-renders do not leave a
+        # stale element reference between lookup and click.
+        for _ in range(50):
+            done = self.js(
+                "const e=document.querySelector(arguments[0]);"
+                "if(!e) return false; e.click(); return true;",
+                selector,
+            )
+            if done:
+                return
+            time.sleep(0.1)
+        raise AssertionError(selector)
 
     def button(self, label):
-        element = self.js(
-            "return [...document.querySelectorAll('main button')].find(e=>e.textContent.trim()===arguments[0])",
-            label,
-        )
-        assert element, label
-        self.call("POST", "/element/" + element["element-6066-11e4-a52e-4f735466cecf"] + "/click", {})
+        # Click through a fresh DOM query so Alpine re-renders do not leave a
+        # stale element reference between lookup and click.
+        for _ in range(50):
+            clicked = self.js(
+                "const b=[...document.querySelectorAll('main button')]"
+                ".find(e=>e.textContent.trim()===arguments[0]);"
+                "if(!b) return false; b.click(); return true;",
+                label,
+            )
+            if clicked:
+                return
+            time.sleep(0.1)
+        raise AssertionError(label)
 
     def text(self):
         return self.js("return document.body.innerText")
@@ -412,17 +430,74 @@ class Browser:
         )
 
     def check_secretary(self):
-        """Confirm the secretary workspace lists the assigned sections."""
+        """Confirm the secretary drafts and publishes a survey, a student
+        responds, and the director sees aggregates and closes it.
+
+        Uses the "incompleta" section, which the secretary is explicitly
+        assigned to and which is enabled but distinct from the section the
+        director flow uses earlier in the run.
+        """
         self.login("secretaria-a")
         self.visit("/investigacion-formativa/secretaria")
         self.check("Secretary workspace lists the assigned school", lambda: "Escuelas asignadas" in self.text())
         self.check("Secretary workspace lists the sections", lambda: "Secciones habilitadas" in self.text())
         self.capture("secretaria-secciones")
-        section_id = self.manifest["secciones"]["completa"]
-        self.visit(f"/investigacion-formativa/secretaria/secciones/{section_id}/encuesta")
+
+        self.section("secretaria", "encuesta", "incompleta")
         self.check("Secretary opens the survey workspace", lambda: "Encuesta de la sección" in self.text())
         self.check("Secretary cannot close the survey", lambda: "Cerrar encuesta" not in self.text())
-        self.capture("secretaria-encuesta")
+
+        q1 = "¿El trabajo de secretaría fortalece la investigación?"
+        q2 = "¿La orientación de secretaría fue clara?"
+        self.fill('textarea[name="preguntas[0]"]', q1)
+        self.button("Agregar pregunta")
+        self.fill('textarea[name="preguntas[1]"]', q2)
+        self.button("Guardar borrador")
+        self.wait(lambda: "El borrador de la encuesta se guardó correctamente." in self.text()
+            and "Publicar encuesta" in self.text())
+        self.check("Secretary saves the survey draft", lambda: self.js(
+            "const v=[...document.querySelectorAll('main textarea')].map(e=>e.value);"
+            "return v.includes(arguments[0]) && v.includes(arguments[1]);",
+            q1, q2,
+        ))
+        self.capture("secretaria-encuesta-borrador")
+
+        self.button("Publicar encuesta")
+        self.wait(lambda: "Publicada" in self.text() and "Cerrar encuesta" not in self.text())
+        self.check("Secretary publishes the survey", lambda: "Publicada" in self.text()
+            and "¿La orientación de secretaría fue clara?" in self.text())
+        self.check("Secretary still cannot close a published survey", lambda: "Cerrar encuesta" not in self.text())
+        self.capture("secretaria-encuesta-publicada")
+        self.logout()
+
+        self.login("integrante")
+        self.section("alumno", "encuesta", "incompleta")
+        self.capture("alumno-encuesta-secretaria")
+        self.js("""
+            for (const name of ['respuestas[0][valor]', 'respuestas[1][valor]']) {
+                document.querySelector('input[name="'+name+'"][value="4"]').click();
+            }
+        """)
+        self.fill_multiline("textarea[name=comentario]", self.comentario_largo)
+        self.click("main button[type=submit]")
+        self.wait(lambda: "Respuesta registrada" in self.text())
+        self.check("Student responds to the secretary survey", lambda: "Respuesta registrada" in self.text())
+        self.logout()
+
+        self.login("director-a")
+        self.section("director", "resultados", "incompleta")
+        self.check("Director sees secretary survey aggregates", lambda: "4.00" in self.text()
+            and "Comentarios confidenciales" in self.text())
+        self.check("Secretary survey report omits respondent name", lambda: "Demo integrante" not in self.text())
+        self.capture("director-resultados-secretaria")
+
+        self.section("director", "encuesta", "incompleta")
+        self.button("Cerrar encuesta")
+        self.wait(lambda: "La encuesta se cerró" in self.text())
+        self.section("director", "encuesta", "incompleta")
+        self.check("Director closes the secretary survey", lambda: "Cerrar encuesta" not in self.text()
+            and "Publicar encuesta" not in self.text())
+        self.capture("director-secretaria-cerrada")
 
     def review_title(self, href):
         reason = "Delimitar el estudio a los procesos de matrícula."

@@ -141,12 +141,15 @@ Ruta negativa: escuela fuera del alcance, sección ajena o permiso ausente. Se d
 
 ## Verificación de navegador
 
-Inicie geckodriver en una terminal: `geckodriver --host 127.0.0.1 --port 4449`. Mantenga el servidor local iniciado con `--no-reload` para conservar las variables de conexión. En otra terminal, defina la contraseña del mismo lote y ejecute:
+El recorrido admite Chromium o Firefox. Con Chromium, inicie ChromeDriver en una terminal: `chromedriver --port 9516`. Con Firefox, inicie `geckodriver --host 127.0.0.1 --port 4449`. Mantenga el servidor local iniciado con `--no-reload` para conservar las variables de conexión. En otra terminal, defina la contraseña del mismo lote y ejecute:
 
 ```bash
+export IF_BROWSER=chromium
+export CHROMIUM_BINARY=/ruta/a/chromium
+export WEBDRIVER_URL=http://127.0.0.1:9516
 export IF_DEMO_MANIFEST=/ruta/al/lote/demo.json
 export IF_BROWSER_OUTPUT=/ruta/nueva/para/evidencia
 python3 tests/Browser/investigacion_formativa.py
 ```
 
-Use un lote sin grupos ni encuestas previas. El destino de evidencia debe ser nuevo y quedar fuera de los archivos versionados. Se guardan HTML, capturas y `results.json`. El recorrido empieza habilitando y configurando la sección de demostración `IFD-deshabilitada`. Ese nombre describe el estado inicial. Guarda competencias, rúbrica y cronograma, comprueba fechas fuera de orden y forma un grupo en esa misma sección. Después solicita un cambio de título con motivo, lo corrige como coordinador, lo acepta como docente y verifica la consulta del integrante sin controles de edición. También publica y cierra una encuesta, registra una respuesta y filtra el historial. Comprueba persistencia mediante páginas nuevas, recarga de la ficha del grupo e inicio de sesión. Compara anchos de 1280 y 390 píxeles. No comprueba carga, descarga ni evaluación en navegador mientras falte G4. Un resultado de este script no equivale a aceptación completa ni a una auditoría de accesibilidad.
+Use un lote sin grupos ni encuestas previas. El destino de evidencia debe ser nuevo y quedar fuera de los archivos versionados. Se guardan HTML, capturas y `results.json`. El recorrido empieza habilitando y configurando la sección de demostración `IFD-deshabilitada`. Ese nombre describe el estado inicial. Guarda competencias, rúbrica y cronograma, comprueba fechas fuera de orden y forma un grupo en esa misma sección. Después solicita un cambio de título con motivo, lo corrige como coordinador, lo acepta como docente y verifica la consulta del integrante sin controles de edición. También publica y cierra una encuesta, registra una respuesta y filtra el historial. La secretaría prepara y publica la encuesta de otra sección `incompleta` sin poder cerrarla; un integrante responde, la dirección ve el agregado sin el nombre del estudiante y cierra la encuesta. Comprueba persistencia mediante páginas nuevas, recarga de la ficha del grupo e inicio de sesión. Compara anchos de 1280 y 390 píxeles. No comprueba carga, descarga ni evaluación en navegador mientras falte G4. Un resultado de este script no equivale a aceptación completa ni a una auditoría de accesibilidad.
