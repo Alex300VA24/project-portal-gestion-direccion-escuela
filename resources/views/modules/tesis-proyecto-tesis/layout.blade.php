@@ -1,11 +1,55 @@
 <x-app-layout>
     @include('modules.tesis-proyecto-tesis.partials.estilos')
 
-    <div class="tz">
+    @php($tieneMenu = ! empty($tesisNav['menu'] ?? []))
+
+    <script>
+        // Menú lateral: desplegado (íconos + nombres) o plegado (solo íconos) en escritorio; cajón superpuesto en celular.
+        window.tzMenu = function () {
+            const clave = 'tesis-proyecto-tesis.menu';
+            const mq = window.matchMedia('(max-width: 900px)');
+            let plegado = false;
+            try { plegado = window.localStorage.getItem(clave) === 'plegado'; } catch (e) { plegado = false; }
+
+            return {
+                plegado, abierto: false, movil: mq.matches,
+                init() { mq.addEventListener('change', (e) => { this.movil = e.matches; this.abierto = false; }); },
+                get expandido() { return this.movil ? this.abierto : ! this.plegado; },
+                alternar() {
+                    if (this.movil) { this.abierto ? this.cerrar() : this.abrir(); return; }
+                    this.plegado = ! this.plegado;
+                    try { window.localStorage.setItem(clave, this.plegado ? 'plegado' : 'desplegado'); } catch (e) { /* sin almacenamiento: solo esta página */ }
+                },
+                // Los focos diferidos comprueban el estado: si el usuario ya volvió a abrir o cerrar, no se aplican.
+                abrir() { this.abierto = true; this.$nextTick(() => { if (this.abierto) this.$refs.menu.querySelector('a')?.focus(); }); },
+                cerrar(devolverFoco = true) {
+                    if (! this.abierto) return;
+                    this.abierto = false;
+                    if (devolverFoco) this.$nextTick(() => { if (! this.abierto) this.$refs.botonMenu?.focus(); });
+                },
+                // Celular: si el foco sale del cajón hacia otro control de la página (Tab), se cierra.
+                salir(e) {
+                    const destino = e.relatedTarget;
+                    if (this.movil && this.abierto && destino && destino !== this.$refs.botonMenu && ! this.$refs.menu.contains(destino)) this.cerrar(false);
+                },
+            };
+        };
+    </script>
+
+    <div class="tz" id="tz-raiz" x-data="tzMenu()" :class="{ 'is-plegado': plegado, 'is-abierto': movil && abierto }" @keydown.escape.window="cerrar()">
+        {{-- Aplica el estado guardado antes de pintar, para que el menú no "salte" al cargar. --}}
+        <script>try { if (window.localStorage.getItem('tesis-proyecto-tesis.menu') === 'plegado') document.getElementById('tz-raiz').classList.add('is-plegado'); } catch (e) {}</script>
         <a href="#tz-contenido" class="sr-only">Saltar al contenido</a>
 
         <div class="tz-band">
             <div class="tz-band-inner">
+                @if ($tieneMenu)
+                    <button type="button" class="tz-menu-btn" x-ref="botonMenu" @click="alternar()"
+                            aria-controls="tz-menu" aria-expanded="true" aria-label="Contraer menú"
+                            :aria-expanded="expandido.toString()" :aria-label="expandido ? 'Contraer menú' : 'Expandir menú'">
+                        <svg class="tz-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                @endif
                 <a class="tz-brand" href="{{ route('tesis-proyecto-tesis.index') }}">
                     <span class="tz-brand-mark" aria-hidden="true">PT</span>
                     <span><strong>Gestión de Tesis</strong><span>Escuela de Ingeniería Informática</span></span>
@@ -69,13 +113,18 @@
         </div>
 
         <div class="tz-shell">
-            <aside class="tz-side" aria-label="Menú del módulo">
+            @if ($tieneMenu)
+                <div class="tz-velo" x-show="movil && abierto" x-cloak x-transition.opacity @click="cerrar()" aria-hidden="true"></div>
+            @endif
+            <aside class="tz-side" id="tz-menu" x-ref="menu" aria-label="Menú del módulo" @focusout="salir($event)">
                 <nav>
                     @foreach ($tesisNav['menu'] ?? [] as $item)
-                        <a href="{{ $item['url'] }}" @if (($tesisNav['activo'] ?? '') === $item['clave']) aria-current="page" @endif>
-                            <span>{{ $item['etiqueta'] }}</span>
+                        @php($nombre = $item['etiqueta'].($item['insignia'] > 0 ? ', '.$item['insignia'].' '.($item['insignia'] === 1 ? 'pendiente' : 'pendientes') : ''))
+                        <a href="{{ $item['url'] }}" aria-label="{{ $nombre }}" @if (($tesisNav['activo'] ?? '') === $item['clave']) aria-current="page" @endif>
+                            @include('modules.tesis-proyecto-tesis.partials.icono-menu', ['clave' => $item['clave']])
+                            <span class="tz-side-label" aria-hidden="true">{{ $item['etiqueta'] }}</span>
                             @if ($item['insignia'] > 0)
-                                <span class="tz-count">{{ $item['insignia'] }}</span>
+                                <span class="tz-count" aria-hidden="true">{{ $item['insignia'] }}</span>
                             @endif
                         </a>
                     @endforeach

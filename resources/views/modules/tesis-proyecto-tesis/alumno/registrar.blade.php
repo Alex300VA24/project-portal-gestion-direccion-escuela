@@ -29,6 +29,7 @@
             return {
                 ...d,
                 coautorInfo: null, buscando: false,
+                init() { if (this.coautor.trim() !== '') this.buscarCoautor(); }, // al volver con errores, muestra de nuevo el estado del coautor
                 get palabras() { return this.titulo.trim() === '' ? 0 : this.titulo.trim().split(/\s+/).length; },
                 get total() { return this.partidas.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0).toFixed(2); },
                 agregar(lista, fila) { if (this[lista].length < 30) this[lista].push({ ...fila }); },
@@ -43,6 +44,12 @@
                         this.coautorInfo = await r.json();
                     } catch (e) { this.coautorInfo = { encontrado: false, mensaje: 'No se pudo consultar. Intenta de nuevo.' }; }
                     this.buscando = false;
+                },
+                get coautorListo() { return !! (this.coautorInfo && this.coautorInfo.encontrado && this.coautorInfo.disponible); },
+                quitarCoautor() {
+                    this.coautor = '';
+                    this.coautorInfo = null;
+                    this.$nextTick(() => this.$refs.coautorCodigo.focus());
                 },
             };
         };
@@ -132,13 +139,23 @@
                 <div class="tz-field" style="max-width: 520px">
                     <label for="coautor_codigo">Código universitario del coautor (opcional)</label>
                     <div class="tz-actions">
-                        <input id="coautor_codigo" name="coautor_codigo" class="tz-input" style="flex: 1" x-model="coautor" maxlength="30" inputmode="numeric" aria-invalid="{{ $err('coautor_codigo') }}" @keydown.enter.prevent="buscarCoautor()">
+                        <input id="coautor_codigo" name="coautor_codigo" class="tz-input" style="flex: 1" x-model="coautor" x-ref="coautorCodigo" maxlength="30" inputmode="numeric" aria-invalid="{{ $err('coautor_codigo') }}" aria-describedby="coautor-estado" @input="coautorInfo = null" @keydown.enter.prevent="buscarCoautor()">
                         <button type="button" class="tz-btn tz-btn-secondary" @click="buscarCoautor()" :disabled="buscando || coautor.trim() === ''">Buscar</button>
                     </div>
-                    <p class="tz-small" role="status" aria-live="polite" x-show="coautorInfo" x-cloak>
-                        <template x-if="coautorInfo && coautorInfo.encontrado"><span><strong x-text="coautorInfo.nombre"></strong> · <span x-text="coautorInfo.mensaje" :class="coautorInfo.disponible ? '' : 'tz-error'"></span></span></template>
-                        <template x-if="coautorInfo && !coautorInfo.encontrado"><span class="tz-error" x-text="coautorInfo.mensaje"></span></template>
-                    </p>
+                    <div id="coautor-estado" role="status" aria-live="polite">
+                        <template x-if="coautorListo">
+                            <div class="tz-coautor" data-coautor="listo">
+                                <span class="tz-status is-info">2</span>
+                                <div>
+                                    <strong x-text="coautorInfo.nombre"></strong> <span class="tz-muted tz-small">· <span x-text="coautorInfo.codigo"></span></span>
+                                    <p class="tz-small">Se agregará como integrante 2 al registrar el proyecto. No necesitas pulsar otro botón: basta con <strong>Registrar proyecto</strong> al final del formulario.</p>
+                                </div>
+                                <button type="button" class="tz-btn tz-btn-secondary" @click="quitarCoautor()" :aria-label="'Quitar a ' + coautorInfo.nombre + ' como integrante 2'">Quitar</button>
+                            </div>
+                        </template>
+                        <template x-if="coautorInfo && coautorInfo.encontrado && ! coautorInfo.disponible"><p class="tz-small"><strong x-text="coautorInfo.nombre"></strong> · <span class="tz-error" x-text="coautorInfo.mensaje"></span></p></template>
+                        <template x-if="coautorInfo && ! coautorInfo.encontrado"><p class="tz-small tz-error" x-text="coautorInfo.mensaje"></p></template>
+                    </div>
                     @error('coautor_codigo') <span class="tz-error">{{ $message }}</span> @enderror
                 </div>
             </div>

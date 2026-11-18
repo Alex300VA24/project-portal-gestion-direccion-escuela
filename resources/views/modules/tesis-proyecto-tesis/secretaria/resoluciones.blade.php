@@ -9,7 +9,7 @@
         </div>
     </div>
 
-    <div class="tz-grid-2" style="grid-template-columns: minmax(0, .8fr) minmax(0, 1.6fr)">
+    <div class="tz-grid-2 is-lista-detalle">
         <section class="tz-panel">
             <div class="tz-panel-head"><h2>Solicitudes esperando resolución</h2></div>
             @if ($pendientes->isEmpty())

@@ -46,20 +46,40 @@
     .tz-pop li.is-new .tz-aviso strong::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tz-focus); margin-right: 8px; }
     .tz-link-btn { background: none; border: 0; padding: 0; color: var(--tz-green-dark); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
 
-    .tz-shell { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 140px); }
-    .tz-side { background: var(--tz-navy); color: #eef2ff; padding: 18px 12px; }
+    .tz-menu-btn { width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid rgba(255,255,255,.25); background: transparent; color: #fff; display: grid; place-items: center; cursor: pointer; transition: background 160ms var(--tz-ease); }
+    .tz-menu-btn:hover { background: rgba(255,255,255,.1); }
+    .tz-shell { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 140px); transition: grid-template-columns 220ms var(--tz-ease); }
+    .tz-side { background: var(--tz-navy); color: #eef2ff; padding: 18px 12px; min-width: 0; }
     .tz-side nav { display: grid; gap: 4px; position: sticky; top: 12px; }
-    .tz-side a { display: flex; align-items: center; justify-content: space-between; min-height: 46px; padding: 0 14px; border-radius: 10px; color: #eef2ff; text-decoration: none; font-size: 15px; font-weight: 500; transition: background 160ms var(--tz-ease); }
+    .tz-side a { position: relative; display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 13px; border-radius: 10px; color: #eef2ff; text-decoration: none; font-size: 15px; font-weight: 500; transition: background 160ms var(--tz-ease); }
     .tz-side a:hover { background: rgba(255,255,255,.08); }
     .tz-side a[aria-current="page"] { background: #fff; color: var(--tz-navy); font-weight: 700; }
-    .tz-side .tz-count { font: 600 11px/20px 'Fira Code', monospace; min-width: 22px; height: 20px; text-align: center; border-radius: 999px; background: var(--tz-focus); color: var(--tz-navy); }
+    .tz-side-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tz-side .tz-count { font: 600 11px/20px 'Fira Code', monospace; min-width: 22px; height: 20px; padding: 0 4px; text-align: center; border-radius: 999px; background: var(--tz-focus); color: var(--tz-navy); }
+    .tz-velo { display: none; }
+    /* Plegado (solo escritorio): barra de íconos; el nombre aparece como tooltip con el mouse o el foco del teclado. */
+    @media (min-width: 901px) {
+        .tz.is-plegado .tz-shell { grid-template-columns: 72px minmax(0, 1fr); }
+        .tz.is-plegado .tz-side a { justify-content: center; padding: 0; gap: 0; }
+        .tz.is-plegado .tz-side-label { position: absolute; left: calc(100% + 14px); top: 50%; transform: translate(-4px, -50%); flex: none; overflow: visible;
+            padding: 7px 12px; border-radius: 8px; background: var(--tz-ink); color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(8,15,35,.25);
+            opacity: 0; visibility: hidden; pointer-events: none; z-index: 40; transition: opacity 140ms var(--tz-ease), transform 140ms var(--tz-ease), visibility 0s linear 140ms; }
+        .tz.is-plegado .tz-side a:hover .tz-side-label, .tz.is-plegado .tz-side a:focus-visible .tz-side-label { opacity: 1; visibility: visible; transform: translate(0, -50%); transition-delay: 0s; }
+        .tz.is-plegado .tz-side .tz-count { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; font-size: 10px; line-height: 18px; padding: 0 3px; }
+        .tz.is-plegado .tz-side a[aria-current="page"]::before { content: ''; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 4px; border-radius: 0 4px 4px 0; background: var(--tz-focus); }
+    }
     .tz-main { padding: 28px clamp(16px, 3vw, 40px) 56px; min-width: 0; }
     .tz-page { max-width: 1180px; display: grid; gap: 22px; }
+    /* Los hijos de las grillas no se ensanchan por sus tablas: cada tabla ya tiene su propio scroll (.tz-table-wrap). */
+    .tz-page > *, .tz-form > * { min-width: 0; }
     @media (max-width: 900px) {
         .tz-shell { grid-template-columns: 1fr; }
-        .tz-side { padding: 8px; }
-        .tz-side nav { display: flex; overflow-x: auto; position: static; }
-        .tz-side a { white-space: nowrap; }
+        /* Celular: el menú empieza oculto y se abre como cajón superpuesto, con íconos y nombres. */
+        .tz-side { position: fixed; top: 0; bottom: 0; left: 0; width: min(300px, 86vw); z-index: 60; overflow-y: auto; box-shadow: 0 24px 64px rgba(8,15,35,.35);
+            transform: translateX(-100%); visibility: hidden; transition: transform 220ms var(--tz-ease), visibility 0s linear 220ms; }
+        .tz.is-abierto .tz-side { transform: none; visibility: visible; transition: transform 220ms var(--tz-ease); }
+        .tz-side nav { position: static; }
+        .tz-velo { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(8,15,35,.55); }
         .tz-user div { display: none; }
     }
 
@@ -74,7 +94,8 @@
     .tz-panel-body { padding: 20px 22px; }
     .tz-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
     .tz-grid-2 { display: grid; gap: 22px; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
-    @media (max-width: 1050px) { .tz-grid-2 { grid-template-columns: 1fr; } }
+    .tz-grid-2.is-lista-detalle { grid-template-columns: minmax(0, .8fr) minmax(0, 1.6fr); }
+    @media (max-width: 1050px) { .tz-grid-2, .tz-grid-2.is-lista-detalle { grid-template-columns: minmax(0, 1fr); } }
     .tz-card { background: var(--tz-surface); border: 1px solid var(--tz-border); border-radius: 14px; padding: 20px 22px; display: grid; gap: 6px; align-content: start; }
     .tz-stat strong { font-size: 2.2rem; line-height: 1; color: var(--tz-navy); font-weight: 700; }
     .tz-facts { display: grid; gap: 14px 24px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 16px; }
@@ -99,7 +120,7 @@
     .tz-alert ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
 
     /* Tablas */
-    .tz-table-wrap { overflow-x: auto; }
+    .tz-table-wrap { overflow-x: auto; position: relative; } /* relative: lo absoluto de dentro (p. ej. .sr-only) no escapa del recorte */
     .tz-table { width: 100%; border-collapse: collapse; font-size: 15px; }
     .tz-table th { text-align: left; font-family: 'Fira Code', monospace; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tz-muted); background: var(--tz-alt); padding: 12px 14px; }
     .tz-table td { padding: 14px; border-bottom: 1px solid var(--tz-border); vertical-align: top; }
@@ -129,6 +150,9 @@
     .tz-input:focus, .tz-select:focus, .tz-textarea:focus { outline: none; border-color: var(--tz-green); box-shadow: 0 0 0 3px rgba(13,122,80,.15); }
     .tz-input[aria-invalid="true"], .tz-select[aria-invalid="true"], .tz-textarea[aria-invalid="true"] { border-color: var(--tz-danger); }
     .tz-error { font-size: 13px; color: var(--tz-danger); font-weight: 600; }
+    .tz-coautor { display: flex; align-items: flex-start; gap: 12px; margin-top: 4px; padding: 12px 14px; border: 1px solid #b7dcc8; border-left: 4px solid var(--tz-green); border-radius: 10px; background: #f1f8f4; }
+    .tz-coautor > div { flex: 1; min-width: 0; }
+    .tz-coautor p { margin: 4px 0 0; }
     .tz-check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
     .tz-check { min-height: 44px; align-items: center; }
     .tz-check input { width: 22px; height: 22px; flex: none; accent-color: var(--tz-green); }
