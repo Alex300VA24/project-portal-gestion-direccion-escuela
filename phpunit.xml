@@ -24,7 +24,6 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_DATABASE" value="portal_gestion_direccion_test_packetb_20261118030709"/>
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="55432"/>
         <env name="DB_USERNAME" value="postgres"/>
