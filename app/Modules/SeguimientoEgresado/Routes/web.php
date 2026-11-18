@@ -16,6 +16,7 @@ use App\Modules\SeguimientoEgresado\Controllers\PromocionController;
 use App\Modules\SeguimientoEgresado\Controllers\ReportesController;
 use App\Modules\SeguimientoEgresado\Controllers\SeguimientoEgresadoController;
 use App\Modules\SeguimientoEgresado\Middleware\RequiereCapacidad;
+use App\Modules\SeguimientoEgresado\Middleware\SincronizaEstadoDeCampanias;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Route;
  */
 Route::prefix('seguimiento-egresado')
     ->name('seguimiento-egresado.')
+    ->middleware(SincronizaEstadoDeCampanias::class)
     ->group(function () {
         $interna = fn (string $capacidad): array => ['auth', RequiereCapacidad::class.':'.$capacidad];
         $egresado = fn (string $capacidad): array => [RequiereCapacidad::class.':'.$capacidad];
@@ -62,9 +64,11 @@ Route::prefix('seguimiento-egresado')
 
         // Campañas e invitaciones
         Route::get('/campanias', [CampaniasController::class, 'index'])->middleware($interna('campanias.consultar'))->name('campanias');
+        Route::get('/campanias/{id}/detalle', [CampaniasController::class, 'detalle'])->whereNumber('id')->middleware($interna('campanias.consultar'))->name('campanias.detalle');
         Route::post('/campanias', [CampaniasController::class, 'store'])->middleware($interna('campanias.administrar'))->name('campanias.store');
         Route::put('/campanias/{id}', [CampaniasController::class, 'update'])->middleware($interna('campanias.administrar'))->name('campanias.update');
         Route::post('/campanias/{id}/emitir-invitaciones', [CampaniasController::class, 'emitirInvitaciones'])->middleware($interna('campanias.administrar'))->name('campanias.emitir-invitaciones');
+        Route::post('/campanias/{id}/recordar-pendientes', [CampaniasController::class, 'recordarPendientes'])->whereNumber('id')->middleware($interna('campanias.administrar'))->name('campanias.recordar-pendientes');
         Route::post('/campanias/invitacion/{id}/recordatorio', [CampaniasController::class, 'reenviarRecordatorio'])->middleware($interna('campanias.administrar'))->name('campanias.recordatorio');
 
         // Evaluación institucional de Dirección
@@ -75,7 +79,6 @@ Route::prefix('seguimiento-egresado')
         Route::post('/institucional/plan-accion', [InstitucionalController::class, 'guardarPlanAccion'])->middleware($interna('institucional.registrar'))->name('institucional.guardar-plan');
 
         // Reportes y formatos institucionales F1 a F11
-        Route::get('/reportes', [ReportesController::class, 'index'])->middleware($interna('reportes.exportar'))->name('reportes');
         Route::get('/reportes/campanias/csv', [ReportesController::class, 'exportarCampaniasCsv'])->middleware($interna('reportes.exportar'))->name('reportes.campanias.csv');
         Route::get('/reportes/campanias/{id}/invitaciones/csv', [ReportesController::class, 'exportarInvitacionesCsv'])->middleware($interna('reportes.exportar'))->name('reportes.invitaciones.csv');
         Route::get('/reportes/indicadores/csv', [ReportesController::class, 'exportarIndicadoresCsv'])->middleware($interna('reportes.exportar'))->name('reportes.indicadores.csv');

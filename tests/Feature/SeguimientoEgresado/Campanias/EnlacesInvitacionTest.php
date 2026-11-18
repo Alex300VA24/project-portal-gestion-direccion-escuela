@@ -32,7 +32,15 @@ class EnlacesInvitacionTest extends TestCase
             'nombre' => 'Encuesta Cohorte 2019', 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'periodo' => '2026-II',
             'fecha_inicio' => '2026-10-05', 'fecha_fin' => '2026-12-31', 'estado' => 'ABIERTA', 'id_usuario_creacion' => UsuarioInterno::idActual(),
         ]);
-        $campania->cohortes()->attach(Cohorte::where('anio_ingreso', 2019)->value('id'));
+        $cohorteId = Cohorte::where('anio_ingreso', 2019)->value('id');
+        $campania->cohortes()->attach($cohorteId);
+
+        // Las campañas se envían al correo personal: los egresados de la promoción ya lo dejaron.
+        foreach (\App\Modules\SeguimientoEgresado\Models\Egresado::where('id_cohorte', $cohorteId)->get() as $egresado) {
+            \App\Modules\SeguimientoEgresado\Models\ContactoEgresado::firstOrCreate(['id_egresado' => $egresado->id, 'vigente_hasta' => null], [
+                'correo_personal' => "personal{$egresado->id}@correo.test", 'celular_whatsapp' => '+51900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO',
+            ]);
+        }
 
         return $campania;
     }
@@ -66,9 +74,9 @@ class EnlacesInvitacionTest extends TestCase
         $campania = $this->campaniaDeLa2019();
 
         $this->followingRedirects()->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id))
-            ->assertOk()->assertSee('Enlaces personales de las invitaciones')->assertSee('/seguimiento-egresado/acceso/', false);
+            ->assertOk()->assertSee('Enlaces personales recién generados')->assertSee('/seguimiento-egresado/acceso/', false);
 
-        $this->get(route('seguimiento-egresado.campanias', ['campania_id' => $campania->id]))->assertOk()->assertDontSee('Enlaces personales de las invitaciones');
+        $this->get(route('seguimiento-egresado.campanias', ['ver' => $campania->id]))->assertOk()->assertDontSee('Enlaces personales recién generados');
     }
 
     public function test_reemitir_no_duplica_invitaciones_ni_vuelve_a_mostrar_enlaces(): void

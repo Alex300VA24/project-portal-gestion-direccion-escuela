@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Datos ficticios para probar la encuesta empresarial y el tablero I1–I6: campañas de 3, 5 y 10 años,
- * historial de una misma cohorte y respuestas de empresas. Todo queda etiquetado como [DEMO].
+ * historial de una misma cohorte y respuestas de empresas. Los datos son de ejemplo y se pueden reconocer por la campaña «Demanda de habilidades».
  * Se ejecuta después de DatosPruebaSeeder y no modifica sus registros.
  * Solo para pruebas: no se ejecuta en producción, ni siquiera con --force.
  */
@@ -28,7 +28,7 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
             return;
         }
 
-        if (DB::table('seguimiento_egresado.campania_seguimiento')->where('nombre', 'like', '[DEMO]%')->exists()) {
+        if (DB::table('seguimiento_egresado.campania_seguimiento')->where('nombre', 'like', 'Demanda de habilidades %')->exists()) {
             return;
         }
 
@@ -51,16 +51,16 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
         $finAbierta = $this->hoy->addDays(60)->toDateString();
 
         // Campañas de egresados: la misma cohorte responde dos años seguidos sin sobrescribir su historial.
-        $anterior = $this->crearCampania('[DEMO] Seguimiento a 3 años '.($anio - 1), 'EGRESADOS', 3, ($anio - 1).'-II', ($anio - 1).'-09-01', ($anio - 1).'-11-30', 'CERRADA', [$cohorte2018]);
+        $anterior = $this->crearCampania('Seguimiento a 3 años '.($anio - 1), 'EGRESADOS', 3, ($anio - 1).'-II', ($anio - 1).'-09-01', ($anio - 1).'-11-30', 'CERRADA', [$cohorte2018]);
         $this->responderCampania($anterior, $egresados2018, CarbonImmutable::create($anio - 1, 10, 10), 'EXPIRADA', 4, 0);
 
-        $actual3 = $this->crearCampania('[DEMO] Seguimiento a 3 años '.$anio, 'EGRESADOS', 3, $anio.'-II', $inicioAbierta, $finAbierta, 'ABIERTA', [$cohorte2018]);
+        $actual3 = $this->crearCampania('Seguimiento a 3 años '.$anio, 'EGRESADOS', 3, $anio.'-II', $inicioAbierta, $finAbierta, 'ABIERTA', [$cohorte2018]);
         $this->responderCampania($actual3, $egresados2018, $this->hoy->subDays(30), 'PENDIENTE', 5, 1);
 
-        $actual5 = $this->crearCampania('[DEMO] Seguimiento a 5 años '.$anio, 'EGRESADOS', 5, $anio.'-II', $inicioAbierta, $finAbierta, 'ABIERTA', [$cohorte2016]);
+        $actual5 = $this->crearCampania('Seguimiento a 5 años '.$anio, 'EGRESADOS', 5, $anio.'-II', $inicioAbierta, $finAbierta, 'ABIERTA', [$cohorte2016]);
         $this->responderCampania($actual5, $egresados2016, $this->hoy->subDays(25), 'PENDIENTE', 4, 2);
 
-        $actual10 = $this->crearCampania('[DEMO] Seguimiento a 10 años '.$anio, 'EGRESADOS', 10, $anio.'-II', $inicioAbierta, $finAbierta, 'ABIERTA', [$cohorte2011]);
+        $actual10 = $this->crearCampania('Seguimiento a 10 años '.$anio, 'EGRESADOS', 10, $anio.'-II', $inicioAbierta, $finAbierta, 'ABIERTA', [$cohorte2011]);
         $this->responderCampania($actual10, $egresados2011, $this->hoy->subDays(20), 'PENDIENTE', 3, 3);
 
         $this->evaluacionesOe($cohorte2019);
@@ -227,9 +227,9 @@ class EmpresasIndicadoresDemoSeeder extends Seeder
      */
     private function encuestasEmpresa(int $anio, string $inicio, string $fin, array $egresados2018, array $egresados2016): void
     {
-        $campania3 = $this->crearCampania('[DEMO] Evaluación de empleadores a 3 años '.$anio, 'EMPRESAS', 3, $anio.'-II', $inicio, $fin, 'ABIERTA');
-        $campania5 = $this->crearCampania('[DEMO] Evaluación de empleadores a 5 años '.$anio, 'EMPRESAS', 5, $anio.'-II', $inicio, $fin, 'ABIERTA');
-        $mercado = $this->crearCampania('[DEMO] Demanda de habilidades '.$anio, 'EMPRESAS', null, $anio.'-II', $inicio, $fin, 'ABIERTA');
+        $campania3 = $this->crearCampania('Evaluación de empleadores a 3 años '.$anio, 'EMPRESAS', 3, $anio.'-II', $inicio, $fin, 'ABIERTA');
+        $campania5 = $this->crearCampania('Evaluación de empleadores a 5 años '.$anio, 'EMPRESAS', 5, $anio.'-II', $inicio, $fin, 'ABIERTA');
+        $mercado = $this->crearCampania('Demanda de habilidades '.$anio, 'EMPRESAS', null, $anio.'-II', $inicio, $fin, 'ABIERTA');
 
         $niveles3 = ['SATISFECHO', 'MUY_SATISFECHO', 'SATISFECHO', 'NEUTRAL', 'INSATISFECHO'];
         foreach (array_slice($egresados2018, 0, 5) as $i => $egresado) {

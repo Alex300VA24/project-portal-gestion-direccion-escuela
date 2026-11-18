@@ -32,7 +32,15 @@ class CorreoCampaniaTest extends TestCase
             'nombre' => 'Encuesta Cohorte 2019', 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'periodo' => '2026-II',
             'fecha_inicio' => '2026-10-05', 'fecha_fin' => '2026-12-31', 'estado' => 'ABIERTA', 'id_usuario_creacion' => UsuarioInterno::idActual(),
         ]);
-        $this->campania->cohortes()->attach(Cohorte::where('anio_ingreso', 2019)->value('id'));
+        $cohorteId = Cohorte::where('anio_ingreso', 2019)->value('id');
+        $this->campania->cohortes()->attach($cohorteId);
+
+        // Las campañas se envían al correo personal: los egresados de la promoción ya lo dejaron.
+        foreach (\App\Modules\SeguimientoEgresado\Models\Egresado::where('id_cohorte', $cohorteId)->get() as $egresado) {
+            \App\Modules\SeguimientoEgresado\Models\ContactoEgresado::firstOrCreate(['id_egresado' => $egresado->id, 'vigente_hasta' => null], [
+                'correo_personal' => "personal{$egresado->id}@correo.test", 'celular_whatsapp' => '+51900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO',
+            ]);
+        }
     }
 
     public function test_al_emitir_se_envia_un_correo_por_invitacion_y_se_marca_la_fecha_de_envio(): void
@@ -47,7 +55,7 @@ class CorreoCampaniaTest extends TestCase
             Mail::assertSent(InvitacionEgresadoMail::class, fn ($m) => $m->url === $enlace['url'] && $m->proposito === 'SEGUIMIENTO');
         }
         $this->assertSame(0, InvitacionEgresado::where('id_campania', $this->campania->id)->whereNull('enviado_en')->count());
-        $this->assertStringContainsString('Todas se enviaron por correo', session('success'));
+        $this->assertStringContainsString('Todas salieron por correo', session('success'));
     }
 
     public function test_sin_servidor_de_correo_no_se_marca_enviado_y_el_enlace_sigue_en_pantalla(): void

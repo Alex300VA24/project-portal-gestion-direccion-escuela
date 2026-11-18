@@ -7,6 +7,7 @@ use App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento;
 use App\Modules\SeguimientoEgresado\Models\CatCanalEnvio;
 use App\Modules\SeguimientoEgresado\Models\Cohorte;
 use App\Modules\SeguimientoEgresado\Models\Competencia;
+use App\Modules\SeguimientoEgresado\Models\ContactoEgresado;
 use App\Modules\SeguimientoEgresado\Models\Egresado;
 use App\Modules\SeguimientoEgresado\Models\InvitacionEgresado;
 use App\Modules\SeguimientoEgresado\Models\ObjetivoEducacional;
@@ -38,97 +39,77 @@ class CampaniasInstitucionalReportesTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Campañas e invitaciones')
-            ->assertSee('Balance global de convocatorias y cobertura')
-            ->assertSee('Total egresados convocados')
-            ->assertSee('Respuestas recibidas')
-            ->assertSee('Tasa de cobertura global')
-            ->assertSee('Campaña Anual de Seguimiento al Egresado 2023');
+            ->assertSee('+ Nueva campaña')
+            ->assertSee('egresados convocados')
+            ->assertSee('respondieron')
+            ->assertSee('de respuesta')
+            ->assertSee('Campaña Anual de Seguimiento al Egresado 2023')
+            ->assertSee('Ver detalle')
+            ->assertDontSee('Matriz de Formatos')
+            ->assertDontSee('WhatsApp')
+            ->assertDontSee('Convocatoria Mixta')
+            ->assertDontSee('Estado inicial');
     }
 
     public function test_crear_campania_valida_servidor_y_persiste_en_postgresql(): void
     {
         $cohorte = Cohorte::first();
-        $canal = CatCanalEnvio::first();
 
-        $data = [
+        $response = $this->post(route('seguimiento-egresado.campanias.store'), [
             'nombre' => 'Campaña de Inserción Laboral Cohorte 2019',
             'tipo' => 'EGRESADOS',
-            'finalidad' => 'SEGUIMIENTO',
             'horizonte_anios' => 1,
-            'periodo' => '2024-II',
+            'periodo' => '2026-II',
             'fecha_inicio' => date('Y-m-d'),
             'fecha_fin' => date('Y-m-d', strtotime('+60 days')),
-            'estado' => 'ABIERTA',
             'cohortes' => [$cohorte->id],
-            'canales' => [$canal->id],
             'descripcion' => 'Relevamiento laboral a 1 año de egreso cohorte 2019.',
-        ];
-
-        $response = $this->post(route('seguimiento-egresado.campanias.store'), $data);
-
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
-
-        $this->assertDatabaseHas('seguimiento_egresado.campania_seguimiento', [
-            'nombre' => 'Campaña de Inserción Laboral Cohorte 2019',
-            'periodo' => '2024-II',
-            'estado' => 'ABIERTA',
         ]);
 
-        $campaniaCreada = CampaniaSeguimiento::where('nombre', 'Campaña de Inserción Laboral Cohorte 2019')->first();
-        $this->assertNotNull($campaniaCreada);
-        $this->assertTrue($campaniaCreada->cohortes->contains($cohorte->id));
-        $this->assertTrue($campaniaCreada->canales->contains($canal->id));
+        $campania = CampaniaSeguimiento::where('nombre', 'Campaña de Inserción Laboral Cohorte 2019')->firstOrFail();
+        $response->assertRedirect(route('seguimiento-egresado.campanias', ['ver' => $campania->id]));
+        $response->assertSessionHas('success');
+
+        $this->assertSame('ABIERTA', $campania->estado, 'una campaña que ya empezó nace abierta');
+        $this->assertSame('SEGUIMIENTO', $campania->finalidad);
+        $this->assertTrue($campania->cohortes->contains($cohorte->id));
+        $this->assertCount(0, $campania->canales, 'ya no se eligen canales: es solo correo personal');
     }
 
-    public function test_crear_campania_rechaza_fechas_incoherentes_y_estados_invalidos(): void
+    public function test_el_estado_de_la_campania_sale_de_sus_fechas(): void
     {
         $cohorte = Cohorte::first();
+        $crear = fn (string $nombre, string $inicio, string $fin) => $this->post(route('seguimiento-egresado.campanias.store'), [
+            'nombre' => $nombre, 'tipo' => 'EGRESADOS', 'periodo' => '2026-II', 'fecha_inicio' => $inicio, 'fecha_fin' => $fin, 'cohortes' => [$cohorte->id],
+        ]);
 
-        // 1. Fecha fin anterior a fecha inicio
-        $dataIncoherenteFechas = [
-            'nombre' => 'Campaña con Fechas Erróneas',
-            'tipo' => 'EGRESADOS',
-            'finalidad' => 'SEGUIMIENTO',
-            'periodo' => '2024-I',
-            'fecha_inicio' => '2024-12-01',
-            'fecha_fin' => '2024-10-01', // Anterior
-            'estado' => 'ABIERTA',
-            'cohortes' => [$cohorte->id],
-        ];
+        $crear('Empieza pronto', date('Y-m-d', strtotime('+10 days')), date('Y-m-d', strtotime('+40 days')))->assertSessionHasNoErrors();
+        $this->assertSame('PROGRAMADA', CampaniaSeguimiento::where('nombre', 'Empieza pronto')->value('estado'));
 
-        $response1 = $this->post(route('seguimiento-egresado.campanias.store'), $dataIncoherenteFechas);
-        $response1->assertSessionHasErrors(['fecha_fin']);
+        // Al llegar la fecha de inicio se abre sola, y al pasar la de fin se cierra sola (al entrar a cualquier pantalla del módulo).
+        CampaniaSeguimiento::where('nombre', 'Empieza pronto')->update(['fecha_inicio' => date('Y-m-d', strtotime('-1 day'))]);
+        $this->get(route('seguimiento-egresado.campanias'));
+        $this->assertSame('ABIERTA', CampaniaSeguimiento::where('nombre', 'Empieza pronto')->value('estado'));
 
-        // 2. Sin cohortes
-        $dataSinCohortes = [
-            'nombre' => 'Campaña sin Cohortes',
-            'tipo' => 'EGRESADOS',
-            'finalidad' => 'SEGUIMIENTO',
-            'periodo' => '2024-I',
-            'fecha_inicio' => '2024-05-01',
-            'fecha_fin' => '2024-08-01',
-            'estado' => 'ABIERTA',
-            'cohortes' => [],
-        ];
+        CampaniaSeguimiento::where('nombre', 'Empieza pronto')->update(['fecha_inicio' => date('Y-m-d', strtotime('-30 days')), 'fecha_fin' => date('Y-m-d', strtotime('-1 day'))]);
+        $this->get(route('seguimiento-egresado.campanias'));
+        $this->assertSame('CERRADA', CampaniaSeguimiento::where('nombre', 'Empieza pronto')->value('estado'));
+    }
 
-        $response2 = $this->post(route('seguimiento-egresado.campanias.store'), $dataSinCohortes);
-        $response2->assertSessionHasErrors(['cohortes']);
+    public function test_crear_campania_rechaza_datos_incoherentes(): void
+    {
+        $cohorte = Cohorte::first();
+        $base = ['nombre' => 'Campaña de prueba', 'tipo' => 'EGRESADOS', 'periodo' => '2026-I', 'fecha_inicio' => date('Y-m-d'), 'fecha_fin' => date('Y-m-d', strtotime('+30 days')), 'cohortes' => [$cohorte->id]];
+        $enviar = fn (array $cambios) => $this->post(route('seguimiento-egresado.campanias.store'), $cambios + $base);
 
-        // 3. Estado CERRADA con fecha de fin futura
-        $dataCerradaFutura = [
-            'nombre' => 'Campaña Cerrada con Fecha Futura',
-            'tipo' => 'EGRESADOS',
-            'finalidad' => 'SEGUIMIENTO',
-            'periodo' => '2025-I',
-            'fecha_inicio' => date('Y-m-d'),
-            'fecha_fin' => date('Y-m-d', strtotime('+30 days')),
-            'estado' => 'CERRADA',
-            'cohortes' => [$cohorte->id],
-        ];
+        $enviar(['fecha_inicio' => date('Y-m-d', strtotime('+30 days')), 'fecha_fin' => date('Y-m-d', strtotime('+10 days'))])->assertSessionHasErrors('fecha_fin');
+        $enviar(['fecha_inicio' => '2024-01-01', 'fecha_fin' => '2024-02-01'])->assertSessionHasErrors('fecha_fin');
+        $enviar(['cohortes' => []])->assertSessionHasErrors('cohortes');
+        $enviar(['periodo' => '2026'])->assertSessionHasErrors('periodo');
+        $enviar(['tipo' => 'MIXTA'])->assertSessionHasErrors('tipo');
+        $enviar(['nombre' => ''])->assertSessionHasErrors('nombre');
 
-        $response3 = $this->post(route('seguimiento-egresado.campanias.store'), $dataCerradaFutura);
-        $response3->assertSessionHasErrors(['estado']);
+        $this->assertSame(0, CampaniaSeguimiento::where('nombre', 'Campaña de prueba')->count());
     }
 
     public function test_actualizar_campania_persiste_cambios_y_redirecciona(): void
@@ -136,59 +117,63 @@ class CampaniasInstitucionalReportesTest extends TestCase
         $campania = CampaniaSeguimiento::first();
         $cohorte = Cohorte::first();
 
-        $updateData = [
+        $response = $this->put(route('seguimiento-egresado.campanias.update', $campania->id), [
             'nombre' => 'Campaña Anual Actualizada 2023',
-            'tipo' => 'EGRESADOS',
-            'finalidad' => 'SEGUIMIENTO',
             'horizonte_anios' => 1,
             'periodo' => '2023-II',
             'fecha_inicio' => $campania->fecha_inicio,
             'fecha_fin' => date('Y-m-d', strtotime('+45 days')),
-            'estado' => 'ABIERTA',
             'cohortes' => [$cohorte->id],
             'descripcion' => 'Actualización de periodo y metas.',
-        ];
-
-        $response = $this->put(route('seguimiento-egresado.campanias.update', $campania->id), $updateData);
-        $response->assertRedirect();
+        ]);
+        $response->assertRedirect(route('seguimiento-egresado.campanias', ['ver' => $campania->id]));
         $response->assertSessionHas('success');
 
         $campania->refresh();
         $this->assertSame('Campaña Anual Actualizada 2023', $campania->nombre);
+        $this->assertSame('EGRESADOS', $campania->tipo, 'el «para quién» no se cambia al editar');
+        $this->assertSame('ABIERTA', $campania->estado, 'al ampliar la fecha de cierre la campaña vuelve a estar abierta');
     }
 
     // =========================================================================
     // S3-13 · Gestionar invitaciones y cobertura (Anti-duplicados, tokens, estados)
     // =========================================================================
 
+    private function conCorreoPersonal(Cohorte $promocion): void
+    {
+        foreach (Egresado::where('id_cohorte', $promocion->id)->get() as $egresado) {
+            ContactoEgresado::firstOrCreate(['id_egresado' => $egresado->id, 'vigente_hasta' => null], [
+                'correo_personal' => "personal{$egresado->id}@correo.test", 'celular_whatsapp' => '+51900111222', 'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO',
+            ]);
+        }
+    }
+
+    private function campaniaAbierta(Cohorte $promocion, array $cambios = []): CampaniaSeguimiento
+    {
+        $campania = CampaniaSeguimiento::create($cambios + [
+            'nombre' => 'Encuesta Cohorte 2019', 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'periodo' => '2026-II',
+            'fecha_inicio' => now()->subDays(5)->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString(), 'estado' => 'ABIERTA',
+            'id_usuario_creacion' => UsuarioInterno::idActual(),
+        ]);
+        $campania->cohortes()->attach($promocion->id);
+
+        return $campania;
+    }
+
     public function test_emitir_invitaciones_por_cohorte_evita_duplicados_y_asigna_token_hash(): void
     {
         $cohorte2019 = Cohorte::where('anio_ingreso', 2019)->first();
         $totalEgresados2019 = Egresado::where('id_cohorte', $cohorte2019->id)->count();
         $this->assertGreaterThan(0, $totalEgresados2019);
+        $this->conCorreoPersonal($cohorte2019);
+        $campania = $this->campaniaAbierta($cohorte2019);
 
-        // Crear campaña para cohorte 2019
-        $campania = CampaniaSeguimiento::create([
-            'nombre' => 'Encuesta Cohorte 2019',
-            'tipo' => 'EGRESADOS',
-            'finalidad' => 'SEGUIMIENTO',
-            'periodo' => '2024-I',
-            'fecha_inicio' => '2024-01-15',
-            'fecha_fin' => '2024-04-30',
-            'estado' => 'ABIERTA',
-            'id_usuario_creacion' => UsuarioInterno::idActual(),
-        ]);
-        $campania->cohortes()->attach($cohorte2019->id);
-
-        // 1. Primera emisión de invitaciones
         $res1 = $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
-        $res1->assertRedirect();
+        $res1->assertRedirect(route('seguimiento-egresado.campanias', ['ver' => $campania->id]));
         $res1->assertSessionHas('success');
 
         $invitacionesCreadas = InvitacionEgresado::where('id_campania', $campania->id)->get();
         $this->assertSame($totalEgresados2019, $invitacionesCreadas->count());
-
-        // Verificar que cada invitación tiene token sha256 y estado PENDIENTE
         foreach ($invitacionesCreadas as $inv) {
             $this->assertSame(64, strlen($inv->token_hash));
             $this->assertSame('PENDIENTE', $inv->estado);
@@ -196,53 +181,99 @@ class CampaniasInstitucionalReportesTest extends TestCase
             $this->assertNotNull($inv->expira_en);
         }
 
-        // 2. Segunda emisión de invitaciones (debe evitar duplicados por completo)
-        $res2 = $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
-        $res2->assertRedirect();
-        $res2->assertSessionHas('success');
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id))->assertSessionHas('success');
+        $this->assertSame($totalEgresados2019, InvitacionEgresado::where('id_campania', $campania->id)->count(), 'No deben duplicarse invitaciones para egresados ya convocados.');
+    }
 
-        $invitacionesDespues = InvitacionEgresado::where('id_campania', $campania->id)->count();
-        $this->assertSame($totalEgresados2019, $invitacionesDespues, 'No deben duplicarse invitaciones para egresados ya convocados.');
+    public function test_quien_no_dejo_su_correo_personal_no_se_convoca_y_se_avisa(): void
+    {
+        $cohorte2019 = Cohorte::where('anio_ingreso', 2019)->first();
+        $this->conCorreoPersonal($cohorte2019);
+        $sin = Egresado::where('id_cohorte', $cohorte2019->id)->orderBy('id')->first();
+        ContactoEgresado::where('id_egresado', $sin->id)->delete();
+        $campania = $this->campaniaAbierta($cohorte2019);
+
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
+
+        $this->assertFalse(InvitacionEgresado::where('id_campania', $campania->id)->where('id_egresado', $sin->id)->exists());
+        $this->assertStringContainsString('no tiene contacto y no fue convocado', session('success'));
+    }
+
+    public function test_no_se_envian_invitaciones_ni_recordatorios_de_una_campania_cerrada_ni_de_empleadores(): void
+    {
+        $cohorte2019 = Cohorte::where('anio_ingreso', 2019)->first();
+        $this->conCorreoPersonal($cohorte2019);
+
+        $cerrada = $this->campaniaAbierta($cohorte2019, ['nombre' => 'Vieja', 'fecha_inicio' => now()->subDays(60)->toDateString(), 'fecha_fin' => now()->subDays(2)->toDateString(), 'estado' => 'CERRADA']);
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $cerrada->id))->assertSessionHasErrors('general');
+        $this->post(route('seguimiento-egresado.campanias.recordar-pendientes', $cerrada->id))->assertSessionHasErrors('general');
+
+        $empleadores = $this->campaniaAbierta($cohorte2019, ['nombre' => 'Empresas', 'tipo' => 'EMPRESAS']);
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $empleadores->id))->assertSessionHasErrors('general');
+        $this->assertSame(0, InvitacionEgresado::whereIn('id_campania', [$cerrada->id, $empleadores->id])->count());
     }
 
     public function test_reenviar_recordatorio_incrementa_conteo_y_actualiza_timestamp(): void
     {
-        $invitacion = InvitacionEgresado::where('estado', 'PENDIENTE')->first();
-        if (! $invitacion) {
-            $campania = CampaniaSeguimiento::first();
-            $egresado = Egresado::whereNotIn('id', InvitacionEgresado::where('id_campania', $campania->id)->pluck('id_egresado'))->first();
-            $invitacion = InvitacionEgresado::create([
-                'id_campania' => $campania->id,
-                'id_egresado' => $egresado->id,
-                'proposito' => 'SEGUIMIENTO',
-                'token_hash' => hash('sha256', 'test-token-'.rand()),
-                'expira_en' => now()->addDays(30),
-                'estado' => 'PENDIENTE',
-                'recordatorios_enviados' => 0,
-            ]);
-        }
-
-        $recordatoriosPrevios = $invitacion->recordatorios_enviados;
+        $cohorte2019 = Cohorte::where('anio_ingreso', 2019)->first();
+        $this->conCorreoPersonal($cohorte2019);
+        $campania = $this->campaniaAbierta($cohorte2019);
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
+        $invitacion = InvitacionEgresado::where('id_campania', $campania->id)->orderBy('id')->firstOrFail();
+        $hashAnterior = $invitacion->token_hash;
 
         $response = $this->post(route('seguimiento-egresado.campanias.recordatorio', $invitacion->id));
-        $response->assertRedirect();
+        $response->assertRedirect(route('seguimiento-egresado.campanias', ['ver' => $campania->id]));
         $response->assertSessionHas('success');
-        $response->assertSessionHas('recordatorio_emitido');
+        $response->assertSessionHas('enlaces_emitidos');
 
-        $invitacionActualizada = InvitacionEgresado::find($invitacion->id);
-        $this->assertSame($recordatoriosPrevios + 1, $invitacionActualizada->recordatorios_enviados);
-        $this->assertNotNull($invitacionActualizada->ultimo_recordatorio_en);
+        $actualizada = InvitacionEgresado::find($invitacion->id);
+        $this->assertSame(1, $actualizada->recordatorios_enviados);
+        $this->assertNotNull($actualizada->ultimo_recordatorio_en);
+        $this->assertNotSame($hashAnterior, $actualizada->token_hash, 'el enlace anterior deja de servir');
+    }
+
+    public function test_recordar_a_todos_los_pendientes_renueva_solo_los_pendientes(): void
+    {
+        $cohorte2019 = Cohorte::where('anio_ingreso', 2019)->first();
+        $this->conCorreoPersonal($cohorte2019);
+        $campania = $this->campaniaAbierta($cohorte2019);
+        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id));
+        $invitaciones = InvitacionEgresado::where('id_campania', $campania->id)->orderBy('id')->get();
+        $this->assertGreaterThanOrEqual(2, $invitaciones->count());
+        $respondida = $invitaciones->first();
+        $respondida->update(['estado' => 'COMPLETADA']);
+        $hashes = $invitaciones->skip(1)->pluck('token_hash', 'id');
+
+        $this->post(route('seguimiento-egresado.campanias.recordar-pendientes', $campania->id))->assertRedirect()->assertSessionHas('success')->assertSessionHas('enlaces_emitidos');
+
+        $this->assertCount($invitaciones->count() - 1, session('enlaces_emitidos'));
+        $this->assertSame(0, $respondida->refresh()->recordatorios_enviados, 'quien ya respondió no recibe recordatorio');
+        foreach ($hashes as $id => $hash) {
+            $nueva = InvitacionEgresado::find($id);
+            $this->assertSame(1, $nueva->recordatorios_enviados);
+            $this->assertNotSame($hash, $nueva->token_hash);
+        }
+    }
+
+    public function test_el_detalle_de_la_campania_se_pide_aparte_y_la_lista_lo_abre_encima(): void
+    {
+        $campania = CampaniaSeguimiento::first();
+
+        $this->get(route('seguimiento-egresado.campanias.detalle', $campania->id))
+            ->assertOk()->assertSee($campania->nombre)->assertSee('Enviar invitaciones')->assertSee('Editar')
+            ->assertDontSee('<html', false)
+            ->assertSee('abrirEditarCampania(JSON.parse', false);
+        $this->get(route('seguimiento-egresado.campanias', ['ver' => $campania->id]))->assertOk()->assertSee('dlg-detalle', false)->assertSee($campania->nombre);
     }
 
     public function test_cobertura_no_confunde_ausencia_con_desempleo(): void
     {
-        // En los datos semilla existen 4 egresados convocados con respuesta laboral
         $response = $this->get(route('seguimiento-egresado.campanias'));
 
-        // La nota explicativa se quitó de la pantalla; la cobertura se sigue mostrando.
         $response->assertOk()
             ->assertDontSee('Criterio metodológico fundamental')
-            ->assertSee('Tasa de Cobertura');
+            ->assertSee('de respuesta');
     }
 
     // =========================================================================
@@ -440,26 +471,11 @@ class CampaniasInstitucionalReportesTest extends TestCase
     // S3-16 · Cubrir y documentar formatos F1–F11
     // =========================================================================
 
-    public function test_reportes_page_displays_matriz_f1_f11(): void
+    public function test_la_pagina_de_reportes_y_su_matriz_ya_no_existen(): void
     {
-        $response = $this->get(route('seguimiento-egresado.reportes'));
-
-        $response->assertOk()
-            ->assertSee('Reportes y formatos institucionales F1–F11')
-            ->assertSee('Matriz de correspondencia y disponibilidad F1–F11')
-            ->assertSee('11 Formatos Mapeados')
-            ->assertSee('F1')
-            ->assertSee('F2')
-            ->assertSee('F3')
-            ->assertSee('F4')
-            ->assertSee('F5')
-            ->assertSee('F6')
-            ->assertSee('F7')
-            ->assertSee('F8')
-            ->assertSee('F9')
-            ->assertSee('F10')
-            ->assertSee('F11')
-            ->assertSee('IMPLEMENTADO');
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('seguimiento-egresado.reportes'));
+        $this->get('/seguimiento-egresado/reportes')->assertNotFound();
+        $this->get(route('seguimiento-egresado.campanias'))->assertDontSee('Matriz de Formatos');
     }
 
     public function test_formatos_f1_a_f11_generan_efectivamente(): void

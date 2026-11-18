@@ -82,7 +82,7 @@ class EnvioDeEnlacesTest extends TestCase
         Mail::assertSent(InvitacionEgresadoMail::class, 1);
     }
 
-    public function test_si_ya_dejo_su_contacto_el_correo_va_al_personal(): void
+    public function test_el_contacto_inicial_va_al_correo_institucional_aunque_ya_haya_un_personal(): void
     {
         Mail::fake();
         ContactoEgresado::create([
@@ -92,7 +92,33 @@ class EnvioDeEnlacesTest extends TestCase
 
         app(EnvioDeEnlaces::class)->enviar($this->invitacion(), 'token-de-prueba');
 
+        Mail::assertSent(InvitacionEgresadoMail::class, fn ($m) => $m->hasTo('egresado.prueba@unitru.edu.pe') && ! $m->hasTo('personal@correo.test'));
+    }
+
+    public function test_las_campanas_van_solo_al_correo_personal_y_sin_el_no_se_envia(): void
+    {
+        Mail::fake();
+        $campania = \App\Modules\SeguimientoEgresado\Models\CampaniaSeguimiento::firstOrFail()->id;
+        $seguimiento = InvitacionEgresado::create([
+            'id_campania' => $campania, 'id_egresado' => $this->egresado->id, 'proposito' => 'SEGUIMIENTO',
+            'token_hash' => hash('sha256', 'token-seguimiento'), 'expira_en' => now()->addDays(30),
+            'recordatorios_enviados' => 0, 'entrega_fallida' => false, 'estado' => 'PENDIENTE',
+        ]);
+
+        $sin = app(EnvioDeEnlaces::class)->enviar($seguimiento, 'token-seguimiento');
+        $this->assertSame(EstadoEnvio::SinCorreo, $sin->estado, 'el correo institucional no se usa para las campañas');
+        Mail::assertNothingSent();
+
+        ContactoEgresado::create([
+            'id_egresado' => $this->egresado->id, 'correo_personal' => 'personal@correo.test', 'celular_whatsapp' => '+51900111222',
+            'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO',
+        ]);
+        $this->egresado->refresh();
+        $con = app(EnvioDeEnlaces::class)->enviar($seguimiento->refresh(), 'token-seguimiento');
+
+        $this->assertSame(EstadoEnvio::Enviado, $con->estado);
         Mail::assertSent(InvitacionEgresadoMail::class, fn ($m) => $m->hasTo('personal@correo.test'));
+        $this->assertSame(DB::table('seguimiento_egresado.cat_canal_envio')->where('codigo', 'CORREO_PERSONAL')->value('id'), $seguimiento->refresh()->id_canal_envio);
     }
 
     public function test_con_redireccion_todo_el_correo_va_a_la_direccion_indicada(): void

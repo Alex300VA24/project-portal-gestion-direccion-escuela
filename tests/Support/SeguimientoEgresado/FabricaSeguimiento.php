@@ -55,11 +55,27 @@ trait FabricaSeguimiento
         ]);
     }
 
+    /** Las campañas se abren y cierran según sus fechas: las fechas por defecto concuerdan con el estado pedido. */
+    /** Deja el contacto personal de un egresado: las campañas solo se envían a ese correo. */
+    protected function darContactoPersonal(int $egresadoId, ?string $correo = null): void
+    {
+        DB::table('seguimiento_egresado.contacto_egresado')->insert([
+            'id_egresado' => $egresadoId, 'correo_personal' => $correo ?? "personal{$egresadoId}@correo.test", 'celular_whatsapp' => '+51900111222',
+            'vigente_desde' => now(), 'origen_registro' => 'FORMULARIO',
+        ]);
+    }
+
     protected function crearCampania(array $cambios = []): int
     {
+        [$inicio, $fin] = match ($cambios['estado'] ?? 'ABIERTA') {
+            'CERRADA' => [now()->subDays(60), now()->subDays(2)],
+            'PROGRAMADA' => [now()->addDays(5), now()->addDays(40)],
+            default => [now()->subDays(30), now()->addDays(60)],
+        };
+
         return DB::table('seguimiento_egresado.campania_seguimiento')->insertGetId(array_merge([
             'nombre' => 'Seguimiento '.++$this->secuenciaFabrica, 'tipo' => 'EGRESADOS', 'finalidad' => 'SEGUIMIENTO', 'horizonte_anios' => 3,
-            'periodo' => '2026-II', 'fecha_inicio' => '2026-10-01', 'fecha_fin' => '2026-12-31', 'estado' => 'ABIERTA',
+            'periodo' => '2026-II', 'fecha_inicio' => $inicio->toDateString(), 'fecha_fin' => $fin->toDateString(), 'estado' => 'ABIERTA',
             'id_usuario_creacion' => $this->crearUsuarioInterno(),
         ], $cambios));
     }

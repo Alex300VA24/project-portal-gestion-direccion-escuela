@@ -52,7 +52,7 @@ class PromocionFlujoTest extends TestCase
         $vacia = $this->nuevaPromocion();
 
         $pagina = $this->actingAs($this->secretaria())->get(route('seguimiento-egresado.padron.promocion', $vacia->id))->assertOk();
-        $pagina->assertSee('Te toca')->assertSee('Primero carga alumnos')->assertSee('Primero envía los enlaces');
+        $pagina->assertSee('Te toca')->assertSee('abrirEditarPromocion(JSON.parse', false)->assertSee('Primero carga alumnos')->assertSee('Primero envía los enlaces');
         $pagina->assertDontSee('Enviar enlaces</span>', false);
     }
 

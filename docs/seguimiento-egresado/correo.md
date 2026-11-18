@@ -18,7 +18,7 @@ El mensaje (`App\Modules\SeguimientoEgresado\Mail\InvitacionEgresadoMail`) lleva
 
 Toda la lógica está en `App\Modules\SeguimientoEgresado\Services\Invitaciones\EnvioDeEnlaces`. Es el único lugar que hay que tocar si se cambia la forma de enviar.
 
-- **Destino.** El correo personal del egresado si ya dejó su contacto; si no, su correo institucional. Si no tiene ninguno, no se envía.
+- **Destino.** El contacto inicial va al correo **institucional**. Las campañas de seguimiento van **solo al correo personal** que el egresado dejó (nunca al institucional); si no lo dejó, no se envía y no se lo convoca.
 - **Qué se registra.** `enviado_en` se marca solo cuando el servidor de correo aceptó el mensaje, y se guarda el canal (`CORREO_PERSONAL` o `CORREO_INSTITUCIONAL`) en `id_canal_envio`. Si el envío falla, se marca `entrega_fallida`. Con `MAIL_MAILER=log` o `array` el mensaje no sale a ningún servidor, por lo que no se marca como enviado.
 - **El enlace nunca se pierde en el momento.** Pase lo que pase con el correo, el enlace se muestra una vez en pantalla con su estado, para que la Secretaría lo entregue por otro medio. En la BD solo queda el SHA-256, así que después no se puede volver a mostrar: se genera uno nuevo («Enlace nuevo» o «Reenviar recordatorio»).
 

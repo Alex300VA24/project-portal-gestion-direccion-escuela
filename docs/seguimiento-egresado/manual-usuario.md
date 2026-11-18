@@ -54,16 +54,27 @@ Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede conf
 | Lo que dice | Qué hacer |
 |---|---|
 | Correo enviado | Nada: el alumno ya lo recibió. |
-| Enlace listo para entregar | El correo no salió hacia esa dirección: entrega el enlace por otro medio (WhatsApp, por ejemplo). |
+| Enlace listo para entregar | El correo no salió hacia esa dirección: entrega el enlace por otro medio (por ejemplo, un mensaje directo). |
 | Falló el envío | Entrega el enlace por otro medio y avisa al responsable del correo. |
 
-### Invitar a una campaña de seguimiento
+### Campañas e invitaciones
 
-1. Entra a **Campañas e invitaciones** y elige la campaña.
-2. Pulsa **Emitir invitaciones por cohorte**. Se crea una invitación por cada **egresado confirmado** de las cohortes de la campaña (quien ya tiene invitación se omite). Los alumnos que siguen como «Apto para egresar» no se convocan: primero hay que confirmar su egreso. El correo va a su correo **personal** si ya lo dejó; si no, al institucional.
-3. El panel **Enlaces personales de las invitaciones** muestra el enlace de cada uno y el estado del correo. Cópialos antes de salir de la página.
-4. En la tabla de invitaciones, **Fecha envío** queda vacía hasta que el correo salga de verdad. «Envío fallido» indica que el servidor no lo aceptó.
-5. Para quien no respondió, **Reenviar recordatorio** genera un enlace nuevo, lo envía por correo y lo muestra una vez. El enlace anterior deja de funcionar.
+La pantalla muestra todas las campañas (nombre, periodo, fechas, promociones, estado y cuántos respondieron). **Ver detalle** abre una ventana encima de la lista, sin bajar la página.
+
+**Crear una campaña.** Pulsa **+ Nueva campaña** y llena: nombre, para quién es (egresados o empleadores), periodo académico (lista), años desde el egreso (opcional: 1, 3, 5 o 10), la fecha en que se abre y la fecha en que se cierra, y las promociones que participan (se muestra cuántos egresados confirmados tiene cada una; las que no tienen ninguno no se pueden elegir).
+
+**La campaña se abre y se cierra sola según sus fechas**: antes de la fecha de apertura está *Programada*, entre las dos fechas está *Abierta* (y los egresados pueden responder) y después de la fecha de cierre queda *Cerrada*. Para cerrarla antes o alargarla, edita sus fechas. Al editar no se cambia para quién es.
+
+**Enviar las invitaciones** (en el detalle de una campaña de egresados):
+1. Pulsa **Enviar invitaciones** y confirma. Cada **egresado confirmado** de las promociones de la campaña recibe un enlace personal **en su correo personal**, el que dejó en el contacto inicial.
+2. Quien aún no dejó su contacto **no se convoca**: el aviso dice cuántos son y que deben completarlo desde su promoción en el Padrón. Quien ya tiene invitación se omite. Los alumnos que siguen como «Apto para egresar» tampoco se convocan.
+3. Los enlaces recién generados aparecen en el mismo detalle, una sola vez, con el estado del correo (**Copiar** para entregarlos a mano). Una campaña cerrada no permite enviar.
+
+**Seguir quién respondió.** La tabla del detalle muestra matrícula, egresado, promoción, fecha de envío, estado (PENDIENTE, RESPONDIDA o VENCIDA), fecha de respuesta, recordatorios enviados y la acción. **Descargar lista (CSV)** baja esa tabla.
+
+**Recordar.** **Recordar a los N pendientes** envía un recordatorio a todos los que aún no respondieron (después de confirmar); **Recordar** en una fila lo hace con uno solo. Cada recordatorio genera un **enlace nuevo y el anterior deja de funcionar**.
+
+**Campañas para empleadores** se crean aquí igual, pero sus enlaces se envían desde **Encuesta empresarial**.
 
 ---
 

@@ -32,7 +32,7 @@ final class EnvioDeEnlaces
         $invitacion->loadMissing(['egresado.contactoVigente', 'campania']);
         $egresado = $invitacion->egresado;
 
-        [$direccion, $canal] = $this->direccionDe($egresado);
+        [$direccion, $canal] = $this->direccionDe($egresado, $invitacion->proposito);
         $redirigidoA = config('seguimiento-egresado.correo.redirigir_a');
         $destino = $redirigidoA ?: $direccion;
 
@@ -85,17 +85,17 @@ final class EnvioDeEnlaces
     }
 
     /**
-     * Correo del egresado y canal del catálogo: el personal si ya dejó su contacto; si no, el institucional.
+     * Correo y canal del catálogo. El contacto inicial va al correo institucional (el alumno aún no dejó otro); las campañas
+     * de seguimiento van solo al correo personal que el egresado dejó, nunca al institucional.
      *
      * @return array{0: ?string, 1: string}
      */
-    private function direccionDe(Egresado $egresado): array
+    private function direccionDe(Egresado $egresado, string $proposito): array
     {
-        $personal = $egresado->contactoVigente?->correo_personal;
-        if ($personal) {
-            return [$personal, 'CORREO_PERSONAL'];
+        if ($proposito === 'CONTACTO_INICIAL') {
+            return [$egresado->correo_institucional ?: null, 'CORREO_INSTITUCIONAL'];
         }
 
-        return [$egresado->correo_institucional ?: null, 'CORREO_INSTITUCIONAL'];
+        return [$egresado->contactoVigente?->correo_personal ?: null, 'CORREO_PERSONAL'];
     }
 }

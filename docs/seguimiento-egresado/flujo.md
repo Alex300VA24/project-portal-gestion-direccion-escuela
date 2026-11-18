@@ -95,8 +95,8 @@ sequenceDiagram
     actor S as Secretaría
     participant M as Módulo
     actor E as Egresado
-    S->>M: Campañas → «Emitir invitaciones por cohorte»
-    M->>M: una invitación SEGUIMIENTO por egresado de las cohortes (sin duplicar)
+    S->>M: Campañas → Ver detalle → «Enviar invitaciones»
+    M->>M: una invitación SEGUIMIENTO por egresado confirmado con correo personal (sin duplicar)
     M-->>S: enlaces en pantalla (una vez) con el estado del correo
     M-->>E: correo con el enlace
     E->>M: abre el enlace → Mi expediente
@@ -108,7 +108,9 @@ sequenceDiagram
 
 Reglas:
 
-- Solo se convoca a **egresados confirmados** (flujo 0). El correo va al correo personal si el egresado ya lo dejó; si no, al institucional.
+- Solo se convoca a **egresados confirmados** (flujo 0) que dejaron su **correo personal**: la campaña va únicamente a ese correo, nunca al institucional. Quien no lo dejó no se convoca y el aviso lo cuenta.
+- La campaña **se abre y se cierra sola según sus fechas** (`EstadoDeCampanias`): Programada, Abierta o Cerrada. No se elige el estado; en cada entrada al módulo se pone al día. Una campaña cerrada no admite invitaciones, recordatorios ni respuestas.
+- «Recordar a los pendientes» genera un enlace nuevo para cada egresado que no respondió (el anterior deja de servir) y lo envía.
 - Emitir dos veces no duplica: quien ya tiene invitación en esa campaña se omite.
 - La encuesta tiene seis secciones: contacto, perfil profesional, situación laboral, desarrollo profesional continuo, satisfacción y habilidades, y contacto del empleador. Los campos con formato se validan en el navegador y todo se valida otra vez en el servidor.
 - Quien no trabaja no guarda datos de empleo.

@@ -85,12 +85,18 @@ class RecorridoCompletoTest extends TestCase
         $this->assertSame(1, DB::table('seguimiento_egresado.contacto_egresado')->where('id_egresado', $luciaId)->count());
         $this->assertSame(2, DB::table('seguimiento_egresado.historial_estado_academico')->where('id_egresado', $luciaId)->count(), 'apto + egresado');
 
-        // 5. Campaña de seguimiento por cohorte (también para empresas) y envío de enlaces
+        // 5. Campaña de seguimiento por promoción (se abre sola por sus fechas) y envío de enlaces; otra campaña para empleadores
         $this->post(route('seguimiento-egresado.campanias.store'), [
-            'nombre' => 'Seguimiento 2026-II', 'tipo' => 'MIXTA', 'finalidad' => 'SEGUIMIENTO', 'horizonte_anios' => 1, 'periodo' => '2026-II',
-            'fecha_inicio' => now()->subDay()->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString(), 'estado' => 'ABIERTA', 'cohortes' => [$cohorte],
+            'nombre' => 'Seguimiento 2026-II', 'tipo' => 'EGRESADOS', 'horizonte_anios' => 1, 'periodo' => '2026-II',
+            'fecha_inicio' => now()->subDay()->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString(), 'cohortes' => [$cohorte],
         ])->assertRedirect();
-        $campania = (int) DB::table('seguimiento_egresado.campania_seguimiento')->value('id');
+        $campania = (int) DB::table('seguimiento_egresado.campania_seguimiento')->where('tipo', 'EGRESADOS')->value('id');
+        $this->assertSame('ABIERTA', DB::table('seguimiento_egresado.campania_seguimiento')->where('id', $campania)->value('estado'));
+        $this->post(route('seguimiento-egresado.campanias.store'), [
+            'nombre' => 'Empleadores 2026-II', 'tipo' => 'EMPRESAS', 'horizonte_anios' => 1, 'periodo' => '2026-II',
+            'fecha_inicio' => now()->subDay()->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString(), 'cohortes' => [$cohorte],
+        ])->assertRedirect();
+        $campaniaEmpresas = (int) DB::table('seguimiento_egresado.campania_seguimiento')->where('tipo', 'EMPRESAS')->value('id');
         Mail::fake();
         $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania))->assertRedirect();
         $this->assertCount(3, session('enlaces_emitidos'));
@@ -118,12 +124,12 @@ class RecorridoCompletoTest extends TestCase
         $this->flushSession();
         $this->actingAs($this->secretaria());
         $this->post(route('seguimiento-egresado.empresas.enlaces'), [
-            'id_campania' => $campania, 'contexto' => 'DESEMPENO', 'id_egresado' => $luciaId, 'organizacion' => 'Empresa Ficticia S.A.C.', 'contacto_empresa' => 'jefe@empresa.test', 'dias_validez' => 7,
+            'id_campania' => $campaniaEmpresas, 'contexto' => 'DESEMPENO', 'id_egresado' => $luciaId, 'organizacion' => 'Empresa Ficticia S.A.C.', 'contacto_empresa' => 'jefe@empresa.test', 'dias_validez' => 7,
         ])->assertSessionHas('enlace_generado');
         $enlaceEmpresa = session('enlace_generado');
         $token = $enlaceEmpresa['token'] ?? basename($enlaceEmpresa['url'] ?? '');
         $this->assertNotEmpty($token);
-        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campania, 'contexto' => 'MERCADO', 'organizacion' => 'Empresa del Mercado', 'dias_validez' => 7])->assertSessionHas('enlace_generado');
+        $this->post(route('seguimiento-egresado.empresas.enlaces'), ['id_campania' => $campaniaEmpresas, 'contexto' => 'MERCADO', 'organizacion' => 'Empresa del Mercado', 'dias_validez' => 7])->assertSessionHas('enlace_generado');
         $tokenMercado = session('enlace_generado')['token'] ?? basename(session('enlace_generado')['url'] ?? '');
 
         // La empresa responde con su enlace, sin iniciar sesión
@@ -145,6 +151,6 @@ class RecorridoCompletoTest extends TestCase
         $this->get(route('seguimiento-egresado.indicadores'))->assertOk()->assertDontSee('[DEMO]');
         $this->get(route('seguimiento-egresado.empresas'))->assertOk()->assertSee('Empresa Ficticia S.A.C.');
         $this->get(route('seguimiento-egresado.reportes.indicadores.csv'))->assertOk();
-        $this->get(route('seguimiento-egresado.campanias', ['campania_id' => $campania]))->assertOk()->assertSee('Seguimiento 2026-II');
+        $this->get(route('seguimiento-egresado.campanias', ['ver' => $campania]))->assertOk()->assertSee('Seguimiento 2026-II');
     }
 }

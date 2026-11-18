@@ -25,41 +25,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ReportesController extends Controller
 {
     /**
-     * Muestra la vista de Reportes y la Matriz de Formatos Oficiales F1–F11.
-     */
-    public function index(Request $request, IndicadoresService $indicadoresService)
-    {
-        $matrizFormatos = $this->obtenerMatrizFormatosF1F11();
-
-        try {
-            $reportesRecientes = ReporteGenerado::with('usuario.rol')
-                ->orderByDesc('generado_en')
-                ->take(15)
-                ->get();
-
-            $totalCampanias = CampaniaSeguimiento::count();
-            $totalInvitaciones = InvitacionEgresado::count();
-            $totalEgresados = Egresado::count();
-            $totalMejoras = MejoraCurricular::count();
-        } catch (\Throwable $e) {
-            $reportesRecientes = collect();
-            $totalCampanias = 3;
-            $totalInvitaciones = 142;
-            $totalEgresados = 24;
-            $totalMejoras = 4;
-        }
-
-        return view('modules.seguimiento-egresado.paginas.reportes', compact(
-            'matrizFormatos',
-            'reportesRecientes',
-            'totalCampanias',
-            'totalInvitaciones',
-            'totalEgresados',
-            'totalMejoras'
-        ));
-    }
-
-    /**
      * Exporta en CSV el catálogo de campañas según filtros activos.
      */
     public function exportarCampaniasCsv(Request $request)
@@ -386,7 +351,7 @@ class ReportesController extends Controller
             case 'F11':
                 return $this->generarFormatoF11($nombreArchivo, $fechaCorte);
             default:
-                return redirect()->route('seguimiento-egresado.reportes')->withErrors([
+                return redirect()->back()->withErrors([
                     'formato' => "Formato {$codigo} no reconocido.",
                 ]);
         }

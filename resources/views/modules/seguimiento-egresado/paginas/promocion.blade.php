@@ -87,7 +87,7 @@
     <div><dt>Total de ingresantes</dt><dd>{{ $promocion->total_ingresantes }}</dd></div>
     <div><dt>Plan de estudios</dt><dd>{{ $promocion->planCurricular?->codigo_version ?? '—' }}</dd></div>
   </dl>
-  <button type="button" class="sg-button sg-button-secondary" onclick="abrirEditarPromocion(@json($datosPromocion, JSON_HEX_APOS | JSON_HEX_QUOT))">Editar</button>
+  <button type="button" class="sg-button sg-button-secondary" onclick="abrirEditarPromocion(@js($datosPromocion))">Editar</button>
 </section>
 
 {{-- PASO 2 · CARGAR ALUMNOS --}}

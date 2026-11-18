@@ -79,8 +79,13 @@ trait FabricaEmpresasIndicadores
         return $id;
     }
 
+    /** Las campañas se abren y cierran según sus fechas: las fechas por defecto concuerdan con el estado pedido. */
     protected function campania(array $cambios = []): int
     {
+        if (($cambios['estado'] ?? 'ABIERTA') === 'CERRADA') {
+            $cambios += ['fecha_inicio' => now()->subDays(60)->toDateString(), 'fecha_fin' => now()->subDays(2)->toDateString()];
+        }
+
         return (int) DB::table('seguimiento_egresado.campania_seguimiento')->insertGetId(array_merge([
             'nombre' => 'Campaña '.++$this->secuencia,
             'tipo' => 'EMPRESAS',

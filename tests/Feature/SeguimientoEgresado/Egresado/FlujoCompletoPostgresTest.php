@@ -34,6 +34,7 @@ class FlujoCompletoPostgresTest extends TestCase
     {
         $egresado = $this->crearEgresado(['nombres' => 'Marisol', 'apellido_paterno' => 'Torres', 'apellido_materno' => 'Linares']);
         $this->darPorEgresado($egresado);
+        $this->darContactoPersonal($egresado);
         $cohorte = (int) DB::table('seguimiento_egresado.egresado')->where('id', $egresado)->value('id_cohorte');
         $campania = $this->crearCampania(['fecha_inicio' => now()->subDays(5)->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString()]);
         DB::table('seguimiento_egresado.campania_cohorte')->insert(['id_campania' => $campania, 'id_cohorte' => $cohorte]);
@@ -81,8 +82,8 @@ class FlujoCompletoPostgresTest extends TestCase
         $cohorte = (int) DB::table('seguimiento_egresado.egresado')->where('id', $egresado)->value('id_cohorte');
         $campania = $this->crearCampania(['fecha_inicio' => now()->subDays(5)->toDateString(), 'fecha_fin' => now()->addDays(30)->toDateString()]);
         DB::table('seguimiento_egresado.campania_cohorte')->insert(['id_campania' => $campania, 'id_cohorte' => $cohorte]);
-        $this->post(route('seguimiento-egresado.campanias.emitir-invitaciones', $campania))->assertRedirect();
-        $encuesta = (int) DB::table('seguimiento_egresado.invitacion_egresado')->where('id_egresado', $egresado)->value('id');
+        // Aún sin contacto, la encuesta ya estaba pendiente (la emitieron antes de que la regla pidiera el correo personal).
+        $encuesta = $this->crearInvitacion($egresado, $campania);
 
         // La Secretaría le genera el enlace de contacto inicial desde el padrón.
         $this->withSession(['seguimiento-egresado.identidad' => ['perfil' => 'SECRETARIA', 'usuario_id' => 1]])

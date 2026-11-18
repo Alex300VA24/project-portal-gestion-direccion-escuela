@@ -68,7 +68,7 @@ class SeguimientoShellTest extends TestCase
 
     public function test_sin_sesion_las_paginas_internas_llevan_al_acceso_del_portal(): void
     {
-        foreach (['padron', 'campanias', 'empresas', 'indicadores', 'institucional', 'reportes'] as $nombre) {
+        foreach (['padron', 'campanias', 'empresas', 'indicadores', 'institucional'] as $nombre) {
             $this->get(route('seguimiento-egresado.'.$nombre))->assertRedirect(route('login'));
         }
     }
