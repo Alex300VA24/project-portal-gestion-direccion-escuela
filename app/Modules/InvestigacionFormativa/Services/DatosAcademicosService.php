@@ -199,6 +199,75 @@ final class DatosAcademicosService
     }
 
     /**
+     * @return list<object{id_escuela: int, nombre: string}>
+     */
+    public function escuelasDeSecretaria(int $userId): array
+    {
+        return DB::table('investigacion_formativa.secretaria_escuela as s')
+            ->join('core.escuela_profesional as e', 'e.id_escuela', '=', 's.id_escuela')
+            ->where('s.user_id', $userId)
+            ->where('s.activo', true)
+            ->orderBy('e.nombre')
+            ->get(['e.id_escuela', 'e.nombre'])
+            ->map(static fn (object $row): object => (object) [
+                'id_escuela' => (int) $row->id_escuela,
+                'nombre' => (string) $row->nombre,
+            ])
+            ->all();
+    }
+
+    /**
+     * Secciones habilitadas del módulo en las escuelas asignadas a la secretaría.
+     *
+     * @return list<object{
+     *     id_seccion: int,
+     *     seccion: string,
+     *     curso_codigo: string,
+     *     curso: string,
+     *     periodo: string,
+     *     id_escuela: int,
+     *     escuela: string
+     * }>
+     */
+    public function seccionesHabilitadasDeSecretaria(int $userId): array
+    {
+        return DB::table('investigacion_formativa.secretaria_escuela as s')
+            ->join('core.escuela_profesional as e', 'e.id_escuela', '=', 's.id_escuela')
+            ->join('core.plan_estudios as pe', 'pe.id_escuela', '=', 'e.id_escuela')
+            ->join('core.curso_plan as cp', 'cp.id_plan', '=', 'pe.id_plan')
+            ->join('core.seccion as sec', 'sec.id_curso_plan', '=', 'cp.id_curso_plan')
+            ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
+            ->join('core.periodo_academico as p', 'p.id_periodo', '=', 'sec.id_periodo')
+            ->join('investigacion_formativa.seccion_configuracion as sc', 'sc.id_seccion', '=', 'sec.id_seccion')
+            ->where('s.user_id', $userId)
+            ->where('s.activo', true)
+            ->where('sec.estado', 'Activa')
+            ->where('sc.habilitada', true)
+            ->orderByDesc('p.fecha_inicio')
+            ->orderBy('c.codigo')
+            ->orderBy('sec.codigo')
+            ->get([
+                'sec.id_seccion',
+                'sec.codigo as seccion',
+                'c.codigo as curso_codigo',
+                'c.nombre as curso',
+                'p.codigo as periodo',
+                'e.id_escuela',
+                'e.nombre as escuela',
+            ])
+            ->map(static fn (object $row): object => (object) [
+                'id_seccion' => (int) $row->id_seccion,
+                'seccion' => (string) $row->seccion,
+                'curso_codigo' => (string) $row->curso_codigo,
+                'curso' => (string) $row->curso,
+                'periodo' => (string) $row->periodo,
+                'id_escuela' => (int) $row->id_escuela,
+                'escuela' => (string) $row->escuela,
+            ])
+            ->all();
+    }
+
+    /**
      * @return list<string>
      */
     public function periodosDeDirector(int $userId): array

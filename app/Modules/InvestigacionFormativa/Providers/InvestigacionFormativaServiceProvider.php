@@ -6,6 +6,7 @@ use App\Modules\InvestigacionFormativa\Commands\ImportarCompetenciasCommand;
 use App\Modules\InvestigacionFormativa\Commands\ImportarDirectoresCommand;
 use App\Modules\InvestigacionFormativa\Commands\ImportarIdentidadesCommand;
 use App\Modules\InvestigacionFormativa\Commands\ImportarParticipantesCommand;
+use App\Modules\InvestigacionFormativa\Commands\ImportarSecretariasCommand;
 use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Models\Grupo;
@@ -40,6 +41,7 @@ final class InvestigacionFormativaServiceProvider extends ServiceProvider
             $this->commands([
                 ImportarIdentidadesCommand::class,
                 ImportarDirectoresCommand::class,
+                ImportarSecretariasCommand::class,
                 ImportarParticipantesCommand::class,
                 ImportarCompetenciasCommand::class,
             ]);

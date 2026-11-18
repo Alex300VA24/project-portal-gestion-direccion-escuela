@@ -12,7 +12,7 @@ final class GuardarEncuestaRequest extends FormRequest
         $seccion = $this->route('seccion');
 
         return $seccion instanceof Seccion
-            && $this->user()?->can('gestionarEncuesta', $seccion) === true;
+            && $this->user()?->can('prepararEncuesta', $seccion) === true;
     }
 
     /** @return array<string, array<int, string>> */

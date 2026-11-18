@@ -25,6 +25,14 @@ final class EncuestaPolicy
             && $this->acceso->puedeVerSeccion($user, (int) $encuesta->id_seccion, 'director_escuela'));
     }
 
+    public function preparar(User $user, Encuesta $encuesta): bool
+    {
+        return $this->seguro(fn (): bool => $this->acceso->puedeGestionarEncuesta(
+            $user,
+            (int) $encuesta->id_seccion,
+        ));
+    }
+
     private function seguro(callable $check): bool
     {
         try {

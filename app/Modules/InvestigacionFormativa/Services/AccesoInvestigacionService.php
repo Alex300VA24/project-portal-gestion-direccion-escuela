@@ -36,12 +36,40 @@ final class AccesoInvestigacionService
         return match ($workspace) {
             'director_escuela' => $seccion->id_escuela !== null
                 && $this->tieneAlcanceEscuela($actor, $seccion->id_escuela),
+            'secretaria' => $seccion->id_escuela !== null
+                && $this->tieneAlcanceEscuelaComoSecretaria($actor, $seccion->id_escuela),
             'profesor' => $actor->idDocente !== null
                 && $seccion->id_docente_responsable === $actor->idDocente,
             'alumno' => $seccion->id_escuela !== null
                 && $this->miembroDeAlgunGrupo($actor, $idSeccion, $seccion->id_escuela) !== null,
             default => false,
         };
+    }
+
+    /**
+     * Indica si el usuario puede preparar y publicar la encuesta de la sección.
+     *
+     * La dirección conserva el ciclo completo. La secretaría prepara y publica
+     * en las escuelas asignadas de forma explícita. Un usuario con ambos roles
+     * accede por cualquiera de los dos alcances.
+     */
+    public function puedeGestionarEncuesta(User $user, int $idSeccion): bool
+    {
+        $actor = $this->identidad->resolver($user);
+
+        if ($actor->tieneRol('director_escuela')
+            && $user->can('investigacion-formativa.surveys.manage')
+            && $this->puedeVerSeccion($user, $idSeccion, 'director_escuela')) {
+            return true;
+        }
+
+        if ($actor->tieneRol('secretaria')
+            && $user->can('investigacion-formativa.surveys.prepare')
+            && $this->puedeVerSeccion($user, $idSeccion, 'secretaria')) {
+            return true;
+        }
+
+        return false;
     }
 
     public function puedeVerResultados(User $user, int $idSeccion): bool
@@ -71,6 +99,15 @@ final class AccesoInvestigacionService
     public function tieneAlcanceEscuela(ActorInvestigacion $actor, int $idEscuela): bool
     {
         return DB::table('investigacion_formativa.director_escuela')
+            ->where('user_id', $actor->user->id)
+            ->where('id_escuela', $idEscuela)
+            ->where('activo', true)
+            ->exists();
+    }
+
+    public function tieneAlcanceEscuelaComoSecretaria(ActorInvestigacion $actor, int $idEscuela): bool
+    {
+        return DB::table('investigacion_formativa.secretaria_escuela')
             ->where('user_id', $actor->user->id)
             ->where('id_escuela', $idEscuela)
             ->where('activo', true)
@@ -123,7 +160,7 @@ final class AccesoInvestigacionService
 
     public function verEnAlgunEspacio(User $user, int $idSeccion): bool
     {
-        foreach (['director_escuela', 'profesor', 'alumno'] as $workspace) {
+        foreach (['director_escuela', 'secretaria', 'profesor', 'alumno'] as $workspace) {
             if ($this->puedeVerSeccion($user, $idSeccion, $workspace)) {
                 return true;
             }

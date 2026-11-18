@@ -21,6 +21,11 @@ final class InvestigacionFormativaController extends Controller
             'route' => 'investigacion-formativa.director.index',
             'description' => 'Habilita cursos, revisa grupos y consulta resultados.',
         ],
+        'secretaria' => [
+            'label' => 'Secretaría de escuela',
+            'route' => 'investigacion-formativa.secretaria.index',
+            'description' => 'Prepara y publica las encuestas de tus secciones asignadas.',
+        ],
         'profesor' => [
             'label' => 'Docencia',
             'route' => 'investigacion-formativa.docente.cursos.index',

@@ -161,6 +161,10 @@ trait CreaDatosInvestigacion
             9008 => ['DNI', '71000008', 'Alumno', 'Retirado'],
             9009 => ['DNI', '71000009', 'Usuario', 'Multiple'],
             9010 => ['DNI', '71000010', 'Académico', 'Inactivo'],
+            9011 => ['DNI', '71000011', 'Secretaria', 'Asignada'],
+            9012 => ['DNI', '71000012', 'Secretaria', 'Sin Asignar'],
+            9013 => ['DNI', '71000013', 'Secretaria', 'Otra'],
+            9014 => ['DNI', '71000014', 'Directora', 'Secretaria'],
         ];
 
         foreach ($personas as $idPersona => [$tipo, $numero, $nombres, $apellido]) {
@@ -282,6 +286,10 @@ trait CreaDatosInvestigacion
             8808 => 9002,
             8809 => 9010,
             8810 => 9008,
+            8811 => 9011,
+            8812 => 9012,
+            8813 => 9013,
+            8814 => 9014,
         ];
 
         foreach ($usuariosAcademicos as $idUsuario => $idPersona) {
@@ -321,6 +329,10 @@ trait CreaDatosInvestigacion
             'academico_inactivo' => ['Académico Inactivo', 'academico.inactivo@example.test', 8809],
             'retirado' => ['Alumno Retirado', 'retirado.if@example.test', 8810],
             'secretaria' => ['Secretaría IF', 'secretaria.if@example.test', null],
+            'secretaria_asignada' => ['Secretaría Asignada', 'secretaria.asignada.if@example.test', 8811],
+            'secretaria_sin_asignar' => ['Secretaría Sin Asignar', 'secretaria.sin.asignar.if@example.test', 8812],
+            'secretaria_otra_escuela' => ['Secretaría Otra Escuela', 'secretaria.otra.if@example.test', 8813],
+            'multisecretaria' => ['Directora Secretaria', 'multisecretaria.if@example.test', 8814],
         ] as $key => [$name, $email, $idUsuarioSeguridad]) {
             $users[$key] = User::factory()->create([
                 'name' => $name,
@@ -332,7 +344,8 @@ trait CreaDatosInvestigacion
                 'docente_a', 'docente_b' => ['profesor'],
                 'alumno_a', 'alumno_b', 'alumno_otra_escuela', 'retirado' => ['alumno'],
                 'multi' => ['profesor', 'alumno'],
-                'secretaria' => ['secretaria'],
+                'multisecretaria' => ['director_escuela', 'secretaria'],
+                'secretaria', 'secretaria_asignada', 'secretaria_sin_asignar', 'secretaria_otra_escuela' => ['secretaria'],
                 default => [],
             };
 
@@ -356,6 +369,30 @@ trait CreaDatosInvestigacion
         DB::table('investigacion_formativa.director_escuela')->insert([
             'user_id' => $users['director']->id,
             'id_escuela' => 920,
+            'activo' => true,
+        ]);
+
+        DB::table('investigacion_formativa.secretaria_escuela')->insert([
+            'user_id' => $users['secretaria_asignada']->id,
+            'id_escuela' => 920,
+            'activo' => true,
+        ]);
+
+        DB::table('investigacion_formativa.secretaria_escuela')->insert([
+            'user_id' => $users['secretaria_otra_escuela']->id,
+            'id_escuela' => 921,
+            'activo' => true,
+        ]);
+
+        DB::table('investigacion_formativa.director_escuela')->insert([
+            'user_id' => $users['multisecretaria']->id,
+            'id_escuela' => 920,
+            'activo' => true,
+        ]);
+
+        DB::table('investigacion_formativa.secretaria_escuela')->insert([
+            'user_id' => $users['multisecretaria']->id,
+            'id_escuela' => 921,
             'activo' => true,
         ]);
 

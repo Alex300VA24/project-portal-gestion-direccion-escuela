@@ -56,6 +56,11 @@
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Cursos y habilitación</span>
                     </a>
                 @endif
+                @if (auth()->user()->hasRole('secretaria'))
+                    <a href="{{ route('investigacion-formativa.secretaria.index') }}" @class(['if-nav-link', 'is-active' => request()->routeIs('investigacion-formativa.secretaria.*')]) @if(request()->routeIs('investigacion-formativa.secretaria.*')) aria-current="page" @endif>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h5"/></svg><span>Secretaría</span>
+                    </a>
+                @endif
                 @if (auth()->user()->hasRole('profesor'))
                     <a href="{{ route('investigacion-formativa.docente.cursos.index') }}" @class(['if-nav-link', 'is-active' => request()->routeIs('investigacion-formativa.docente.cursos.index')]) @if(request()->routeIs('investigacion-formativa.docente.cursos.index')) aria-current="page" @endif>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Docencia</span>

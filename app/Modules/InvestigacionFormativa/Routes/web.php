@@ -6,6 +6,7 @@ use App\Modules\InvestigacionFormativa\Controllers\EncuestaController;
 use App\Modules\InvestigacionFormativa\Controllers\EvaluacionController;
 use App\Modules\InvestigacionFormativa\Controllers\GrupoController;
 use App\Modules\InvestigacionFormativa\Controllers\InvestigacionFormativaController;
+use App\Modules\InvestigacionFormativa\Controllers\SecretariaController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('investigacion-formativa')
@@ -39,6 +40,18 @@ Route::prefix('investigacion-formativa')
                     ->name('director.encuestas.publicar');
                 Route::post('/director/secciones/{seccion}/encuesta/cerrar', [EncuestaController::class, 'cerrar'])
                     ->name('director.encuestas.cerrar');
+            });
+
+            Route::middleware('permission:investigacion-formativa.surveys.prepare')->group(function () {
+                Route::get('/secretaria', [SecretariaController::class, 'index'])
+                    ->name('secretaria.index');
+
+                Route::get('/secretaria/secciones/{seccion}/encuesta', [SecretariaController::class, 'encuesta'])
+                    ->name('secretaria.encuestas.edit');
+                Route::put('/secretaria/secciones/{seccion}/encuesta', [SecretariaController::class, 'actualizar'])
+                    ->name('secretaria.encuestas.update');
+                Route::post('/secretaria/secciones/{seccion}/encuesta/publicar', [SecretariaController::class, 'publicar'])
+                    ->name('secretaria.encuestas.publicar');
             });
 
             Route::get('/docente/cursos', [ConfiguracionController::class, 'cursos'])

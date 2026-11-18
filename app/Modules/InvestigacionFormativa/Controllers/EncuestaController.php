@@ -3,16 +3,15 @@
 namespace App\Modules\InvestigacionFormativa\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\InvestigacionFormativa\Controllers\Concerns\PreparaEncuestas;
 use App\Modules\InvestigacionFormativa\Exceptions\AccesoDenegado;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
-use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Requests\GuardarEncuestaRequest;
 use App\Modules\InvestigacionFormativa\Requests\ResponderEncuestaRequest;
 use App\Modules\InvestigacionFormativa\Requests\VersionEncuestaRequest;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\EncuestaService;
-use App\Modules\InvestigacionFormativa\Support\ActorInvestigacion;
 use App\Shared\Models\Core\Seccion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +21,8 @@ use Illuminate\View\View;
 
 final class EncuestaController extends Controller
 {
+    use PreparaEncuestas;
+
     public function __construct(
         private readonly AccesoInvestigacionService $acceso,
         private readonly EncuestaService $encuestas,
@@ -29,77 +30,21 @@ final class EncuestaController extends Controller
 
     public function editar(Request $request, Seccion $seccion): View
     {
-        Gate::authorize('gestionarEncuesta', $seccion);
-        $this->actorDe($request);
-
-        return view('modules.investigacion-formativa.director.encuesta', [
-            'seccion' => $seccion,
-            'encuesta' => $this->encuestas->vistaDirector((int) $seccion->id_seccion),
-            'conflicto' => null,
-            'preguntasIntentadas' => null,
-            'versionIntentada' => null,
-        ]);
+        return $this->editarEncuesta($request, $seccion);
     }
 
     public function actualizar(
         GuardarEncuestaRequest $request,
         Seccion $seccion,
     ): RedirectResponse|Response {
-        Gate::authorize('gestionarEncuesta', $seccion);
-        $actor = $this->actorDe($request);
-
-        try {
-            $this->encuestas->guardarBorrador(
-                $actor,
-                (int) $seccion->id_seccion,
-                array_values((array) $request->validated('preguntas')),
-                $request->integer('version'),
-            );
-        } catch (AccesoDenegado $exception) {
-            abort(403, $exception->getMessage());
-        } catch (VersionDesactualizada $exception) {
-            return $this->vistaDirector(
-                $seccion,
-                $exception->getMessage(),
-                409,
-                array_values((array) $request->validated('preguntas')),
-                $request->integer('version'),
-            );
-        } catch (EstadoInvalido $exception) {
-            return redirect()
-                ->route('investigacion-formativa.director.encuestas.edit', $seccion)
-                ->withInput()
-                ->withErrors(['encuesta' => $exception->getMessage()]);
-        }
-
-        return redirect()
-            ->route('investigacion-formativa.director.encuestas.edit', $seccion)
-            ->with('status', 'El borrador de la encuesta se guardó correctamente.');
+        return $this->actualizarEncuesta($request, $seccion);
     }
 
     public function publicar(
         VersionEncuestaRequest $request,
         Seccion $seccion,
     ): RedirectResponse|Response {
-        Gate::authorize('gestionarEncuesta', $seccion);
-        $actor = $this->actorDe($request);
-        $encuesta = $this->encuestaDeSeccion($seccion);
-
-        try {
-            $this->encuestas->publicar($actor, $encuesta, $request->integer('version'));
-        } catch (AccesoDenegado $exception) {
-            abort(403, $exception->getMessage());
-        } catch (VersionDesactualizada $exception) {
-            return $this->vistaDirector($seccion, $exception->getMessage(), 409);
-        } catch (EstadoInvalido $exception) {
-            return redirect()
-                ->route('investigacion-formativa.director.encuestas.edit', $seccion)
-                ->withErrors(['encuesta' => $exception->getMessage()]);
-        }
-
-        return redirect()
-            ->route('investigacion-formativa.director.encuestas.edit', $seccion)
-            ->with('status', 'La encuesta se publicó. Las preguntas ya no pueden cambiarse.');
+        return $this->publicarEncuesta($request, $seccion);
     }
 
     public function cerrar(
@@ -115,7 +60,7 @@ final class EncuestaController extends Controller
         } catch (AccesoDenegado $exception) {
             abort(403, $exception->getMessage());
         } catch (VersionDesactualizada $exception) {
-            return $this->vistaDirector($seccion, $exception->getMessage(), 409);
+            return $this->vistaConConflicto($seccion, $exception->getMessage(), 409);
         } catch (EstadoInvalido $exception) {
             return redirect()
                 ->route('investigacion-formativa.director.encuestas.edit', $seccion)
@@ -176,41 +121,28 @@ final class EncuestaController extends Controller
             );
     }
 
-    private function actorDe(Request $request): ActorInvestigacion
+    protected function nombreRutaEdicion(): string
     {
-        try {
-            return $this->acceso->resolver($request->user());
-        } catch (AccesoDenegado $exception) {
-            abort(403, $exception->getMessage());
-        }
+        return 'investigacion-formativa.director.encuestas.edit';
     }
 
-    private function encuestaDeSeccion(Seccion $seccion): Encuesta
+    protected function nombreRutaActualizar(): string
     {
-        $encuesta = Encuesta::query()
-            ->where('id_seccion', (int) $seccion->id_seccion)
-            ->first();
-
-        if ($encuesta === null) {
-            abort(404);
-        }
-
-        return $encuesta;
+        return 'investigacion-formativa.director.encuestas.update';
     }
 
-    private function vistaDirector(
-        Seccion $seccion,
-        ?string $conflicto,
-        int $status,
-        ?array $preguntasIntentadas = null,
-        ?int $versionIntentada = null,
-    ): Response {
-        return response()->view('modules.investigacion-formativa.director.encuesta', [
-            'seccion' => $seccion,
-            'encuesta' => $this->encuestas->vistaDirector((int) $seccion->id_seccion),
-            'conflicto' => $conflicto,
-            'preguntasIntentadas' => $preguntasIntentadas,
-            'versionIntentada' => $versionIntentada,
-        ], $status);
+    protected function nombreRutaPublicar(): string
+    {
+        return 'investigacion-formativa.director.encuestas.publicar';
+    }
+
+    protected function nombreRutaCerrar(): ?string
+    {
+        return 'investigacion-formativa.director.encuestas.cerrar';
+    }
+
+    protected function vistaEncuesta(): string
+    {
+        return 'modules.investigacion-formativa.director.encuesta';
     }
 }

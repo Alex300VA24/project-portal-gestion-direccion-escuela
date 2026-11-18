@@ -36,7 +36,7 @@ final class PermissionsSeederTest extends TestCase
         $this->seed(InvestigacionPermisosSeeder::class);
 
         $this->assertSame(
-            12,
+            13,
             Permission::query()->where('name', 'like', 'investigacion-formativa.%')->count(),
         );
 
@@ -61,6 +61,10 @@ final class PermissionsSeederTest extends TestCase
         $this->assertFalse($alumno->hasPermissionTo('investigacion-formativa.groups.review'));
 
         $secretaria = $secretaria->fresh();
-        $this->assertFalse($secretaria->hasPermissionTo('investigacion-formativa.view'));
+        $this->assertTrue($secretaria->hasPermissionTo('investigacion-formativa.view'));
+        $this->assertTrue($secretaria->hasPermissionTo('investigacion-formativa.surveys.prepare'));
+        $this->assertFalse($secretaria->hasPermissionTo('investigacion-formativa.surveys.manage'));
+        $this->assertFalse($secretaria->hasPermissionTo('investigacion-formativa.reports.view'));
+        $this->assertFalse($secretaria->hasPermissionTo('investigacion-formativa.courses.manage'));
     }
 }

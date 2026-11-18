@@ -30,7 +30,7 @@ final class EncuestaService
      *     cerrada_en: string|null
      * }
      */
-    public function vistaDirector(int $idSeccion): object
+    public function vistaGestor(int $idSeccion): object
     {
         $encuesta = DB::table('investigacion_formativa.encuesta')
             ->where('id_seccion', $idSeccion)
@@ -74,11 +74,11 @@ final class EncuestaService
         int $versionEsperada,
     ): object {
         $preguntas = $this->normalizarPreguntas($preguntas);
-        $this->exigirDirector($actor, $idSeccion);
+        $this->exigirGestorEncuesta($actor, $idSeccion);
 
         return DB::transaction(function () use ($actor, $idSeccion, $preguntas, $versionEsperada): object {
             $config = $this->configuracion->bloquearParaEscritura($idSeccion);
-            $this->exigirDirector($actor, $idSeccion);
+            $this->exigirGestorEncuesta($actor, $idSeccion);
             $this->exigirHabilitada($config);
 
             $encuesta = DB::table('investigacion_formativa.encuesta')
@@ -140,11 +140,11 @@ final class EncuestaService
         Encuesta $encuesta,
         int $versionEsperada,
     ): object {
-        $this->exigirDirector($actor, (int) $encuesta->id_seccion);
+        $this->exigirGestorEncuesta($actor, (int) $encuesta->id_seccion);
 
         return DB::transaction(function () use ($actor, $encuesta, $versionEsperada): object {
             $config = $this->configuracion->bloquearParaEscritura((int) $encuesta->id_seccion);
-            $this->exigirDirector($actor, (int) $encuesta->id_seccion);
+            $this->exigirGestorEncuesta($actor, (int) $encuesta->id_seccion);
             $this->exigirHabilitada($config);
 
             $actual = $this->encuestaBloqueada((int) $encuesta->id_seccion, (int) $encuesta->id_encuesta);
@@ -500,6 +500,19 @@ final class EncuestaService
 
         if (! $this->acceso->puedeVerSeccion($actor->user, $idSeccion, 'director_escuela')) {
             throw new AccesoDenegado('No es responsable de una encuesta de la escuela solicitada.');
+        }
+    }
+
+    /**
+     * Exige la capacidad de preparar y publicar la encuesta.
+     *
+     * La dirección y la secretaría asignada a la escuela pueden guardar el
+     * borrador y publicar. El cierre sigue reservado a la dirección.
+     */
+    private function exigirGestorEncuesta(ActorInvestigacion $actor, int $idSeccion): void
+    {
+        if (! $this->acceso->puedeGestionarEncuesta($actor->user, $idSeccion)) {
+            throw new AccesoDenegado('No tiene permiso para gestionar la encuesta de esta escuela.');
         }
     }
 

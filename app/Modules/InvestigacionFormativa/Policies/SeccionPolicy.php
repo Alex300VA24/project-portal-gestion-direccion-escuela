@@ -49,6 +49,14 @@ final class SeccionPolicy
             && $this->acceso->puedeVerSeccion($user, (int) $seccion->id_seccion, 'director_escuela'));
     }
 
+    public function prepararEncuesta(User $user, Seccion $seccion): bool
+    {
+        return $this->seguro(fn (): bool => $this->acceso->puedeGestionarEncuesta(
+            $user,
+            (int) $seccion->id_seccion,
+        ));
+    }
+
     public function responderEncuesta(User $user, Seccion $seccion): bool
     {
         return $this->seguro(fn (): bool => $user->can('investigacion-formativa.surveys.respond')

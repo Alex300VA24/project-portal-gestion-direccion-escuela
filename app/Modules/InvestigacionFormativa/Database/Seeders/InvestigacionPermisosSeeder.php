@@ -15,9 +15,10 @@ final class InvestigacionPermisosSeeder extends Seeder
      * @var array<string, list<string>>
      */
     private const GRANTS = [
-        'investigacion-formativa.view' => ['director_escuela', 'profesor', 'alumno'],
+        'investigacion-formativa.view' => ['director_escuela', 'secretaria', 'profesor', 'alumno'],
         'investigacion-formativa.courses.manage' => ['director_escuela'],
         'investigacion-formativa.surveys.manage' => ['director_escuela'],
+        'investigacion-formativa.surveys.prepare' => ['secretaria'],
         'investigacion-formativa.reports.view' => ['director_escuela'],
         'investigacion-formativa.configuration.manage' => ['profesor'],
         'investigacion-formativa.groups.review' => ['profesor'],

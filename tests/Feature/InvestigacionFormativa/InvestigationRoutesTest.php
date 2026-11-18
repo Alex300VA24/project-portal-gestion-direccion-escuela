@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\InvestigacionFormativa;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosInvestigacion;
 use Tests\TestCase;
 
@@ -50,12 +52,34 @@ final class InvestigationRoutesTest extends TestCase
 
     public function test_unrelated_role_is_denied(): void
     {
-        $this->actingAs($this->datos['users']['secretaria'])
+        $visitante = Role::firstOrCreate(['name' => 'visitante', 'guard_name' => 'web']);
+        $usuario = User::factory()->create([
+            'name' => 'Visitante IF',
+            'email' => 'visitante.if@example.test',
+        ]);
+        $usuario->assignRole($visitante);
+
+        $this->actingAs($usuario)
             ->get('/investigacion-formativa')
             ->assertForbidden();
 
+        $this->actingAs($usuario)
+            ->getJson('/api/investigacion-formativa')
+            ->assertForbidden();
+    }
+
+    public function test_secretary_role_receives_the_module_metadata(): void
+    {
         $this->actingAs($this->datos['users']['secretaria'])
             ->getJson('/api/investigacion-formativa')
+            ->assertOk()
+            ->assertExactJson(['module' => 'Investigación Formativa']);
+    }
+
+    public function test_secretary_without_academic_mapping_is_denied_on_the_web_entry(): void
+    {
+        $this->actingAs($this->datos['users']['secretaria'])
+            ->get('/investigacion-formativa')
             ->assertForbidden();
     }
 

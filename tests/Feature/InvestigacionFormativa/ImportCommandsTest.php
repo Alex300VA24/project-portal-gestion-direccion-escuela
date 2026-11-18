@@ -29,13 +29,13 @@ final class ImportCommandsTest extends TestCase
     public function test_importacion_de_identidades_es_atomica_ante_fila_invalida(): void
     {
         $user = User::factory()->create(['email' => 'import.valid@example.test']);
-        $this->crearUsuarioAcademico(8811, 9011);
+        $this->crearUsuarioAcademico(8899, 9099);
 
         $csv = $this->csv(
             ['user_id', 'id_usuario_seguridad', 'activo'],
             [
-                [$user->id, 8811, 1],
-                [999999, 8811, 1],
+                [$user->id, 8899, 1],
+                [999999, 8899, 1],
             ],
         );
 
@@ -189,6 +189,73 @@ final class ImportCommandsTest extends TestCase
         $this->assertDatabaseMissing('investigacion_formativa.competencia_seccion', [
             'id_seccion' => 9901,
             'codigo' => 'C3',
+        ]);
+    }
+
+    public function test_importacion_de_secretarias_solo_valida_con_dry_run(): void
+    {
+        $csv = $this->csv(
+            ['user_id', 'id_escuela', 'activo'],
+            [[$this->datos['users']['secretaria_sin_asignar']->id, 920, 1]],
+        );
+
+        try {
+            $this->artisan('investigacion:importar-secretarias', ['csv' => $csv, '--dry-run' => true])
+                ->assertExitCode(0);
+        } finally {
+            unlink($csv);
+        }
+
+        $this->assertDatabaseMissing('investigacion_formativa.secretaria_escuela', [
+            'user_id' => $this->datos['users']['secretaria_sin_asignar']->id,
+            'id_escuela' => 920,
+        ]);
+    }
+
+    public function test_importacion_de_secretarias_es_idempotente(): void
+    {
+        $csv = $this->csv(
+            ['user_id', 'id_escuela', 'activo'],
+            [[$this->datos['users']['secretaria_sin_asignar']->id, 920, 1]],
+        );
+
+        try {
+            $this->artisan('investigacion:importar-secretarias', ['csv' => $csv, '--apply' => true])
+                ->assertExitCode(0);
+            $this->artisan('investigacion:importar-secretarias', ['csv' => $csv, '--apply' => true])
+                ->assertExitCode(0);
+        } finally {
+            unlink($csv);
+        }
+
+        $this->assertSame(
+            1,
+            DB::table('investigacion_formativa.secretaria_escuela')
+                ->where('user_id', $this->datos['users']['secretaria_sin_asignar']->id)
+                ->where('id_escuela', 920)
+                ->count(),
+        );
+    }
+
+    public function test_importacion_de_secretarias_rechaza_usuarios_sin_rol_o_escuela_inexistente(): void
+    {
+        $csv = $this->csv(
+            ['user_id', 'id_escuela', 'activo'],
+            [
+                [$this->datos['users']['director']->id, 920, 1],
+                [$this->datos['users']['secretaria_sin_asignar']->id, 999999, 1],
+            ],
+        );
+
+        try {
+            $this->artisan('investigacion:importar-secretarias', ['csv' => $csv, '--apply' => true])
+                ->assertExitCode(1);
+        } finally {
+            unlink($csv);
+        }
+
+        $this->assertDatabaseMissing('investigacion_formativa.secretaria_escuela', [
+            'user_id' => $this->datos['users']['secretaria_sin_asignar']->id,
         ]);
     }
 
