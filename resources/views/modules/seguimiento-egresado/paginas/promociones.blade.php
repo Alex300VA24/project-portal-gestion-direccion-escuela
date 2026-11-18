@@ -4,8 +4,10 @@
 
 @push('styles')
 <style>
-  .sg-tabla-promociones th, .sg-tabla-promociones td { white-space: nowrap; }
-  .sg-pasos { display: flex; gap: 6px; align-items: center; }
+  .sg-tabla-promociones th, .sg-tabla-promociones td { padding-left: 10px; padding-right: 10px; }
+  .sg-tabla-promociones td:not(:nth-child(5)) { white-space: nowrap; }
+  .sg-tabla-promociones td:last-child { min-width: 170px; }
+  .sg-pasos { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; max-width: 260px; }
   .sg-paso-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--sg-hover); color: var(--sg-muted); white-space: nowrap; }
   .sg-paso-chip.hecho { background: var(--sg-success-soft); color: var(--sg-success); }
   .sg-paso-chip.toca { background: var(--sg-soft); color: var(--sg-accent); box-shadow: inset 0 0 0 1.5px var(--sg-accent); }

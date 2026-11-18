@@ -13,8 +13,8 @@
   .sg-barra-mini > div, .sg-barra-cob > div { height: 100%; background: var(--sg-success); }
   .sg-barra-cob { height: 10px; border-radius: 5px; background: var(--sg-border); overflow: hidden; margin-top: 6px; }
   /* Ventana de detalle */
-  #dlg-detalle { width: min(96vw, 1100px); max-height: 92vh; text-align: left; overflow: auto; }
-  #dlg-detalle .sg-detalle-cuerpo { padding: 22px 26px 26px; }
+  #dlg-detalle { width: min(98vw, 1400px); max-width: 98vw; max-height: 92vh; text-align: left; overflow: auto; }
+  #dlg-detalle .sg-detalle-cuerpo { padding: 22px 22px 26px; }
   .sg-detalle-cabecera { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
   .sg-resumen-badges { display: flex; gap: 6px; flex-wrap: wrap; }
   .sg-dialogo-cerrar { border: 0; background: transparent; font-size: 18px; cursor: pointer; color: var(--sg-muted); padding: 4px 8px; }
@@ -22,7 +22,7 @@
   .sg-acciones-detalle { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .sg-acciones-detalle form { margin: 0; }
   .sg-enlaces { background: #fffdf5; border: 1px solid var(--sg-border); border-left: 4px solid var(--sg-warning); border-radius: var(--sg-radius); padding: 12px 16px; margin: 12px 0; }
-  .sg-tabla-detalle td, .sg-tabla-detalle th { white-space: nowrap; }
+  .sg-tabla-detalle td, .sg-tabla-detalle th { white-space: nowrap; padding-left: 10px; padding-right: 10px; }
 </style>
 @endpush
 

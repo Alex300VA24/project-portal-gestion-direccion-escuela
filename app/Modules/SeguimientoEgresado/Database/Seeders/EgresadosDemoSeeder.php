@@ -131,8 +131,8 @@ class EgresadosDemoSeeder extends Seeder
     private function egresadosSinInvitar(int $cohorte, int $usuario): void
     {
         $personas = [
-            ['2019100142', '74106238', 'Joaquín', 'Rojas', 'Castañeda', 'jrojas@unitru.edu.pe', '2024-07-19', '2024-I', 'joaquin.rojas.c@gmail.com', '+51 951 220 764', 'Av. Mansiche 812, Trujillo'],
-            ['2019100158', '71853942', 'Fiorella', 'Mendoza', 'Aguilar', 'fmendoza@unitru.edu.pe', '2023-12-15', '2023-II', 'fiorella.mendoza@outlook.com', '+51 966 438 105', 'Calle Bolívar 233, Trujillo'],
+            ['2019100142', '74106238', 'Joaquín', 'Rojas', 'Castañeda', 'jrojas@unitru.edu.pe', '2024-07-19', '2024-I', 'alvaroenrique080199@gmail.com', '+51 951 220 764', 'Av. Mansiche 812, Trujillo'],
+            ['2019100158', '71853942', 'Fiorella', 'Mendoza', 'Aguilar', 'fmendoza@unitru.edu.pe', '2023-12-15', '2023-II', 'arimanuelg544@gmail.com', '+51 966 438 105', 'Calle Bolívar 233, Trujillo'],
             ['2019100203', '75290614', 'Luis Alberto', 'Cabrera', 'Neyra', 'lcabrera@unitru.edu.pe', '2024-07-19', '2024-I', 'luis.cabrera.n@gmail.com', '+51 974 081 556', 'Urb. Las Quintanas, Mz. B Lt. 12, Trujillo'],
         ];
 
@@ -171,7 +171,7 @@ class EgresadosDemoSeeder extends Seeder
     {
         if (! DB::table('seguimiento_egresado.contacto_egresado')->where('id_egresado', $egresado)->exists()) {
             DB::table('seguimiento_egresado.contacto_egresado')->insert([
-                'id_egresado' => $egresado, 'correo_personal' => 'alvaroenrique080199@gmail.com', 'celular_whatsapp' => '+51 944 120 387',
+                'id_egresado' => $egresado, 'correo_personal' => 'renzo.paredes92@gmail.com', 'celular_whatsapp' => '+51 944 120 387',
                 'telefono_fijo' => null, 'direccion' => 'Jr. Pizarro 540, Trujillo', 'vigente_desde' => '2024-08-05 09:30:00-05:00', 'origen_registro' => 'SECRETARIA',
             ]);
         }
@@ -190,7 +190,7 @@ class EgresadosDemoSeeder extends Seeder
             'vigente_desde' => '2024-01-10 11:00:00-05:00', 'vigente_hasta' => '2026-10-12 08:45:00-05:00', 'origen_registro' => 'FORMULARIO',
         ]);
         DB::table('seguimiento_egresado.contacto_egresado')->insert([
-            'id_egresado' => $egresado, 'correo_personal' => 'arimanuelg544@gmail.com', 'celular_whatsapp' => '+51 987 654 321',
+            'id_egresado' => $egresado, 'correo_personal' => 'camila.sanchez.u@gmail.com', 'celular_whatsapp' => '+51 987 654 321',
             'telefono_fijo' => '044 245817', 'direccion' => 'Calle Los Cedros 275, Urb. San Andrés, Trujillo',
             'vigente_desde' => '2026-10-12 08:45:00-05:00', 'vigente_hasta' => null, 'origen_registro' => 'FORMULARIO',
         ]);

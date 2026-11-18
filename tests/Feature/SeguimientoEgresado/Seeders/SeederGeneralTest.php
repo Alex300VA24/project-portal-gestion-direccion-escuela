@@ -35,7 +35,7 @@ class SeederGeneralTest extends TestCase
 
         $personales = DB::table('seguimiento_egresado.contacto_egresado as c')
             ->join('seguimiento_egresado.egresado as e', 'e.id', '=', 'c.id_egresado')
-            ->whereIn('e.codigo_matricula', ['2019100187', '2019100094'])->whereNull('c.vigente_hasta')
+            ->whereIn('e.codigo_matricula', ['2019100142', '2019100158'])->whereNull('c.vigente_hasta')
             ->pluck('c.correo_personal')->sort()->values()->all();
         $this->assertSame(['alvaroenrique080199@gmail.com', 'arimanuelg544@gmail.com'], $personales);
     }

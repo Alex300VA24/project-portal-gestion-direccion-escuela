@@ -45,7 +45,7 @@ El egresado no tiene cuenta: entra con el enlace de su invitación.
 | Contacto completo y encuesta pendiente | `/seguimiento-egresado/acceso/demo-encuesta-renzo-8H3T5P1W` |
 | Todo completo, con historial | `/seguimiento-egresado/acceso/demo-historial-camila-6B9X2D7R` |
 
-Para ver «Enviar enlaces»: Padrón → Promoción 2020 (paso 3) o Promoción 2019 (Valeria y Andrés sin enlace). Los alumnos aptos de ejemplo son Valeria Quispe y Andrés Torres (`acortegana@unitru.edu.pe` y `agamboaa@unitru.edu.pe`); los egresados de la campaña 2026, Renzo Paredes y Camila Sánchez (`alvaroenrique080199@gmail.com` y `arimanuelg544@gmail.com`).
+Para ver «Enviar enlaces»: Padrón → Promoción 2020 (paso 3) o Promoción 2019 (Valeria y Andrés sin enlace). Los alumnos aptos de ejemplo son Valeria Quispe y Andrés Torres (`acortegana@unitru.edu.pe` y `agamboaa@unitru.edu.pe`); dos egresados que aún no responden la campaña 2026, Joaquín Rojas y Fiorella Mendoza (`alvaroenrique080199@gmail.com` y `arimanuelg544@gmail.com`).
 
 ## Configuración
 
