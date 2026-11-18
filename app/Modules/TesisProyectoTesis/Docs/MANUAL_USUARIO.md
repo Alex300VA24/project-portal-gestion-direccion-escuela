@@ -22,7 +22,9 @@ Esta guía explica cómo usar la sección **Gestión de Tesis** del portal de la
 1. Entra al portal con tu correo institucional y tu contraseña.
 2. Abre **Gestión de Tesis**. El sistema te lleva directamente a tu página de inicio según tu función.
    - Si eres docente y a la vez asesor y jurado, primero eliges con qué papel entrar: **Entrar como asesor** o **Entrar como jurado**.
-3. A la izquierda está el **menú** con tus opciones. Un número amarillo junto a una opción indica cuántas cosas esperan tu atención.
+3. A la izquierda está el **menú** con tus opciones. Cada opción tiene un ícono, y la de la página en la que estás aparece resaltada. Un número amarillo junto a una opción indica cuántas cosas esperan tu atención.
+   - El botón de tres rayas, arriba a la izquierda, **contrae el menú** para dejar solo los íconos y ganar espacio. Al pasar el mouse por un ícono, o al llegar a él con la tecla Tab, aparece su nombre. Pulsa el botón otra vez para **expandir el menú**. El portal recuerda tu elección en ese navegador.
+   - En el celular el menú está oculto: ábrelo con el mismo botón. Se cierra al elegir una opción, al tocar fuera de él o con la tecla Esc.
 4. Arriba a la derecha está la **campana** de avisos:
    - el número indica los avisos sin leer;
    - al pulsar un aviso («Ir a la acción →») llegas directamente a la pantalla donde debes actuar, y el aviso queda leído;
@@ -95,7 +97,9 @@ En **Inicio** ves:
    - el título, de 20 palabras como máximo (un contador te avisa);
    - el resumen y la línea de investigación;
    - los datos de la investigación.
-3. Si trabajas con un compañero, escribe su **código universitario** en «Coautor». El sistema te dice si está disponible. Un proyecto puede tener como máximo 2 estudiantes.
+3. Si trabajas con un compañero, escribe su **código universitario** en «Coautor» y pulsa **Buscar**. Un proyecto puede tener como máximo 2 estudiantes.
+   - Si está disponible, aparece un recuadro verde con su nombre y el texto «Se agregará como integrante 2 al registrar el proyecto». **No hay que pulsar otro botón**: quedará incluido cuando pulses **Registrar proyecto** al final.
+   - Si te equivocaste de compañero, pulsa **Quitar** en ese recuadro y el campo queda vacío.
 4. Llena el cronograma y, si corresponde, los recursos, colaboradores y presupuesto. Usa los botones **+ Agregar** para sumar filas.
 5. Adjunta el documento F1 en PDF y pulsa **Registrar proyecto**.
 
