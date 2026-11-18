@@ -4,68 +4,71 @@
 
 @section('content')
 
-        <h1 class="text-2xl font-bold text-gray-900">Mis cursos asignados</h1>
-        <p class="mt-2 text-sm text-gray-600">
-            Secciones activas donde figuras como docente responsable. Configura competencias,
-            rúbrica y cronograma antes de habilitar el trabajo con estudiantes.
-        </p>
+        <div class="if-page-heading">
+            <div>
+                <h1 class="if-heading">Mis cursos asignados</h1>
+                <p class="if-lead">
+                    Secciones activas donde figuras como docente responsable. Configura competencias,
+                    rúbrica y cronograma antes de habilitar el trabajo con estudiantes.
+                </p>
+            </div>
+        </div>
 
         @if (session('status'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
+            <div class="if-flash-success" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($secciones === [])
-            <p class="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                No tienes secciones activas asignadas en este momento.
-            </p>
+            <div class="if-panel if-empty">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <h2>Sin cursos asignados</h2>
+                <p>No tienes secciones activas asignadas en este momento.</p>
+            </div>
         @else
-            <div class="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+            <div class="if-table-wrap" style="margin-top: 22px;">
+                <table class="if-table">
+                    <caption class="sr-only">Secciones donde figuras como docente responsable</caption>
+                    <thead>
                         <tr>
-                            <th class="px-4 py-3" scope="col">Periodo</th>
-                            <th class="px-4 py-3" scope="col">Curso</th>
-                            <th class="px-4 py-3" scope="col">Sección</th>
-                            <th class="px-4 py-3" scope="col">Configuración</th>
-                            <th class="px-4 py-3" scope="col">Pasos</th>
+                            <th scope="col">Periodo</th>
+                            <th scope="col">Curso</th>
+                            <th scope="col">Sección</th>
+                            <th scope="col">Configuración</th>
+                            <th scope="col">Pasos</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody>
                         @foreach ($secciones as $seccion)
                             <tr>
-                                <td class="whitespace-nowrap px-4 py-3 text-gray-700">{{ $seccion->periodo }}</td>
-                                <td class="px-4 py-3 text-gray-900">
-                                    {{ $seccion->curso_codigo }} · {{ $seccion->curso }}
+                                <td data-label="Periodo">{{ $seccion->periodo }}</td>
+                                <td data-label="Curso">
+                                    <strong>{{ $seccion->curso_codigo }} · {{ $seccion->curso }}</strong>
                                 </td>
-                                <td class="px-4 py-3 text-gray-700">{{ $seccion->seccion }}</td>
-                                <td class="px-4 py-3">
+                                <td data-label="Sección">{{ $seccion->seccion }}</td>
+                                <td data-label="Configuración">
                                     @if ($seccion->habilitada)
-                                        <span class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">
-                                            Habilitada
-                                        </span>
+                                        <span class="if-status is-success">Habilitada</span>
                                     @else
-                                        <span class="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
-                                            Pendiente de habilitación
-                                        </span>
+                                        <span class="if-status is-warning">Pendiente de habilitación</span>
                                     @endif
 
                                     @if ($seccion->configurada)
-                                        <p class="mt-1 text-xs font-semibold text-emerald-800">
-                                            Configuración completa
-                                        </p>
+                                        <p class="if-note" style="margin-top: 6px;">Configuración completa</p>
                                     @else
-                                        <p class="mt-1 text-xs text-amber-900">
+                                        <p class="if-note" style="margin-top: 6px;">
                                             {{ implode(', ', $seccion->faltantes) }}
                                         </p>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3">
-                                    <ul class="flex flex-wrap gap-2 text-xs font-semibold" role="list">
+                                <td data-label="Pasos">
+                                    <ul class="if-actions" role="list">
                                         <li>
                                             <a
-                                                class="rounded-md border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                                class="if-button-secondary"
+                                                style="min-height: 38px; padding: 0 12px; font-size: 13px;"
                                                 href="{{ route('investigacion-formativa.docente.competencias.edit', $seccion->id_seccion) }}"
                                             >
                                                 Competencias
@@ -73,7 +76,8 @@
                                         </li>
                                         <li>
                                             <a
-                                                class="rounded-md border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                                class="if-button-secondary"
+                                                style="min-height: 38px; padding: 0 12px; font-size: 13px;"
                                                 href="{{ route('investigacion-formativa.docente.rubrica.edit', $seccion->id_seccion) }}"
                                             >
                                                 Rúbrica
@@ -81,7 +85,8 @@
                                         </li>
                                         <li>
                                             <a
-                                                class="rounded-md border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                                class="if-button-secondary"
+                                                style="min-height: 38px; padding: 0 12px; font-size: 13px;"
                                                 href="{{ route('investigacion-formativa.docente.cronograma.edit', $seccion->id_seccion) }}"
                                             >
                                                 Cronograma
@@ -89,7 +94,8 @@
                                         </li>
                                         <li>
                                             <a
-                                                class="rounded-md border border-gray-300 px-2 py-1 text-gray-700 hover:bg-gray-50"
+                                                class="if-button-secondary"
+                                                style="min-height: 38px; padding: 0 12px; font-size: 13px;"
                                                 href="{{ route('investigacion-formativa.docente.grupos.index', $seccion->id_seccion) }}"
                                             >
                                                 Grupos

@@ -4,21 +4,27 @@
 
 @section('content')
 
-        <h1 class="text-2xl font-bold text-gray-900">Mis cursos</h1>
-        <p class="mt-2 text-sm text-gray-600">
-            Secciones donde figuras en el padrón de participación. Forma tu grupo cuando la
-            sección esté habilitada y configurada.
-        </p>
+        <div class="if-page-heading">
+            <div>
+                <h1 class="if-heading">Mis cursos</h1>
+                <p class="if-lead">
+                    Secciones donde figuras en el padrón de participación. Forma tu grupo cuando la
+                    sección esté habilitada y configurada.
+                </p>
+            </div>
+        </div>
 
         @if (session('status'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
+            <div class="if-flash-success" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
-                <ul class="list-disc space-y-1 pl-5" role="list">
+            <div class="if-flash-danger" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <ul class="if-list" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -27,72 +33,69 @@
         @endif
 
         @if ($secciones === [])
-            <p class="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                No tienes secciones activas con participación registrada.
-            </p>
+            <div class="if-panel if-empty" style="margin-top: 22px;">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <h2>Sin cursos</h2>
+                <p>No tienes secciones activas con participación registrada.</p>
+            </div>
         @else
-            <div class="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+            <div class="if-table-wrap" style="margin-top: 22px;">
+                <table class="if-table">
+                    <caption class="sr-only">Secciones donde figuras en el padrón de participación</caption>
+                    <thead>
                         <tr>
-                            <th class="px-4 py-3" scope="col">Periodo</th>
-                            <th class="px-4 py-3" scope="col">Curso</th>
-                            <th class="px-4 py-3" scope="col">Sección</th>
-                            <th class="px-4 py-3" scope="col">Estado</th>
-                            <th class="px-4 py-3" scope="col">Grupo</th>
-                            <th class="px-4 py-3" scope="col">Acción</th>
+                            <th scope="col">Periodo</th>
+                            <th scope="col">Curso</th>
+                            <th scope="col">Sección</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Grupo</th>
+                            <th scope="col">Acción</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody>
                         @foreach ($secciones as $seccion)
                             <tr>
-                                <td class="whitespace-nowrap px-4 py-3 text-gray-700">{{ $seccion->periodo }}</td>
-                                <td class="px-4 py-3 text-gray-900">
+                                <td data-label="Periodo">{{ $seccion->periodo }}</td>
+                                <td data-label="Curso">
                                     {{ $seccion->curso_codigo }} · {{ $seccion->curso }}
                                 </td>
-                                <td class="px-4 py-3 text-gray-700">{{ $seccion->seccion }}</td>
-                                <td class="px-4 py-3">
+                                <td data-label="Sección">{{ $seccion->seccion }}</td>
+                                <td data-label="Estado">
                                     @if (! $seccion->habilitada)
-                                        <span class="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
-                                            Pendiente de habilitación
-                                        </span>
+                                        <span class="if-status is-warning">Pendiente de habilitación</span>
                                     @elseif (! $seccion->configurada)
-                                        <span class="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
-                                            Configuración pendiente
-                                        </span>
-                                        <p class="mt-1 text-xs text-amber-900">
+                                        <span class="if-status is-warning">Configuración pendiente</span>
+                                        <p class="if-note" style="margin-top: 6px;">
                                             {{ implode(', ', $seccion->faltantes) }}
                                         </p>
                                     @else
-                                        <span class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">
-                                            Habilitada
-                                        </span>
+                                        <span class="if-status is-success">Habilitada</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-gray-700">
+                                <td data-label="Grupo">
                                     {{ $seccion->id_grupo === null ? 'Sin grupo' : 'Grupo formado' }}
                                 </td>
-                                <td class="px-4 py-3">
+                                <td data-label="Acción" class="if-stack" style="--if-stack-gap: 8px;">
                                     @if ($seccion->id_grupo !== null)
                                         <a
-                                            class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                            class="if-button-secondary if-button-sm"
                                             href="{{ route('investigacion-formativa.alumno.grupos.show', $seccion->id_seccion) }}"
                                         >
                                             Ver mi grupo
                                         </a>
                                     @elseif ($seccion->habilitada && $seccion->configurada)
                                         <a
-                                            class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
+                                            class="if-button if-button-sm"
                                             href="{{ route('investigacion-formativa.alumno.grupos.create', $seccion->id_seccion) }}"
                                         >
                                             Formar grupo
                                         </a>
                                     @else
-                                        <span class="text-xs text-gray-500">Disponible al completar la configuración</span>
+                                        <span class="if-note">Disponible al completar la configuración</span>
                                     @endif
 
                                     <a
-                                        class="mt-2 inline-flex rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                        class="if-button-secondary if-button-sm"
                                         href="{{ route('investigacion-formativa.alumno.encuestas.show', $seccion->id_seccion) }}"
                                     >
                                         Ver encuesta
@@ -106,24 +109,25 @@
         @endif
 
         @if ($retiradas !== [])
-            <section class="mt-8" aria-labelledby="titulo-grupos-anteriores">
-                <h2 id="titulo-grupos-anteriores" class="text-lg font-semibold text-gray-900">
+            <section style="margin-top: 28px;" aria-labelledby="titulo-grupos-anteriores">
+                <h2 id="titulo-grupos-anteriores" class="if-section-title">
                     Grupos anteriores (solo lectura)
                 </h2>
-                <p class="mt-1 text-sm text-gray-600">
+                <p class="if-lead" style="margin-top: 6px;">
                     Conservas acceso de lectura a los grupos de tu participación retirada.
                 </p>
 
-                <ul class="mt-4 grid gap-3 sm:grid-cols-2" role="list">
+                <ul class="if-grid" style="margin-top: 14px;" role="list">
                     @foreach ($retiradas as $retirada)
-                        <li class="rounded-lg border border-gray-200 bg-white p-4">
-                            <p class="text-sm font-semibold text-gray-900">{{ $retirada->grupo }}</p>
-                            <p class="mt-1 text-sm text-gray-700">
+                        <li class="if-card if-stack">
+                            <p class="if-card-title">{{ $retirada->grupo }}</p>
+                            <p class="if-card-text">
                                 {{ $retirada->curso_codigo }} · {{ $retirada->curso }} · Sección {{ $retirada->seccion }}
                             </p>
-                            <p class="mt-1 text-xs text-gray-500">Periodo {{ $retirada->periodo }}</p>
+                            <p class="if-note">Periodo {{ $retirada->periodo }}</p>
                             <a
-                                class="mt-3 inline-flex rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                class="if-button-secondary if-button-sm"
+                                style="align-self: flex-start;"
                                 href="{{ route('investigacion-formativa.alumno.grupos.show', $retirada->id_seccion) }}"
                             >
                                 Ver grupo

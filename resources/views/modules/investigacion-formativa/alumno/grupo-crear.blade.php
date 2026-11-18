@@ -4,23 +4,28 @@
 
 @section('content')
 
-        <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de navegación">
-            <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.alumno.cursos.index') }}">
+        <nav class="if-actions if-note" aria-label="Ruta de navegación">
+            <a class="if-link" href="{{ route('investigacion-formativa.alumno.cursos.index') }}">
                 Mis cursos
             </a>
             <span aria-hidden="true">/</span>
             <span>Formar grupo en la sección {{ $seccion->codigo }}</span>
         </nav>
 
-        <h1 class="text-2xl font-bold text-gray-900">Formar grupo de investigación</h1>
-        <p class="mt-2 text-sm text-gray-600">
-            El grupo y sus integrantes quedan fijos al guardar. Tú serás el coordinador y el
-            único integrante que podrá editar el título.
-        </p>
+        <div class="if-page-heading">
+            <div>
+                <h1 class="if-heading">Formar grupo de investigación</h1>
+                <p class="if-lead">
+                    El grupo y sus integrantes quedan fijos al guardar. Tú serás el coordinador y el
+                    único integrante que podrá editar el título.
+                </p>
+            </div>
+        </div>
 
         @if ($errors->any())
-            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
-                <ul class="list-disc space-y-1 pl-5" role="list">
+            <div class="if-flash-danger" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <ul class="if-list" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -29,17 +34,17 @@
         @endif
 
         <form
-            class="mt-6 rounded-lg border border-gray-200 bg-white p-5"
+            class="if-panel if-stack"
+            style="margin-top: 22px; padding: 22px;"
             method="POST"
             action="{{ route('investigacion-formativa.alumno.grupos.store', $seccion) }}"
         >
             @csrf
 
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700" for="grupo-nombre">Nombre del grupo</label>
+            <div class="if-form-grid">
+                <div class="if-field">
+                    <label for="grupo-nombre">Nombre del grupo</label>
                     <input
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         id="grupo-nombre"
                         maxlength="120"
                         name="nombre"
@@ -49,10 +54,9 @@
                     >
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700" for="grupo-titulo">Título propuesto</label>
+                <div class="if-field">
+                    <label for="grupo-titulo">Título propuesto</label>
                     <input
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         id="grupo-titulo"
                         maxlength="250"
                         name="titulo"
@@ -63,20 +67,19 @@
                 </div>
             </div>
 
-            <fieldset class="mt-6">
-                <legend class="text-sm font-semibold text-gray-900">Integrantes</legend>
-                <p class="mt-1 text-xs text-gray-600">
+            <fieldset>
+                <legend class="if-legend">Integrantes</legend>
+                <p class="if-note" style="margin-top: 4px;">
                     Solo se listan estudiantes del padrón activo de la sección. El coordinador
                     queda incluido automáticamente.
                 </p>
 
-                <ul class="mt-3 grid gap-2 sm:grid-cols-2" role="list">
+                <ul class="if-choice-list" role="list">
                     @foreach ($roster as $integrante)
                         @php($esCreador = $integrante->id_estudiante === $idEstudiante)
                         <li>
-                            <label class="flex gap-3 rounded-md border border-gray-200 p-3 text-sm hover:border-indigo-300" for="integrante-{{ $integrante->id_estudiante }}">
+                            <label class="if-choice" for="integrante-{{ $integrante->id_estudiante }}">
                                 <input
-                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                     id="integrante-{{ $integrante->id_estudiante }}"
                                     name="integrante_ids[]"
                                     type="checkbox"
@@ -85,10 +88,10 @@
                                     @disabled($esCreador)
                                 >
                                 <span>
-                                    <span class="block font-medium text-gray-900">{{ $integrante->nombre }}</span>
-                                    <span class="block text-xs text-gray-500">{{ $integrante->codigo }}</span>
+                                    <strong>{{ $integrante->nombre }}</strong>
+                                    <span class="if-note if-mono">{{ $integrante->codigo }}</span>
                                     @if ($esCreador)
-                                        <span class="mt-1 block text-xs font-semibold text-indigo-700">Coordinador</span>
+                                        <span class="if-text-success">Coordinador</span>
                                         <input name="integrante_ids[]" type="hidden" value="{{ $integrante->id_estudiante }}">
                                     @endif
                                 </span>
@@ -98,11 +101,10 @@
                 </ul>
             </fieldset>
 
-            <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700" for="grupo-linea">Línea de investigación</label>
+            <div class="if-form-grid">
+                <div class="if-field">
+                    <label for="grupo-linea">Línea de investigación</label>
                     <select
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         id="grupo-linea"
                         name="id_linea"
                         required
@@ -116,10 +118,9 @@
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700" for="grupo-tipo-producto">Tipo de producto</label>
+                <div class="if-field">
+                    <label for="grupo-tipo-producto">Tipo de producto</label>
                     <select
-                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         id="grupo-tipo-producto"
                         name="id_tipo_producto"
                         required
@@ -135,21 +136,21 @@
             </div>
 
             @if ($lineas === [] || $tiposProducto === [])
-                <p class="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <div class="if-warning-note">
                     Falta cargar las líneas de investigación activas o los tipos de producto.
                     Solicita la configuración antes de crear el grupo.
-                </p>
+                </div>
             @endif
 
-            <div class="mt-6 flex items-center gap-3">
+            <div class="if-actions">
                 <button
-                    class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-400"
+                    class="if-button"
                     type="submit"
                     @disabled($lineas === [] || $tiposProducto === [])
                 >
                     Crear grupo
                 </button>
-                <a class="text-sm font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.alumno.cursos.index') }}">
+                <a class="if-link" href="{{ route('investigacion-formativa.alumno.cursos.index') }}">
                     Cancelar
                 </a>
             </div>

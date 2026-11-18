@@ -4,29 +4,35 @@
 
 @section('content')
 
-        <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de navegación">
-            <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
+        <nav class="if-actions if-note" aria-label="Ruta de navegación">
+            <a class="if-link" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
                 Mis cursos
             </a>
             <span aria-hidden="true">/</span>
             <span>Grupos de la sección {{ $seccion->codigo }}</span>
         </nav>
 
-        <h1 class="text-2xl font-bold text-gray-900">Grupos de investigación</h1>
-        <p class="mt-2 text-sm text-gray-600">
-            Revisa el título propuesto por cada grupo de la sección. El estado del título solo
-            cambia por una revisión registrada.
-        </p>
+        <div class="if-page-heading">
+            <div>
+                <h1 class="if-heading">Grupos de investigación</h1>
+                <p class="if-lead">
+                    Revisa el título propuesto por cada grupo de la sección. El estado del título solo
+                    cambia por una revisión registrada.
+                </p>
+            </div>
+        </div>
 
         @if (session('status'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
+            <div class="if-flash-success" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
-                <ul class="list-disc space-y-1 pl-5" role="list">
+            <div class="if-flash-danger" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <ul class="if-list" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -34,53 +40,55 @@
             </div>
         @endif
 
-        <form class="mt-6 flex flex-wrap items-end gap-3" method="GET" action="{{ route('investigacion-formativa.docente.grupos.index', $seccion) }}">
-            <div>
-                <label class="block text-sm font-medium text-gray-700" for="buscar-grupo">Buscar grupo o título</label>
+        <form class="if-form-grid" method="GET" action="{{ route('investigacion-formativa.docente.grupos.index', $seccion) }}">
+            <div class="if-field">
+                <label for="buscar-grupo">Buscar grupo o título</label>
                 <input
-                    class="mt-1 block w-72 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     id="buscar-grupo"
                     name="buscar"
                     type="search"
                     value="{{ $busqueda }}"
                 >
             </div>
-            <button
-                class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                type="submit"
-            >
-                Buscar
-            </button>
+            <div>
+                <button class="if-button" type="submit">
+                    Buscar
+                </button>
+            </div>
         </form>
 
         @if ($grupos->isEmpty())
-            <p class="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                No hay grupos que coincidan con la búsqueda.
-            </p>
+            <div class="if-panel if-empty" style="margin-top: 22px;">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <h2>Sin resultados</h2>
+                <p>No hay grupos que coincidan con la búsqueda.</p>
+            </div>
         @else
-            <div class="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+            <div class="if-table-wrap" style="margin-top: 22px;">
+                <table class="if-table">
+                    <caption class="sr-only">Grupos de investigación de la sección</caption>
+                    <thead>
                         <tr>
-                            <th class="px-4 py-3" scope="col">Grupo</th>
-                            <th class="px-4 py-3" scope="col">Coordinador</th>
-                            <th class="px-4 py-3" scope="col">Título propuesto</th>
-                            <th class="px-4 py-3" scope="col">Estado</th>
-                            <th class="px-4 py-3" scope="col">Avances</th>
-                            <th class="px-4 py-3" scope="col">Acción</th>
+                            <th scope="col">Grupo</th>
+                            <th scope="col">Coordinador</th>
+                            <th scope="col">Título propuesto</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Avances</th>
+                            <th scope="col">Acción</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody>
                         @foreach ($grupos as $grupo)
                             <tr>
-                                <td class="px-4 py-3 font-medium text-gray-900">{{ $grupo->nombre }}</td>
-                                <td class="px-4 py-3 text-gray-700">{{ $grupo->coordinador ?? 'Sin coordinador' }}</td>
-                                <td class="px-4 py-3 text-gray-900">{{ $grupo->titulo ?? 'Sin título' }}</td>
-                                <td class="px-4 py-3 text-gray-700">{{ $grupo->estado ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-700">{{ $grupo->entregados }} de 3</td>
-                                <td class="px-4 py-3">
+                                <td data-label="Grupo"><strong>{{ $grupo->nombre }}</strong></td>
+                                <td data-label="Coordinador">{{ $grupo->coordinador ?? 'Sin coordinador' }}</td>
+                                <td data-label="Título propuesto">{{ $grupo->titulo ?? 'Sin título' }}</td>
+                                <td data-label="Estado">{{ $grupo->estado ?? '—' }}</td>
+                                <td data-label="Avances">{{ $grupo->entregados }} de 3</td>
+                                <td data-label="Acción">
                                     <a
-                                        class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                        class="if-button-secondary"
+                                        style="min-height: 38px; padding: 0 12px; font-size: 13px;"
                                         href="{{ route('investigacion-formativa.docente.grupos.show', [$seccion, $grupo->id_grupo]) }}"
                                     >
                                         Ver grupo
@@ -92,8 +100,8 @@
                 </table>
             </div>
 
-            <div class="mt-4">
-                {{ $grupos->links() }}
+            <div class="if-pagination">
+                {{ $grupos->links('modules.investigacion-formativa.partials.paginacion') }}
             </div>
         @endif
 @endsection

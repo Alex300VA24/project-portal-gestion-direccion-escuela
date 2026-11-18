@@ -4,11 +4,11 @@
     La dirección y la secretaría usan el mismo formulario. Cada espacio
     entrega sus propias rutas y decide si puede cerrar la encuesta.
 --}}
-<section class="mt-6 rounded-lg border border-gray-200 bg-white p-5" aria-labelledby="titulo-preguntas">
-    <div class="flex flex-wrap items-start justify-between gap-3">
+<section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-preguntas">
+    <div class="if-section-heading" style="margin: 0;">
         <div>
-            <h2 id="titulo-preguntas" class="text-lg font-semibold text-gray-900">Preguntas</h2>
-            <p class="mt-1 text-sm text-gray-600">
+            <h2 id="titulo-preguntas" class="if-section-title">Preguntas</h2>
+            <p class="if-note" style="margin-top: 4px;">
                 @if ($encuesta->estado === 'borrador')
                     Puede guardar entre 1 y 50 preguntas. Cada pregunta admite hasta 1000 caracteres.
                 @else
@@ -17,10 +17,10 @@
             </p>
         </div>
 
-        <div class="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
-            <span class="font-semibold">{{ $encuesta->respuestas_count }}</span>
+        <span class="if-tag">
+            <strong>{{ $encuesta->respuestas_count }}</strong>
             {{ $encuesta->respuestas_count === 1 ? 'respuesta registrada' : 'respuestas registradas' }}
-        </div>
+        </span>
     </div>
 
     @if ($conflicto !== null)
@@ -45,16 +45,14 @@
             ));
         @endphp
 
-        <div class="mt-5 grid gap-5 lg:grid-cols-2" data-conflicto-borrador>
-            <section class="rounded-md border border-gray-200 p-4" data-borrador-actual>
-                <h3 class="text-sm font-semibold text-gray-900">
-                    Encuesta guardada actualmente · versión {{ $encuesta->version }}
-                </h3>
+        <div class="if-split" data-conflicto-borrador>
+            <section class="if-card" data-borrador-actual>
+                <h3 class="if-card-title">Encuesta guardada actualmente · versión {{ $encuesta->version }}</h3>
 
                 @if ($encuesta->preguntas === [])
-                    <p class="mt-3 text-sm text-gray-600">El borrador actual no tiene preguntas.</p>
+                    <p class="if-card-text">El borrador actual no tiene preguntas.</p>
                 @else
-                    <ol class="mt-3 space-y-2 pl-5 text-sm text-gray-700" role="list">
+                    <ol class="if-list" role="list">
                         @foreach ($encuesta->preguntas as $pregunta)
                             <li>{{ $pregunta->texto }}</li>
                         @endforeach
@@ -63,15 +61,13 @@
             </section>
 
             @if ($preguntasIntentadas !== null)
-                <section class="rounded-md border border-amber-300 bg-amber-50 p-4" data-borrador-intentado>
-                    <h3 class="text-sm font-semibold text-gray-900">
-                        Cambios enviados · versión {{ $versionIntentada ?? 'no disponible' }}
-                    </h3>
+                <section class="if-card" data-borrador-intentado style="border-color: var(--portal-warning);">
+                    <h3 class="if-card-title">Cambios enviados · versión {{ $versionIntentada ?? 'no disponible' }}</h3>
 
                     @if ($preguntasIntentadasNormalizadas === [])
-                        <p class="mt-3 text-sm text-gray-700">No se recuperaron preguntas del intento de guardado.</p>
+                        <p class="if-card-text">No se recuperaron preguntas del intento de guardado.</p>
                     @else
-                        <ol class="mt-3 space-y-2 pl-5 text-sm text-gray-700" role="list">
+                        <ol class="if-list" role="list">
                             @foreach ($preguntasIntentadasNormalizadas as $indice => $pregunta)
                                 <li>{{ $pregunta['texto'] }}</li>
                             @endforeach
@@ -113,14 +109,13 @@
         @endphp
 
         <div
-            class="mt-5"
             x-data="{ preguntas: @js($preguntasGuardadas) }"
             data-editor-preguntas
         >
             @if ($encuesta->preguntas === [] && old('preguntas') === null)
-                <p class="mb-4 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                    No hay preguntas guardadas todavía. Agregue la primera pregunta para crear el borrador.
-                </p>
+                <div class="if-card">
+                    <p>No hay preguntas guardadas todavía. Agregue la primera pregunta para crear el borrador.</p>
+                </div>
             @endif
 
             <form
@@ -132,17 +127,13 @@
                 <input name="version" type="hidden" value="{{ old('version', $encuesta->version) }}">
 
                 <template x-for="(pregunta, indice) in preguntas" :key="indice">
-                    <div class="rounded-md border border-gray-200 p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex-1">
-                                <label
-                                    class="block text-sm font-medium text-gray-700"
-                                    :for="`pregunta-${indice}`"
-                                >
+                    <div class="if-card" style="margin-top: 12px;">
+                        <div class="if-toolbar" style="align-items: flex-start; justify-content: space-between;">
+                            <div class="if-field" style="flex: 1 1 320px;">
+                                <label :for="`pregunta-${indice}`">
                                     Pregunta <span x-text="indice + 1"></span>
                                 </label>
                                 <textarea
-                                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     :id="`pregunta-${indice}`"
                                     :name="`preguntas[${indice}]`"
                                     maxlength="1000"
@@ -153,7 +144,8 @@
                             </div>
 
                             <button
-                                class="rounded-md border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                class="if-button-secondary"
+                                style="min-height: 38px; padding: 0 12px; font-size: 13px;"
                                 type="button"
                                 x-show="preguntas.length > 1"
                                 @click="preguntas.splice(indice, 1)"
@@ -164,9 +156,9 @@
                     </div>
                 </template>
 
-                <div class="mt-4 flex flex-wrap gap-3">
+                <div class="if-actions" style="margin-top: 16px;">
                     <button
-                        class="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        class="if-button-secondary"
                         type="button"
                         @click="preguntas.push({ texto: '' })"
                         :disabled="preguntas.length >= 50"
@@ -174,18 +166,13 @@
                         Agregar pregunta
                     </button>
 
-                    <button
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                        type="submit"
-                    >
-                        Guardar borrador
-                    </button>
+                    <button class="if-button" type="submit">Guardar borrador</button>
                 </div>
             </form>
 
-            <details class="mt-5 rounded-md border border-gray-200 bg-gray-50 p-4">
-                <summary class="cursor-pointer text-sm font-semibold text-gray-900">Vista previa</summary>
-                <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-gray-700" role="list">
+            <details class="if-card">
+                <summary class="if-card-title">Vista previa</summary>
+                <ol class="if-list" role="list" style="margin-top: 10px;">
                     <template x-for="(pregunta, indice) in preguntas" :key="`preview-${indice}`">
                         <li x-text="pregunta.texto || 'Pregunta sin texto'"></li>
                     </template>
@@ -194,14 +181,14 @@
         </div>
     @else
         @if ($encuesta->preguntas === [])
-            <p class="mt-5 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                Todavía no hay preguntas guardadas.
-            </p>
+            <div class="if-card">
+                <p>Todavía no hay preguntas guardadas.</p>
+            </div>
         @else
-            <ol class="mt-5 space-y-3" role="list">
+            <ol class="if-stack" role="list">
                 @foreach ($encuesta->preguntas as $pregunta)
-                    <li class="rounded-md border border-gray-200 p-4 text-sm text-gray-800">
-                        <span class="mr-2 font-semibold text-gray-500">{{ $pregunta->orden }}.</span>
+                    <li class="if-card">
+                        <span class="if-muted">{{ $pregunta->orden }}.</span>
                         {{ $pregunta->texto }}
                     </li>
                 @endforeach
@@ -210,64 +197,54 @@
     @endif
 </section>
 
-<section class="mt-6 rounded-lg border border-gray-200 bg-white p-5" aria-labelledby="titulo-ciclo">
-    <h2 id="titulo-ciclo" class="text-lg font-semibold text-gray-900">Ciclo de la encuesta</h2>
-    <p class="mt-1 text-sm text-gray-600">
+<section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-ciclo">
+    <h2 id="titulo-ciclo" class="if-section-title">Ciclo de la encuesta</h2>
+    <p class="if-note">
         Publicar fija las preguntas. Cerrar impide nuevas respuestas y no permite reabrir la encuesta.
     </p>
 
     @if ($conflicto === null)
-        <div class="mt-4 flex flex-wrap gap-3">
+        <div class="if-actions">
             @if ($encuesta->estado === 'borrador' && $encuesta->id_encuesta !== null && $encuesta->preguntas !== [])
                 <form method="POST" action="{{ route($rutaPublicar, $seccion) }}">
                     @csrf
                     <input name="version" type="hidden" value="{{ $encuesta->version }}">
-                    <button
-                        class="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                        type="submit"
-                    >
-                        Publicar encuesta
-                    </button>
+                    <button class="if-button" type="submit">Publicar encuesta</button>
                 </form>
             @elseif ($encuesta->estado === 'publicada' && $rutaCerrar !== null)
                 <form method="POST" action="{{ route($rutaCerrar, $seccion) }}">
                     @csrf
                     <input name="version" type="hidden" value="{{ $encuesta->version }}">
-                    <button
-                        class="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-                        type="submit"
-                    >
-                        Cerrar encuesta
-                    </button>
+                    <button class="if-button if-button-danger" type="submit">Cerrar encuesta</button>
                 </form>
             @endif
         </div>
     @endif
 
     @if ($encuesta->publicada_en !== null)
-        <p class="mt-4 text-sm text-gray-600">
+        <p class="if-note">
             Publicada el
             {{ \Carbon\CarbonImmutable::parse($encuesta->publicada_en)->setTimezone('America/Lima')->format('d/m/Y H:i') }}.
         </p>
     @endif
 
     @if ($encuesta->cerrada_en !== null)
-        <p class="mt-1 text-sm text-gray-600">
+        <p class="if-note">
             Cerrada el
             {{ \Carbon\CarbonImmutable::parse($encuesta->cerrada_en)->setTimezone('America/Lima')->format('d/m/Y H:i') }}.
         </p>
     @endif
 </section>
 
-<section class="mt-6 rounded-lg border border-gray-200 bg-white p-5" aria-labelledby="titulo-respuestas">
-    <h2 id="titulo-respuestas" class="text-lg font-semibold text-gray-900">Respuestas</h2>
+<section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-respuestas">
+    <h2 id="titulo-respuestas" class="if-section-title">Respuestas</h2>
 
     @if ($encuesta->respuestas_count === 0)
-        <p class="mt-3 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            Todavía no hay respuestas registradas.
-        </p>
+        <div class="if-card">
+            <p>Todavía no hay respuestas registradas.</p>
+        </div>
     @else
-        <p class="mt-3 text-sm text-gray-700">
+        <p>
             Hay {{ $encuesta->respuestas_count }} {{ $encuesta->respuestas_count === 1 ? 'respuesta registrada' : 'respuestas registradas' }}.
             Los resultados agregados y los comentarios se muestran en la pantalla de resultados de la sección.
         </p>

@@ -4,35 +4,42 @@
 
 @section('content')
 
-        <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de configuración">
-            <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
+        <nav class="if-actions if-note" aria-label="Ruta de configuración">
+            <a class="if-link" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
                 Mis cursos
             </a>
             <span aria-hidden="true">/</span>
             <span>Competencias de la sección {{ $seccion->codigo }}</span>
         </nav>
 
-        <h1 class="text-2xl font-bold text-gray-900">Competencias de la sección</h1>
-        <p class="mt-2 text-sm text-gray-600">
-            Selecciona las competencias que se evaluarán en esta sección. La lista proviene
-            de la importación del sílabo aprobado.
-        </p>
+        <div class="if-page-heading">
+            <div>
+                <h1 class="if-heading">Competencias de la sección</h1>
+                <p class="if-lead">
+                    Selecciona las competencias que se evaluarán en esta sección. La lista proviene
+                    de la importación del sílabo aprobado.
+                </p>
+            </div>
+        </div>
 
         @if (session('status'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
+            <div class="if-flash-success" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($conflicto !== null)
-            <div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert" data-conflicto>
-                {{ $conflicto }} Recarga la página antes de volver a intentar.
+            <div class="if-alert" role="alert" data-conflicto>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <span>{{ $conflicto }} Recarga la página antes de volver a intentar.</span>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
-                <ul class="list-disc space-y-1 pl-5" role="list">
+            <div class="if-flash-danger" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <ul class="if-list" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -40,9 +47,7 @@
             </div>
         @endif
 
-        <div class="mt-6">
-            @include('modules.investigacion-formativa.partials.estado-configuracion', ['estado' => $estado])
-        </div>
+        @include('modules.investigacion-formativa.partials.estado-configuracion', ['estado' => $estado])
 
         @php
             $seleccionadas = array_map(
@@ -53,13 +58,14 @@
         @endphp
 
         @if ($competencias === [])
-            <p class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div class="if-warning-note" style="margin-top: 22px;">
                 Esta sección no tiene competencias importadas. Solicita la importación del
                 sílabo aprobado antes de continuar.
-            </p>
+            </div>
         @else
             <form
-                class="mt-6 rounded-lg border border-gray-200 bg-white p-5"
+                class="if-panel if-stack"
+                style="margin-top: 22px; padding: 22px;"
                 method="POST"
                 action="{{ route('investigacion-formativa.docente.competencias.update', $seccion->id_seccion) }}"
             >
@@ -67,15 +73,14 @@
                 @method('PUT')
                 <input type="hidden" name="version" value="{{ old('version', $estado->version) }}">
 
-                <fieldset>
-                    <legend class="text-sm font-semibold text-gray-900">Competencias disponibles</legend>
+                <fieldset class="if-fieldset">
+                    <legend class="if-legend">Competencias disponibles</legend>
 
-                    <ul class="mt-3 space-y-3" role="list">
+                    <ul class="if-choice-list" role="list">
                         @foreach ($competencias as $competencia)
                             <li>
-                                <label class="flex gap-3 rounded-md border border-gray-200 p-3 hover:border-indigo-300" for="competencia-{{ $competencia->id_competencia }}">
+                                <label class="if-choice" for="competencia-{{ $competencia->id_competencia }}">
                                     <input
-                                        class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         id="competencia-{{ $competencia->id_competencia }}"
                                         name="competencia_ids[]"
                                         type="checkbox"
@@ -83,9 +88,9 @@
                                         @checked(in_array((int) $competencia->id_competencia, $marcadas, true))
                                     >
                                     <span>
-                                        <strong class="block text-sm text-gray-900">{{ $competencia->codigo }}</strong>
-                                        <span class="mt-1 block text-sm text-gray-700">{{ $competencia->descripcion }}</span>
-                                        <span class="mt-1 block text-xs text-gray-500">Fuente: {{ $competencia->fuente }}</span>
+                                        <strong class="if-mono">{{ $competencia->codigo }}</strong>
+                                        <span class="if-card-text">{{ $competencia->descripcion }}</span>
+                                        <span class="if-note">Fuente: {{ $competencia->fuente }}</span>
                                     </span>
                                 </label>
                             </li>
@@ -93,14 +98,11 @@
                     </ul>
                 </fieldset>
 
-                <div class="mt-5 flex items-center gap-3">
-                    <button
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                        type="submit"
-                    >
+                <div class="if-actions">
+                    <button class="if-button" type="submit">
                         Guardar competencias
                     </button>
-                    <a class="text-sm font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.rubrica.edit', $seccion->id_seccion) }}">
+                    <a class="if-link" href="{{ route('investigacion-formativa.docente.rubrica.edit', $seccion->id_seccion) }}">
                         Continuar con la rúbrica
                     </a>
                 </div>

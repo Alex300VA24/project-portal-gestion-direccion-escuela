@@ -29,18 +29,19 @@ PHP_CLI_SERVER_WORKERS=4 php artisan serve --host=127.0.0.1 --port=8059 --no-rel
 
 El servidor PostgreSQL y las credenciales de estos ejemplos corresponden a la verificación local. Adapte el puerto y el usuario a su entorno. La base debe contener `_test_demo_` en su nombre. El seeder solo funciona en `local` o `testing`. No imprime la contraseña. Crea cuentas nuevas; no cambia contraseñas ni roles de cuentas existentes.
 
-El seeder imprime los correos y las secciones. Exporta un directorio por lote con `demo.json` y cuatro CSV. No exporta contraseñas. Los CSV contienen IDs devueltos por esa misma base y no sirven como catálogo institucional.
+El seeder imprime los correos y las secciones. Exporta un directorio por lote con `demo.json` y cinco CSV. No exporta contraseñas. Los CSV contienen IDs devueltos por esa misma base y no sirven como catálogo institucional.
 
 | Archivo exportado | Comando de validación |
 |---|---|
 | `identidades.csv` | `php artisan investigacion:importar-identidades RUTA --dry-run` |
 | `directores.csv` | `php artisan investigacion:importar-directores RUTA --dry-run` |
+| `secretarias.csv` | `php artisan investigacion:importar-secretarias RUTA --dry-run` |
 | `participantes.csv` | `php artisan investigacion:importar-participantes RUTA --dry-run` |
 | `competencias.csv` | `php artisan investigacion:importar-competencias RUTA --dry-run` |
 
 Sustituya `RUTA` por el archivo del lote. `--dry-run` valida sin escribir. Solo `--apply` aplica una importación. No combine ambas opciones. Los roles de Laravel se asignan por separado; importar una identidad no concede un rol.
 
-La demostración incluye dos escuelas, dos periodos, dos directores, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. La sección `completa` está lista para crear grupos. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
+La demostración incluye dos escuelas, dos periodos, dos directores, una secretaria de escuela, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. La sección `completa` está lista para crear grupos. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
 
 ## 1. Habilitación y configuración
 

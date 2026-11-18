@@ -36,7 +36,7 @@
     @vite(['resources/css/app.css', 'resources/css/investigacion-formativa.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="portal-body">
+<body class="portal-body if-body">
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
     <div class="if-shell">
         <aside id="if-navigation" class="if-sidebar" :class="{ 'is-open': navigationOpen }" aria-label="Navegación de Investigación Formativa">

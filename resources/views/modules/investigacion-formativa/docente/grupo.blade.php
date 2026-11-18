@@ -4,13 +4,13 @@
 
 @section('content')
 
-        <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de navegación">
-            <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
+        <nav class="if-actions if-note" aria-label="Ruta de navegación">
+            <a class="if-link" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
                 Mis cursos
             </a>
             <span aria-hidden="true">/</span>
             <a
-                class="font-semibold text-indigo-700 hover:text-indigo-900"
+                class="if-link"
                 href="{{ route('investigacion-formativa.docente.grupos.index', $seccion) }}"
             >
                 Grupos de la sección {{ $seccion->codigo }}
@@ -20,20 +20,23 @@
         </nav>
 
         @if (session('status'))
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
+            <div class="if-flash-success" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($conflicto !== null)
-            <div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert" data-conflicto>
-                {{ $conflicto }} Recarga la página antes de volver a intentar.
+            <div class="if-alert" role="alert" data-conflicto>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <span>{{ $conflicto }} Recarga la página antes de volver a intentar.</span>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
-                <ul class="list-disc space-y-1 pl-5" role="list">
+            <div class="if-flash-danger" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <ul class="if-list" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -42,15 +45,17 @@
         @endif
 
         @if ($detalle === null || $detalle->proyecto === null)
-            <p class="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                Este grupo todavía no tiene un proyecto registrado.
-            </p>
+            <div class="if-panel if-empty" style="margin-top: 22px;">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <h2>Sin proyecto registrado</h2>
+                <p>Este grupo todavía no tiene un proyecto registrado.</p>
+            </div>
         @else
-            <section class="mt-6 rounded-lg border border-gray-200 bg-white p-5" aria-labelledby="titulo-grupo">
-                <div class="flex flex-wrap items-start justify-between gap-3">
+            <section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-grupo">
+                <div class="if-section-heading" style="margin: 0;">
                     <div>
-                        <h1 id="titulo-grupo" class="text-xl font-bold text-gray-900">{{ $detalle->grupo->nombre }}</h1>
-                        <p class="mt-1 text-sm text-gray-600">
+                        <h1 id="titulo-grupo" class="if-heading"> {{ $detalle->grupo->nombre }}</h1>
+                        <p class="if-lead">
                             Sección {{ $seccion->codigo }} · {{ $detalle->entregados }} de 3 avances entregados
                         </p>
                     </div>
@@ -58,51 +63,49 @@
                     @php
                         $estado = $detalle->proyecto->estado;
                         $clasesEstado = match ($estado) {
-                            'Aceptado' => 'bg-emerald-100 text-emerald-800',
-                            'Cambio solicitado' => 'bg-rose-100 text-rose-800',
-                            default => 'bg-amber-100 text-amber-800',
+                            'Aceptado' => 'is-success',
+                            'Cambio solicitado' => 'is-danger',
+                            default => 'is-warning',
                         };
                     @endphp
-                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $clasesEstado }}">
+                    <span class="if-status {{ $clasesEstado }}">
                         {{ $estado }} · versión {{ $detalle->proyecto->version }}
                     </span>
                 </div>
 
-                <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <dl class="if-dl">
                     <div>
-                        <dt class="font-medium text-gray-700">Línea de investigación</dt>
-                        <dd class="text-gray-900">{{ $detalle->proyecto->linea }}</dd>
+                        <dt>Línea de investigación</dt>
+                        <dd>{{ $detalle->proyecto->linea }}</dd>
                     </div>
                     <div>
-                        <dt class="font-medium text-gray-700">Tipo de producto</dt>
-                        <dd class="text-gray-900">{{ $detalle->proyecto->tipo_producto }}</dd>
+                        <dt>Tipo de producto</dt>
+                        <dd>{{ $detalle->proyecto->tipo_producto }}</dd>
                     </div>
                 </dl>
 
-                <h2 class="mt-6 text-sm font-semibold text-gray-900">Integrantes</h2>
-                <ul class="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200" role="list">
+                <h2 class="if-section-title">Integrantes</h2>
+                <ul class="if-members" role="list">
                     @foreach ($detalle->miembros as $miembro)
-                        <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+                        <li>
                             <span>
-                                <span class="font-medium text-gray-900">{{ $miembro->nombre }}</span>
-                                <span class="ml-2 text-xs text-gray-500">{{ $miembro->codigo }}</span>
+                                <strong>{{ $miembro->nombre }}</strong>
+                                <span class="if-note if-mono">{{ $miembro->codigo }}</span>
                             </span>
                             @if ($miembro->es_coordinador)
-                                <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">
-                                    Coordinador
-                                </span>
+                                <span class="if-tag">Coordinador</span>
                             @endif
                         </li>
                     @endforeach
                 </ul>
             </section>
 
-            <section class="mt-6 rounded-lg border border-gray-200 bg-white p-5" aria-labelledby="titulo-propuesta">
-                <h2 id="titulo-propuesta" class="text-lg font-semibold text-gray-900">Título propuesto</h2>
-                <p class="mt-3 whitespace-pre-line text-sm text-gray-900">{{ $detalle->proyecto->titulo }}</p>
+            <section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-propuesta">
+                <h2 id="titulo-propuesta" class="if-section-title">Título propuesto</h2>
+                <blockquote class="if-quote" data-titulo-propuesto>{{ $detalle->proyecto->titulo }}</blockquote>
 
                 <form
-                    class="mt-5 rounded-md border border-gray-200 p-4"
+                    class="if-fieldset if-stack"
                     method="POST"
                     action="{{ route('investigacion-formativa.docente.titulos.update', [$seccion, $grupo]) }}"
                 >
@@ -112,83 +115,80 @@
                     <input name="version" type="hidden" value="{{ $detalle->proyecto->version }}">
 
                     <fieldset>
-                        <legend class="text-sm font-semibold text-gray-900">Revisión del título</legend>
+                        <legend class="if-legend">Revisión del título</legend>
 
-                        <div class="mt-3 flex flex-wrap gap-4">
-                            <label class="flex items-center gap-2 text-sm text-gray-700" for="estado-aceptado">
+                        <div class="if-choice-list">
+                            <label class="if-choice" for="estado-aceptado">
                                 <input
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                     id="estado-aceptado"
                                     name="estado"
                                     type="radio"
                                     value="Aceptado"
                                     @checked(old('estado') === 'Aceptado')
                                 >
-                                Aceptar título
+                                <span>Aceptar título</span>
                             </label>
 
-                            <label class="flex items-center gap-2 text-sm text-gray-700" for="estado-cambio">
+                            <label class="if-choice" for="estado-cambio">
                                 <input
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                     id="estado-cambio"
                                     name="estado"
                                     type="radio"
                                     value="Cambio solicitado"
                                     @checked(old('estado') === 'Cambio solicitado')
                                 >
-                                Solicitar cambios
+                                <span>Solicitar cambios</span>
                             </label>
                         </div>
 
-                        <div class="mt-4">
-                            <label class="block text-sm font-medium text-gray-700" for="motivo-revision">
+                        <div class="if-field" style="margin-top: 14px;">
+                            <label for="motivo-revision">
                                 Motivo del cambio solicitado
                             </label>
                             <textarea
-                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 id="motivo-revision"
                                 maxlength="2000"
                                 name="motivo"
                                 rows="3"
                             >{{ old('motivo') }}</textarea>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <p class="if-field-hint">
                                 El motivo es obligatorio cuando solicitas cambios.
                             </p>
                         </div>
 
-                        <button
-                            class="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                            type="submit"
-                        >
-                            Registrar revisión
-                        </button>
+                        <div class="if-actions" style="margin-top: 14px;">
+                            <button class="if-button" type="submit">
+                                Registrar revisión
+                            </button>
+                        </div>
                     </fieldset>
                 </form>
             </section>
 
             @if ($detalle->historial !== [])
-                <section class="mt-6" aria-labelledby="titulo-historial">
-                    <h2 id="titulo-historial" class="text-lg font-semibold text-gray-900">Historial de revisiones</h2>
+                <section style="margin-top: 22px;" aria-labelledby="titulo-historial">
+                    <h2 id="titulo-historial" class="if-section-title">Historial de revisiones</h2>
 
-                    <div class="mt-2 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    <div class="if-table-wrap" style="margin-top: 12px;">
+                        <table class="if-table">
+                            <caption class="sr-only">Revisiones registradas del título propuesto</caption>
+                            <thead>
                                 <tr>
-                                    <th class="px-3 py-2" scope="col">Título</th>
-                                    <th class="px-3 py-2" scope="col">Estado</th>
-                                    <th class="px-3 py-2" scope="col">Motivo</th>
-                                    <th class="px-3 py-2" scope="col">Autor</th>
-                                    <th class="px-3 py-2" scope="col">Fecha</th>
+                                    <th scope="col">Título</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col">Motivo</th>
+                                    <th scope="col">Autor</th>
+                                    <th scope="col">Fecha</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100">
+                            <tbody>
                                 @foreach ($detalle->historial as $revision)
                                     <tr>
-                                        <td class="px-3 py-2 text-gray-900">{{ $revision->titulo }}</td>
-                                        <td class="px-3 py-2 text-gray-700">{{ $revision->estado }}</td>
-                                        <td class="px-3 py-2 text-gray-700">{{ $revision->motivo ?? '—' }}</td>
-                                        <td class="px-3 py-2 text-gray-700">{{ $revision->autor }}</td>
-                                        <td class="whitespace-nowrap px-3 py-2 text-gray-700">
+                                        <td data-label="Título">{{ $revision->titulo }}</td>
+                                        <td data-label="Estado">{{ $revision->estado }}</td>
+                                        <td data-label="Motivo">{{ $revision->motivo ?? '—' }}</td>
+                                        <td data-label="Autor">{{ $revision->autor }}</td>
+                                        <td data-label="Fecha">
                                             {{ \Carbon\CarbonImmutable::parse($revision->registrado_en)->setTimezone('America/Lima')->format('d/m/Y H:i') }}
                                         </td>
                                     </tr>
@@ -204,8 +204,8 @@
             $avances = $evaluaciones ?? [];
         @endphp
 
-        <section class="mt-6" aria-labelledby="titulo-avances">
-            <h2 id="titulo-avances" class="text-lg font-semibold text-gray-900">Avances y evaluaciones</h2>
+        <section style="margin-top: 22px;" aria-labelledby="titulo-avances">
+            <h2 id="titulo-avances" class="if-section-title">Avances y evaluaciones</h2>
 
             @forelse ($avances as $avance)
                 @php
@@ -233,69 +233,64 @@
 
                 <article
                     id="avance-{{ $avance->id_entrega }}"
-                    class="mt-4 rounded-lg border border-gray-200 bg-white p-5"
+                    class="if-panel if-stack"
+                    style="margin-top: 16px; padding: 22px;"
                     aria-labelledby="titulo-avance-{{ $avance->id_entrega }}"
                 >
-                    <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="if-section-heading" style="margin: 0;">
                         <div>
-                            <h3 id="titulo-avance-{{ $avance->id_entrega }}" class="font-semibold text-gray-900">
+                            <h3 id="titulo-avance-{{ $avance->id_entrega }}" class="if-section-title">
                                 {{ $avance->unidad }} · versión {{ $avance->version }}
                             </h3>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <p class="if-note">
                                 Entregada el
                                 {{ \Carbon\CarbonImmutable::parse($avance->entregado_en)->setTimezone('America/Lima')->format('d/m/Y H:i') }}
                             </p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="if-actions">
                             @if ($avance->es_ultima)
-                                <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-800">
-                                    Versión más reciente
-                                </span>
+                                <span class="if-tag">Versión más reciente</span>
                             @endif
 
                             @if ($evaluacionActual !== null)
-                                <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                <span class="if-status is-success">
                                     Evaluada · nota {{ $evaluacionActual->nota ?? 'no disponible' }}
                                 </span>
                             @elseif ($avance->es_ultima)
-                                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                                    Pendiente de evaluación
-                                </span>
+                                <span class="if-status is-warning">Pendiente de evaluación</span>
                             @else
-                                <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                                    Versión anterior sin evaluación
-                                </span>
+                                <span class="if-status is-neutral">Versión anterior sin evaluación</span>
                             @endif
                         </div>
                     </div>
 
                     @if ($evaluacionActual !== null)
-                        <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                        <dl class="if-dl">
                             <div>
-                                <dt class="font-medium text-gray-700">Nota</dt>
-                                <dd class="text-lg font-semibold text-gray-900">{{ $evaluacionActual->nota ?? '—' }}</dd>
+                                <dt>Nota</dt>
+                                <dd class="if-mono">{{ $evaluacionActual->nota ?? '—' }}</dd>
                             </div>
                             <div>
-                                <dt class="font-medium text-gray-700">Puntos derivados</dt>
-                                <dd class="text-gray-900">{{ $evaluacionActual->puntos }} / {{ $evaluacionActual->maximo }}</dd>
+                                <dt>Puntos derivados</dt>
+                                <dd>{{ $evaluacionActual->puntos }} / {{ $evaluacionActual->maximo }}</dd>
                             </div>
                             <div>
-                                <dt class="font-medium text-gray-700">Revisión</dt>
-                                <dd class="text-gray-900">Versión {{ $evaluacionActual->version }}</dd>
+                                <dt>Revisión</dt>
+                                <dd>Versión {{ $evaluacionActual->version }}</dd>
                             </div>
                         </dl>
 
                         @if ($evaluacionActual->comentario !== null)
-                            <div class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800">
-                                <p class="font-semibold">Comentario del docente</p>
-                                <p class="mt-1 whitespace-pre-line">{{ $evaluacionActual->comentario }}</p>
+                            <div class="if-card">
+                                <p class="if-card-title">Comentario del docente</p>
+                                <blockquote class="if-quote" style="margin-top: 10px;"> {{ $evaluacionActual->comentario }}</blockquote>
                             </div>
                         @endif
                     @endif
 
                     <form
-                        class="mt-5 rounded-md border border-gray-200 p-4"
+                        class="if-fieldset if-stack"
                         method="POST"
                         action="{{ route('investigacion-formativa.docente.evaluaciones.update', [$seccion, $grupo, $avance->id_entrega]) }}"
                     >
@@ -305,8 +300,8 @@
                         <input name="version" type="hidden" value="{{ $evaluacionActual?->version ?? 0 }}">
 
                         <fieldset>
-                            <legend class="text-sm font-semibold text-gray-900">Criterios de evaluación</legend>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <legend class="if-legend">Criterios de evaluación</legend>
+                            <p class="if-note" style="margin-top: 4px;">
                                 Seleccione un nivel por criterio. Los puntajes y la nota los calcula el servidor.
                             </p>
 
@@ -318,26 +313,25 @@
                                     );
                                 @endphp
 
-                                <div class="mt-4 rounded-md border border-gray-200 p-3">
+                                <div class="if-card" style="margin-top: 14px;">
                                     <input
                                         name="criterios[{{ $indiceCriterio }}][id_criterio]"
                                         type="hidden"
                                         value="{{ $criterio->id_criterio }}"
                                     >
 
-                                    <p class="text-sm font-medium text-gray-900">
+                                    <p class="if-card-title">
                                         {{ $criterio->descripcion }}
-                                        <span class="font-normal text-gray-500">· máximo {{ $criterio->puntaje_maximo }}</span>
+                                        <span class="if-note">· máximo {{ $criterio->puntaje_maximo }}</span>
                                     </p>
 
-                                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                                    <div class="if-choice-grid" style="margin-top: 10px;">
                                         @foreach ($criterio->niveles as $nivel)
                                             <label
-                                                class="flex items-start gap-2 rounded border border-gray-200 p-2 text-sm text-gray-700"
+                                                class="if-choice"
                                                 for="nivel-{{ $avance->id_entrega }}-{{ $criterio->id_criterio }}-{{ $nivel->nivel }}"
                                             >
                                                 <input
-                                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                     id="nivel-{{ $avance->id_entrega }}-{{ $criterio->id_criterio }}-{{ $nivel->nivel }}"
                                                     name="criterios[{{ $indiceCriterio }}][nivel]"
                                                     type="radio"
@@ -346,8 +340,8 @@
                                                     required
                                                 >
                                                 <span>
-                                                    <span class="block font-medium">Nivel {{ $nivel->nivel }} · {{ $nivel->puntaje }} puntos</span>
-                                                    <span class="block text-xs text-gray-500">{{ $nivel->descripcion }}</span>
+                                                    <strong>Nivel {{ $nivel->nivel }} · {{ $nivel->puntaje }} puntos</strong>
+                                                    <span class="if-note">{{ $nivel->descripcion }}</span>
                                                 </span>
                                             </label>
                                         @endforeach
@@ -356,12 +350,11 @@
                             @endforeach
                         </fieldset>
 
-                        <div class="mt-5">
-                            <label class="block text-sm font-medium text-gray-700" for="comentario-{{ $avance->id_entrega }}">
+                        <div class="if-field">
+                            <label for="comentario-{{ $avance->id_entrega }}">
                                 Comentario de la evaluación
                             </label>
                             <textarea
-                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 id="comentario-{{ $avance->id_entrega }}"
                                 maxlength="4000"
                                 name="comentario"
@@ -369,34 +362,31 @@
                             >{{ old('comentario', $evaluacionActual?->comentario) }}</textarea>
                         </div>
 
-                        <div class="mt-5">
+                        <div>
                             <input name="sin_observaciones" type="hidden" value="0">
-                            <label class="flex items-center gap-2 text-sm text-gray-700" for="sin-observaciones-{{ $avance->id_entrega }}">
+                            <label class="if-choice" for="sin-observaciones-{{ $avance->id_entrega }}">
                                 <input
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                     id="sin-observaciones-{{ $avance->id_entrega }}"
                                     name="sin_observaciones"
                                     type="checkbox"
                                     value="1"
                                     @checked(filter_var($sinObservacionesActual, FILTER_VALIDATE_BOOL))
                                 >
-                                La entrega no tiene observaciones
+                                <span>La entrega no tiene observaciones</span>
                             </label>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <p class="if-field-hint">
                                 Si existe una observación, complete al menos un campo. Si la marca, deje los campos vacíos.
                             </p>
 
-                            <div class="mt-3 grid gap-3">
+                            <div class="if-stack" style="margin-top: 12px;">
                                 @for ($indiceObservacion = 0; $indiceObservacion < $cantidadObservaciones; $indiceObservacion++)
-                                    <div>
+                                    <div class="if-field">
                                         <label
-                                            class="block text-sm font-medium text-gray-700"
                                             for="observacion-{{ $avance->id_entrega }}-{{ $indiceObservacion }}"
                                         >
                                             Observación {{ $indiceObservacion + 1 }}
                                         </label>
                                         <textarea
-                                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                             id="observacion-{{ $avance->id_entrega }}-{{ $indiceObservacion }}"
                                             maxlength="2000"
                                             name="observaciones[{{ $indiceObservacion }}]"
@@ -407,25 +397,25 @@
                             </div>
                         </div>
 
-                        <button
-                            class="mt-5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                            type="submit"
-                        >
-                            {{ $evaluacionActual === null ? 'Registrar evaluación' : 'Corregir evaluación' }}
-                        </button>
+                        <div class="if-actions">
+                            <button
+                                class="if-button"
+                                type="submit"
+                            >
+                                {{ $evaluacionActual === null ? 'Registrar evaluación' : 'Corregir evaluación' }}
+                            </button>
+                        </div>
                     </form>
 
                     @if ($avance->historial_observaciones !== [])
-                        <details class="mt-5 rounded-md border border-gray-200 bg-gray-50 p-3">
-                            <summary class="cursor-pointer text-sm font-semibold text-gray-900">
-                                Historial de observaciones
-                            </summary>
+                        <details class="if-card">
+                            <summary class="if-card-title">Historial de observaciones</summary>
 
-                            <ul class="mt-3 space-y-2" role="list">
+                            <ul class="if-list" role="list" style="margin-top: 10px;">
                                 @foreach ($avance->historial_observaciones as $observacion)
-                                    <li class="rounded border border-gray-200 bg-white p-3 text-sm text-gray-800">
+                                    <li>
                                         <p>{{ $observacion->descripcion }}</p>
-                                        <p class="mt-1 text-xs text-gray-500">
+                                        <p class="if-note">
                                             {{ $observacion->autor !== '' ? $observacion->autor : 'Docente' }}
                                             ·
                                             {{ $observacion->estado }}
@@ -441,9 +431,11 @@
                     @endif
                 </article>
             @empty
-                <p class="mt-3 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                    Este grupo todavía no tiene entregas registradas.
-                </p>
+                <div class="if-panel if-empty" style="margin-top: 16px;">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                    <h2>Sin entregas</h2>
+                    <p>Este grupo todavía no tiene entregas registradas.</p>
+                </div>
             @endforelse
         </section>
 @endsection

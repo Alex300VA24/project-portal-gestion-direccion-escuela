@@ -4,35 +4,42 @@
 
 @section('content')
 
-        <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de configuración">
-            <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
+        <nav class="if-actions if-note" aria-label="Ruta de configuración">
+            <a class="if-link" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
                 Mis cursos
             </a>
             <span aria-hidden="true">/</span>
             <span>Rúbrica de la sección {{ $seccion->codigo }}</span>
         </nav>
 
-        <h1 class="text-2xl font-bold text-gray-900">Rúbrica de avances</h1>
-        <p class="mt-2 text-sm text-gray-600">
-            Cada criterio debe tener cuatro niveles con su descripción y puntaje. El puntaje
-            máximo del criterio se calcula con el mayor puntaje de sus niveles.
-        </p>
+        <div class="if-page-heading">
+            <div>
+                <h1 class="if-heading">Rúbrica de avances</h1>
+                <p class="if-lead">
+                    Cada criterio debe tener cuatro niveles con su descripción y puntaje. El puntaje
+                    máximo del criterio se calcula con el mayor puntaje de sus niveles.
+                </p>
+            </div>
+        </div>
 
         @if (session('status'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-                {{ session('status') }}
+            <div class="if-flash-success" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($conflicto !== null)
-            <div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert" data-conflicto>
-                {{ $conflicto }} Recarga la página antes de volver a intentar.
+            <div class="if-alert" role="alert" data-conflicto>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <span>{{ $conflicto }} Recarga la página antes de volver a intentar.</span>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
-                <ul class="list-disc space-y-1 pl-5" role="list">
+            <div class="if-flash-danger" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                <ul class="if-list" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -40,19 +47,18 @@
             </div>
         @endif
 
-        <div class="mt-6">
-            @include('modules.investigacion-formativa.partials.estado-configuracion', ['estado' => $estado])
-        </div>
+        @include('modules.investigacion-formativa.partials.estado-configuracion', ['estado' => $estado])
 
         @if ($congelada)
-            <p class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div class="if-warning-note" style="margin-top: 22px;">
                 La rúbrica está congelada porque ya existen entregas en esta sección. No se
                 puede modificar.
-            </p>
+            </div>
         @endif
 
         <form
-            class="mt-6 rounded-lg border border-gray-200 bg-white p-5"
+            class="if-panel if-stack"
+            style="margin-top: 22px; padding: 22px;"
             method="POST"
             action="{{ route('investigacion-formativa.docente.rubrica.update', $seccion->id_seccion) }}"
         >
@@ -60,10 +66,9 @@
             @method('PUT')
             <input type="hidden" name="version" value="{{ old('version', $estado->version) }}">
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700" for="rubrica-nombre">Nombre de la rúbrica</label>
+            <div class="if-field">
+                <label for="rubrica-nombre">Nombre de la rúbrica</label>
                 <input
-                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     id="rubrica-nombre"
                     maxlength="150"
                     name="nombre"
@@ -73,10 +78,9 @@
                 >
             </div>
 
-            <div class="mt-4">
-                <label class="block text-sm font-medium text-gray-700" for="rubrica-descripcion">Descripción (opcional)</label>
+            <div class="if-field">
+                <label for="rubrica-descripcion">Descripción (opcional)</label>
                 <textarea
-                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     id="rubrica-descripcion"
                     maxlength="4000"
                     name="descripcion"
@@ -84,10 +88,10 @@
                 >{{ old('descripcion', $rubrica?->descripcion ?? '') }}</textarea>
             </div>
 
-            <div class="mt-6 flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-sm font-semibold text-gray-900">Criterios</h2>
+            <div class="if-section-heading" style="margin: 0;">
+                <h2 class="if-section-title">Criterios</h2>
                 <button
-                    class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    class="if-button-secondary if-button-sm"
                     id="agregar-criterio"
                     type="button"
                 >
@@ -95,64 +99,68 @@
                 </button>
             </div>
 
-            <div class="mt-3 space-y-5" id="criterios">
+            <div class="if-stack" id="criterios">
                 @foreach ($criterios as $indice => $criterio)
-                    <fieldset class="rounded-md border border-gray-200 p-4" data-criterio="{{ $indice }}">
-                        <legend class="px-1 text-sm font-semibold text-gray-900">Criterio {{ $indice + 1 }}</legend>
+                    <fieldset class="if-fieldset" data-criterio="{{ $indice }}">
+                        <legend class="if-legend">Criterio {{ $indice + 1 }}</legend>
 
-                        <label class="block text-sm font-medium text-gray-700" for="criterio-{{ $indice }}-descripcion">
-                            Descripción del criterio
-                        </label>
-                        <textarea
-                            class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            id="criterio-{{ $indice }}-descripcion"
-                            maxlength="2000"
-                            name="criterios[{{ $indice }}][descripcion]"
-                            required
-                            rows="2"
-                        >{{ $criterio['descripcion'] }}</textarea>
+                        <div class="if-field" style="margin-top: 8px;">
+                            <label for="criterio-{{ $indice }}-descripcion">
+                                Descripción del criterio
+                            </label>
+                            <textarea
+                                id="criterio-{{ $indice }}-descripcion"
+                                maxlength="2000"
+                                name="criterios[{{ $indice }}][descripcion]"
+                                required
+                                rows="2"
+                            >{{ $criterio['descripcion'] }}</textarea>
+                        </div>
 
-                        <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                        <div class="if-split" style="margin-top: 16px;">
                             @foreach ($criterio['niveles'] as $posicion => $nivel)
-                                <div class="rounded-md bg-gray-50 p-3">
+                                <div class="if-card if-stack">
                                     <input
                                         name="criterios[{{ $indice }}][niveles][{{ $posicion }}][nivel]"
                                         type="hidden"
                                         value="{{ $nivel['nivel'] }}"
                                     >
 
-                                    <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600" for="nivel-{{ $indice }}-{{ $posicion }}-descripcion">
-                                        Nivel {{ $nivel['nivel'] }} · Descripción
-                                    </label>
-                                    <textarea
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                        id="nivel-{{ $indice }}-{{ $posicion }}-descripcion"
-                                        maxlength="2000"
-                                        name="criterios[{{ $indice }}][niveles][{{ $posicion }}][descripcion]"
-                                        required
-                                        rows="2"
-                                    >{{ $nivel['descripcion'] }}</textarea>
+                                    <div class="if-field">
+                                        <label for="nivel-{{ $indice }}-{{ $posicion }}-descripcion">
+                                            Nivel {{ $nivel['nivel'] }} · Descripción
+                                        </label>
+                                        <textarea
+                                            id="nivel-{{ $indice }}-{{ $posicion }}-descripcion"
+                                            maxlength="2000"
+                                            name="criterios[{{ $indice }}][niveles][{{ $posicion }}][descripcion]"
+                                            required
+                                            rows="2"
+                                        >{{ $nivel['descripcion'] }}</textarea>
+                                    </div>
 
-                                    <label class="mt-2 block text-xs font-semibold uppercase tracking-wide text-gray-600" for="nivel-{{ $indice }}-{{ $posicion }}-puntaje">
-                                        Puntaje
-                                    </label>
-                                    <input
-                                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                        id="nivel-{{ $indice }}-{{ $posicion }}-puntaje"
-                                        max="9999.99"
-                                        min="0"
-                                        name="criterios[{{ $indice }}][niveles][{{ $posicion }}][puntaje]"
-                                        required
-                                        step="0.01"
-                                        type="number"
-                                        value="{{ $nivel['puntaje'] }}"
-                                    >
+                                    <div class="if-field">
+                                        <label for="nivel-{{ $indice }}-{{ $posicion }}-puntaje">
+                                            Puntaje
+                                        </label>
+                                        <input
+                                            id="nivel-{{ $indice }}-{{ $posicion }}-puntaje"
+                                            max="9999.99"
+                                            min="0"
+                                            name="criterios[{{ $indice }}][niveles][{{ $posicion }}][puntaje]"
+                                            required
+                                            step="0.01"
+                                            type="number"
+                                            value="{{ $nivel['puntaje'] }}"
+                                        >
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
 
                         <button
-                            class="mt-3 rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                            class="if-button-secondary if-button-sm if-button-ghost-danger"
+                            style="margin-top: 12px;"
                             data-quitar-criterio
                             type="button"
                         >
@@ -162,76 +170,80 @@
                 @endforeach
             </div>
 
-            <div class="mt-5 flex items-center gap-3">
+            <div class="if-actions">
                 <button
-                    class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-400"
+                    class="if-button"
                     type="submit"
                     @disabled($congelada)
                 >
                     Guardar rúbrica
                 </button>
-                <a class="text-sm font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.cronograma.edit', $seccion->id_seccion) }}">
+                <a class="if-link" href="{{ route('investigacion-formativa.docente.cronograma.edit', $seccion->id_seccion) }}">
                     Continuar con el cronograma
                 </a>
             </div>
         </form>
 
         <template id="plantilla-criterio">
-            <fieldset class="rounded-md border border-gray-200 p-4" data-criterio="__INDICE__">
-                <legend class="px-1 text-sm font-semibold text-gray-900">Criterio adicional</legend>
+            <fieldset class="if-fieldset" data-criterio="__INDICE__">
+                <legend class="if-legend">Criterio adicional</legend>
 
-                <label class="block text-sm font-medium text-gray-700" for="criterio-__INDICE__-descripcion">
-                    Descripción del criterio
-                </label>
-                <textarea
-                    class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    id="criterio-__INDICE__-descripcion"
-                    maxlength="2000"
-                    name="criterios[__INDICE__][descripcion]"
-                    required
-                    rows="2"
-                ></textarea>
+                <div class="if-field" style="margin-top: 8px;">
+                    <label for="criterio-__INDICE__-descripcion">
+                        Descripción del criterio
+                    </label>
+                    <textarea
+                        id="criterio-__INDICE__-descripcion"
+                        maxlength="2000"
+                        name="criterios[__INDICE__][descripcion]"
+                        required
+                        rows="2"
+                    ></textarea>
+                </div>
 
-                <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                <div class="if-split" style="margin-top: 16px;">
                     @foreach ([0 => 1, 1 => 2, 2 => 3, 3 => 4] as $posicion => $numero)
-                        <div class="rounded-md bg-gray-50 p-3">
+                        <div class="if-card if-stack">
                             <input
                                 name="criterios[__INDICE__][niveles][{{ $posicion }}][nivel]"
                                 type="hidden"
                                 value="{{ $numero }}"
                             >
 
-                            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600" for="nivel-__INDICE__-{{ $posicion }}-descripcion">
-                                Nivel {{ $numero }} · Descripción
-                            </label>
-                            <textarea
-                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                id="nivel-__INDICE__-{{ $posicion }}-descripcion"
-                                maxlength="2000"
-                                name="criterios[__INDICE__][niveles][{{ $posicion }}][descripcion]"
-                                required
-                                rows="2"
-                            ></textarea>
+                            <div class="if-field">
+                                <label for="nivel-__INDICE__-{{ $posicion }}-descripcion">
+                                    Nivel {{ $numero }} · Descripción
+                                </label>
+                                <textarea
+                                    id="nivel-__INDICE__-{{ $posicion }}-descripcion"
+                                    maxlength="2000"
+                                    name="criterios[__INDICE__][niveles][{{ $posicion }}][descripcion]"
+                                    required
+                                    rows="2"
+                                ></textarea>
+                            </div>
 
-                            <label class="mt-2 block text-xs font-semibold uppercase tracking-wide text-gray-600" for="nivel-__INDICE__-{{ $posicion }}-puntaje">
-                                Puntaje
-                            </label>
-                            <input
-                                class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                id="nivel-__INDICE__-{{ $posicion }}-puntaje"
-                                max="9999.99"
-                                min="0"
-                                name="criterios[__INDICE__][niveles][{{ $posicion }}][puntaje]"
-                                required
-                                step="0.01"
-                                type="number"
-                            >
+                            <div class="if-field">
+                                <label for="nivel-__INDICE__-{{ $posicion }}-puntaje">
+                                    Puntaje
+                                </label>
+                                <input
+                                    id="nivel-__INDICE__-{{ $posicion }}-puntaje"
+                                    max="9999.99"
+                                    min="0"
+                                    name="criterios[__INDICE__][niveles][{{ $posicion }}][puntaje]"
+                                    required
+                                    step="0.01"
+                                    type="number"
+                                >
+                            </div>
                         </div>
                     @endforeach
                 </div>
 
                 <button
-                    class="mt-3 rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                    class="if-button-secondary if-button-sm if-button-ghost-danger"
+                    style="margin-top: 12px;"
                     data-quitar-criterio
                     type="button"
                 >

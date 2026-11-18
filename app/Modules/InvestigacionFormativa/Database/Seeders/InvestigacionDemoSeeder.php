@@ -105,6 +105,7 @@ final class InvestigacionDemoSeeder extends Seeder
         $estudiantes = [];
         foreach ([
             'director-a' => [['director_escuela'], 0], 'director-b' => [['director_escuela'], 1],
+            'secretaria-a' => [['secretaria'], 0],
             'docente-a' => [['profesor'], 0], 'docente-b' => [['profesor'], 1],
             'docente-libre' => [['profesor'], 0],
             'coordinador' => [['alumno'], 0], 'integrante' => [['alumno'], 0],
@@ -130,6 +131,11 @@ final class InvestigacionDemoSeeder extends Seeder
             ]);
             if (in_array('director_escuela', $roles, true)) {
                 DB::table('investigacion_formativa.director_escuela')->insert([
+                    'user_id' => $user->id, 'id_escuela' => $escuelas[$escuela], 'activo' => true,
+                ]);
+            }
+            if (in_array('secretaria', $roles, true)) {
+                DB::table('investigacion_formativa.secretaria_escuela')->insert([
                     'user_id' => $user->id, 'id_escuela' => $escuelas[$escuela], 'activo' => true,
                 ]);
             }
@@ -215,6 +221,7 @@ final class InvestigacionDemoSeeder extends Seeder
         $archivos = [
             'identidades' => ['investigacion_formativa.identidad_usuario', ['user_id', 'id_usuario_seguridad', 'activo'], 'user_id', $usuarios],
             'directores' => ['investigacion_formativa.director_escuela', ['user_id', 'id_escuela', 'activo'], 'user_id', $usuarios],
+            'secretarias' => ['investigacion_formativa.secretaria_escuela', ['user_id', 'id_escuela', 'activo'], 'user_id', $usuarios],
             'participantes' => ['investigacion_formativa.participante_seccion', ['id_seccion', 'id_estudiante', 'estado', 'fuente', 'referencia_origen'], 'id_seccion', $secciones],
             'competencias' => ['investigacion_formativa.competencia_seccion', ['id_seccion', 'codigo', 'descripcion', 'fuente', 'seleccionada'], 'id_seccion', $secciones],
         ];
