@@ -1,12 +1,8 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Estudiante · Investigación Formativa
-        </h2>
-    </x-slot>
+@extends('modules.investigacion-formativa.layouts.app')
+@section('title', 'Estudiante · Mis cursos')
+@section('page-label', 'Mis cursos')
 
-    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        @include('modules.investigacion-formativa.partials.sidebar')
+@section('content')
 
         <h1 class="text-2xl font-bold text-gray-900">Mis cursos</h1>
         <p class="mt-2 text-sm text-gray-600">
@@ -137,5 +133,4 @@
                 </ul>
             </section>
         @endif
-    </main>
-</x-app-layout>
+@endsection

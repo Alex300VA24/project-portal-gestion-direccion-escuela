@@ -1,12 +1,8 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Estudiante · Encuesta
-        </h2>
-    </x-slot>
+@extends('modules.investigacion-formativa.layouts.app')
+@section('title', 'Estudiante · Encuesta')
+@section('page-label', 'Encuesta')
 
-    <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        @include('modules.investigacion-formativa.partials.sidebar')
+@section('content')
 
         <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de navegación">
             <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.alumno.cursos.index') }}">
@@ -174,5 +170,4 @@
                 </form>
             </section>
         @endif
-    </main>
-</x-app-layout>
+@endsection

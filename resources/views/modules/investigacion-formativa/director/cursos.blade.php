@@ -1,12 +1,8 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Dirección de escuela · Cursos
-        </h2>
-    </x-slot>
+@extends('modules.investigacion-formativa.layouts.app')
+@section('title', 'Dirección · Cursos y habilitación')
+@section('page-label', 'Cursos y habilitación')
 
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        @include('modules.investigacion-formativa.partials.sidebar')
+@section('content')
 
         <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -198,5 +194,4 @@
                 {{ $secciones->links() }}
             </div>
         @endif
-    </main>
-</x-app-layout>
+@endsection

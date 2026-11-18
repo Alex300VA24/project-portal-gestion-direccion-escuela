@@ -1,42 +1,40 @@
-@extends('layouts.app')
-@section('title', 'Grupos · Investigación Formativa')
+@extends('modules.investigacion-formativa.layouts.app')
+@section('title', 'Docencia · Grupos de investigación')
 @section('page-label', 'Grupos')
 
 @section('content')
-    <div class="if-page-heading">
-        <div>
-            <span class="if-eyebrow">Preferencias</span>
-            <h2>Grupos de investigación</h2>
-            <p>
-                Revisa el título propuesto por cada grupo de la sección. El estado del título solo
-                cambia por una revisión registrada.
-            </p>
-        </div>
-    </div>
 
-    @if (session('status'))
-        <div class="if-flash-success" role="status">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-            <span>{{ session('status') }}</span>
-        </div>
-    @endif
+        <nav class="mb-4 text-sm text-gray-600" aria-label="Ruta de navegación">
+            <a class="font-semibold text-indigo-700 hover:text-indigo-900" href="{{ route('investigacion-formativa.docente.cursos.index') }}">
+                Mis cursos
+            </a>
+            <span aria-hidden="true">/</span>
+            <span>Grupos de la sección {{ $seccion->codigo }}</span>
+        </nav>
 
-    @if ($errors->any())
-        <div class="if-flash-danger" role="alert" style="margin-bottom:16px;">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 17h.01"/></svg>
-            <span>
-                <strong>Revisa los siguientes errores</strong>
-                <ul style="margin:6px 0 0;padding-left:18px">
+        <h1 class="text-2xl font-bold text-gray-900">Grupos de investigación</h1>
+        <p class="mt-2 text-sm text-gray-600">
+            Revisa el título propuesto por cada grupo de la sección. El estado del título solo
+            cambia por una revisión registrada.
+        </p>
+
+        @if (session('status'))
+            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
+                <ul class="list-disc space-y-1 pl-5" role="list">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
-            </span>
-        </div>
-    @endif
+            </div>
+        @endif
 
-    <form class="mb-4" method="GET" action="{{ route('investigacion-formativa.docente.grupos.index', $seccion) }}">
-        <div class="flex flex-wrap items-end gap-3">
+        <form class="mt-6 flex flex-wrap items-end gap-3" method="GET" action="{{ route('investigacion-formativa.docente.grupos.index', $seccion) }}">
             <div>
                 <label class="block text-sm font-medium text-gray-700" for="buscar-grupo">Buscar grupo o título</label>
                 <input
@@ -53,53 +51,49 @@
             >
                 Buscar
             </button>
-        </div>
-    </form>
+        </form>
 
-    @if ($grupos->isEmpty())
-        <div class="if-empty" style="margin:16px 0;">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <h3>No hay grupos que coincidan con la búsqueda</h3>
-            <p>Ajuste el filtro de búsqueda para ver los grupos.</p>
-        </div>
-    @else
-        <div class="if-panel" style="margin:16px 0;overflow-x:auto">
-            <table class="if-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Grupo</th>
-                        <th scope="col">Coordinador</th>
-                        <th scope="col">Título propuesto</th>
-                        <th scope="col">Estado</th>
-                        <th scope="col">Avances</th>
-                        <th scope="col">Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($grupos as $grupo)
+        @if ($grupos->isEmpty())
+            <p class="mt-6 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                No hay grupos que coincidan con la búsqueda.
+            </p>
+        @else
+            <div class="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
                         <tr>
-                            <td data-label="Grupo" style="font-weight:600">{{ $grupo->nombre }}</td>
-                            <td data-label="Coordinador">{{ $grupo->coordinador ?? 'Sin coordinador' }}</td>
-                            <td data-label="Título">{{ $grupo->titulo ?? 'Sin título' }}</td>
-                            <td data-label="Estado">{{ $grupo->estado ?? '—' }}</td>
-                            <td data-label="Avances">{{ $grupo->entregados }} de 3</td>
-                            <td data-label="Acción">
-                                <a
-                                    class="if-button-secondary"
-                                    style="padding:0 12px;min-height:38px;font-size:12px"
-                                    href="{{ route('investigacion-formativa.docente.grupos.show', [$seccion, $grupo->id_grupo]) }}"
-                                >
-                                    Ver grupo
-                                </a>
-                            </td>
+                            <th class="px-4 py-3" scope="col">Grupo</th>
+                            <th class="px-4 py-3" scope="col">Coordinador</th>
+                            <th class="px-4 py-3" scope="col">Título propuesto</th>
+                            <th class="px-4 py-3" scope="col">Estado</th>
+                            <th class="px-4 py-3" scope="col">Avances</th>
+                            <th class="px-4 py-3" scope="col">Acción</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($grupos as $grupo)
+                            <tr>
+                                <td class="px-4 py-3 font-medium text-gray-900">{{ $grupo->nombre }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ $grupo->coordinador ?? 'Sin coordinador' }}</td>
+                                <td class="px-4 py-3 text-gray-900">{{ $grupo->titulo ?? 'Sin título' }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ $grupo->estado ?? '—' }}</td>
+                                <td class="px-4 py-3 text-gray-700">{{ $grupo->entregados }} de 3</td>
+                                <td class="px-4 py-3">
+                                    <a
+                                        class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                        href="{{ route('investigacion-formativa.docente.grupos.show', [$seccion, $grupo->id_grupo]) }}"
+                                    >
+                                        Ver grupo
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="mt-4">
-            {{ $grupos->links() }}
-        </div>
-    @endif
-</div>
+            <div class="mt-4">
+                {{ $grupos->links() }}
+            </div>
+        @endif
+@endsection

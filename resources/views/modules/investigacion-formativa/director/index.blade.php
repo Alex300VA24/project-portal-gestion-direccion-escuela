@@ -1,132 +1,146 @@
-@extends('layouts.app')
+@extends('modules.investigacion-formativa.layouts.app')
 @section('title', 'Dirección de escuela')
 @section('page-label', 'Dirección')
 
 @section('content')
-    <div class="if-page-heading">
-        <div>
-            <span class="if-eyebrow">Módulo</span>
-            <h1>Dirección de escuela</h1>
-            <p>
-                Resumen de las secciones de sus escuelas asignadas. Incluye secciones cerradas y
-                deshabilitadas de los periodos seleccionados.
-            </p>
-        </div>
-    </div>
 
-    @if (session('status'))
-        <div class="if-flash-success" role="status">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-            <span>{{ session('status') }}</span>
-        </div>
-    @endif
-
-    @if ($escuelas === [])
-        <div class="if-empty">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 17h.01"/></svg>
-            <h3>No tiene escuelas activas asignadas</h3>
-            <p>Solicite la importación de su alcance de dirección.</p>
-        </div>
-    @else
-        <form
-            class="if-panel if-inline-stats"
-            method="GET"
-            action="{{ route('investigacion-formativa.director.index') }}"
-            aria-label="Filtros del resumen"
-            style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:16px 18px;margin:0 0 16px;border:1px solid var(--portal-border);border-radius:12px;background:var(--portal-surface)"
-        >
-            <div class="if-field">
-                <label for="filtro-escuela">Escuela</label>
-                <select id="filtro-escuela" name="escuela">
-                    <option value="">Todas las escuelas</option>
-                    @foreach ($escuelas as $escuela)
-                        <option value="{{ $escuela->id_escuela }}" @selected(($filtros['escuela'] ?? null) === (int) $escuela->id_escuela)>
-                            {{ $escuela->nombre }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="if-field">
-                <label for="filtro-periodo">Periodo</label>
-                <select id="filtro-periodo" name="periodo">
-                    <option value="">Todos los periodos</option>
-                    @foreach ($periodos as $periodo)
-                        <option value="{{ $periodo }}" @selected(($filtros['periodo'] ?? null) === $periodo)>
-                            {{ $periodo }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div style="display:flex;align-items:flex-end;gap:8px">
-                <button class="if-button" type="submit">Filtrar</button>
-                <a class="if-button-secondary" href="{{ route('investigacion-formativa.director.index') }}">Limpiar</a>
-            </div>
-        </form>
-
-        <dl class="if-inline-stats" aria-label="Totales de las secciones filtradas" style="margin-bottom:16px">
-            <div><dt>Secciones</dt><dd>{{ $totales->secciones }}</dd></div>
-            <div><dt>Habilitadas</dt><dd>{{ $totales->habilitadas }}</dd></div>
-            <div><dt>Grupos</dt><dd>{{ $totales->grupos }}</dd></div>
-            <div><dt>Avances evaluados</dt><dd>{{ $totales->evaluaciones }}</dd></div>
-            <div><dt>Respuestas</dt><dd>{{ $totales->respuestas }}</dd></div>
-        </dl>
-
-        <p style="font-size:13px;color:var(--portal-muted);margin:0 0 12px">
-            La participación usa respuestas / participantes activos actuales. Puede superar el 100%
-            después de retiros. Sin participantes activos, la tasa no se calcula.
+        <h1 class="text-2xl font-bold text-gray-900">Dirección de escuela</h1>
+        <p class="mt-2 max-w-3xl text-sm text-gray-600">
+            Resumen de las secciones de sus escuelas asignadas. Incluye secciones cerradas y deshabilitadas de los periodos seleccionados.
         </p>
 
-        <div class="if-panel">
-            <header class="if-panel-heading">
+        @if ($escuelas === [])
+            <p class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                No tiene escuelas activas asignadas. Solicite la importación de su alcance
+                de dirección.
+            </p>
+        @else
+            <form
+                class="mt-6 grid gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-4"
+                method="GET"
+                action="{{ route('investigacion-formativa.director.index') }}"
+                aria-label="Filtros del resumen"
+            >
                 <div>
-                    <h2>Secciones de su alcance</h2>
-                    <p>Se incluyen secciones cerradas y deshabilitadas de los periodos seleccionados.</p>
+                    <label class="block text-sm font-medium text-gray-700" for="filtro-escuela">
+                        Escuela
+                    </label>
+                    <select
+                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        id="filtro-escuela"
+                        name="escuela"
+                    >
+                        <option value="">Todas las escuelas</option>
+                        @foreach ($escuelas as $escuela)
+                            <option value="{{ $escuela->id_escuela }}" @selected(($filtros['escuela'] ?? null) === (int) $escuela->id_escuela)>
+                                {{ $escuela->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
-                <a href="{{ route('investigacion-formativa.director.cursos.index') }}">Ver cursos y habilitar secciones</a>
-            </header>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700" for="filtro-periodo">
+                        Periodo
+                    </label>
+                    <select
+                        class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        id="filtro-periodo"
+                        name="periodo"
+                    >
+                        <option value="">Todos los periodos</option>
+                        @foreach ($periodos as $periodo)
+                            <option value="{{ $periodo }}" @selected(($filtros['periodo'] ?? null) === $periodo)>
+                                {{ $periodo }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <button
+                        class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        type="submit"
+                    >
+                        Filtrar
+                    </button>
+                </div>
+            </form>
+
+            <dl class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" aria-label="Totales de las secciones filtradas">
+                <div class="rounded-lg border border-gray-200 bg-white p-4">
+                    <dt class="text-sm text-gray-600">Secciones</dt>
+                    <dd class="mt-1 text-2xl font-bold text-gray-900">{{ $totales->secciones }}</dd>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-4">
+                    <dt class="text-sm text-gray-600">Habilitadas</dt>
+                    <dd class="mt-1 text-2xl font-bold text-gray-900">{{ $totales->habilitadas }}</dd>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-4">
+                    <dt class="text-sm text-gray-600">Grupos</dt>
+                    <dd class="mt-1 text-2xl font-bold text-gray-900">{{ $totales->grupos }}</dd>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-4">
+                    <dt class="text-sm text-gray-600">Avances actuales evaluados</dt>
+                    <dd class="mt-1 text-2xl font-bold text-gray-900">{{ $totales->evaluaciones }}</dd>
+                </div>
+                <div class="rounded-lg border border-gray-200 bg-white p-4">
+                    <dt class="text-sm text-gray-600">Respuestas</dt>
+                    <dd class="mt-1 text-2xl font-bold text-gray-900">{{ $totales->respuestas }}</dd>
+                </div>
+            </dl>
+
+            <p class="mt-4 text-sm text-gray-600">La participación usa respuestas / participantes activos actuales.
+                Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula.</p>
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold text-gray-900">Secciones de su alcance</h2>
+                <a
+                    class="inline-flex rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    href="{{ route('investigacion-formativa.director.cursos.index') }}"
+                >
+                    Ver cursos y habilitar secciones
+                </a>
+            </div>
 
             @if ($secciones === [])
-                <div class="if-empty">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <h3>No hay secciones en el alcance seleccionado</h3>
-                    <p>Ajuste los filtros de escuela o periodo para ver otras secciones.</p>
-                </div>
+                <p class="mt-4 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                    No hay secciones en el alcance seleccionado.
+                </p>
             @else
-                <div style="overflow-x:auto">
-                    <table class="if-table">
-                        <thead>
+                <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 bg-white text-sm">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col">Sección</th>
-                                <th scope="col">Curso</th>
-                                <th scope="col">Periodo</th>
-                                <th scope="col">Docente</th>
-                                <th scope="col">Estado</th>
-                                <th scope="col">Respuestas</th>
-                                <th scope="col"><span class="sr-only">Acciones</span></th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700" scope="col">Sección</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700" scope="col">Curso</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700" scope="col">Periodo</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700" scope="col">Docente</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700" scope="col">Estado</th>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-700" scope="col">Respuestas</th>
+                                <th class="px-4 py-3 text-right font-semibold text-gray-700" scope="col"><span class="sr-only">Acciones</span></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-200">
                             @foreach ($secciones as $seccion)
                                 <tr>
-                                    <td data-label="Sección" style="font-weight:600">{{ $seccion->seccion }} · {{ $seccion->escuela }}</td>
-                                    <td data-label="Curso">{{ $seccion->curso }}</td>
-                                    <td data-label="Periodo">{{ $seccion->periodo }}</td>
-                                    <td data-label="Docente">{{ $seccion->docente ?? 'Sin docente asignado' }}</td>
-                                    <td data-label="Estado">
-                                        <span class="if-status {{ $seccion->habilitada ? 'is-success' : 'is-neutral' }}">
-                                            {{ $seccion->habilitada ? 'Habilitada' : 'Deshabilitada' }}
-                                        </span>
+                                    <td class="px-4 py-3 font-medium text-gray-900">{{ $seccion->seccion }} · {{ $seccion->escuela }}</td>
+                                    <td class="px-4 py-3 text-gray-700">{{ $seccion->curso }}</td>
+                                    <td class="px-4 py-3 text-gray-700">{{ $seccion->periodo }}</td>
+                                    <td class="px-4 py-3 text-gray-700">{{ $seccion->docente ?? 'Sin docente asignado' }}</td>
+                                    <td class="px-4 py-3 text-gray-700">
+                                        {{ $seccion->habilitada ? 'Habilitada' : 'Deshabilitada' }}
                                     </td>
-                                    <td data-label="Respuestas">
+                                    <td class="px-4 py-3 text-gray-700">
                                         {{ $seccion->respuestas_count }}
                                         @if ($seccion->roster_activo > 0)
                                             · {{ $seccion->participacion_porcentaje }}% de {{ $seccion->roster_activo }} activos
                                         @endif
                                     </td>
-                                    <td data-label="Acciones" style="text-align:right">
-                                        <a class="if-link" href="{{ route('investigacion-formativa.director.resultados', array_filter(['seccion' => $seccion->id_seccion, 'escuela' => $filtros['escuela'], 'periodo' => $filtros['periodo']])) }}">
+                                    <td class="px-4 py-3 text-right">
+                                        <a
+                                            class="font-semibold text-indigo-700 hover:text-indigo-900"
+                                            href="{{ route('investigacion-formativa.director.resultados', array_filter(['seccion' => $seccion->id_seccion, 'escuela' => $filtros['escuela'], 'periodo' => $filtros['periodo']])) }}"
+                                        >
                                             Ver resultados
                                         </a>
                                     </td>
@@ -136,6 +150,5 @@
                     </table>
                 </div>
             @endif
-        </div>
-    @endif
+        @endif
 @endsection
