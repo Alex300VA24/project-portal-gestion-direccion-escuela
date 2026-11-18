@@ -38,6 +38,11 @@
   .sg-dialogo-pie button { min-width: 120px; padding: 9px 22px; border: 0; border-radius: 8px; background: var(--sg-navy, #172554); color: #fff; font-weight: 600; cursor: pointer; }
   .sg-dialogo-pie button:hover { filter: brightness(1.15); }
   .sg-dialogo-pie .sg-dialogo-secundario { background: transparent; color: var(--sg-text, #15233d); border: 1px solid var(--sg-border, #dde1da); }
+  /* Ventanas con formulario: nunca más altas que la pantalla. El cuerpo se desplaza y los botones quedan siempre a la vista (también con zoom). */
+  .sg-form-dialogo[open] { display: flex; flex-direction: column; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); }
+  .sg-form-dialogo > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .sg-form-dialogo .sg-dialogo-cuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .sg-form-dialogo .sg-dialogo-pie { flex: none; border-top: 1px solid var(--sg-border, #dde1da); padding-top: 14px; }
 </style>
 <dialog class="sg-dialogo" id="sg-dialogo" data-tipo="{{ $aviso['tipo'] ?? 'info' }}" aria-labelledby="sg-dialogo-titulo" aria-describedby="sg-dialogo-mensaje" @if($aviso) open @endif>
   <div class="sg-dialogo-cuerpo">

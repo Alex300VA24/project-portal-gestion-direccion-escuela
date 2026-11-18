@@ -53,8 +53,8 @@
 
 @if ($error)
   <div class="sg-alert sg-alert-danger sg-bloque" role="alert">
-    No se pudieron consultar los datos. Revisa la conexión con la base de datos y
-    <a class="sg-link" href="{{ route('seguimiento-egresado.empresas') }}">vuelve a intentarlo</a>.
+    No se pudieron cargar los datos en este momento.
+    <a class="sg-link" href="{{ route('seguimiento-egresado.empresas') }}">Inténtalo de nuevo</a>.
   </div>
 @else
   {{-- CAMPAÑA --}}

@@ -42,6 +42,10 @@
           </a>
         @endforeach
       </div>
+      <a class="sg-module-switch" href="{{ route('dashboard') }}">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Cambiar de módulo</span>
+      </a>
     </nav>
     <div class="sg-sidebar-foot">
       <span class="sg-sidebar-university">Universidad Nacional de Trujillo</span>
@@ -70,8 +74,8 @@
               <svg class="sg-user-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </summary>
             <div class="sg-user-panel">
-              <a href="{{ route('dashboard') }}">Cambiar de módulo</a>
-              <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Cerrar sesión</button></form>
+              <a href="{{ route('profile.edit') }}">Mi perfil</a>
+              <form method="POST" action="{{ route('logout') }}">@csrf<button class="sg-user-salir" type="submit">Cerrar sesión</button></form>
             </div>
           </details>
         @else

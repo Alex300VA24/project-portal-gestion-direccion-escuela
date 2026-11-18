@@ -12,6 +12,12 @@ Tiene dos partes: la de la **Secretaría**, que genera los enlaces, y la del **e
 
 Inicia sesión en el portal con tu cuenta de Secretaría y abre el módulo **Seguimiento al Egresado**. En la barra superior ves tu nombre y tu rol, y las opciones **Cambiar de módulo** y **Cerrar sesión**. La Dirección entra igual y ve las mismas pantallas, con permisos propios (por ejemplo, solo la Dirección registra la evaluación institucional).
 
+### Inicio
+
+La portada muestra, arriba, **Por cerrar**: hasta cinco avisos de lo que sigue abierto y espera respuestas, ordenados por la fecha de cierre más cercana. Pueden ser campañas de egresados, campañas de empleadores y el **contacto inicial** de cada promoción mientras sigue en plazo. Cada aviso dice cuándo cierra, cuántos respondieron (**«12 de 14 · faltan 2»**) y lleva un botón para abrir el detalle; los que cierran en una semana o menos se marcan en ámbar. Si hay más de cinco, **Ver todas las campañas** lleva a la lista. Sin campañas abiertas dice «No hay campañas abiertas». Debajo están los accesos a las cinco áreas. Esta información solo la ve el personal con sesión iniciada.
+
+En todas las pantallas, **Cambiar de módulo** está abajo a la izquierda del menú lateral, y la cuenta (arriba a la derecha) abre **Mi perfil** y **Cerrar sesión**.
+
 ### Padrón y promociones: un flujo de cuatro pasos
 
 Una **promoción** es el grupo de alumnos que ingresó el mismo año. En **Padrón y promociones** ves la lista de promociones y, de cada una, el paso en que va (✓ Promoción · Alumnos · Enlaces · Contacto). El botón de la derecha (**Cargar alumnos →**, **Enviar enlaces →**, **Ver seguimiento →**) te lleva a su página, directo al paso que toca. Así puedes dejar el trabajo a medias y retomarlo después.

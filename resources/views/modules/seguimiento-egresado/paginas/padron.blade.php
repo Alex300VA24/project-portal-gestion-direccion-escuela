@@ -2416,7 +2416,7 @@
 
     // Cargar historial de campañas en vivo desde PostgreSQL
     const timeline = document.getElementById('exp-timeline');
-    timeline.innerHTML = '<p style="color:var(--sg-muted); font-size:13px;">Cargando historial de mediciones de base de datos...</p>';
+    timeline.innerHTML = '<p style="color:var(--sg-muted); font-size:13px;">Cargando historial…</p>';
 
     try {
       const resp = await fetch(`/seguimiento-egresado/padron/egresado/${id}`);

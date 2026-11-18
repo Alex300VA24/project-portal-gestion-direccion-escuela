@@ -59,8 +59,8 @@
 
 @if ($error || collect($indicadores)->contains(fn ($r) => $r->estado === \App\Modules\SeguimientoEgresado\Services\Indicadores\ResultadoIndicador::ERROR))
   <div class="sg-alert sg-alert-danger sg-bloque" role="alert">
-    No se pudieron consultar los datos. Revisa la conexión con la base de datos y
-    <a class="sg-link" href="{{ route('seguimiento-egresado.indicadores', $consulta) }}">vuelve a intentarlo</a>.
+    No se pudieron cargar los datos en este momento.
+    <a class="sg-link" href="{{ route('seguimiento-egresado.indicadores', $consulta) }}">Inténtalo de nuevo</a>.
   </div>
 @endif
 

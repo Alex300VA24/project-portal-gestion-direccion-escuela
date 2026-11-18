@@ -33,13 +33,15 @@ class SeguimientoShellTest extends TestCase
         }
     }
 
-    public function test_la_barra_superior_muestra_la_cuenta_del_portal_y_permite_cambiar_de_modulo_o_salir(): void
+    public function test_la_cuenta_del_portal_ofrece_perfil_y_salir_y_el_menu_lateral_cambiar_de_modulo(): void
     {
         $usuario = $this->secretaria();
 
         $this->actingAs($usuario)->get(route('seguimiento-egresado.padron'))->assertOk()
             ->assertSee($usuario->name)
             ->assertSee('Cambiar de módulo')
+            ->assertSee('Mi perfil')
+            ->assertSee(route('profile.edit'), false)
             ->assertSee('Cerrar sesión')
             ->assertSee(route('logout'), false);
     }
@@ -63,7 +65,7 @@ class SeguimientoShellTest extends TestCase
         $respuesta->assertOk()
             ->assertSee('Inicio · Seguimiento al Egresado | UNT')
             ->assertSee('Iniciar sesión')
-            ->assertSee('seguimiento_egresado');
+            ->assertDontSee('esquema de datos');
     }
 
     public function test_sin_sesion_las_paginas_internas_llevan_al_acceso_del_portal(): void
