@@ -3,8 +3,9 @@
 namespace App\Modules\TesisProyectoTesis\Support;
 
 /**
- * Genera un PDF válido de una página con texto (Helvetica, WinAnsi). Solo para documentos
- * de ejemplo del seeder de escenarios; no reemplaza a los documentos reales que suben los usuarios.
+ * Genera un PDF válido de una página con texto (Helvetica, WinAnsi). Se usa para los documentos de ejemplo
+ * del seeder de escenarios y para la constancia en PDF del oficio de solicitud de asesor; no reemplaza a los
+ * documentos que suben los usuarios.
  */
 final class PdfSimple
 {

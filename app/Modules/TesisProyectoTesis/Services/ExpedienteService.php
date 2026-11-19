@@ -7,13 +7,14 @@ use App\Modules\TesisProyectoTesis\Models\Entrega;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
 use App\Modules\TesisProyectoTesis\Models\ReporteSimilitud;
 use App\Modules\TesisProyectoTesis\Models\Resolucion;
+use App\Modules\TesisProyectoTesis\Models\Solicitud;
 
 /**
  * Ubica el archivo de un registro del expediente a partir de su uuid público.
  */
 final class ExpedienteService
 {
-    public const TIPOS = ['proyecto', 'entrega', 'resolucion', 'reporte', 'acta-firmada'];
+    public const TIPOS = ['oficio', 'proyecto', 'entrega', 'resolucion', 'reporte', 'acta-firmada'];
 
     /** @return array{0: ?Proyecto, 1: ?int} */
     public function ubicarArchivo(string $tipo, string $uuid): array
@@ -32,6 +33,11 @@ final class ExpedienteService
                 $e = Entrega::query()->where('uuid', $uuid)->first();
 
                 return [$e?->proyecto, $e?->id_archivo];
+            })(),
+            'oficio' => (function () use ($uuid) {
+                $s = Solicitud::query()->where('uuid', $uuid)->first();
+
+                return [$s?->proyecto, $s?->id_archivo];
             })(),
             'resolucion' => (function () use ($uuid) {
                 $r = Resolucion::query()->where('uuid', $uuid)->first();

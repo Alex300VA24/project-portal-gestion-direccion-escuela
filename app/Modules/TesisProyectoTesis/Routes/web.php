@@ -72,6 +72,7 @@ Route::prefix('tesis-proyecto-tesis')
                 Route::get('/proyectos/{proyecto}/solicitar-asesor', [DirectorController::class, 'solicitarAsesor'])
                     ->middleware('can:gestionarComoDirector,proyecto')->whereUuid('proyecto')->name('asesor.solicitar');
                 Route::post('/proyectos/{proyecto}/solicitar-asesor', [DirectorController::class, 'enviarSolicitudAsesor'])->whereUuid('proyecto')->name('asesor.enviar');
+                Route::get('/solicitudes/{solicitud}/oficio', [DirectorController::class, 'oficio'])->whereUuid('solicitud')->name('oficio');
                 Route::get('/proyectos/{proyecto}/jurado', [DirectorController::class, 'jurado'])
                     ->middleware('can:gestionarComoDirector,proyecto')->whereUuid('proyecto')->name('jurado');
                 Route::post('/proyectos/{proyecto}/jurado', [DirectorController::class, 'asignarJurado'])->whereUuid('proyecto')->name('jurado.asignar');

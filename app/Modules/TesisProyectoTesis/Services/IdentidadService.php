@@ -132,6 +132,18 @@ final class IdentidadService
             ->all();
     }
 
+    /** Nombre completo de un usuario del portal (por su id en seguridad.usuario). */
+    public function nombreUsuario(?int $idUsuario): string
+    {
+        if ($idUsuario === null) {
+            return '—';
+        }
+        $r = DB::table('seguridad.usuario as u')->join('core.persona as p', 'p.id_persona', '=', 'u.id_persona')
+            ->where('u.id_usuario', $idUsuario)->first(['p.nombres', 'p.apellido_paterno', 'p.apellido_materno']);
+
+        return $r ? self::nombreCompleto($r->nombres, $r->apellido_paterno, $r->apellido_materno) : '—';
+    }
+
     public function nombreDocente(?int $id): string
     {
         return $id === null ? '—' : ($this->docentes([$id])[$id]['nombre'] ?? '—');

@@ -3,6 +3,7 @@
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Models\Solicitud;
 use App\Modules\TesisProyectoTesis\Requests\AsignarJuradoRequest;
 use App\Modules\TesisProyectoTesis\Requests\FiltrarProyectosDirectorRequest;
 use App\Modules\TesisProyectoTesis\Requests\ReemplazarJuradoRequest;
@@ -15,6 +16,7 @@ use App\Modules\TesisProyectoTesis\Services\SimilitudService;
 use App\Modules\TesisProyectoTesis\Support\Estados;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 final class DirectorController extends BaseController
@@ -98,9 +100,22 @@ final class DirectorController extends BaseController
 
     public function enviarSolicitudAsesor(SolicitarAsesorRequest $request, Proyecto $proyecto, DesignacionService $designacion): RedirectResponse
     {
-        $designacion->solicitarAsesor($proyecto, $this->identidad($request), $request->validated());
+        $solicitud = $designacion->solicitarAsesor($proyecto, $this->identidad($request), $request->validated());
 
-        return redirect()->route('tesis-proyecto-tesis.director.panel')
-            ->with('status', "Solicitud de asesor enviada al Decanato para {$proyecto->codigo}. La Secretaría registrará la resolución.");
+        // Continuación: el oficio se imprime, se firma y se envía al Decanato por el canal oficial.
+        return redirect()->route('tesis-proyecto-tesis.director.oficio', $solicitud)
+            ->with('status', "Solicitud de asesor de {$proyecto->codigo} registrada (oficio N.° {$designacion->numeroOficio($solicitud)}). Imprime el oficio, fírmalo y envíalo al Decanato por el canal oficial.");
+    }
+
+    /** Oficio imprimible de la solicitud de asesor (dirigido al Decano). */
+    public function oficio(Request $request, Solicitud $solicitud, DesignacionService $designacion): View
+    {
+        $this->identidad($request);
+        Gate::authorize('gestionarComoDirector', $solicitud->proyecto);
+
+        return $this->vista($request, 'director.oficio', [
+            'oficio' => $designacion->oficio($solicitud),
+            'proyecto' => $solicitud->proyecto,
+        ], 'director', 'panel');
     }
 }

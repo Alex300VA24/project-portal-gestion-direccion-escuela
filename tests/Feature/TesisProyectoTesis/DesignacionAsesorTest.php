@@ -42,7 +42,7 @@ final class DesignacionAsesorTest extends TesisTestCase
     {
         $this->como('director@portal.local')
             ->post(route('tesis-proyecto-tesis.director.asesor.enviar', $p), $this->solicitud())
-            ->assertRedirect(route('tesis-proyecto-tesis.director.panel'))
+            ->assertRedirect(route('tesis-proyecto-tesis.director.oficio', \App\Modules\TesisProyectoTesis\Models\Solicitud::query()->where('id_proyecto', $p->id_proyecto)->latest('id_solicitud')->firstOrFail()))
             ->assertSessionHasNoErrors();
     }
 

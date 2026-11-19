@@ -10,6 +10,7 @@ use App\Modules\TesisProyectoTesis\Models\TipoSolicitud;
 use App\Modules\TesisProyectoTesis\Support\Estados;
 use App\Modules\TesisProyectoTesis\Support\Identidad;
 use App\Modules\TesisProyectoTesis\Support\Parametros;
+use App\Modules\TesisProyectoTesis\Support\PdfSimple;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,73 @@ final class DesignacionService
         private readonly NotificacionService $notificaciones,
     ) {}
 
+    /** Número del oficio: correlativo de las solicitudes de asesor del año (no se guarda: se recalcula igual). */
+    public function numeroOficio(Solicitud $s): string
+    {
+        $anio = (int) $s->presentada_en->year;
+        $n = Solicitud::query()->where('id_tipo_solicitud', $s->id_tipo_solicitud)
+            ->whereYear('presentada_en', $anio)->where('id_solicitud', '<=', $s->id_solicitud)->count();
+
+        return sprintf('%03d-%d-EPII-D', $n, $anio);
+    }
+
+    /**
+     * Datos del oficio de solicitud de asesor dirigido al Decano.
+     *
+     * @return array<string, mixed>
+     */
+    public function oficio(Solicitud $s): array
+    {
+        $p = $s->proyecto()->with('integrantesActivos')->firstOrFail();
+        $estudiantes = $this->identidad->estudiantes($p->integrantesActivos->pluck('id_estudiante')->all());
+
+        return [
+            'numero' => $this->numeroOficio($s),
+            'fecha' => $s->presentada_en,
+            'destinatario' => $s->destinatario,
+            'area' => $s->destinatario_area,
+            'asunto' => $s->asunto,
+            'detalle' => $s->detalle,
+            'proyecto' => ['codigo' => $p->codigo, 'titulo' => $p->titulo],
+            'estudiantes' => array_values(array_map(fn ($e) => $e['nombre'].' (código '.$e['codigo'].')', $estudiantes)),
+            'linea' => $this->catalogo->nombresLineas([$p->id_linea])[$p->id_linea] ?? '—',
+            'sugerido' => $s->id_docente_sugerido ? $this->identidad->nombreDocente((int) $s->id_docente_sugerido) : null,
+            'director' => $this->identidad->nombreUsuario((int) $s->presentada_por),
+            'uuid' => $s->uuid,
+            'archivo' => $s->id_archivo !== null,
+        ];
+    }
+
+    /** @return list<string> */
+    private function lineasOficio(array $o): array
+    {
+        return [
+            'Trujillo, '.$o['fecha']->locale('es')->translatedFormat('j \d\e F \d\e Y'),
+            '',
+            'Señor(a): '.$o['destinatario'],
+            $o['area'],
+            'Presente.-',
+            '',
+            'Asunto: '.$o['asunto'],
+            '',
+            'Proyecto: '.$o['proyecto']['codigo'].' · '.$o['proyecto']['titulo'],
+            'Estudiantes: '.implode('; ', $o['estudiantes']),
+            'Línea de investigación: '.$o['linea'],
+            'Docente sugerido: '.($o['sugerido'] ?? 'sin sugerencia'),
+            '',
+            (string) $o['detalle'],
+            '',
+            'Atentamente,',
+            '',
+            '',
+            '______________________________',
+            $o['director'],
+            'Director(a) de la Escuela de Ingeniería Informática',
+            '',
+            'Constancia generada por el sistema de Gestión de Tesis. El envío al Decanato se hace por el canal oficial.',
+        ];
+    }
+
     /** Solicitudes de asesor que esperan la resolución del Decanato. */
     public function solicitudesPendientes()
     {
@@ -37,7 +105,7 @@ final class DesignacionService
             ->where('id_tipo_solicitud', $this->idTipo(Parametros::TIPO_SOLICITUD_ASESOR))
             ->with('proyecto:id_proyecto,uuid,codigo,titulo,id_linea,estado,etapa')
             ->orderBy('presentada_en')->orderBy('id_solicitud')
-            ->get(['id_solicitud', 'uuid', 'id_proyecto', 'presentada_en', 'asunto', 'detalle', 'id_docente_sugerido']);
+            ->get(['id_solicitud', 'uuid', 'id_proyecto', 'presentada_en', 'asunto', 'detalle', 'id_docente_sugerido', 'id_archivo']);
     }
 
     public function resolucionesRecientes(int $limite = 8)
@@ -111,15 +179,23 @@ final class DesignacionService
                 'id_docente_sugerido' => $sugerido,
             ])->refresh();
 
+            // Constancia: el oficio en PDF queda guardado en la solicitud. El Decanato no usa el sistema:
+            // el Director lo imprime, lo firma y lo envía por el canal oficial.
+            $o = $this->oficio($solicitud);
+            $solicitud->update(['id_archivo' => $this->archivos->guardarContenido(
+                PdfSimple::generar('OFICIO N.° '.$o['numero'], $this->lineasOficio($o)),
+                'Oficio_'.$o['numero'].'.pdf', $director->idUsuario, 'oficios',
+            )]);
+
             $this->notificaciones->notificar(
                 $this->identidad->usuariosConRol('secretaria'),
-                'asesor.solicitado', "Solicitud de asesor enviada · {$p->codigo}",
-                'Registra la resolución del Decanato cuando llegue.', $p,
+                'asesor.solicitado', "Solicitud de asesor registrada · {$p->codigo}",
+                "El Director registró la solicitud (oficio N.° {$o['numero']}) y la envía al Decanato por el canal oficial. Registra la resolución cuando llegue.", $p,
             );
             $this->notificaciones->notificar(
                 $this->identidad->usuariosDeEstudiantes($p->integrantesActivos()->pluck('id_estudiante')->all()),
                 'asesor.solicitado', 'Se solicitó la designación de tu asesor',
-                'El Director envió la solicitud al Decanato. Te avisaremos cuando se registre la resolución.', $p,
+                'El Director registró la solicitud y la envía al Decanato por el canal oficial. Te avisaremos cuando se registre la resolución.', $p,
             );
 
             return $solicitud;

@@ -37,6 +37,9 @@
                     @if ($sugerido)
                         <span class="tz-small">Sugerencia del Director: <strong>{{ $sugerido['nombre'] }}</strong> (referencial)</span>
                     @endif
+                    @if ($actual->id_archivo)
+                        <a class="tz-small" href="{{ route('tesis-proyecto-tesis.archivos.descargar', ['oficio', $actual->uuid]) }}" target="_blank" rel="noopener">Oficio del Director al Decanato · ver PDF</a>
+                    @endif
                 </div>
                 <div class="tz-panel-body tz-fields">
                     <div class="tz-field">

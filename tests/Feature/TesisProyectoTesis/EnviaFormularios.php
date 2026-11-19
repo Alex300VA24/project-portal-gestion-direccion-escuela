@@ -61,7 +61,8 @@ trait EnviaFormularios
             }
             $valor = match (true) {
                 in_array($tipo, ['submit', 'button', 'image', 'reset', 'file'], true) => null,
-                in_array($tipo, ['radio', 'checkbox'], true) => $campo->hasAttribute('checked') ? ($campo->getAttribute('value') ?: 'on') : null,
+                // Como el navegador: un radio/checkbox marcado envía su value (aunque sea ""); sin atributo value, «on».
+                in_array($tipo, ['radio', 'checkbox'], true) => $campo->hasAttribute('checked') ? ($campo->hasAttribute('value') ? $campo->getAttribute('value') : 'on') : null,
                 $campo->tagName === 'textarea' => $campo->textContent,
                 $campo->tagName === 'select' => $this->valorSeleccionado($x, $campo),
                 default => $campo->getAttribute('value'),

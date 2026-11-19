@@ -305,6 +305,11 @@
     .tz-doc h2, .tz-doc h3 { color: #000; }
     .tz-doc h2 { text-align: center; font-size: 17px; margin-bottom: 14px; }
     .tz-doc .tz-doc-center { text-align: center; }
+    .tz-doc .tz-doc-derecha { text-align: right; }
+    .tz-doc .tz-doc-tabla { width: 100%; border-collapse: collapse; margin: 14px 0; }
+    .tz-doc .tz-doc-tabla th, .tz-doc .tz-doc-tabla td { padding: 4px 8px; border: 1px solid #000; text-align: left; vertical-align: top; }
+    .tz-doc .tz-doc-tabla th { width: 30%; }
+    .tz-doc .tz-firma-unica { grid-template-columns: minmax(0, 320px); }
     .tz-doc .tz-firmas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 40px 24px; margin-top: 64px; text-align: center; font-size: 14px; }
     .tz-doc .tz-firmas div { border-top: 1px solid #000; padding-top: 6px; }
     @media print {
