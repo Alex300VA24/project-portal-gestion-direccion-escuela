@@ -9,13 +9,16 @@ use App\Modules\InvestigacionFormativa\Requests\HabilitarSeccionRequest;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
 use App\Modules\InvestigacionFormativa\Services\DatosAcademicosService;
+use App\Modules\InvestigacionFormativa\Services\ReportePdfService;
 use App\Modules\InvestigacionFormativa\Services\ReporteService;
 use App\Modules\InvestigacionFormativa\Support\ActorInvestigacion;
 use App\Shared\Models\Core\Seccion;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 final class DirectorController extends Controller
@@ -25,6 +28,7 @@ final class DirectorController extends Controller
         private readonly DatosAcademicosService $datos,
         private readonly ConfiguracionService $configuracion,
         private readonly ReporteService $reportes,
+        private readonly ReportePdfService $pdf,
     ) {}
 
     public function index(Request $request): View
@@ -141,6 +145,49 @@ final class DirectorController extends Controller
             'reporte' => $reporte,
             'pagina' => $pagina,
             'porPagina' => $porPagina,
+        ]);
+    }
+
+    public function exportarResultados(Request $request, Seccion $seccion): Response
+    {
+        $actor = $this->actorDe($request);
+        Gate::authorize('verResultados', $seccion);
+
+        $idLinea = $request->filled('linea') ? (int) $request->input('linea') : null;
+
+        try {
+            $reporte = $this->reportes->porSeccion(
+                $actor,
+                (int) $seccion->id_seccion,
+                1,
+                1,
+                $idLinea,
+                false,
+            );
+        } catch (AccesoDenegado $exception) {
+            abort(403, $exception->getMessage());
+        }
+
+        $seccion->load(['periodo', 'cursoPlan.curso']);
+
+        $generadoEn = CarbonImmutable::now('America/Lima');
+        $contenido = $this->pdf->generar(
+            $reporte,
+            $seccion,
+            $this->datos->nombreEscuelaDeSeccion((int) $seccion->id_seccion),
+            $idLinea === null ? null : $this->datos->nombreDeLinea($idLinea),
+            $generadoEn->format('d/m/Y H:i'),
+        );
+
+        $codigo = Str::slug((string) $seccion->codigo);
+        $nombreArchivo = 'investigacion-formativa-'
+            .($codigo === '' ? 'seccion-'.$seccion->id_seccion : $codigo)
+            .'-'.$generadoEn->format('Ymd-His').'.pdf';
+
+        return response($contenido, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$nombreArchivo.'"',
+            'Cache-Control' => 'no-store, private',
         ]);
     }
 

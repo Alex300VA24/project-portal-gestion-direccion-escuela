@@ -22,6 +22,9 @@ Route::prefix('investigacion-formativa')
 
                 Route::get('/director/secciones/{seccion}/resultados', [DirectorController::class, 'resultados'])
                     ->name('director.resultados');
+
+                Route::get('/director/secciones/{seccion}/resultados.pdf', [DirectorController::class, 'exportarResultados'])
+                    ->name('director.resultados.pdf');
             });
 
             Route::middleware('permission:investigacion-formativa.courses.manage')->group(function () {

@@ -13,6 +13,16 @@
                     <a class="if-link" href="{{ route('investigacion-formativa.director.index', request()->only(['escuela', 'periodo', 'curso', 'linea'])) }}">
                         Volver al resumen e historial por periodo
                     </a>
+                    <a
+                        class="if-button"
+                        href="{{ route('investigacion-formativa.director.resultados.pdf', $seccion) }}@if (request()->filled('linea'))?linea={{ (int) request('linea') }}@endif"
+                        download
+                    >
+                        Descargar PDF
+                    </a>
+                </p>
+                <p class="if-note" style="margin-top: 8px;">
+                    El PDF incluye los resultados visibles con los filtros activos. No incluye los comentarios confidenciales de la encuesta.
                 </p>
             </div>
         </div>

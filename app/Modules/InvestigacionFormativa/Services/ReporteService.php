@@ -48,6 +48,7 @@ final class ReporteService
         int $paginaComentarios = 1,
         int $porPaginaComentarios = 10,
         ?int $idLinea = null,
+        bool $incluirComentarios = true,
     ): object {
         $this->exigirSeccionVisible($actor, $idSeccion);
 
@@ -88,7 +89,9 @@ final class ReporteService
                 })
                 ->all();
 
-            $comentarios = $this->paginadosComentarios($idEncuesta, $paginaComentarios, $porPaginaComentarios);
+            if ($incluirComentarios) {
+                $comentarios = $this->paginadosComentarios($idEncuesta, $paginaComentarios, $porPaginaComentarios);
+            }
         }
 
         $rosterActivo = (int) DB::table('investigacion_formativa.participante_seccion')

@@ -47,6 +47,27 @@ final class DatosAcademicosService
         ];
     }
 
+    public function nombreEscuelaDeSeccion(int $idSeccion): ?string
+    {
+        $nombre = DB::table('core.seccion as s')
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
+            ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
+            ->join('core.escuela_profesional as e', 'e.id_escuela', '=', 'pe.id_escuela')
+            ->where('s.id_seccion', $idSeccion)
+            ->value('e.nombre');
+
+        return $nombre === null ? null : (string) $nombre;
+    }
+
+    public function nombreDeLinea(int $idLinea): ?string
+    {
+        $nombre = DB::table('core.linea_investigacion')
+            ->where('id_linea', $idLinea)
+            ->value('nombre');
+
+        return $nombre === null ? null : (string) $nombre;
+    }
+
     public function docenteActivoDePersona(int $idPersona): ?int
     {
         $idDocente = DB::table('core.docente')
