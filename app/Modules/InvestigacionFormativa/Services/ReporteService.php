@@ -52,6 +52,10 @@ final class ReporteService
     ): object {
         $this->exigirSeccionVisible($actor, $idSeccion);
 
+        if ($idLinea !== null && ! $this->datos->lineaPerteneceASeccion($idLinea, $idSeccion)) {
+            throw new AccesoDenegado('La línea solicitada no pertenece a la escuela de la sección.');
+        }
+
         $encuesta = DB::table('investigacion_formativa.encuesta')
             ->where('id_seccion', $idSeccion)
             ->first();
@@ -274,9 +278,9 @@ final class ReporteService
             throw new AccesoDenegado('El periodo solicitado no pertenece a su alcance de dirección.');
         }
 
-        $seccionesPermitidas = $this->seccionesDirectorio($actor->user->id, null, null);
-        $cursos = $this->cursosDeSecciones($seccionesPermitidas);
-        $lineas = $this->lineasDeSecciones(array_column($seccionesPermitidas, 'id_seccion'));
+        $seccionesFiltradas = $this->seccionesDirectorio($actor->user->id, $idEscuela, $periodo);
+        $cursos = $this->cursosDeSecciones($seccionesFiltradas);
+        $lineas = $this->lineasDeSecciones(array_column($seccionesFiltradas, 'id_seccion'));
 
         if ($idCurso !== null && ! in_array($idCurso, array_column($cursos, 'id_curso'), true)) {
             throw new AccesoDenegado('El curso solicitado no pertenece a su alcance de dirección.');

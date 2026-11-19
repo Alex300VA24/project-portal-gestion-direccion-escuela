@@ -68,6 +68,20 @@ final class DatosAcademicosService
         return $nombre === null ? null : (string) $nombre;
     }
 
+    /**
+     * Comprueba que la línea pertenezca a la escuela de la sección.
+     */
+    public function lineaPerteneceASeccion(int $idLinea, int $idSeccion): bool
+    {
+        return DB::table('core.seccion as s')
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
+            ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
+            ->join('core.linea_investigacion as l', 'l.id_escuela', '=', 'pe.id_escuela')
+            ->where('s.id_seccion', $idSeccion)
+            ->where('l.id_linea', $idLinea)
+            ->exists();
+    }
+
     public function docenteActivoDePersona(int $idPersona): ?int
     {
         $idDocente = DB::table('core.docente')

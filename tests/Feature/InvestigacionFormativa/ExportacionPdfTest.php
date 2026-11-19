@@ -155,6 +155,17 @@ final class ExportacionPdfTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_no_exporta_ni_muestra_una_linea_de_otra_escuela(): void
+    {
+        $this->actingAs($this->datos['users']['director'])
+            ->get($this->ruta().'?linea=9802')
+            ->assertForbidden();
+
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.resultados', 9901).'?linea=9802')
+            ->assertForbidden();
+    }
+
     public function test_el_boton_de_descarga_conserva_el_filtro_de_linea(): void
     {
         $this->actingAs($this->datos['users']['director'])

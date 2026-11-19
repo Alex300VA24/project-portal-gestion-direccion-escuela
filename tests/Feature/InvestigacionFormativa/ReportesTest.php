@@ -453,6 +453,26 @@ final class ReportesTest extends TestCase
         $this->assertNotContains(9902, array_column($this->resumen()->secciones, 'id_seccion'));
     }
 
+    public function test_las_opciones_de_filtro_se_limitan_a_la_escuela_elegida(): void
+    {
+        DB::table('investigacion_formativa.director_escuela')->insert([
+            'user_id' => $this->datos['users']['multisecretaria']->id,
+            'id_escuela' => 921,
+            'activo' => true,
+        ]);
+
+        $actor = app(AccesoInvestigacionService::class)->resolver($this->datos['users']['multisecretaria']);
+        $resumen = app(ReporteService::class)->resumenDirector($actor, 921);
+
+        $this->assertSame([9902], array_column($resumen->secciones, 'id_seccion'));
+        $this->assertSame([9702], array_column($resumen->cursos, 'id_curso'));
+        $this->assertSame([], $resumen->lineas);
+
+        $this->actingAs($this->datos['users']['multisecretaria'])
+            ->get(route('investigacion-formativa.director.index', ['escuela' => 921, 'curso' => 9701]))
+            ->assertForbidden();
+    }
+
     public function test_las_consultas_del_resumen_no_crecen_por_seccion(): void
     {
         $proyecto = $this->proyecto();

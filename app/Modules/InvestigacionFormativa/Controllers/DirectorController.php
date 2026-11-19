@@ -129,13 +129,17 @@ final class DirectorController extends Controller
         $porPagina = min(100, max(1, $request->integer('por_pagina', 10)));
         $idLinea = $request->filled('linea') ? (int) $request->input('linea') : null;
 
-        $reporte = $this->reportes->porSeccion(
-            $actor,
-            (int) $seccion->id_seccion,
-            $pagina,
-            $porPagina,
-            $idLinea,
-        );
+        try {
+            $reporte = $this->reportes->porSeccion(
+                $actor,
+                (int) $seccion->id_seccion,
+                $pagina,
+                $porPagina,
+                $idLinea,
+            );
+        } catch (AccesoDenegado $exception) {
+            abort(403, $exception->getMessage());
+        }
 
         $reporte->comentarios->appends($request->only(['por_pagina', 'escuela', 'periodo', 'curso', 'linea']));
         $seccion->load(['periodo', 'cursoPlan.curso']);
