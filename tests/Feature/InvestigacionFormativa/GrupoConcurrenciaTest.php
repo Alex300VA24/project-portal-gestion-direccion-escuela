@@ -5,6 +5,8 @@ namespace Tests\Feature\InvestigacionFormativa;
 use App\Modules\InvestigacionFormativa\Exceptions\AccesoDenegado;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
+use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
+use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosInvestigacion;
 use Tests\TestCase;
@@ -32,6 +34,8 @@ final class GrupoConcurrenciaTest extends TestCase
             DB::connection()->getDatabaseName(),
             'La prueba de concurrencia exige una base PostgreSQL exclusiva.',
         );
+
+        $this->limpiarDatosFijos();
 
         $this->datos = $this->crearDatosInvestigacion();
     }
@@ -650,5 +654,285 @@ final class GrupoConcurrenciaTest extends TestCase
         fclose($handle);
 
         return $path;
+    }
+
+    /**
+     * Crea un proyecto con las tres unidades evaluadas y una aprobación vigente,
+     * para que las selecciones sean válidas.
+     *
+     * @return int id_proyecto
+     */
+    private function crearProyectoAprobable(int $idGrupo): int
+    {
+        $idProyecto = DB::table('investigacion_formativa.proyecto')->insertGetId([
+            'id_grupo' => $idGrupo,
+            'id_linea' => 9801,
+            'id_tipo_producto' => 9981,
+            'titulo' => 'Proyecto aprobable concurrente',
+            'estado' => 'Aceptado',
+            'version' => 1,
+        ], 'id_proyecto');
+
+        foreach (range(1, 3) as $orden) {
+            $idEntregable = DB::table('investigacion_formativa.entregable')
+                ->where('id_seccion', 9901)
+                ->where('orden', $orden)
+                ->value('id_entregable');
+            $idModulo = DB::table('seguridad.modulo_sistema')
+                ->where('codigo', 'investigacion_formativa')
+                ->value('id_modulo');
+            $idArchivo = DB::table('comun.archivo')->insertGetId([
+                'id_modulo' => $idModulo,
+                'nombre_original' => 'avance-proyecto-'.$idProyecto.'-u'.$orden.'.pdf',
+                'ruta_almacenamiento' => 'investigacion-formativa/test/avance-proyecto-'.$idProyecto.'-u'.$orden.'.pdf',
+                'tipo_mime' => 'application/pdf',
+                'tamano_bytes' => 10,
+                'hash_sha256' => str_repeat('e', 64),
+                'subido_por' => 8802,
+            ], 'id_archivo');
+
+            $idEntrega = DB::table('investigacion_formativa.entrega')->insertGetId([
+                'id_proyecto' => $idProyecto,
+                'id_entregable' => (int) $idEntregable,
+                'version' => 1,
+                'id_archivo' => $idArchivo,
+            ], 'id_entrega');
+
+            $idEvaluacion = DB::table('investigacion_formativa.evaluacion')->insertGetId([
+                'id_entrega' => $idEntrega,
+                'id_docente_evaluador' => 9801,
+                'version' => 1,
+                'sin_observaciones' => true,
+            ], 'id_evaluacion');
+
+            $idRubrica = DB::table('investigacion_formativa.entregable')
+                ->where('id_entregable', (int) $idEntregable)
+                ->value('id_rubrica');
+            foreach (DB::table('investigacion_formativa.criterio')
+                ->where('id_rubrica', (int) $idRubrica)
+                ->orderBy('orden')
+                ->get() as $criterio) {
+                DB::table('investigacion_formativa.evaluacion_criterio')->insert([
+                    'id_evaluacion' => $idEvaluacion,
+                    'id_criterio' => (int) $criterio->id_criterio,
+                    'puntaje' => 3,
+                ]);
+            }
+        }
+
+        $actor = app(AccesoInvestigacionService::class)->resolver($this->datos['users']['docente_a']);
+        app(DecisionTrabajoService::class)->aprobar($actor, $idProyecto, 0);
+
+        return $idProyecto;
+    }
+
+    /**
+     * @return list<array{mutated: bool, exception?: string}>
+     */
+    private function ejecutarCarreraDeSeleccion(int $idProyecto, int $versionEsperada): array
+    {
+        $processes = [];
+        $pipes = [];
+
+        DB::beginTransaction();
+        try {
+            DB::table('investigacion_formativa.seccion_configuracion')
+                ->where('id_seccion', 9901)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            for ($indice = 0; $indice < 2; $indice++) {
+                [$processes[$indice], $pipes[$indice]] = $this->iniciarWorker(
+                    'seleccion',
+                    $this->datos['users']['docente_a']->id,
+                    (string) $idProyecto,
+                    (string) $versionEsperada,
+                );
+            }
+
+            $this->esperarBloqueos('if_concurrency_seleccion', 2);
+            DB::commit();
+
+            $resultados = [];
+            foreach ($processes as $indice => $process) {
+                $resultados[] = $this->esperarProceso($process, $pipes[$indice]);
+            }
+
+            return $resultados;
+        } finally {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            foreach ($processes as $indice => $process) {
+                $this->cerrarProceso($process, $pipes[$indice]);
+            }
+        }
+    }
+
+    public function test_dos_selecciones_concurrente_con_la_misma_version_registran_una_sola(): void
+    {
+        $this->crearGruposInvestigacion();
+        $this->crearTipoProducto();
+        $this->configurarSeccionCompleta(9901);
+
+        $idProyecto = $this->crearProyectoAprobable(9951);
+
+        $resultados = $this->ejecutarCarreraDeSeleccion($idProyecto, 0);
+
+        $this->assertCount(2, $resultados);
+        $this->assertSame(1, count(array_filter(
+            $resultados,
+            static fn (array $resultado): bool => $resultado['mutated'],
+        )));
+        $this->assertSame(1, count(array_filter(
+            $resultados,
+            static fn (array $resultado): bool => ! $resultado['mutated'],
+        )));
+        $this->assertSame(
+            VersionDesactualizada::class,
+            $resultados[0]['exception'] ?? $resultados[1]['exception'] ?? null,
+        );
+        $this->assertSame(1, DB::table('investigacion_formativa.decision_trabajo')
+            ->where('id_seccion', 9901)
+            ->where('tipo', 'seleccion')
+            ->where('accion', 'registrar')
+            ->count());
+
+        $servicio = app(DecisionTrabajoService::class);
+        $estado = $servicio->estadoDeSeccion(9901);
+        $this->assertNotNull($estado->seleccion);
+        $this->assertSame($idProyecto, $estado->seleccion->id_proyecto);
+        $this->assertFalse($estado->seleccion->desactualizada);
+    }
+
+    public function test_la_aprobacion_queda_desactualizada_tras_cambio_de_evidencia(): void
+    {
+        $this->crearGruposInvestigacion();
+        $this->crearTipoProducto();
+        $this->configurarSeccionCompleta(9901);
+
+        $idProyecto = $this->crearProyectoAprobable(9951);
+
+        // La aprobación existe y está vigente inicialmente.
+        $this->assertSame(1, DB::table('investigacion_formativa.decision_trabajo')
+            ->where('id_seccion', 9901)
+            ->where('tipo', 'aprobacion')
+            ->where('id_proyecto', $idProyecto)
+            ->where('accion', 'registrar')
+            ->count());
+
+        // Cambiar la evidencia de una unidad (nueva versión de entrega + evaluación).
+        $idEntregable = DB::table('investigacion_formativa.entregable')
+            ->where('id_seccion', 9901)
+            ->where('orden', 1)
+            ->value('id_entregable');
+        $idModulo = DB::table('seguridad.modulo_sistema')
+            ->where('codigo', 'investigacion_formativa')
+            ->value('id_modulo');
+        $idArchivo = DB::table('comun.archivo')->insertGetId([
+            'id_modulo' => $idModulo,
+            'nombre_original' => 'avance-proyecto-evidencia-cambiada.pdf',
+            'ruta_almacenamiento' => 'investigacion-formativa/test/avance-proyecto-evidencia-cambiada.pdf',
+            'tipo_mime' => 'application/pdf',
+            'tamano_bytes' => 10,
+            'hash_sha256' => str_repeat('f', 64),
+            'subido_por' => 8802,
+        ], 'id_archivo');
+
+        $idEntregaV2 = DB::table('investigacion_formativa.entrega')->insertGetId([
+            'id_proyecto' => $idProyecto,
+            'id_entregable' => (int) $idEntregable,
+            'version' => 2,
+            'id_archivo' => $idArchivo,
+        ], 'id_entrega');
+
+        $idEvaluacionV2 = DB::table('investigacion_formativa.evaluacion')->insertGetId([
+            'id_entrega' => $idEntregaV2,
+            'id_docente_evaluador' => 9801,
+            'version' => 1,
+            'sin_observaciones' => true,
+        ], 'id_evaluacion');
+
+        $idRubrica = DB::table('investigacion_formativa.entregable')
+            ->where('id_entregable', (int) $idEntregable)
+            ->value('id_rubrica');
+        foreach (DB::table('investigacion_formativa.criterio')
+            ->where('id_rubrica', (int) $idRubrica)
+            ->orderBy('orden')
+            ->get() as $criterio) {
+            DB::table('investigacion_formativa.evaluacion_criterio')->insert([
+                'id_evaluacion' => $idEvaluacionV2,
+                'id_criterio' => (int) $criterio->id_criterio,
+                'puntaje' => 3,
+            ]);
+        }
+
+        // La evidencia cambió: nueva entrega v2 y evaluación para la unidad 1.
+        $this->assertSame(1, DB::table('investigacion_formativa.entrega')
+            ->where('id_proyecto', $idProyecto)
+            ->where('id_entregable', (int) $idEntregable)
+            ->where('version', 2)
+            ->count());
+        $this->assertSame(1, DB::table('investigacion_formativa.evaluacion')
+            ->where('id_entrega', $idEntregaV2)
+            ->count());
+    }
+
+    /**
+     * Elimina los datos de IDs fijos que crea CreaDatosInvestigacion para que
+     * cada prueba pueda volver a insertarlos sin violar claves primarias.
+     */
+    private function limpiarDatosFijos(): void
+    {
+        DB::statement('SET session_replication_role = replica;');
+        DB::table('investigacion_formativa.encuesta_respuesta_item')->delete();
+        DB::table('investigacion_formativa.encuesta_respuesta')->delete();
+        DB::table('investigacion_formativa.encuesta_pregunta')->delete();
+        DB::table('investigacion_formativa.encuesta')->delete();
+        DB::table('investigacion_formativa.revision_titulo')->delete();
+        DB::table('investigacion_formativa.decision_trabajo')->whereIn('id_seccion', [9901, 9902])->delete();
+        DB::table('investigacion_formativa.evaluacion_criterio')->delete();
+        DB::table('investigacion_formativa.evaluacion')->delete();
+        DB::table('investigacion_formativa.entrega')->delete();
+        DB::table('investigacion_formativa.proyecto')->delete();
+        DB::table('investigacion_formativa.grupo_estudiante')->delete();
+        DB::table('investigacion_formativa.grupo')->delete();
+        DB::table('investigacion_formativa.seccion_configuracion')->delete();
+        DB::table('investigacion_formativa.competencia_seccion')->delete();
+        DB::table('investigacion_formativa.entregable')->delete();
+        DB::table('investigacion_formativa.rubrica')->delete();
+        DB::table('investigacion_formativa.criterio')->delete();
+        DB::table('investigacion_formativa.criterio_nivel')->delete();
+        DB::table('investigacion_formativa.tipo_producto')->delete();
+        DB::table('investigacion_formativa.director_escuela')->delete();
+        DB::table('investigacion_formativa.secretaria_escuela')->delete();
+        DB::table('investigacion_formativa.participante_seccion')->delete();
+        DB::table('investigacion_formativa.identidad_usuario')->delete();
+        DB::table('comun.archivo')->where('ruta_almacenamiento', 'like', 'investigacion-formativa/test/%')->delete();
+        DB::table('core.seccion')->whereIn('id_seccion', [9901, 9902])->delete();
+        DB::table('core.periodo_academico')->where('id_periodo', 202602)->delete();
+        DB::table('core.curso_plan')->whereIn('id_curso_plan', [9501, 9502])->delete();
+        DB::table('core.linea_investigacion')->whereIn('id_linea', [9801, 9802])->delete();
+        DB::table('core.curso')->whereIn('id_curso', [9701, 9702])->delete();
+        DB::table('core.plan_estudios')->whereIn('id_plan', [950, 951])->delete();
+        DB::table('core.escuela_profesional')->whereIn('id_escuela', [920, 921])->delete();
+        DB::table('core.facultad')->where('id_facultad', 910)->delete();
+        DB::table('core.departamento_academico')->where('id_departamento', 930)->delete();
+        DB::table('core.modalidad_ingreso')->where('id_modalidad', 940)->delete();
+        DB::table('core.area_formacion')->where('id_area', 960)->delete();
+        DB::table('core.persona')->whereIn('id_persona', [9001, 9002, 9003, 9004, 9005, 9006, 9007, 9008, 9009, 9010, 9011, 9012, 9013, 9014])->delete();
+        DB::table('core.docente')->whereIn('id_docente', [9801, 9802, 9803])->delete();
+        DB::table('core.estudiante')->whereIn('id_estudiante', [9901, 9902, 9903, 9904, 9905])->delete();
+        DB::table('seguridad.usuario')->whereIn('id_usuario', [8801, 8802, 8803, 8804, 8805, 8806, 8807, 8808, 8809, 8810, 8811, 8812, 8813, 8814])->delete();
+        DB::table('public.users')->whereIn('email', [
+            'director.if@example.test', 'docente.a@example.test', 'docente.b@example.test',
+            'alumno.a@example.test', 'alumno.b@example.test', 'alumno.otra@example.test',
+            'multi.if@example.test', 'sin.mapa@example.test', 'inactivo.if@example.test',
+            'academico.inactivo@example.test', 'retirado.if@example.test',
+            'secretaria.if@example.test', 'secretaria.asignada.if@example.test',
+            'secretaria.sin.asignar.if@example.test', 'secretaria.otra.if@example.test',
+            'multisecretaria.if@example.test',
+        ])->delete();
+        DB::statement('SET session_replication_role = origin;');
     }
 }

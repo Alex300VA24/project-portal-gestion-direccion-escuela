@@ -9,6 +9,7 @@ use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
+use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
 use App\Modules\InvestigacionFormativa\Services\EncuestaService;
 use App\Modules\InvestigacionFormativa\Services\EvaluacionService;
 use App\Modules\InvestigacionFormativa\Services\GrupoService;
@@ -119,6 +120,18 @@ try {
             $actor,
             $encuesta,
             (int) $argv[5],
+        );
+    } elseif ($mode === 'aprobacion') {
+        app(DecisionTrabajoService::class)->aprobar(
+            $actor,
+            (int) $argv[4],
+            (int) ($argv[5] ?? 0),
+        );
+    } elseif ($mode === 'seleccion') {
+        app(DecisionTrabajoService::class)->seleccionar(
+            $actor,
+            (int) $argv[4],
+            (int) ($argv[5] ?? 0),
         );
     } else {
         throw new InvalidArgumentException('Modo de concurrencia desconocido.');
