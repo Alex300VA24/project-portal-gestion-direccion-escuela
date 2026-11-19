@@ -166,6 +166,72 @@ final class ExportacionPdfTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_el_pdf_exportado_renderiza_varias_paginas_con_datos_reales(): void
+    {
+        $this->crearTipoProducto();
+        $this->configurarSeccionCompleta(9901);
+
+        // Crea suficientes grupos con titulos largos para forzar varias paginas de PDF.
+        for ($indice = 1; $indice <= 15; $indice++) {
+            $idGrupo = DB::table('investigacion_formativa.grupo')->insertGetId([
+                'id_seccion' => 9901,
+                'nombre' => 'Grupo de investigación con nombre muy largo número '.$indice,
+            ], 'id_grupo');
+            $idProyecto = DB::table('investigacion_formativa.proyecto')->insertGetId([
+                'id_grupo' => $idGrupo,
+                'id_linea' => 9801,
+                'id_tipo_producto' => 9981,
+                'titulo' => 'Estudio detallado de los procesos de investigación formativa en el área de ingeniería de software número '.$indice.' con enfoque en la calidad académica',
+                'estado' => 'Aceptado',
+                'version' => 1,
+            ], 'id_proyecto');
+
+            foreach ([1, 2, 3] as $unidad) {
+                $this->evaluar($idProyecto, $unidad, [3, 3, 2]);
+            }
+        }
+
+        $this->encuestaConRespuestas();
+
+        $contenido = (string) $this->actingAs($this->datos['users']['director'])->get($this->ruta())->getContent();
+        $this->assertStringStartsWith('%PDF', $contenido);
+
+        $texto = $this->textoDelPdf($contenido);
+
+        $this->assertStringContainsString('Investigación Formativa I', $texto);
+        $this->assertStringContainsString('Grupo de investigación con nombre muy largo número 15', $texto);
+        $this->assertStringContainsString('ó', $texto);
+        $this->assertStringContainsString('Ingeniería', $texto);
+
+        $paginas = $this->contarPaginasPdf($contenido);
+        $this->assertGreaterThan(1, $paginas, 'El reporte exportado debe renderizar más de una página con suficientes grupos.');
+    }
+
+    private function contarPaginasPdf(string $pdf): int
+    {
+        $directorio = storage_path('app/dompdf/pruebas');
+        if (! is_dir($directorio)) {
+            mkdir($directorio, 0775, true);
+        }
+        $ruta = $directorio.'/conteo-paginas-'.uniqid('', true).'.pdf';
+        file_put_contents($ruta, $pdf);
+
+        $proceso = new Process(['pdfinfo', $ruta]);
+        $proceso->run();
+        $salida = $proceso->getOutput();
+        @unlink($ruta);
+
+        $this->assertSame(0, $proceso->getExitCode(), 'pdfinfo no pudo leer el PDF generado.');
+
+        foreach (explode("\n", $salida) as $linea) {
+            if (str_starts_with(trim($linea), 'Pages:')) {
+                return (int) trim(str_replace('Pages:', '', $linea));
+            }
+        }
+
+        $this->fail('pdfinfo no reportó el número de páginas.');
+    }
+
     public function test_el_boton_de_descarga_conserva_el_filtro_de_linea(): void
     {
         $this->actingAs($this->datos['users']['director'])
