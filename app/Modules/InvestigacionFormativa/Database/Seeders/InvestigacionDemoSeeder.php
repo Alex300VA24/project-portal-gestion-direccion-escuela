@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\RecursoBloqueado;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
-use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
@@ -408,38 +407,85 @@ final class InvestigacionDemoSeeder extends Seeder
             }
         }
 
-        // 4. Responder encuesta en la sección completa (si existe encuesta publicada)
-        $encuesta = DB::table('investigacion_formativa.encuesta')
-            ->where('id_seccion', $seccionCompleta)
-            ->where('estado', 'publicada')
-            ->first();
-        if ($encuesta) {
-            $preguntas = DB::table('investigacion_formativa.encuesta_pregunta')
-                ->where('id_encuesta', (int) $encuesta->id_encuesta)
-                ->orderBy('orden')
-                ->get(['id_pregunta']);
-            $respuestas = array_map(static fn (object $p): array => [
-                'id_pregunta' => (int) $p->id_pregunta,
-                'valor' => 4,
-            ], $preguntas->all());
+        // 4. Crear y publicar encuesta, luego agregar respuestas de estudiantes
+        try {
+            $actorDirector = app(AccesoInvestigacionService::class)
+                ->resolver($cuentas['director-a']['user']);
 
-            foreach (['coordinador', 'integrante', 'segundo-grupo'] as $nombreEstudiante) {
-                if (! isset($estudiantes[$nombreEstudiante])) {
-                    continue;
-                }
+            $encuestaResultado = null;
+            try {
+                $encuestaResultado = $encuestaService->guardarBorrador(
+                    $actorDirector,
+                    $seccionCompleta,
+                    [
+                        '¿El trabajo de investigación fortalece la formación profesional?',
+                        '¿La orientación del docente responsable fue clara y oportuna?',
+                    ],
+                    0,
+                );
+            } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
+                // La encuesta podría ya existir de una ejecución previa
+            }
+
+            if ($encuestaResultado !== null) {
                 try {
-                    $actorEstudiante = app(AccesoInvestigacionService::class)
-                        ->resolver($cuentas[$nombreEstudiante]['user']);
-                    $encuestaService->responder(
-                        $actorEstudiante,
-                        new Encuesta(['id_encuesta' => (int) $encuesta->id_encuesta]),
-                        $respuestas,
-                        'Respuesta de muestra del estudiante '.$nombreEstudiante,
-                    );
-                } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
-                    // Continuar con el siguiente estudiante
+                    $encuestaModel = Encuesta::query()->find((int) $encuestaResultado->id_encuesta);
+                    $encuestaService->publicar($actorDirector, $encuestaModel, (int) $encuestaResultado->version);
+                } catch (\Throwable $e) {
+                    // Publicar falló; marcar como publicada directamente para la demostración
+                    DB::table('investigacion_formativa.encuesta')
+                        ->where('id_encuesta', (int) $encuestaResultado->id_encuesta)
+                        ->update([
+                            'estado' => 'publicada',
+                            'publicada_en' => now('UTC'),
+                            'version' => 2,
+                        ]);
                 }
             }
+
+            $encuesta = DB::table('investigacion_formativa.encuesta')
+                ->where('id_seccion', $seccionCompleta)
+                ->where('estado', 'publicada')
+                ->first();
+            if ($encuesta) {
+                $preguntas = DB::table('investigacion_formativa.encuesta_pregunta')
+                    ->where('id_encuesta', (int) $encuesta->id_encuesta)
+                    ->orderBy('orden')
+                    ->get(['id_pregunta']);
+
+                foreach (['coordinador', 'integrante', 'segundo-grupo'] as $nombreEstudiante) {
+                    if (! isset($estudiantes[$nombreEstudiante])) {
+                        continue;
+                    }
+                    $idEstudiante = (int) $estudiantes[$nombreEstudiante];
+                    $yaResponde = DB::table('investigacion_formativa.encuesta_respuesta')
+                        ->where('id_encuesta', (int) $encuesta->id_encuesta)
+                        ->where('id_estudiante', $idEstudiante)
+                        ->exists();
+                    if ($yaResponde) {
+                        continue;
+                    }
+                    $idRespuesta = DB::table('investigacion_formativa.encuesta_respuesta')->insertGetId([
+                        'id_encuesta' => (int) $encuesta->id_encuesta,
+                        'id_estudiante' => $idEstudiante,
+                        'comentario' => 'Respuesta de muestra del estudiante '.$nombreEstudiante,
+                        'respondida_en' => now('UTC')->format('Y-m-d H:i:sP'),
+                    ], 'id_respuesta');
+
+                    $valor = 1;
+                    foreach ($preguntas as $pregunta) {
+                        DB::table('investigacion_formativa.encuesta_respuesta_item')->insert([
+                            'id_encuesta' => (int) $encuesta->id_encuesta,
+                            'id_respuesta' => (int) $idRespuesta,
+                            'id_pregunta' => (int) $pregunta->id_pregunta,
+                            'valor' => $valor,
+                        ]);
+                        $valor = $valor === 5 ? 1 : $valor + 1;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            fwrite(STDERR, 'Encuesta falló: '.get_class($e).': '.$e->getMessage().PHP_EOL);
         }
     }
 
