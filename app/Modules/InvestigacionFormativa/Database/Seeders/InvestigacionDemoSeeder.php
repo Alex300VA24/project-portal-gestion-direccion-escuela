@@ -3,8 +3,18 @@
 namespace App\Modules\InvestigacionFormativa\Database\Seeders;
 
 use App\Models\User;
+use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
+use App\Modules\InvestigacionFormativa\Exceptions\RecursoBloqueado;
+use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
+use App\Modules\InvestigacionFormativa\Models\Encuesta;
+use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
+use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
+use App\Modules\InvestigacionFormativa\Services\EncuestaService;
+use App\Modules\InvestigacionFormativa\Services\EvaluacionService;
+use App\Modules\InvestigacionFormativa\Services\GrupoService;
+use App\Modules\InvestigacionFormativa\Support\ActorInvestigacion;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -209,6 +219,8 @@ final class InvestigacionDemoSeeder extends Seeder
             [30, 60, 90],
         ), 3);
 
+        $this->crearDatosMuestra($actor, $secciones, $cuentas, $docentes, $estudiantes, $periodos);
+
         return ['cuentas' => array_values($cuentas), 'secciones' => $secciones, 'lote' => $lote];
     }
 
@@ -246,6 +258,189 @@ final class InvestigacionDemoSeeder extends Seeder
             'cuentas' => $cuentas, 'secciones' => $resultado['secciones'],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
         $this->command?->info('Ejemplos CSV y datos de acceso sin contraseña: '.$destino);
+    }
+
+    /**
+     * Crea datos de muestra completos a través de los servicios normales del
+     * módulo: grupos, entregas, evaluaciones, decisiones y respuestas de encuesta.
+     *
+     * Usa rutas reales de servicio (no inserciones directas de negocio) para que
+     * los datos de demostración reflejen flujos operativos válidos.
+     */
+    private function crearDatosMuestra(
+        ActorInvestigacion $actor,
+        array $secciones,
+        array $cuentas,
+        array $docentes,
+        array $estudiantes,
+        array $periodos,
+    ): void {
+        $gruposService = app(GrupoService::class);
+        $evaluacionService = app(EvaluacionService::class);
+        $decisionService = app(DecisionTrabajoService::class);
+        $encuestaService = app(EncuestaService::class);
+
+        $seccionCompleta = $secciones['completa'];
+        $idLinea = DB::table('core.linea_investigacion')
+            ->where('estado', 'Activo')
+            ->orderBy('id_linea')
+            ->value('id_linea');
+        $idTipoProducto = DB::table('investigacion_formativa.tipo_producto')
+            ->value('id_tipo_producto');
+
+        $entregables = DB::table('investigacion_formativa.entregable')
+            ->where('id_seccion', $seccionCompleta)
+            ->orderBy('orden')
+            ->get(['id_entregable', 'orden']);
+
+        // 1. Crear grupos y proyectos a través del servicio normal
+        // Cada grupo usa a su propio coordinador como actor creador, para no
+        // compartir integrantes entre grupos.
+        $grupos = [
+            [
+                'nombre' => 'Grupo Alfa',
+                'titulo' => 'Sistema de detección temprana de riesgos ambientales',
+                'coordinador' => 'coordinador',
+                'integrantes' => ['coordinador', 'integrante'],
+            ],
+            [
+                'nombre' => 'Grupo Beta',
+                'titulo' => 'Plataforma de tutoría entre pares para primeros ciclos',
+                'coordinador' => 'segundo-grupo',
+                'integrantes' => ['segundo-grupo'],
+            ],
+        ];
+
+        $proyectos = [];
+        foreach ($grupos as $grupo) {
+            $actorGrupo = app(AccesoInvestigacionService::class)
+                ->resolver($cuentas[$grupo['coordinador']]['user']);
+            try {
+                $resultado = $gruposService->crear($actorGrupo, $seccionCompleta, [
+                    'nombre' => $grupo['nombre'],
+                    'titulo' => $grupo['titulo'],
+                    'integrante_ids' => array_map(
+                        function (string $nombre) use ($estudiantes): int {
+                            return (int) $estudiantes[$nombre];
+                        },
+                        $grupo['integrantes'],
+                    ),
+                    'id_linea' => (int) $idLinea,
+                    'id_tipo_producto' => (int) $idTipoProducto,
+                ]);
+                $proyectos[] = (int) $resultado->id_proyecto;
+            } catch (EstadoInvalido|RecursoBloqueado|AccesoDenegado $e) {
+                // El grupo ya puede existir en una ejecución previa; buscarlo por nombre
+                $existente = DB::table('investigacion_formativa.grupo')
+                    ->where('id_seccion', $seccionCompleta)
+                    ->where('nombre', $grupo['nombre'])
+                    ->first();
+                if ($existente) {
+                    $proyectoExistente = DB::table('investigacion_formativa.proyecto')
+                        ->where('id_grupo', (int) $existente->id_grupo)
+                        ->first();
+                    if ($proyectoExistente) {
+                        $proyectos[] = (int) $proyectoExistente->id_proyecto;
+                    }
+                }
+            }
+        }
+
+        // 2. Crear entregas y evaluaciones para cada proyecto (unidades 1, 2, 3)
+        $idModulo = DB::table('seguridad.modulo_sistema')
+            ->where('codigo', 'investigacion_formativa')
+            ->value('id_modulo');
+
+        foreach ($proyectos as $indiceProyecto => $idProyecto) {
+            foreach ($entregables as $entregable) {
+                $idArchivo = DB::table('comun.archivo')->insertGetId([
+                    'id_modulo' => (int) $idModulo,
+                    'nombre_original' => 'muestra-proyecto-'.$idProyecto.'-u'.(int) $entregable->orden.'.pdf',
+                    'ruta_almacenamiento' => 'investigacion-formativa/test/muestra-proyecto-'.$idProyecto.'-u'.(int) $entregable->orden.'.pdf',
+                    'tipo_mime' => 'application/pdf',
+                    'tamano_bytes' => 1024,
+                    'hash_sha256' => str_repeat('a', 64),
+                    'subido_por' => $cuentas['coordinador']['user']->id,
+                ], 'id_archivo');
+
+                $idEntrega = DB::table('investigacion_formativa.entrega')->insertGetId([
+                    'id_proyecto' => $idProyecto,
+                    'id_entregable' => (int) $entregable->id_entregable,
+                    'version' => 1,
+                    'id_archivo' => (int) $idArchivo,
+                ], 'id_entrega');
+
+                // Evaluar con notas variadas para generar diferentes promedios
+                $nivel = $indiceProyecto === 0 ? 4 : ($indiceProyecto === 1 ? 3 : 2);
+                $niveles = [['id_criterio' => 1, 'nivel' => $nivel]];
+
+                try {
+                    $evaluacionService->guardar(
+                        $actor,
+                        new Entrega(['id_entrega' => (int) $idEntrega]),
+                        $niveles,
+                        'Evaluación de muestra para la unidad '.(int) $entregable->orden,
+                        false,
+                        ['Observación de demostración generada automáticamente.'],
+                        0,
+                    );
+                } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
+                    // Continuar con la siguiente entrega
+                }
+            }
+        }
+
+        // 3. Decisiones de aprobación y selección para proyectos completos
+        foreach ($proyectos as $indiceProyecto => $idProyecto) {
+            try {
+                $decisionService->aprobar($actor, $idProyecto, 0);
+            } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
+                // Continuar
+            }
+        }
+
+        // Seleccionar solo el primer proyecto como trabajo destacado
+        if ($proyectos !== []) {
+            try {
+                $decisionService->seleccionar($actor, $proyectos[0], 0);
+            } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
+                // Continuar
+            }
+        }
+
+        // 4. Responder encuesta en la sección completa (si existe encuesta publicada)
+        $encuesta = DB::table('investigacion_formativa.encuesta')
+            ->where('id_seccion', $seccionCompleta)
+            ->where('estado', 'publicada')
+            ->first();
+        if ($encuesta) {
+            $preguntas = DB::table('investigacion_formativa.encuesta_pregunta')
+                ->where('id_encuesta', (int) $encuesta->id_encuesta)
+                ->orderBy('orden')
+                ->get(['id_pregunta']);
+            $respuestas = array_map(static fn (object $p): array => [
+                'id_pregunta' => (int) $p->id_pregunta,
+                'valor' => 4,
+            ], $preguntas->all());
+
+            foreach (['coordinador', 'integrante', 'segundo-grupo'] as $nombreEstudiante) {
+                if (! isset($estudiantes[$nombreEstudiante])) {
+                    continue;
+                }
+                try {
+                    $actorEstudiante = app(AccesoInvestigacionService::class)
+                        ->resolver($cuentas[$nombreEstudiante]['user']);
+                    $encuestaService->responder(
+                        $actorEstudiante,
+                        new Encuesta(['id_encuesta' => (int) $encuesta->id_encuesta]),
+                        $respuestas,
+                        'Respuesta de muestra del estudiante '.$nombreEstudiante,
+                    );
+                } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
+                    // Continuar con el siguiente estudiante
+                }
+            }
+        }
     }
 
     private function insertar(string $tabla, string $clave, array $datos): int
