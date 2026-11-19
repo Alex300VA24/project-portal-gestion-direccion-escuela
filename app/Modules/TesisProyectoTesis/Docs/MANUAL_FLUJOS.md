@@ -27,6 +27,12 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
   - [F-13 · Alumno intenta abrir un proyecto ajeno](#f-13--alumno-intenta-abrir-un-proyecto-ajeno)
   - [F-14 · Jurado o profesor de otro proyecto](#f-14--jurado-o-profesor-de-otro-proyecto)
   - [F-15 · Id numérico en la URL y rol equivocado](#f-15--id-numérico-en-la-url-y-rol-equivocado)
+- Correcciones de la prueba manual (19/11)
+  - [F-16 · Formulario F1 según el formato de la Escuela](#f-16--formulario-f1-según-el-formato-de-la-escuela)
+  - [F-17 · Oficio al Decanato](#f-17--oficio-al-decanato)
+  - [F-18 · «Volver» y regreso a la lista de origen](#f-18--volver-y-regreso-a-la-lista-de-origen)
+  - [F-19 · Mensajes en español y «Dar conformidad»](#f-19--mensajes-en-español-y-dar-conformidad)
+  - [F-20 · Recorrido completo con clics reales](#f-20--recorrido-completo-con-clics-reales)
 - [Pruebas automáticas](#pruebas-automáticas)
 
 ---
@@ -124,11 +130,13 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 **Pasos**
 
 1. **nuevo@** → Inicio → **Registrar proyecto (F1)**.
-   - Completa el título (20 palabras como máximo), la línea, los datos de la investigación y al menos una etapa del cronograma.
+   - Completa el título (20 palabras como máximo), el resumen, las listas (enfoque, tipo, diseño, línea, financiamiento) y el lugar de ejecución.
+   - Agrega al menos una actividad al cronograma con inicio, término y horas por semana (la duración se calcula sola).
+   - Opcional: una fila en «Recursos y presupuesto».
    - Adjunta el PDF, deja el coautor vacío y pulsa **Registrar proyecto**.
 2. **director@** → Panel general → «Requieren tu acción» → **Solicitar** en el proyecto nuevo.
    - El docente sugerido es opcional.
-   - Pulsa **Enviar solicitud al Decanato**.
+   - Pulsa **Registrar solicitud y generar oficio**: se abre el oficio para imprimir (ver F-17).
 3. **secretaria@** → Resoluciones → elige la solicitud en «Solicitudes esperando resolución».
    - Completa el N.° de resolución, la fecha (hoy o anterior), el órgano emisor y «Dirigida a».
    - En «Docente designado como asesor» elige **Mg. Carlos Medina Ruiz** (`asesor@`).
@@ -151,7 +159,7 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 | Después del paso | Estado del proyecto | Además |
 |---|---|---|
 | 1 | Registrado | Código `PT-AAAA-NNN`. Aviso «Nuevo proyecto …» al Director. |
-| 2 | Registrado | La solicitud queda pendiente; aviso a la Secretaría. |
+| 2 | Registrado | La solicitud queda pendiente con su oficio en PDF; aviso a la Secretaría. |
 | 3 | Con asesor | Aviso «Fuiste designado asesor · …» al asesor. El estudiante ve a su asesor y el N.° de resolución. |
 | 4 | En desarrollo | Aviso «Nueva entrega · … v1» al asesor. |
 | 7 | En desarrollo | Rúbrica de **18 criterios** (etapa Proyecto). La versión final pasa a «Culminada». |
@@ -220,21 +228,23 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
    - Elige «Con observaciones» y pulsa **Enviar revisión**.
 2. **est03@** → Observaciones: la observación aparece en «Pendientes».
 3. **est04@** → Observaciones → «Pendientes (2)».
-   - En la primera, escribe la respuesta y en «Corregida en» elige la **v2**.
-   - Pulsa **Enviar respuesta**.
+   - En la primera, escribe la respuesta y adjunta un PDF en **Documento corregido (PDF, opcional)**. Pulsa **Enviar respuesta**.
+   - En la segunda, escribe la respuesta y en **Corregida en una versión ya subida** elige la versión que acabas de subir. Pulsa **Enviar respuesta**.
 4. **est04@** → pestaña «Respondidas»: ahora hay 2. Todavía puede **Actualizar respuesta** mientras no esté levantada.
-5. **asesor@** → Mis proyectos → PT-DEMO-04 → «Observaciones del proyecto» → **Dar por levantada** en una observación respondida.
+5. **asesor@** → Mis proyectos → PT-DEMO-04 → «Observaciones del proyecto»: junto a cada respuesta aparece **Ver documento corregido (vN)**. Ábrelo y pulsa **Dar por levantada**.
+6. Opcional: responde una observación sin adjuntar ni elegir versión.
 
 **Resultado esperado**
 
-- Paso 1: la entrega v2 de PT-DEMO-03 queda «Observada». Los estudiantes reciben el aviso «El asesor revisó tu entrega v2».
-- Paso 3: el asesor recibe el aviso «Observación respondida · PT-DEMO-04».
+- Paso 1: la entrega v2 de PT-DEMO-03 queda «Observada». Los estudiantes reciben el aviso «El asesor revisó tu entrega v2». El asesor vuelve a **Mis proyectos** con el mensaje de confirmación.
+- Paso 3: «Respuesta enviada con el documento corregido (registrado como vN)». Se crea la entrega vN (avance, misma etapa) y la observación queda «corregida en vN». La segunda respuesta dice «Respuesta enviada: corregida en vN». El asesor recibe un solo aviso por respuesta, «Observación respondida · PT-DEMO-04», que menciona la versión.
+- Paso 6: aviso amarillo «No adjuntaste el documento corregido ni elegiste una versión…»; el asesor ve «sin versión corregida indicada».
 - Paso 5: la observación pasa a «Levantadas». El estudiante recibe «Se levantó una observación».
 - Una observación **Pendiente** no se puede levantar: «Solo se levantan observaciones que el estudiante ya respondió.»
 - Solo quien registró la observación puede levantarla: «Solo el revisor que registró la observación puede levantarla.»
 - «Corregida en» solo acepta una versión posterior a la observada: «Elige una entrega de tu proyecto posterior a la observada.»
 
-**Pruebas automáticas:** `AvancesRevisionTest::test_ciclo_completo_avance_observacion_respuesta_levantada`, `test_reglas_del_dictamen_y_doble_revision`, `test_solo_se_levanta_lo_respondido_y_por_su_autor`, `test_validaciones_de_entrega_y_respuesta`.
+**Pruebas automáticas:** `AvancesRevisionTest::test_ciclo_completo_avance_observacion_respuesta_levantada`, `test_reglas_del_dictamen_y_doble_revision`, `test_solo_se_levanta_lo_respondido_y_por_su_autor`, `test_validaciones_de_entrega_y_respuesta`, `RespuestaConDocumentoTest` (las tres pruebas).
 
 ---
 
@@ -260,11 +270,12 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 
 **Resultado esperado**
 
-- Paso 4: «Verificación registrada» con el dictamen «Observado». La versión v4 queda «Observada» y el estudiante recibe «Tu asesor verificó la versión v4 con la rúbrica».
+- Paso 4: el asesor vuelve a **Mis proyectos** con «Verificación de PT-DEMO-05 guardada. Las observaciones se enviaron a los estudiantes.» La versión v4 queda «Observada» y el estudiante recibe «Tu asesor verificó la versión v4 con la rúbrica».
 - Paso 5: no se puede registrar Turnitin: «Para registrar Turnitin, la versión vigente debe estar verificada con la rúbrica (conforme) y sin observaciones abiertas.»
 - Paso 6: la observación del criterio 3 aparece en «Pendientes».
 - Una segunda verificación de la misma versión se rechaza: «Ya registraste tu verificación de la versión v4. Espera la nueva versión del estudiante.»
 - «No aplica» solo existe en el criterio 6 (hipótesis) y cuenta como cumplido.
+- Si el asesor da la conformidad mientras tiene observaciones abiertas, el mensaje dice cuántas debe dar por levantadas antes de registrar Turnitin.
 
 **Pruebas automáticas:** `VerificacionAsesorTest::test_criterios_no_cumple_exigen_observacion_y_bloquean_conformidad`, `test_marcas_incompletas_o_invalidas`, `test_sin_version_final_no_hay_verificacion`.
 
@@ -569,10 +580,147 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 
 ---
 
+## F-16 · Formulario F1 según el formato de la Escuela
+
+| | |
+|---|---|
+| **Objetivo** | El F1 usa las listas, ayudas y la tabla única de recursos y presupuesto de la Escuela, y la ficha muestra los totales. |
+| **Cuentas** | nuevo@, asesor@, director@ |
+| **Escenario** | Ninguno para el registro; PT-DEMO-04 para ver las fichas. |
+| **Datos** | Siembra los escenarios. |
+
+**Pasos**
+
+1. **nuevo@** → **Registrar proyecto (F1)**. Revisa las listas: Enfoque (Cuantitativo / Cualitativo / Mixto), Tipo (Básica / Aplicada), Diseño (con «Otro»), Financiamiento (con una ayuda por opción). «Institución» viene con «Universidad Nacional de Trujillo».
+2. Elige el diseño **Otro**: aparece «Describe el diseño». Escribe «Investigación tecnológica».
+3. Cronograma: actividad 1 del 01/09/2026 al 30/09/2026 (8 h/sem.); **+ Agregar actividad**: actividad 2 del 01/10/2026 al 28/02/2027 (12 h/sem.).
+4. Recursos: «Papel bond A4», código **2.3.1.5.1 · Materiales y útiles de oficina**, Millar, 2 × 28.25. **+ Agregar recurso**: Servicios, «Hosting», elige **Otro código** y escribe `2.3.2.7.99`, Mes, 6 × 15. **+ Agregar recurso**: «Laptop propia», código **–**, Unidad, 1 × 0.
+5. Adjunta el PDF y pulsa **Registrar proyecto**. Abre **Mi proyecto**.
+6. **asesor@** → Mis proyectos → PT-DEMO-04; **director@** → Todos los proyectos → título de PT-DEMO-04.
+
+**Resultado esperado**
+
+- Paso 3: «Duración (meses)» muestra **6** (solo lectura) y el encabezado del cronograma «Duración: 6 meses».
+- Paso 4: «Otro código» vacía el campo y pide el código. Subtotales S/ 56.50, S/ 90.00 y S/ 0.00; total de bienes S/ 56.50, de servicios S/ 90.00, general S/ 146.50. Solo se ofrecen los tipos Bienes y Servicios. «Personal» muestra al estudiante y «Asesor · lo designa el Decanato por resolución».
+- Paso 5: la ficha muestra «Otro: Investigación tecnológica», 6 meses, el cronograma y la tabla con los mismos totales.
+- Paso 6: la ficha del asesor y la del Director (con «← Volver a Todos los proyectos») muestran los datos del F1 y los totales (PT-DEMO-04: bienes S/ 28.00, servicios S/ 465.00, total S/ 493.00).
+- Errores en español: horas vacías, «Otro» sin describir, código con letras, cronograma de más de 36 meses.
+
+**Pruebas automáticas:** `FormatoF1Test` (las cuatro pruebas), `RegistroProyectoTest::test_alumno_registra_proyecto_con_coautor`, `test_validacion_de_campos_obligatorios_y_formato`.
+
+---
+
+## F-17 · Oficio al Decanato
+
+| | |
+|---|---|
+| **Objetivo** | El Decanato no usa el sistema: al registrar la solicitud se genera el oficio imprimible y queda su constancia en PDF. |
+| **Cuentas** | director@, secretaria@ |
+| **Escenario** | PT-DEMO-01. |
+| **Datos** | Siembra los escenarios. |
+
+**Pasos**
+
+1. **director@** → Panel general → **Solicitar** en PT-DEMO-01. Lee la nota «El sistema registra la solicitud; el envío al Decanato se hace por el canal oficial».
+2. Pulsa **Registrar solicitud y generar oficio**.
+3. En el oficio, pulsa **Imprimir oficio** y luego **Constancia en PDF**.
+4. Vuelve a **Solicitar** en PT-DEMO-01.
+5. **secretaria@** → Resoluciones → PT-DEMO-01.
+
+**Resultado esperado**
+
+- Paso 2: se abre «Oficio de solicitud de asesor», con el mensaje «Solicitud de asesor de PT-DEMO-01 registrada (oficio N.° NNN-2026-EPII-D)…». El oficio va dirigido al Decano e incluye asunto, proyecto, estudiantes, línea y docente sugerido.
+- Paso 3: la vista de impresión muestra solo el oficio; el PDF se descarga.
+- Paso 4: «La solicitud se registró el … y se envía al Decanato por el canal oficial» con el enlace «Ver e imprimir el oficio».
+- Paso 5: enlace «Oficio del Director al Decanato · ver PDF». El aviso de la Secretaría menciona el número de oficio y el canal oficial.
+- Solo el Director abre el oficio (otros roles: 403).
+
+**Pruebas automáticas:** `OficioDecanatoTest` (las dos pruebas), `EscenariosNotificacionesTest::test_reiniciar_borra_tambien_el_oficio_de_la_solicitud`.
+
+---
+
+## F-18 · «Volver» y regreso a la lista de origen
+
+| | |
+|---|---|
+| **Objetivo** | Cada pantalla de detalle o formulario tiene «← Volver a …», y al guardar se vuelve a la lista de origen con el mensaje. |
+| **Cuentas** | asesor@, director@, secretaria@, jurado2@, jurado3@ |
+| **Escenario** | PT-DEMO-03, PT-DEMO-06, PT-DEMO-07, PT-DEMO-10, PT-DEMO-11. |
+
+**Pasos y resultado esperado**
+
+| Pantalla | «Volver a» | Al guardar |
+|---|---|---|
+| Revisar avance (asesor@, PT-DEMO-03) | Mis proyectos | Mis proyectos, «Revisión de la entrega v2 de PT-DEMO-03 enviada…» |
+| Rúbrica con observaciones (asesor@) | Mis proyectos | Mis proyectos |
+| Rúbrica conforme (asesor@) | Mis proyectos | Turnitin (continuación) |
+| Asignar o reemplazar jurado (director@, PT-DEMO-06) | Panel general | Panel general |
+| Programar sustentación (secretaria@) | Sustentaciones | Sustentaciones |
+| Acta (secretaria@, PT-DEMO-11) | Actas y dictámenes | Se queda en el acta al subir el firmado (para informar); Actas al informar |
+| Rúbrica del jurado (jurado2@, PT-DEMO-07) | Proyectos asignados | Proyectos asignados, «PT-DEMO-07: Conformidad registrada.» |
+| Resultado (jurado3@, PT-DEMO-10) | Sustentaciones | Sustentaciones |
+
+**Pruebas automáticas:** `VolverTest` (las dos pruebas).
+
+---
+
+## F-19 · Mensajes en español y «Dar conformidad»
+
+| | |
+|---|---|
+| **Objetivo** | «Dar conformidad» funciona con clics reales y ningún mensaje muestra claves como «validation.required». |
+| **Cuentas** | asesor@, jurado1@, jurado2@, jurado3@, nuevo@ |
+| **Escenario** | PT-DEMO-05, PT-DEMO-07, PT-DEMO-08. |
+
+**Pasos**
+
+1. **asesor@** → PT-DEMO-05 → **Verificar con rúbrica** → **Marcar los pendientes como «cumple»** → **Dar conformidad**.
+2. **jurado2@** y **jurado3@** → PT-DEMO-07 → igual que el paso 1.
+3. **jurado1@** → PT-DEMO-08 → **Revisión intermedia** → marca todo → **Registrar revisión intermedia**.
+4. **nuevo@** → Registrar proyecto: pulsa **Registrar proyecto** sin completar nada.
+
+**Resultado esperado**
+
+- Pasos 1 a 3: se guardan sin «validation.required» (el asesor pasa a Turnitin; los jurados vuelven a Proyectos asignados).
+- Paso 4: el recuadro «Revisa los datos del formulario» lista mensajes en español, por ejemplo «Completa el campo «título».» o «Adjunta el documento F1 en PDF.».
+
+**Pruebas automáticas:** `RubricaFormularioTest` (envía la rúbrica con los campos del HTML renderizado, con un control que falla con el marcado anterior), `MensajesValidacionTest`.
+
+---
+
+## F-20 · Recorrido completo con clics reales
+
+| | |
+|---|---|
+| **Objetivo** | Un proyecto nuevo de nuevo@ recorre las dos etapas hasta «Tesis aprobada»: con un «no cumple», Turnitin, dictamen, revisión intermedia, una sustentación con un desaprobatorio y el acta. |
+| **Cuentas** | nuevo@, director@, secretaria@, asesor@, jurado1-3@ |
+| **Escenario** | Ninguno (proyecto nuevo). Al terminar, vuelve a sembrar: el proyecto de ensayo de nuevo@ se borra. |
+
+**Pasos**
+
+1. Registro F1 (nuevo@) → solicitud y oficio (director@) → resolución con asesor@ (secretaria@).
+2. Avance v1 → asesor observa → nuevo@ responde **adjuntando el PDF corregido** → asesor **Ver documento corregido** → **Dar por levantada**.
+3. Versión final → rúbrica del asesor con el criterio 3 en **no cumple** → nueva versión final → respuesta eligiendo esa versión → levantada → **Dar conformidad** → Turnitin 14 %.
+4. Jurado (Presidente, Secretario, Vocal) → tres conformidades → Secretaría sube el dictamen firmado e informa.
+5. Etapa Tesis: avance → **revisión intermedia** de jurado1 (con un «no cumple») → versión final → conformidad del asesor → Turnitin 11.5 % → revisión final de los tres jurados.
+6. Secretaría programa la sustentación (hoy, 17:00, AUD-FCFYM) → jurado1 **Aprobatorio**, jurado2 **Desaprobatorio**, jurado3 **Aprobatorio** → acta firmada → informar.
+
+**Resultado esperado**
+
+- Paso 3: con observaciones abiertas, Turnitin no se habilita hasta levantarlas.
+- Paso 4: estado «Tesis en desarrollo», etapa Tesis, dictamen `DIC-AAAA-NNN`.
+- Paso 6: «aprobado por mayoría», sin mención honrosa; estado final **Tesis aprobada**.
+- Historial: Registrado → Con asesor → En desarrollo → Verificado por el asesor → En revisión del jurado → Proyecto aprobado → Tesis en desarrollo → En revisión del jurado → Listo para sustentar → Sustentación programada → Sustentado → Tesis aprobada.
+- Se ejecutó con clics reales (Chrome sin ventana, eventos de entrada): 40 de 40 pasos correctos, sin errores de JavaScript.
+
+**Pruebas automáticas:** `FlujoCompletoTest::test_recorrido_completo_de_las_dos_etapas` (por HTTP).
+
+---
+
 ## Pruebas automáticas
 
 ```bash
-vendor/bin/phpunit --filter=TesisProyectoTesis           # 75 pruebas del módulo
+vendor/bin/phpunit --filter=TesisProyectoTesis           # 104 pruebas del módulo
 vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre módulos
 ```
 
@@ -591,5 +739,12 @@ vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre mó
 | `SustentacionActaTest` | Programación, choques de agenda, resultados, acta, mención, reprogramación |
 | `FlujoCompletoTest` | Recorrido completo de las dos etapas por HTTP |
 | `SeguridadRutasTest` | Revisión automática de `auth`, roles, uuid, POST, `{!! !!}`, `@csrf`, `$fillable` |
-| `EscenariosNotificacionesTest` | Seeder de escenarios, PDF reales, destino de cada aviso |
+| `EscenariosNotificacionesTest` | Seeder de escenarios, PDF reales, destino de cada aviso, reinicio sin archivos huérfanos |
+| `InterfazTest` | Contenedor propio, menú plegable, menú de usuario, tema, coautor |
+| `RubricaFormularioTest` | Rúbrica enviada con los campos del HTML renderizado (regresión de «Dar conformidad») |
+| `MensajesValidacionTest` | Mensajes de validación en español en todos los FormRequest |
+| `VolverTest` | «← Volver a …» y regreso a la lista de origen |
+| `RespuestaConDocumentoTest` | Respuesta a observaciones con el PDF corregido |
+| `FormatoF1Test` | Formulario F1, duración, fichas con totales, seeder de líneas |
+| `OficioDecanatoTest` | Oficio al Decanato y su constancia en PDF |
 | `Unit/ParametrosEstadosTest` | Parámetros del proceso y etiquetas de estado |

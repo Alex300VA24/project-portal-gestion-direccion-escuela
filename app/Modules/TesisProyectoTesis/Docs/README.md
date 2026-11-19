@@ -5,7 +5,7 @@ Módulo del portal de la Escuela de Ingeniería Informática que gestiona el pro
 | Manual | Para quién | Contenido |
 |---|---|---|
 | [Manual de usuario](MANUAL_USUARIO.md) | Estudiantes, asesores, Director, Secretaría y jurados | Qué puede hacer cada rol, paso a paso y con capturas; qué significa cada estado; mensajes frecuentes; glosario |
-| [Manual de flujos](MANUAL_FLUJOS.md) | Quien prueba o revisa el módulo | 15 casos de prueba sobre los escenarios `PT-DEMO-01…11`, con cuentas, pasos, resultado esperado y la prueba automática que cubre cada caso |
+| [Manual de flujos](MANUAL_FLUJOS.md) | Quien prueba o revisa el módulo | 20 casos de prueba sobre los escenarios `PT-DEMO-01…11` (incluidas las correcciones de la prueba manual y el recorrido completo con clics reales), con cuentas, pasos, resultado esperado y la prueba automática que cubre cada caso |
 | [Manual de arquitectura](MANUAL_ARQUITECTURA.md) | Desarrolladores y grupo de gestión | Capas, rutas y Policy, servicios, modelos, migraciones, contrato con `core`/`seguridad`, seguridad, diagrama de estados, seeders, pruebas, decisiones y limitaciones |
 
 ## Inicio rápido

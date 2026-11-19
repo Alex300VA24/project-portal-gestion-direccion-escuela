@@ -32,6 +32,9 @@ Esta guía explica cómo usar la sección **Gestión de Tesis** del portal de la
    - el botón de **tema** (luna o sol), que cambia entre tema claro y oscuro. La elección se guarda en tu navegador y vale para todos los módulos del portal;
    - tu **menú de usuario** (nombre y rol): **Mi perfil**, **Cambiar rol** (solo si tienes más de un rol en el módulo) y **Cerrar sesión**.
 
+5. En cada pantalla de detalle o formulario, el enlace **← Volver a …** de arriba te lleva a la lista de donde vienes (por ejemplo, «Volver a Mis proyectos»). Al guardar, el sistema te devuelve a esa lista con un mensaje verde que confirma lo que hiciste.
+6. Si falta un dato o hay un error, verás un recuadro rojo **«Revisa los datos del formulario»** con mensajes en español que dicen qué corregir.
+
 ![Barra superior con el menú de usuario abierto](img/barra-superior.png)
 
 > Los documentos se suben siempre en **PDF de hasta 10 MB**. Solo pueden abrirlos las personas que participan en ese proyecto.
@@ -96,18 +99,33 @@ En **Inicio** ves:
 
 ### Registrar tu proyecto (F1)
 
+El formulario sigue el formato F1 de la Escuela.
+
 1. En **Inicio**, pulsa **Registrar proyecto (F1)**.
-2. Completa los datos generales:
-   - el título, de 20 palabras como máximo (un contador te avisa);
-   - el resumen y la línea de investigación;
-   - los datos de la investigación.
+2. **Datos generales**:
+   - el título, de 20 palabras como máximo (un contador te avisa), y el resumen;
+   - **Enfoque**: Cuantitativo, Cualitativo o Mixto;
+   - **Tipo por el fin que persigue**: Básica o Aplicada;
+   - **Diseño de contrastación**: Experimental, Cuasi-experimental, Pre-experimental, No experimental – descriptivo, No experimental – correlacional u **Otro** (si eliges «Otro», describe el diseño);
+   - la **línea de investigación**;
+   - **Lugar de ejecución**: la ciudad o entidad donde aplicas la investigación (por ejemplo, Trujillo, La Libertad);
+   - **Institución**: viene con «Universidad Nacional de Trujillo»; cámbiala si corresponde;
+   - **Duración (meses)**: no se escribe, **se calcula sola** desde el cronograma (del primer inicio al último término);
+   - **Financiamiento**: Autofinanciado, Institucional o Externo. Debajo se explica cada opción.
 3. Si trabajas con un compañero, escribe su **código universitario** en «Coautor» y pulsa **Buscar**. Un proyecto puede tener como máximo 2 estudiantes.
    - Si está disponible, aparece un recuadro verde con su nombre y el texto «Se agregará como integrante 2 al registrar el proyecto». **No hay que pulsar otro botón**: quedará incluido cuando pulses **Registrar proyecto** al final.
    - Si te equivocaste de compañero, pulsa **Quitar** en ese recuadro y el campo queda vacío.
-4. Llena el cronograma y, si corresponde, los recursos, colaboradores y presupuesto. Usa los botones **+ Agregar** para sumar filas.
-5. Adjunta el documento F1 en PDF y pulsa **Registrar proyecto**.
+4. **Cronograma de actividades**: anota las actividades de tu investigación (por ejemplo, revisión bibliográfica, diseño, desarrollo, análisis de datos, evaluación y redacción del informe), **no** las etapas del trámite. Para cada una indica el inicio, el término y cuántas **horas por semana** le dedicarás. Con **+ Agregar actividad** sumas filas; la duración total aparece arriba de la tabla.
+5. **Recursos y presupuesto** (una sola tabla). Por cada recurso indica:
+   - el tipo (**Bienes** o **Servicios**) y la descripción;
+   - el **código del clasificador de gastos**: escribe para buscar por código o por concepto (por ejemplo, «2.3.1.5.1 · Materiales y útiles de oficina»). Si no está en la lista, elige **Otro código** y escríbelo. Para un bien propio sin costo (como tu laptop) usa **«–»** y valor 0;
+   - la unidad de medida, la cantidad y el **valor unitario en S/**.
 
-Tu proyecto recibe un código (por ejemplo, `PT-2026-005`) y queda en estado **Registrado**. Tu coautor lo verá en su cuenta.
+   El subtotal de cada fila, el total de bienes, el total de servicios y el total general se calculan solos. El **personal** (tú, tu coautor y el asesor) se muestra automáticamente, sin costo.
+6. Si corresponde, agrega **colaboradores**.
+7. Adjunta el documento F1 en PDF y pulsa **Registrar proyecto**.
+
+Tu proyecto recibe un código (por ejemplo, `PT-2026-005`) y queda en estado **Registrado**. Tu coautor lo verá en su cuenta. En **Mi proyecto** verás estos datos con el cronograma y los totales del presupuesto.
 
 ![Registro del proyecto](img/alumno-registrar.png)
 
@@ -128,8 +146,11 @@ Cada envío crea una nueva versión (v1, v2, v3…). En «Historial de versiones
 
 1. Abre **Observaciones**. Hay tres pestañas: **Pendientes**, **Respondidas** y **Levantadas**.
 2. En cada observación pendiente, escribe en «Tu respuesta» qué corregiste.
-3. En «Corregida en», elige la versión donde está la corrección. Debe ser una versión que subiste **después** de la observada.
-4. Pulsa **Enviar respuesta**. La observación pasa a «Respondidas».
+3. Indica dónde está la corrección (opcional, pero recomendable):
+   - **Documento corregido (PDF)**: adjunta el documento corregido. Se registra como una nueva entrega (avance, versión siguiente) y la observación queda «corregida en» esa versión. No hace falta subirlo antes en Avances.
+   - **Corregida en una versión ya subida**: si respondes varias observaciones con el mismo documento, adjúntalo en la primera y en las demás elige esa versión de la lista.
+   - Si no adjuntas nada ni eliges versión, verás una advertencia: puedes enviar igual, pero el revisor no sabrá dónde ver la corrección.
+4. Pulsa **Enviar respuesta**. La observación pasa a «Respondidas» y tu revisor recibe un aviso.
 5. El asesor o el jurado revisa tu respuesta y la da por levantada. Mientras no lo haga, puedes cambiar tu respuesta con **Actualizar respuesta**.
 
 ![Observaciones del estudiante](img/alumno-observaciones.png)
@@ -173,7 +194,9 @@ En **Mis proyectos** ves los proyectos que asesoras y cifras de lo pendiente. Ca
 
 ### Dar por levantada una observación
 
-En el detalle del proyecto, sección «Observaciones del proyecto», pulsa **Dar por levantada** en las observaciones que el estudiante ya respondió. Solo puedes levantar las observaciones que tú registraste.
+En el detalle del proyecto, sección «Observaciones del proyecto», junto a la respuesta del estudiante aparece **Ver documento corregido (vN)**: ábrelo para revisar la corrección. Luego pulsa **Dar por levantada**. Si el estudiante no indicó la versión, verás «sin versión corregida indicada». Solo puedes levantar las observaciones que tú registraste.
+
+Al final del detalle del proyecto están los datos del F1: datos de la investigación, cronograma y recursos con sus totales.
 
 ### Verificar con la rúbrica
 
@@ -185,8 +208,8 @@ En el detalle del proyecto, sección «Observaciones del proyecto», pulsa **Dar
 
    **Marcar los pendientes como «cumple»** completa de una vez los criterios que aún no marcaste.
 3. La barra inferior te dice si puedes continuar:
-   - Con todos en «cumple», pulsa **Dar conformidad**.
-   - Si hay alguno en «no cumple», pulsa **Guardar y enviar observaciones**. El estudiante corrige y sube una nueva versión final.
+   - Con todos en «cumple», pulsa **Dar conformidad**. Pasas a Turnitin. Si aún tienes observaciones abiertas, el mensaje te dice cuántas debes dar por levantadas antes de registrar Turnitin.
+   - Si hay alguno en «no cumple», pulsa **Guardar y enviar observaciones**. Vuelves a **Mis proyectos**; el estudiante corrige, sube una nueva versión final y responde la observación.
 
 ![Rúbrica del asesor](img/asesor-rubrica.png)
 
@@ -224,10 +247,15 @@ Muestra:
 
 ### Solicitar el asesor al Decanato
 
+El Decanato no usa el sistema: **el sistema registra la solicitud; el envío al Decanato se hace por el canal oficial**.
+
 1. En «Requieren tu acción», pulsa **Solicitar** junto al proyecto nuevo.
 2. Revisa los datos de la solicitud (dirigida a, área, asunto, descripción).
 3. Si quieres, sugiere un docente especialista en la línea del proyecto. La sugerencia es solo referencial: decide el Decanato.
-4. Pulsa **Enviar solicitud al Decanato**. La Secretaría registrará la resolución cuando llegue.
+4. Pulsa **Registrar solicitud y generar oficio**. Se abre el **oficio** dirigido al Decano (número, asunto, proyecto, estudiantes, línea y docente sugerido).
+5. Pulsa **Imprimir oficio**, fírmalo y envíalo al Decanato por el canal oficial. La **Constancia en PDF** queda guardada en la solicitud; puedes volver a abrir el oficio desde la pantalla de la solicitud («Ver e imprimir el oficio»).
+
+La Secretaría registrará la resolución cuando llegue.
 
 ### Asignar el jurado
 
@@ -251,7 +279,7 @@ No se puede reemplazar cuando la sustentación ya está programada o concluida.
 
 ### Todos los proyectos
 
-Lista todos los proyectos con búsqueda y filtro por estado. Según el estado, cada fila ofrece **Solicitar asesor**, **Asignar jurado** o **Ver jurado**.
+Lista todos los proyectos con búsqueda y filtro por estado. Según el estado, cada fila ofrece **Solicitar asesor**, **Asignar jurado** o **Ver jurado**. Al pulsar el **título** se abre la **ficha del proyecto**: integrantes, asesor, jurado, datos del F1, cronograma, recursos con sus totales e historial.
 
 ---
 
@@ -261,7 +289,7 @@ Menú: **Resoluciones**, **Sustentaciones**, **Actas y dictámenes**.
 
 ### Registrar la resolución del asesor
 
-1. Abre **Resoluciones**. En «Solicitudes esperando resolución» elige el proyecto.
+1. Abre **Resoluciones**. En «Solicitudes esperando resolución» elige el proyecto. Con **Oficio del Director al Decanato · ver PDF** puedes revisar la solicitud que se envió.
 2. Completa:
    - el N.° de resolución;
    - la fecha de emisión, que no puede ser futura;
@@ -359,7 +387,12 @@ Los votos de cada uno se muestran recién cuando están los tres.
 | «No puedes agregarte a ti mismo como coautor.» | Deja el campo vacío si trabajas solo. |
 | Junto al nombre de tu coautor aparece un aviso en rojo | Ya tiene otro proyecto activo. Un estudiante solo puede tener uno. |
 | «En el estado actual del proyecto (…) no se reciben entregas.» | Espera a que tu asesor sea designado o a que termine la etapa en curso. |
-| «Elige una entrega de tu proyecto posterior a la observada.» | Sube primero la versión corregida y luego responde la observación. |
+| «Elige una entrega de tu proyecto posterior a la observada.» | Adjunta el documento corregido en la respuesta o elige una versión posterior a la observada. |
+| «No adjuntaste el documento corregido ni elegiste una versión…» (aviso amarillo) | Tu respuesta se envió. Si ya corregiste el documento, vuelve a responder adjuntándolo o eligiendo la versión. |
+| «Describe el diseño de contrastación cuando eliges «Otro».» | Escribe el diseño en el campo que aparece debajo. |
+| «El cronograma dura N meses; el máximo es 36…» | Revisa las fechas de inicio y término de las actividades. |
+| «Indica la dedicación de cada actividad, en horas por semana.» | Completa las horas por semana de cada actividad del cronograma. |
+| «El código del clasificador debe tener números separados por puntos…» | Elige un código de la lista, escribe uno como 2.3.1.5.1 o usa «–» para un bien propio. |
 | «Esta observación ya fue levantada por el revisor.» | No necesitas hacer nada más con ella. |
 
 ### Asesor y jurado
@@ -372,6 +405,8 @@ Los votos de cada uno se muestran recién cuando están los tres.
 | «Aún no hay una versión final o culminada para verificar.» | El estudiante debe subir su versión final. |
 | «Primero verifica la versión vigente con la rúbrica y da tu conformidad.» | Completa la rúbrica antes de registrar Turnitin. |
 | «Aún hay observaciones tuyas sin levantar.» | Levanta las observaciones que el estudiante ya respondió. |
+| «Rúbrica conforme. Antes de registrar Turnitin, da por levantadas tus N observaciones abiertas…» | En la ficha del proyecto, abre el documento corregido y pulsa **Dar por levantada**. |
+| «No se recibió qué acción elegiste…» | Vuelve a pulsar el botón de la rúbrica (por ejemplo, **Dar conformidad**). |
 | «Si registras observaciones, el resultado debe ser «Con observaciones».» | Cambia el resultado o quita las observaciones nuevas. |
 | «Solo se levantan observaciones que el estudiante ya respondió.» | Espera la respuesta del estudiante. |
 | «El resultado se registra el día de la sustentación.» | Vuelve el día programado. |
@@ -392,7 +427,7 @@ Los votos de cada uno se muestran recién cuando están los tres.
 | Mensaje | Qué hacer |
 |---|---|
 | «Ya existe una resolución con ese número.» | Revisa el número de la resolución. |
-| «La fecha no puede ser anterior a hoy.» | Elige hoy o una fecha posterior. |
+| «La fecha de la sustentación no puede ser anterior a hoy.» | Elige hoy o una fecha posterior. |
 | «El ambiente ya tiene una sustentación en ese horario.» | Cambia el aula o la hora. Revisa la agenda de la semana. |
 | Un mensaje dice que un jurado o el asesor tiene otra sustentación a esa hora | Elige otra hora. |
 | «Primero sube el documento firmado.» | Sube el escaneo firmado antes de informar al Director. |
@@ -403,7 +438,9 @@ Los votos de cada uno se muestran recién cuando están los tres.
 
 | Término | Significado |
 |---|---|
-| **F1** | Formato del proyecto de tesis que el estudiante registra en el 9.º ciclo (etapa 1). |
+| **F1** | Formato del proyecto de tesis que el estudiante registra en el 9.º ciclo (etapa 1): datos generales, cronograma de actividades y recursos y presupuesto. |
+| **Clasificador de gastos** | Código presupuestal de cada recurso (por ejemplo, 2.3.1.5.1 · Materiales y útiles de oficina). «–» indica un bien propio sin costo. |
+| **Oficio** | Documento que el Director imprime, firma y envía al Decanato para solicitar el asesor; el sistema guarda su constancia en PDF. |
 | **F2** | Documento de la tesis que se desarrolla en el 10.º ciclo (etapa 2). |
 | **Avance** | Entrega parcial del documento que el asesor revisa, normalmente cada semana. |
 | **Observación** | Indicación de algo que se debe corregir. Pasa por tres momentos: pendiente, respondida y levantada. |

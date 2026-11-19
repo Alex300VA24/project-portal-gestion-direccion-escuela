@@ -59,14 +59,14 @@ app/Modules/TesisProyectoTesis/
 ├── Database/
 │   ├── Migrations/     3 migraciones originales de gestión + 19 de ajuste (2026_11_10_0000NN)
 │   └── Seeders/        TesisDatabaseSeeder, RubricaSeeder, TipoSolicitudSeeder,
-│                       DemoTesisSeeder, EscenariosTesisSeeder
+│                       DemoTesisSeeder, EscenariosTesisSeeder, LineasInvestigacionSeeder
 ├── Docs/               estos manuales e img/ con capturas
 ├── Models/             23 modelos (ModuleModel, incluido Registro) + Concerns/UsaUuid
 ├── Policies/           ProyectoPolicy
-├── Requests/           13 FormRequest (uno por escritura)
+├── Requests/           18 FormRequest sobre TesisFormRequest (mensajes en español): 13 de escritura y 5 de filtros/consultas
 ├── Routes/             web.php, api.php
 ├── Services/           21 servicios con las reglas de negocio
-└── Support/            Estados, Parametros, Identidad (DTO), PdfSimple
+└── Support/            Estados, Parametros, Identidad (DTO), PdfSimple, DuracionCronograma
 
 resources/views/modules/tesis-proyecto-tesis/
 ├── layout.blade.php    documento propio del módulo (como layouts.calidad): menú lateral por rol, barra superior con campana, tema y menú de usuario
@@ -143,8 +143,10 @@ Prefijo `/tesis-proyecto-tesis`, nombre `tesis-proyecto-tesis.`. Todo, salvo la 
 | Método | URI | Nombre | Autorización |
 |---|---|---|---|
 | GET | `/director` | `director.panel` | Rol |
-| GET | `/director/proyectos` | `director.proyectos` | Rol (filtros validados) |
+| GET | `/director/proyectos` | `director.proyectos` | Rol (`FiltrarProyectosDirectorRequest`) |
+| GET | `/director/proyectos/{proyecto}` | `director.proyecto` | `can:gestionarComoDirector` (ficha con el detalle del F1) |
 | GET / POST | `/director/proyectos/{proyecto}/solicitar-asesor` | `director.asesor.solicitar` / `director.asesor.enviar` | `can:gestionarComoDirector` / `SolicitarAsesorRequest` |
+| GET | `/director/solicitudes/{solicitud}/oficio` | `director.oficio` | `Gate::authorize('gestionarComoDirector')` en el controlador (oficio imprimible) |
 | GET / POST | `/director/proyectos/{proyecto}/jurado` | `director.jurado` / `director.jurado.asignar` | `can:gestionarComoDirector` / `AsignarJuradoRequest` |
 | POST | `/director/proyectos/{proyecto}/jurado/reemplazar` | `director.jurado.reemplazar` | `ReemplazarJuradoRequest` |
 
@@ -258,7 +260,7 @@ La seguridad pidió además **identificadores públicos no numéricos**. Ninguna
 | 03 | `colaborador` | `id_persona` nullable + `nombres_completos` | Colaboradores en texto libre sin crear personas en `core` |
 | 04 | `actividad_cronograma` | `horas_semanales` (1–60) | Cronograma del F1 |
 | 05 | `recurso` | `cantidad`, tipos válidos, índice | Recursos del F1 |
-| 06 | `partida_presupuesto` | `id_recurso` nullable, `id_proyecto`, clasificador, descripción | Presupuesto por partidas del F1 |
+| 06 | `partida_presupuesto` | `id_recurso` nullable, `id_proyecto`, clasificador, descripción | Presupuesto del F1: cada fila de «Recursos y presupuesto» es un `recurso` + su partida (`id_recurso`) |
 | 07 | `solicitud` | uuid, destinatario, asunto, detalle, docente sugerido, `atendida_en`; `id_archivo` nullable | La solicitud de asesor la genera el sistema |
 | 08 | `resolucion` | uuid, órgano emisor, dirigido a, quién registró; UNIQUE por solicitud | Una resolución por solicitud y trazabilidad |
 | 09 | `asesor_proyecto` | fechas, motivo, estado; un asesor activo por proyecto (índice parcial) | Historial de designación |
@@ -308,7 +310,7 @@ Resumen de la revisión hecha con los requisitos de seguridad del módulo:
 | Identidad solo por contrato | `IdentidadService`; sin vínculo → mensaje claro | `BaseModuloTest` |
 | Solo uuid en URLs y formularios | `whereUuid`, códigos de catálogo, token de avisos | `SeguridadRutasTest`, `BaseModuloTest` |
 | Exposición mínima | Columnas explícitas. La API solo devuelve `{module, schema}`. Sin DNI ni teléfono en pantallas. La búsqueda de coautor solo devuelve nombre, código y disponibilidad | `BaseModuloTest`, `RegistroProyectoTest` |
-| FormRequest en cada escritura | 13 FormRequest con `authorize()`; las reglas de negocio se repiten en el Service | Pruebas de validación |
+| FormRequest en cada escritura | 13 FormRequest de escritura (y 5 de filtros) con `authorize()`, `messages()` y `attributes()` en español; las reglas de negocio se repiten en el Service | `MensajesValidacionTest`, `RubricaFormularioTest` |
 | `$fillable` explícito | Todos los modelos | `SeguridadRutasTest` |
 | Doble envío y concurrencia | `DB::transaction` + `lockForUpdate` y `pg_advisory_xact_lock` (registro, numeraciones, agenda). El estado se verifica dentro de la transacción | Pruebas de doble envío |
 | SQL seguro | Solo estático o con bindings | Revisión manual |
@@ -320,7 +322,7 @@ Resumen de la revisión hecha con los requisitos de seguridad del módulo:
 ## Archivos
 
 - `ArchivoService::guardar()` guarda el PDF en el disco `local` (`storage/app/private/tesis/`), fuera de `public`, con nombre `uuid.pdf`. Registra el nombre original saneado, el tamaño y el usuario en `comun.archivo`.
-- `guardarContenido()` hace lo mismo con un contenido generado (PDF de ejemplo con `Support/PdfSimple`).
+- `guardarContenido()` hace lo mismo con un contenido generado con `Support/PdfSimple`: los PDF de ejemplo de los escenarios y la constancia del oficio al Decanato (`tesis/oficios/`, enlazada en `tesis.solicitud.id_archivo`).
 - `eliminar()` borra el archivo y su registro.
 - La descarga entra por una sola ruta: `GET /archivos/{tipo}/{uuid}`. `ExpedienteService::ubicarArchivo()` busca el registro dueño (proyecto, entrega, resolución, reporte o acta firmada) y su proyecto, y el controlador exige la Policy `ver`.
 - El dictamen y el acta se imprimen desde la vista (HTML + `window.print()`). La Secretaría sube luego el escaneo firmado.
@@ -397,6 +399,7 @@ Con Turnitin > 21 % el proyecto **no cambia de estado**: la entrega queda Observ
 | `RubricaSeeder` | Todos | Rúbrica única v1 con 26 criterios (18 aplican a Proyecto y 25 a Tesis). Idempotente |
 | `TipoSolicitudSeeder` | Todos | Designación de asesor, Designación de jurado, Programación de sustentación |
 | `DemoTesisSeeder` | Solo `local`/`testing` | Facultad, escuela, periodo, líneas, ambientes y cuentas `*@portal.local` (inserta en `core`, `seguridad` y `public`) |
+| `LineasInvestigacionSeeder` | Solo `local`/`testing` | Preparado para la lista oficial de líneas (`LINEAS`, vacía por ahora). En producción las carga gestión en `core` |
 | `EscenariosTesisSeeder` | Solo `local`/`testing` | 11 proyectos `PT-DEMO-01…11` en cada punto del flujo, con PDF reales y avisos. Idempotente: además borra los proyectos de ensayo de las cuentas `nuevo@` y `est01…11@` y conserva los de otras cuentas (ver [Manual de flujos](MANUAL_FLUJOS.md#escenarios-pt-demo)) |
 
 ```bash
@@ -415,7 +418,7 @@ Siembra **dentro** del contenedor `app` y como `www-data`, para que los PDF qued
 
 | Suite | Cantidad |
 |---|---|
-| `tests/Feature/TesisProyectoTesis/` | 10 archivos, 72 pruebas |
+| `tests/Feature/TesisProyectoTesis/` | 17 archivos de prueba (más el ayudante `EnviaFormularios`), 102 pruebas |
 | `tests/Unit/TesisProyectoTesis/` | 1 archivo, 2 pruebas |
 | `tests/Unit/ModuleStructureTest.php`, `ModuleSchemaIsolationTest.php` | Aislamiento entre módulos (globales) |
 
@@ -497,6 +500,15 @@ Resumen de las decisiones tomadas durante la implementación. Ante una duda se e
 - Controles de al menos 44 px y foco visible.
 - Los estados llevan siempre texto además del color.
 - Enlace «Saltar al contenido», etiquetas `label`/`legend` y roles ARIA en pestañas, barras de progreso y búsqueda.
+
+**Correcciones de la prueba manual (19/11)**
+
+- Los botones de envío de la rúbrica no llevan `name`: la acción viaja en un campo oculto que llena el clic. Al enviar, Alpine deshabilita los botones (anti doble envío) y un botón deshabilitado no envía su valor; eso producía «validation.required». En todos los formularios `enviando` se activa con `setTimeout`, después de armar los datos.
+- Mensajes de validación en español desde `TesisFormRequest::mensajesBase()`, sin tocar `lang/`.
+- «← Volver a …» en las pantallas de detalle; al guardar se vuelve a la lista de origen, salvo dos continuaciones (rúbrica conforme → Turnitin; acta firmada → informar).
+- La respuesta a una observación puede adjuntar el PDF corregido: se registra con `AvanceService::subir` como avance de la semana actual y la observación queda «corregida en» esa versión.
+- F1 según el formato de la Escuela: duración calculada (`DuracionCronograma`, el servidor no acepta la del formulario), catálogo del clasificador de gastos en `Parametros::CLASIFICADOR_GASTOS`, una fila = `recurso` + `partida_presupuesto`, sin migraciones.
+- El Decanato no usa el sistema: la solicitud genera un oficio imprimible y su constancia en PDF; el número `NNN-AAAA-EPII-D` es el correlativo del año y se recalcula.
 
 **Contenedor y tema**
 
