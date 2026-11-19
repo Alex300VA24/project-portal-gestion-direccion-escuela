@@ -21,7 +21,7 @@ final class ReportePdfService
         ?string $linea,
         string $generadoEn,
     ): string {
-        $opciones = new Options();
+        $opciones = new Options;
         $opciones->setDefaultFont('DejaVu Sans');
         $opciones->setIsRemoteEnabled(false);
         $opciones->setIsJavascriptEnabled(false);
