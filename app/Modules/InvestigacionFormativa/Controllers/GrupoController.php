@@ -189,7 +189,7 @@ final class GrupoController extends Controller
 
         return view('modules.investigacion-formativa.docente.grupos', [
             'seccion' => $seccion,
-            'grupos' => $this->grupos->listarGruposDeSeccion((int) $seccion->id_seccion, $busqueda),
+            'grupos' => $this->grupos->listarGruposDeSeccion((int) $seccion->id_seccion, null, $busqueda),
             'busqueda' => $busqueda,
             'decisiones' => $this->decisiones->estadoDeSeccion((int) $seccion->id_seccion)->por_grupo,
         ]);
@@ -272,7 +272,7 @@ final class GrupoController extends Controller
         if ($resumen->es_coordinador) {
             $motivoBloqueo = $participa
                 ? $this->grupos->motivoBloqueoTitulo(
-                    (int) ($detalle?->proyecto->id_proyecto ?? 0),
+                    (int) ($detalle?->proyecto?->id_proyecto ?? 0),
                     $idSeccion,
                 )
                 : 'Tu participación está retirada; el grupo queda en solo lectura.';

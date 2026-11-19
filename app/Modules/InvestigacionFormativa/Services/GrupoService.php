@@ -508,6 +508,7 @@ final class GrupoService
                 'per.apellido_paterno as coordinador_apellido',
                 'av.entregados',
             ])
+            ->withQueryString()
             ->through(static fn (object $fila): object => (object) [
                 'id_grupo' => (int) $fila->id_grupo,
                 'nombre' => (string) $fila->nombre,

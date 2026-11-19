@@ -328,6 +328,42 @@ final class GruposTitulosTest extends TestCase
             ->assertSee('Título propio');
     }
 
+    public function test_el_estudiante_ve_un_grupo_sin_proyecto_sin_error(): void
+    {
+        $this->crearGruposInvestigacion();
+
+        $this->actingAs($this->datos['users']['alumno_a'])
+            ->get(route('investigacion-formativa.alumno.grupos.show', 9901))
+            ->assertOk()
+            ->assertSee('El grupo todavía no tiene un proyecto registrado.');
+    }
+
+    public function test_el_docente_busca_grupos_por_nombre_y_titulo_sin_confundir_el_texto_con_la_linea(): void
+    {
+        $this->crearGruposInvestigacion();
+        $this->crearTipoProducto();
+        DB::table('investigacion_formativa.proyecto')->insert([
+            'id_grupo' => 9951,
+            'id_linea' => 9801,
+            'id_tipo_producto' => 9981,
+            'titulo' => 'Proyecto 2024',
+            'estado' => 'Registrado',
+            'version' => 1,
+        ]);
+
+        $this->actingAs($this->datos['users']['docente_a'])
+            ->get(route('investigacion-formativa.docente.grupos.index', 9901).'?buscar=Retirado')
+            ->assertOk()
+            ->assertSee('Grupo Retirado')
+            ->assertDontSee('Grupo Multi');
+
+        $this->actingAs($this->datos['users']['docente_a'])
+            ->get(route('investigacion-formativa.docente.grupos.index', 9901).'?buscar=2024')
+            ->assertOk()
+            ->assertSee('Grupo A')
+            ->assertSee('Proyecto 2024');
+    }
+
     /**
      * @param  list<int>  $integrantes
      */
