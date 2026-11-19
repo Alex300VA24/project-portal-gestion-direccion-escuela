@@ -158,6 +158,19 @@ class Browser:
     def text(self):
         return self.js("return document.body.innerText")
 
+    def fetch_app(self, path, extra_headers=None):
+        """GET a URL of the running demo application and return (status, headers, body).
+
+        Accepts both relative paths (prefixed with the demo app URL) and
+        absolute URLs, because DOM href attributes may already be absolute.
+        Pass extra_headers (e.g. Cookie) to reuse the browser's session.
+        """
+        import urllib.request
+        url = path if path.startswith(("http://", "https://")) else self.app + path
+        request = urllib.request.Request(url, headers=extra_headers or {})
+        with urllib.request.urlopen(request, timeout=40) as response:
+            return response.status, response.headers, response.read()
+
     def check(self, name, condition):
         assert condition(), name
         self.checks.append(name)
@@ -645,6 +658,25 @@ class Browser:
         self.capture("director-resultados")
         self.check("Survey report", lambda: "5.00" in self.text() and "Comentarios confidenciales" in self.text())
         self.check("Report omits respondent name", lambda: "Demo integrante" not in self.text())
+        pdf_href = self.js(
+            "var a=Array.from(document.querySelectorAll('a')).find("
+            "function(e){return e.textContent.trim()==='Descargar PDF';});"
+            "return a?a.getAttribute('href'):null;"
+        )
+        self.check("PDF download link present on results page", lambda: pdf_href is not None)
+        if pdf_href:
+            cookies = self.call("GET", "/cookie")
+            cookie_header = "; ".join(
+                "{}={}".format(c.get("name"), c.get("value")) for c in cookies
+            )
+            status, headers, body = self.fetch_app(pdf_href, {"Cookie": cookie_header})
+            self.check("PDF download returns a PDF document", lambda: status == 200 and body.startswith(b"%PDF"))
+            self.check("PDF download is an attachment", lambda: "attachment" in str(headers.get("content-disposition", "")))
+            self.check("PDF download link carries the download attribute", lambda: self.js(
+                "var a=Array.from(document.querySelectorAll('a')).find("
+                "function(e){return e.textContent.trim()==='Descargar PDF';});"
+                "return !!a && a.hasAttribute('download');"
+            ))
         self.check_comment_layout()
         self.section("director", "encuesta")
         self.button("Cerrar encuesta")
