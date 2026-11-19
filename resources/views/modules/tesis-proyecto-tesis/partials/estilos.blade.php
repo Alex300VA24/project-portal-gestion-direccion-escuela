@@ -60,6 +60,7 @@
     .tz-muted { color: var(--tz-muted); }
     .tz-small { font-size: 13px; }
     .tz-warning-text { color: var(--tz-warning); }
+    .tz-doc-link { display: inline-flex; align-items: center; min-height: 44px; margin-left: 4px; font-weight: 700; }
 
     /* ===== Contenedor: menú lateral fijo + barra superior + contenido a todo el ancho ===== */
     .tz-side { position: fixed; z-index: 60; inset: 0 auto 0 0; width: var(--tz-side-w); display: flex; flex-direction: column; gap: 6px;

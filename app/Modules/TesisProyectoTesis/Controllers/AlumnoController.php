@@ -149,11 +149,19 @@ final class AlumnoController extends BaseController
 
     public function responder(ResponderObservacionRequest $request, Observacion $observacion, AvanceService $avances): RedirectResponse
     {
-        $avances->responder($observacion, $this->identidad($request), $request->validated('respuesta'), $request->validated('entrega'));
+        $o = $avances->responder($observacion, $this->identidad($request), $request->validated('respuesta'), $request->validated('entrega'), $request->file('archivo'));
         $proyecto = $avances->proyectoDeObservacion($observacion);
+        $version = $o->entregaCorreccion?->version;
+        $destino = redirect()->route('tesis-proyecto-tesis.alumno.proyecto.observaciones', $proyecto);
 
-        return redirect()->route('tesis-proyecto-tesis.alumno.proyecto.observaciones', $proyecto)
-            ->with('status', 'Respuesta enviada. El revisor confirmará si la observación queda levantada.');
+        if ($version === null) {
+            return $destino->with('status', 'Respuesta enviada. El revisor confirmará si la observación queda levantada.')
+                ->with('aviso', 'No adjuntaste el documento corregido ni elegiste una versión. Si ya corregiste el documento, súbelo o elige la versión en «Corregida en» para que el revisor pueda verlo.');
+        }
+
+        return $destino->with('status', $request->hasFile('archivo')
+            ? "Respuesta enviada con el documento corregido (registrado como v{$version}). El revisor confirmará si la observación queda levantada."
+            : "Respuesta enviada: corregida en v{$version}. El revisor confirmará si la observación queda levantada.");
     }
 
     /**

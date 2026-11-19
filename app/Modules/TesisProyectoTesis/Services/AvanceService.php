@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -25,14 +26,15 @@ final class AvanceService
         private readonly HistorialService $historial,
         private readonly NotificacionService $notificaciones,
         private readonly JuradoService $jurado,
+        private readonly SeguimientoService $seguimiento,
     ) {}
 
     /**
      * @param  array{tipo: string, numero_semana: int, comentario?: ?string}  $datos
      */
-    public function subir(Proyecto $proyecto, Identidad $estudiante, array $datos, UploadedFile $pdf): Entrega
+    public function subir(Proyecto $proyecto, Identidad $estudiante, array $datos, UploadedFile $pdf, bool $avisar = true): Entrega
     {
-        return DB::transaction(function () use ($proyecto, $estudiante, $datos, $pdf) {
+        return DB::transaction(function () use ($proyecto, $estudiante, $datos, $pdf, $avisar) {
             $p = $this->historial->bloquear($proyecto);
 
             if (! in_array($p->estado, Estados::PERMITEN_ENTREGA, true)) {
@@ -62,8 +64,10 @@ final class AvanceService
                 ? $this->identidad->usuariosDeDocentes($p->juradosActivos()->pluck('id_docente')->all())
                 : $this->identidad->usuariosDeDocentes(array_filter([$p->asesorActivo()->value('id_docente')]));
 
-            $this->notificaciones->notificar($destinos, 'entrega.subida', "Nueva entrega · {$p->codigo} v{$version}",
-                "Los estudiantes subieron la {$tipo}.", $p);
+            if ($avisar) {
+                $this->notificaciones->notificar($destinos, 'entrega.subida', "Nueva entrega · {$p->codigo} v{$version}",
+                    "Los estudiantes subieron la {$tipo}.", $p);
+            }
 
             $this->jurado->notificarIntermediaSiCorresponde($p);
 
@@ -104,9 +108,14 @@ final class AvanceService
         return $observacion->revision?->entrega?->proyecto;
     }
 
-    public function responder(Observacion $observacion, Identidad $estudiante, string $respuesta, ?string $uuidEntrega): Observacion
+    /**
+     * Responde una observación. Si el estudiante adjunta el PDF corregido, se registra como nueva entrega
+     * (avance, misma etapa, versión siguiente, semana actual) y la observación queda «corregida en» esa versión;
+     * si no, puede elegir una versión ya subida. El adjunto tiene prioridad sobre la versión elegida.
+     */
+    public function responder(Observacion $observacion, Identidad $estudiante, string $respuesta, ?string $uuidEntrega, ?UploadedFile $pdf = null): Observacion
     {
-        return DB::transaction(function () use ($observacion, $estudiante, $respuesta, $uuidEntrega) {
+        return DB::transaction(function () use ($observacion, $estudiante, $respuesta, $uuidEntrega, $pdf) {
             $o = Observacion::query()->whereKey($observacion->id_observacion)->lockForUpdate()->firstOrFail();
             $revision = Revision::query()->with('entrega')->findOrFail($o->id_revision);
             $proyecto = $revision->entrega->proyecto;
@@ -116,7 +125,16 @@ final class AvanceService
             }
 
             $idCorreccion = null;
-            if ($uuidEntrega !== null && $uuidEntrega !== '') {
+            $correccion = null;
+            if ($pdf !== null) {
+                // Sin aviso de «Nueva entrega»: el revisor recibe el aviso de la respuesta, que ya menciona la versión.
+                $correccion = $this->subir($proyecto, $estudiante, [
+                    'tipo' => 'Avance',
+                    'numero_semana' => $this->seguimiento->semanaActual($proyecto),
+                    'comentario' => 'Documento corregido de la observación: '.Str::limit((string) $o->descripcion, 120),
+                ], $pdf, avisar: false);
+                $idCorreccion = $correccion->id_entrega;
+            } elseif ($uuidEntrega !== null && $uuidEntrega !== '') {
                 $correccion = Entrega::query()->where('uuid', $uuidEntrega)->where('id_proyecto', $proyecto->id_proyecto)->first();
                 if ($correccion === null || $correccion->entregado_en->lt($revision->entrega->entregado_en) || $correccion->is($revision->entrega)) {
                     throw ValidationException::withMessages(['entrega' => 'Elige una entrega de tu proyecto posterior a la observada.']);
@@ -134,7 +152,10 @@ final class AvanceService
             $this->notificaciones->notificar(
                 $this->identidad->usuariosDeDocentes([(int) $revision->id_docente]),
                 'observacion.respondida', "Observación respondida · {$proyecto->codigo}",
-                'El estudiante indicó cómo corrigió la observación. Revísala y dala por levantada.', $proyecto,
+                $correccion !== null
+                    ? "El estudiante indicó cómo corrigió la observación y la ubicó en la versión v{$correccion->version}. Abre el documento corregido y, si corresponde, dala por levantada."
+                    : 'El estudiante indicó cómo corrigió la observación, sin indicar la versión corregida. Revísala y, si corresponde, dala por levantada.',
+                $proyecto,
             );
 
             return $o;

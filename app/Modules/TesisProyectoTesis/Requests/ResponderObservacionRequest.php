@@ -2,6 +2,8 @@
 
 namespace App\Modules\TesisProyectoTesis\Requests;
 
+use App\Modules\TesisProyectoTesis\Support\Parametros;
+
 use App\Modules\TesisProyectoTesis\Services\AvanceService;
 
 final class ResponderObservacionRequest extends TesisFormRequest
@@ -20,6 +22,7 @@ final class ResponderObservacionRequest extends TesisFormRequest
         return [
             'respuesta' => ['required', 'string', 'min:5', 'max:3000'],
             'entrega' => ['nullable', 'uuid'],
+            'archivo' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:'.Parametros::ARCHIVO_MAX_KB],
         ];
     }
 

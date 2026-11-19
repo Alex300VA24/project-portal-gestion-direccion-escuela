@@ -194,6 +194,9 @@
                     @if (session('status'))
                         <div class="tz-alert is-success" role="status">{{ session('status') }}</div>
                     @endif
+                    @if (session('aviso'))
+                        <div class="tz-alert is-warning" role="status">{{ session('aviso') }}</div>
+                    @endif
                     @if (session('error'))
                         <div class="tz-alert is-danger" role="alert">{{ session('error') }}</div>
                     @endif
