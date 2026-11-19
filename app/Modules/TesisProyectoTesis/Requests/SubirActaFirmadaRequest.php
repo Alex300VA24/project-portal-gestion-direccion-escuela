@@ -3,9 +3,8 @@
 namespace App\Modules\TesisProyectoTesis\Requests;
 
 use App\Modules\TesisProyectoTesis\Support\Parametros;
-use Illuminate\Foundation\Http\FormRequest;
 
-final class SubirActaFirmadaRequest extends FormRequest
+final class SubirActaFirmadaRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -20,9 +19,19 @@ final class SubirActaFirmadaRequest extends FormRequest
         return ['archivo' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:'.Parametros::ARCHIVO_MAX_KB]];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'archivo.required' => 'Adjunta el documento firmado y escaneado en PDF.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['archivo' => 'documento firmado (PDF)'];
+        return [
+            'archivo' => 'documento firmado (PDF)',
+        ];
     }
 }

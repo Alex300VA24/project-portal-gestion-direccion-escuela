@@ -5,6 +5,7 @@ namespace App\Modules\TesisProyectoTesis\Controllers;
 use App\Modules\TesisProyectoTesis\Models\Entrega;
 use App\Modules\TesisProyectoTesis\Models\Observacion;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Requests\FiltrarBandejaAsesorRequest;
 use App\Modules\TesisProyectoTesis\Requests\RegistrarSimilitudRequest;
 use App\Modules\TesisProyectoTesis\Requests\RevisarAvanceRequest;
 use App\Modules\TesisProyectoTesis\Requests\VerificarRubricaRequest;
@@ -18,7 +19,6 @@ use App\Modules\TesisProyectoTesis\Support\Estados;
 use App\Modules\TesisProyectoTesis\Support\Parametros;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class AsesorController extends BaseController
@@ -28,10 +28,10 @@ final class AsesorController extends BaseController
         private readonly RevisionService $revisiones,
     ) {}
 
-    public function proyectos(Request $request, AsesorService $asesor): View
+    public function proyectos(FiltrarBandejaAsesorRequest $request, AsesorService $asesor): View
     {
         $id = $this->identidad($request);
-        $filtro = $request->validate(['etapa' => ['nullable', Rule::in(['Proyecto', 'Tesis'])]]);
+        $filtro = $request->validated();
         $datos = $asesor->bandeja((int) $id->idDocente, $filtro['etapa'] ?? null);
 
         return $this->vista($request, 'asesor.proyectos', [...$datos, 'etapa' => $filtro['etapa'] ?? null], 'asesor', 'proyectos', ['proyectos' => $datos['cifras']['porRevisar']]);

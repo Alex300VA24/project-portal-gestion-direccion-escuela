@@ -2,9 +2,7 @@
 
 namespace App\Modules\TesisProyectoTesis\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-final class SolicitarAsesorRequest extends FormRequest
+final class SolicitarAsesorRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -25,9 +23,24 @@ final class SolicitarAsesorRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'detalle.min' => 'Describe la solicitud en al menos :min caracteres.',
+            'docente_sugerido.regex' => 'El docente sugerido no es válido. Elige uno de la lista o «Sin sugerencia».',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['destinatario' => 'cargo del destinatario', 'destinatario_area' => 'área', 'detalle' => 'descripción', 'docente_sugerido' => 'docente sugerido'];
+        return [
+            'destinatario' => 'dirigido a (cargo)',
+            'destinatario_area' => 'área',
+            'asunto' => 'asunto',
+            'detalle' => 'descripción',
+            'docente_sugerido' => 'docente sugerido',
+        ];
     }
 }

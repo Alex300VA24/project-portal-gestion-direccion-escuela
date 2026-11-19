@@ -4,10 +4,9 @@ namespace App\Modules\TesisProyectoTesis\Requests;
 
 use App\Modules\TesisProyectoTesis\Services\RevisionService;
 use App\Modules\TesisProyectoTesis\Support\Parametros;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class RevisarAvanceRequest extends FormRequest
+final class RevisarAvanceRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -40,9 +39,27 @@ final class RevisarAvanceRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'dictamen.required' => 'Elige el resultado de la revisión: Con observaciones, Sin observaciones o Proyecto culminado.',
+            'dictamen.in' => 'Elige el resultado de la revisión: Con observaciones, Sin observaciones o Proyecto culminado.',
+            'observaciones.*.descripcion.min' => 'Cada observación debe tener al menos :min caracteres.',
+            'levantar.*.uuid' => 'Una de las observaciones marcadas para levantar no es válida. Recarga la página e inténtalo de nuevo.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['dictamen' => 'resultado de la revisión', 'observaciones.*.descripcion' => 'observación', 'observaciones.*.seccion' => 'sección del documento'];
+        return [
+            'dictamen' => 'resultado de la revisión',
+            'comentario' => 'comentario general',
+            'observaciones' => 'observaciones',
+            'observaciones.*.descripcion' => 'observación',
+            'observaciones.*.seccion' => 'sección del documento',
+            'levantar' => 'observaciones por levantar',
+        ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Modules\TesisProyectoTesis\Controllers;
 
+use App\Modules\TesisProyectoTesis\Requests\AbrirNotificacionRequest;
 use App\Modules\TesisProyectoTesis\Services\EnlaceNotificacionService;
 use App\Modules\TesisProyectoTesis\Services\IdentidadService;
 use App\Modules\TesisProyectoTesis\Services\NavegacionService;
@@ -60,9 +61,9 @@ final class InicioController extends BaseController
     /**
      * Abre un aviso: lo marca como leído y lleva a la pantalla de la acción (calculada en el servidor).
      */
-    public function abrirNotificacion(Request $request, NotificacionService $notificaciones, EnlaceNotificacionService $enlaces): RedirectResponse
+    public function abrirNotificacion(AbrirNotificacionRequest $request, NotificacionService $notificaciones, EnlaceNotificacionService $enlaces): RedirectResponse
     {
-        $datos = $request->validate(['n' => ['required', 'string', 'max:2000']]);
+        $datos = $request->validated();
         $aviso = $notificaciones->abrir($datos['n'], $this->identidad($request)->idUsuario);
 
         abort_if($aviso === null, 404);

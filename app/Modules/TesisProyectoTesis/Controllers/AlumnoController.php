@@ -4,6 +4,7 @@ namespace App\Modules\TesisProyectoTesis\Controllers;
 
 use App\Modules\TesisProyectoTesis\Models\Observacion;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Requests\BuscarCoautorRequest;
 use App\Modules\TesisProyectoTesis\Requests\RegistrarProyectoRequest;
 use App\Modules\TesisProyectoTesis\Requests\ResponderObservacionRequest;
 use App\Modules\TesisProyectoTesis\Requests\SubirEntregaRequest;
@@ -158,9 +159,9 @@ final class AlumnoController extends BaseController
     /**
      * Búsqueda del coautor por código: devuelve solo nombre y si está disponible.
      */
-    public function coautor(Request $request, IdentidadService $identidad): JsonResponse
+    public function coautor(BuscarCoautorRequest $request, IdentidadService $identidad): JsonResponse
     {
-        $datos = $request->validate(['codigo' => ['required', 'string', 'max:30', 'regex:/^[A-Za-z0-9-]+$/']]);
+        $datos = $request->validated();
         $yo = $this->identidad($request);
         $e = $identidad->estudiantePorCodigo($datos['codigo']);
 

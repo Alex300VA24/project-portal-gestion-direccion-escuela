@@ -3,9 +3,8 @@
 namespace App\Modules\TesisProyectoTesis\Requests;
 
 use App\Modules\TesisProyectoTesis\Support\Parametros;
-use Illuminate\Foundation\Http\FormRequest;
 
-final class RegistrarResolucionRequest extends FormRequest
+final class RegistrarResolucionRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -29,9 +28,30 @@ final class RegistrarResolucionRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'fecha.before_or_equal' => 'La fecha de emisión no puede ser posterior a hoy.',
+            'docente.required' => 'Elige al docente designado como asesor.',
+            'docente.regex' => 'El docente elegido no es válido. Elige uno de la lista.',
+            'numero.regex' => 'El número de resolución solo admite letras, números, espacios y los signos . / - °.',
+            'archivo.required' => 'Adjunta la resolución escaneada en PDF.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['numero' => 'número de resolución', 'fecha' => 'fecha de emisión', 'organo_emisor' => 'órgano emisor', 'dirigido_a' => 'dirigida a', 'docente' => 'docente designado', 'archivo' => 'resolución escaneada (PDF)'];
+        return [
+            'numero' => 'número de resolución',
+            'fecha' => 'fecha de emisión',
+            'organo_emisor' => 'órgano emisor',
+            'dirigido_a' => 'dirigida a',
+            'docente' => 'docente designado como asesor',
+            'asunto' => 'asunto',
+            'detalle' => 'detalle',
+            'archivo' => 'resolución escaneada (PDF)',
+        ];
     }
 }

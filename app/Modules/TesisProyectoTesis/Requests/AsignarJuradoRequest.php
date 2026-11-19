@@ -2,9 +2,7 @@
 
 namespace App\Modules\TesisProyectoTesis\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-final class AsignarJuradoRequest extends FormRequest
+final class AsignarJuradoRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -25,9 +23,25 @@ final class AsignarJuradoRequest extends FormRequest
         ];
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, string|array<string, string>> */
     public function messages(): array
     {
-        return ['different' => 'Los tres cargos deben ser docentes distintos.'];
+        return array_merge($this->mensajesBase(), [
+            'Presidente.required' => 'Elige al presidente del jurado.',
+            'Secretario.required' => 'Elige al secretario del jurado.',
+            'Vocal.required' => 'Elige al vocal del jurado.',
+            'different' => 'Los tres cargos deben ser docentes distintos: «:attribute» y «:other» no pueden ser la misma persona.',
+            'regex' => 'El docente elegido en «:attribute» no es válido. Elige uno de la lista.',
+        ]);
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'Presidente' => 'presidente del jurado',
+            'Secretario' => 'secretario del jurado',
+            'Vocal' => 'vocal del jurado',
+        ];
     }
 }

@@ -5,17 +5,18 @@ namespace App\Modules\TesisProyectoTesis\Controllers;
 use App\Modules\TesisProyectoTesis\Models\Acta;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
 use App\Modules\TesisProyectoTesis\Models\Solicitud;
+use App\Modules\TesisProyectoTesis\Requests\FiltrarAgendaRequest;
 use App\Modules\TesisProyectoTesis\Requests\ProgramarSustentacionRequest;
 use App\Modules\TesisProyectoTesis\Requests\RegistrarResolucionRequest;
 use App\Modules\TesisProyectoTesis\Requests\SubirActaFirmadaRequest;
 use App\Modules\TesisProyectoTesis\Services\ActaService;
 use App\Modules\TesisProyectoTesis\Services\CatalogoService;
-use App\Modules\TesisProyectoTesis\Services\RubricaService;
-use App\Modules\TesisProyectoTesis\Services\SimilitudService;
-use App\Modules\TesisProyectoTesis\Services\SustentacionService;
 use App\Modules\TesisProyectoTesis\Services\DesignacionService;
 use App\Modules\TesisProyectoTesis\Services\IdentidadService;
+use App\Modules\TesisProyectoTesis\Services\RubricaService;
 use App\Modules\TesisProyectoTesis\Services\SeguimientoService;
+use App\Modules\TesisProyectoTesis\Services\SimilitudService;
+use App\Modules\TesisProyectoTesis\Services\SustentacionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -50,10 +51,10 @@ final class SecretariaController extends BaseController
         ], 'secretaria', 'sustentaciones', ['sustentaciones' => $pendientes->count()]);
     }
 
-    public function programar(Request $request, Proyecto $proyecto, SustentacionService $sustentaciones, SeguimientoService $seguimiento, CatalogoService $catalogo, RubricaService $rubrica, SimilitudService $similitud): View
+    public function programar(FiltrarAgendaRequest $request, Proyecto $proyecto, SustentacionService $sustentaciones, SeguimientoService $seguimiento, CatalogoService $catalogo, RubricaService $rubrica, SimilitudService $similitud): View
     {
         $this->identidad($request);
-        $filtro = $request->validate(['ambiente' => ['nullable', 'string', 'max:30', 'regex:/^[A-Za-z0-9-]+$/'], 'fecha' => ['nullable', 'date_format:Y-m-d']]);
+        $filtro = $request->validated();
         $ambientes = $catalogo->ambientes();
         $codigo = $filtro['ambiente'] ?? old('ambiente', $ambientes[0]['codigo'] ?? null);
         $fecha = \Illuminate\Support\Carbon::parse($filtro['fecha'] ?? old('fecha', now()->toDateString()));

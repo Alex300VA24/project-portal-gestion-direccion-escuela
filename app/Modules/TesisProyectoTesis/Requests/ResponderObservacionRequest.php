@@ -3,9 +3,8 @@
 namespace App\Modules\TesisProyectoTesis\Requests;
 
 use App\Modules\TesisProyectoTesis\Services\AvanceService;
-use Illuminate\Foundation\Http\FormRequest;
 
-final class ResponderObservacionRequest extends FormRequest
+final class ResponderObservacionRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -24,9 +23,23 @@ final class ResponderObservacionRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'respuesta.required' => 'Escribe cómo corregiste la observación.',
+            'respuesta.min' => 'Explica la corrección en al menos :min caracteres.',
+            'entrega.uuid' => 'La versión elegida en «Corregida en» no es válida. Elige una de la lista o déjala vacía.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['respuesta' => 'respuesta', 'entrega' => 'entrega donde se corrigió'];
+        return [
+            'respuesta' => 'respuesta',
+            'entrega' => 'corregida en',
+            'archivo' => 'documento corregido (PDF)',
+        ];
     }
 }

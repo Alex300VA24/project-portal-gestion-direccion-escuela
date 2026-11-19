@@ -3,9 +3,8 @@
 namespace App\Modules\TesisProyectoTesis\Requests;
 
 use App\Modules\TesisProyectoTesis\Support\Parametros;
-use Illuminate\Foundation\Http\FormRequest;
 
-final class RegistrarSimilitudRequest extends FormRequest
+final class RegistrarSimilitudRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -25,9 +24,24 @@ final class RegistrarSimilitudRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'porcentaje.between' => 'El porcentaje de similitud debe estar entre 0 y 100.',
+            'porcentaje.decimal' => 'El porcentaje admite como máximo 2 decimales (por ejemplo, 12.50).',
+            'archivo.required' => 'Adjunta el reporte de Turnitin en PDF.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['porcentaje' => 'porcentaje de similitud', 'archivo' => 'reporte de Turnitin (PDF)', 'indicaciones' => 'indicaciones'];
+        return [
+            'porcentaje' => 'porcentaje de similitud',
+            'archivo' => 'reporte de Turnitin (PDF)',
+            'indicaciones' => 'indicaciones',
+            'conformidad' => 'conformidad',
+        ];
     }
 }

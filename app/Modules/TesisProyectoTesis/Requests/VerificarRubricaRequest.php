@@ -2,14 +2,13 @@
 
 namespace App\Modules\TesisProyectoTesis\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * Verificación con la rúbrica: la usa el asesor (ruta asesor.*) y cada jurado (ruta jurado.*).
  * Los criterios se identifican por su número de orden, no por id.
  */
-final class VerificarRubricaRequest extends FormRequest
+final class VerificarRubricaRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -32,9 +31,28 @@ final class VerificarRubricaRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'accion.required' => 'No se recibió qué acción elegiste. Vuelve a pulsar «Dar conformidad», «Guardar y enviar observaciones» o «Registrar revisión intermedia».',
+            'accion.in' => 'La acción elegida no es válida. Vuelve a pulsar «Dar conformidad», «Guardar y enviar observaciones» o «Registrar revisión intermedia».',
+            'marcas.required' => 'Marca cada criterio de la rúbrica antes de enviar.',
+            'marcas.*.required' => 'Marca cada criterio: cumple, no cumple o no aplica.',
+            'marcas.*.in' => 'Marca cada criterio: cumple, no cumple o no aplica.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['marcas' => 'marcas de la rúbrica', 'marcas.*' => 'marca del criterio', 'obs.*' => 'observación del criterio'];
+        return [
+            'marcas' => 'marcas de la rúbrica',
+            'marcas.*' => 'marca del criterio',
+            'obs' => 'observaciones',
+            'obs.*' => 'observación del criterio',
+            'accion' => 'acción',
+            'comentario' => 'comentario general',
+        ];
     }
 }

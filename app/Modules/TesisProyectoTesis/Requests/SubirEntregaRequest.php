@@ -3,10 +3,9 @@
 namespace App\Modules\TesisProyectoTesis\Requests;
 
 use App\Modules\TesisProyectoTesis\Support\Parametros;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class SubirEntregaRequest extends FormRequest
+final class SubirEntregaRequest extends TesisFormRequest
 {
     public function authorize(): bool
     {
@@ -26,9 +25,25 @@ final class SubirEntregaRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string|array<string, string>> */
+    public function messages(): array
+    {
+        return array_merge($this->mensajesBase(), [
+            'tipo.required' => 'Elige si es un avance semanal o la versión final.',
+            'tipo.in' => 'Elige si es un avance semanal o la versión final.',
+            'numero_semana.between' => 'La semana debe estar entre :min y :max.',
+            'archivo.required' => 'Adjunta el documento en PDF.',
+        ]);
+    }
+
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['tipo' => 'tipo de entrega', 'numero_semana' => 'semana', 'archivo' => 'archivo (PDF)'];
+        return [
+            'tipo' => 'tipo de entrega',
+            'numero_semana' => 'semana',
+            'comentario' => 'comentario',
+            'archivo' => 'documento (PDF)',
+        ];
     }
 }

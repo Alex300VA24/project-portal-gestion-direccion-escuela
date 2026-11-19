@@ -4,6 +4,7 @@ namespace App\Modules\TesisProyectoTesis\Controllers;
 
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
 use App\Modules\TesisProyectoTesis\Requests\AsignarJuradoRequest;
+use App\Modules\TesisProyectoTesis\Requests\FiltrarProyectosDirectorRequest;
 use App\Modules\TesisProyectoTesis\Requests\ReemplazarJuradoRequest;
 use App\Modules\TesisProyectoTesis\Requests\SolicitarAsesorRequest;
 use App\Modules\TesisProyectoTesis\Services\DesignacionService;
@@ -14,7 +15,6 @@ use App\Modules\TesisProyectoTesis\Services\SimilitudService;
 use App\Modules\TesisProyectoTesis\Support\Estados;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class DirectorController extends BaseController
@@ -29,13 +29,10 @@ final class DirectorController extends BaseController
         return $this->vista($request, 'director.panel', $datos, 'director', 'panel', ['panel' => $datos['cifras']['accion']]);
     }
 
-    public function proyectos(Request $request): View
+    public function proyectos(FiltrarProyectosDirectorRequest $request): View
     {
         $this->identidad($request);
-        $filtros = $request->validate([
-            'estado' => ['nullable', Rule::in(array_keys(Estados::ETIQUETAS))],
-            'buscar' => ['nullable', 'string', 'max:80'],
-        ]);
+        $filtros = $request->validated();
 
         return $this->vista($request, 'director.proyectos', [
             'filas' => $this->director->proyectos($filtros['estado'] ?? null, $filtros['buscar'] ?? null),
