@@ -498,6 +498,92 @@ final class ReportesTest extends TestCase
         $this->assertSame(9, $this->resumen()->totales->secciones);
     }
 
+    public function test_la_carga_de_estados_usa_consulta_por_lote_para_selecciones(): void
+    {
+        $this->crearTipoProducto();
+        $servicio = app(DecisionTrabajoService::class);
+        $usuarioDocente = $this->datos['users']['docente_a'];
+        $ahora = now('UTC')->format('Y-m-d H:i:sP');
+
+        $crearSeleccion = function (int $idSeccion, int $idProyecto) use (
+
+            $usuarioDocente,
+            $ahora,
+        ): void {
+            DB::table('investigacion_formativa.decision_trabajo')->insert([
+                'id_seccion' => $idSeccion,
+                'tipo' => 'aprobacion',
+                'accion' => 'registrar',
+                'id_proyecto' => $idProyecto,
+                'version' => 1,
+                'user_id' => $usuarioDocente->id,
+                'id_docente' => 9801,
+                'decidido_en' => $ahora,
+                'evidencia' => '{}',
+            ]);
+            DB::table('investigacion_formativa.decision_trabajo')->insert([
+                'id_seccion' => $idSeccion,
+                'tipo' => 'seleccion',
+                'accion' => 'registrar',
+                'id_proyecto' => $idProyecto,
+                'version' => 1,
+                'user_id' => $usuarioDocente->id,
+                'id_docente' => 9801,
+                'decidido_en' => $ahora,
+                'evidencia' => '{}',
+                'motivo' => null,
+            ]);
+        };
+
+        // Seccion 9901 ya tiene grupos; crear proyectos y selecciones para ella y para 8 secciones mas.
+        $idsSecciones = [];
+        $seccionBase = (array) DB::table('core.seccion')->where('id_seccion', 9901)->first();
+        foreach (array_merge([9901], range(10001, 10008)) as $indice => $idSeccion) {
+            $idsSecciones[] = $idSeccion;
+            if ($idSeccion !== 9901) {
+                $seccion = $seccionBase;
+                $seccion['id_seccion'] = $idSeccion;
+                $seccion['codigo'] = 'BATCH-SEL-'.($indice + 1);
+                DB::table('core.seccion')->insert($seccion);
+            }
+
+            $idGrupo = DB::table('investigacion_formativa.grupo')->insertGetId([
+                'id_seccion' => $idSeccion, 'nombre' => 'Grupo lote '.($indice + 1),
+            ], 'id_grupo');
+            $idProyecto = DB::table('investigacion_formativa.proyecto')->insertGetId([
+                'id_grupo' => $idGrupo, 'id_linea' => 9801, 'id_tipo_producto' => 9981,
+                'titulo' => 'Proyecto lote '.($indice + 1), 'estado' => 'Aceptado', 'version' => 1,
+            ], 'id_proyecto');
+
+            $crearSeleccion($idSeccion, $idProyecto);
+        }
+
+        $contar = function (array $ids) use ($servicio): int {
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            $servicio->resumenesPorSecciones($ids);
+            $cantidad = count(DB::getQueryLog());
+            DB::disableQueryLog();
+
+            return $cantidad;
+        };
+
+        $uno = $contar([9901]);
+        $nueve = $contar($idsSecciones);
+
+        // Antes de la correccion, cada seccion con seleccion añadía una consulta
+        // extra mediante infoSeleccion. Tras la correccion, la informacion de
+        // proyecto se carga en una sola consulta por lote, por lo que el
+        // recuento no debe crecer proporcionalmente al numero de secciones.
+        $this->assertSame($uno, $nueve);
+
+        $estados = $servicio->resumenesPorSecciones($idsSecciones);
+        $this->assertSame(9, count($estados));
+        foreach ($estados as $estado) {
+            $this->assertNotNull($estado->seleccion);
+        }
+    }
+
     private function reporte(): object
     {
         return app(ReporteService::class)->porSeccion(app(AccesoInvestigacionService::class)->resolver($this->datos['users']['director']), 9901);

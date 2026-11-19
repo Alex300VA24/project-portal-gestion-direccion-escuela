@@ -334,6 +334,33 @@ final class DecisionTrabajoService
 
         $evidencias = $this->evidenciasActuales(array_keys($idsProyectos));
 
+        // Carga por lote la información de proyecto de todas las selecciones,
+        // una sola consulta en lugar de una por sección con selección.
+        $seleccionInfoPorProyecto = [];
+        foreach ($selecciones as $filaSeleccion) {
+            if ($filaSeleccion->accion !== 'registrar') {
+                continue;
+            }
+            $idProyecto = (int) $filaSeleccion->id_proyecto;
+            if (! isset($seleccionInfoPorProyecto[$idProyecto])) {
+                $seleccionInfoPorProyecto[$idProyecto] = null;
+            }
+        }
+        if ($seleccionInfoPorProyecto !== []) {
+            $filasProyecto = DB::table('investigacion_formativa.proyecto as p')
+                ->join('investigacion_formativa.grupo as g', 'g.id_grupo', '=', 'p.id_grupo')
+                ->whereIn('p.id_proyecto', array_keys($seleccionInfoPorProyecto))
+                ->get(['p.id_proyecto', 'p.titulo', 'g.id_grupo', 'g.nombre']);
+            foreach ($filasProyecto as $fila) {
+                $seleccionInfoPorProyecto[(int) $fila->id_proyecto] = (object) [
+                    'id_proyecto' => (int) $fila->id_proyecto,
+                    'id_grupo' => (int) $fila->id_grupo,
+                    'nombre' => (string) $fila->nombre,
+                    'titulo' => (string) $fila->titulo,
+                ];
+            }
+        }
+
         $estados = [];
 
         foreach ($idsSecciones as $idSeccion) {
@@ -378,7 +405,13 @@ final class DecisionTrabajoService
                     'motivo' => $filaSeleccion->motivo === null ? null : (string) $filaSeleccion->motivo,
                     'decidido_en' => (string) $filaSeleccion->decidido_en,
                 ];
-                $seleccionInfo = $this->infoSeleccion($idProyecto, ! $vigente, (string) $filaSeleccion->decidido_en);
+                $baseInfo = $seleccionInfoPorProyecto[$idProyecto] ?? null;
+                $seleccionInfo = $baseInfo === null
+                    ? null
+                    : (object) array_merge((array) $baseInfo, [
+                        'desactualizada' => ! $vigente,
+                        'decidido_en' => (string) $filaSeleccion->decidido_en,
+                    ]);
             }
 
             $estados[$idSeccion] = (object) [
@@ -716,27 +749,6 @@ final class DecisionTrabajoService
             'id_proyecto' => (int) $fila->id_proyecto,
             'id_grupo' => (int) $fila->id_grupo,
             'id_seccion' => (int) $fila->id_seccion,
-        ];
-    }
-
-    private function infoSeleccion(int $idProyecto, bool $desactualizada, string $decididoEn): ?object
-    {
-        $fila = DB::table('investigacion_formativa.proyecto as p')
-            ->join('investigacion_formativa.grupo as g', 'g.id_grupo', '=', 'p.id_grupo')
-            ->where('p.id_proyecto', $idProyecto)
-            ->first(['p.id_proyecto', 'p.titulo', 'g.id_grupo', 'g.nombre']);
-
-        if ($fila === null) {
-            return null;
-        }
-
-        return (object) [
-            'id_proyecto' => (int) $fila->id_proyecto,
-            'id_grupo' => (int) $fila->id_grupo,
-            'nombre' => (string) $fila->nombre,
-            'titulo' => (string) $fila->titulo,
-            'desactualizada' => $desactualizada,
-            'decidido_en' => $decididoEn,
         ];
     }
 
