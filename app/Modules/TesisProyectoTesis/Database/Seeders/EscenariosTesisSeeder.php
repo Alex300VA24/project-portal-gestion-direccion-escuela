@@ -129,6 +129,7 @@ final class EscenariosTesisSeeder extends Seeder
             Entrega::query()->whereIn('id_entrega', $entregas)->pluck('id_archivo')->all(),
             ReporteSimilitud::query()->whereIn('id_entrega', $entregas)->pluck('id_archivo')->all(),
             Resolucion::query()->whereIn('id_solicitud', $solicitudes)->pluck('id_archivo')->all(),
+            Solicitud::query()->whereIn('id_solicitud', $solicitudes)->pluck('id_archivo')->all(), // oficio al Decanato
             Acta::query()->whereIn('id_proyecto', $ids)->pluck('id_archivo_firmado')->all(),
         );
 
@@ -145,6 +146,12 @@ final class EscenariosTesisSeeder extends Seeder
         Proyecto::query()->whereIn('id_proyecto', $ids)->delete(); // resto en cascada
 
         $this->archivos->eliminar(array_values(array_unique(array_filter($archivos))));
+
+        // Oficios que quedaron sin solicitud en reinicios anteriores (antes no se limpiaban).
+        $huerfanos = DB::table('comun.archivo as a')->where('a.ruta_almacenamiento', 'like', 'tesis/oficios/%')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('tesis.solicitud as s')->whereColumn('s.id_archivo', 'a.id_archivo'))
+            ->pluck('a.id_archivo')->map(fn ($v) => (int) $v)->all();
+        $this->archivos->eliminar($huerfanos);
     }
 
     // ----- Escenarios -----

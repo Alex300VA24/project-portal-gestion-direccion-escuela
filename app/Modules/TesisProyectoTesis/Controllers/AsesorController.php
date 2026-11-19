@@ -94,9 +94,16 @@ final class AsesorController extends BaseController
     {
         $revision = $rubrica->verificarComoAsesor($proyecto, $this->identidad($request), $request->validated());
 
-        return $revision->conforme
-            ? redirect()->route('tesis-proyecto-tesis.asesor.similitud', $proyecto)->with('status', 'Rúbrica conforme. Ahora registra el reporte de Turnitin.')
-            : redirect()->route('tesis-proyecto-tesis.asesor.proyectos')->with('status', "Verificación de {$proyecto->codigo} guardada. Las observaciones se enviaron a los estudiantes.");
+        if ($revision->conforme) {
+            $abiertas = $this->revisiones->observacionesAbiertasDe($proyecto, (int) $this->identidad($request)->idDocente)->count();
+
+            // Turnitin exige la rúbrica conforme y ninguna observación abierta: el mensaje dice qué falta.
+            return redirect()->route('tesis-proyecto-tesis.asesor.similitud', $proyecto)->with('status', $abiertas === 0
+                ? 'Rúbrica conforme. Ahora registra el reporte de Turnitin.'
+                : "Rúbrica conforme. Antes de registrar Turnitin, da por levantadas tus {$abiertas} ".($abiertas === 1 ? 'observación abierta' : 'observaciones abiertas').' (en la ficha del proyecto).');
+        }
+
+        return redirect()->route('tesis-proyecto-tesis.asesor.proyectos')->with('status', "Verificación de {$proyecto->codigo} guardada. Las observaciones se enviaron a los estudiantes.");
     }
 
     public function similitud(Request $request, Proyecto $proyecto, SimilitudService $similitud): View

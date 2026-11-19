@@ -160,6 +160,25 @@ final class EscenariosNotificacionesTest extends TesisTestCase
         $this->como('nuevo@portal.local')->get(route('tesis-proyecto-tesis.alumno.panel'))->assertSee('Aún no registras tu proyecto de tesis');
     }
 
+    public function test_reiniciar_borra_tambien_el_oficio_de_la_solicitud(): void
+    {
+        $this->seed(EscenariosTesisSeeder::class);
+        $archivos = DB::table('comun.archivo')->count();
+
+        // El Director registra la solicitud de PT-DEMO-01: se genera el oficio en PDF.
+        $this->como('director@portal.local')->post(route('tesis-proyecto-tesis.director.asesor.enviar', $this->p('01')), [
+            'destinatario' => 'Decano de la Facultad', 'destinatario_area' => 'Decanato', 'asunto' => 'Designación de asesor',
+            'detalle' => 'Solicito la designación de un asesor especialista en la línea del proyecto.', 'docente_sugerido' => '',
+        ])->assertSessionHasNoErrors();
+        $ruta = (string) DB::table('comun.archivo')->where('ruta_almacenamiento', 'like', 'tesis/oficios/%')->orderByDesc('id_archivo')->value('ruta_almacenamiento');
+        $this->assertSame($archivos + 1, DB::table('comun.archivo')->count());
+
+        $this->seed(EscenariosTesisSeeder::class);
+
+        $this->assertSame($archivos, DB::table('comun.archivo')->count(), 'El oficio no queda huérfano al reiniciar.');
+        Storage::disk('local')->assertMissing($ruta);
+    }
+
     public function test_campana_muestra_avisos_como_formularios_post(): void
     {
         $p = $this->proyecto(['alumno@portal.local']);
