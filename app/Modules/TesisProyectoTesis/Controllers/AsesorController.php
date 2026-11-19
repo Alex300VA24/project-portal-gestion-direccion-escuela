@@ -46,6 +46,7 @@ final class AsesorController extends BaseController
             'entregas' => $this->seguimiento->entregas($proyecto),
             'observaciones' => $avances->observaciones($proyecto),
             'historial' => $this->seguimiento->historial($proyecto),
+            'f1' => $this->seguimiento->detalleF1($proyecto),
         ], 'asesor', 'proyectos');
     }
 

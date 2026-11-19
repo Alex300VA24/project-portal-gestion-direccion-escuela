@@ -16,18 +16,22 @@ final class RegistroProyectoTest extends TesisTestCase
             'linea' => 'LI-SW',
             'enfoque' => 'Cuantitativo',
             'tipo_investigacion' => 'Aplicada',
-            'diseno' => 'Preexperimental',
+            'diseno' => 'Pre-experimental',
             'lugar_ejecucion' => 'Escuela de Ingeniería Informática',
             'institucion' => 'Universidad Nacional de Trujillo',
-            'duracion_meses' => 8,
             'financiamiento' => 'Autofinanciado',
             'coautor_codigo' => '1027004588',
             'actividades' => [
                 ['descripcion' => 'Revisión bibliográfica', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2026-09-30', 'horas' => 8],
+                ['descripcion' => 'Desarrollo del prototipo', 'fecha_inicio' => '2026-10-01', 'fecha_fin' => '2027-02-28', 'horas' => 12],
                 ['descripcion' => '', 'fecha_inicio' => '', 'fecha_fin' => '', 'horas' => ''],
             ],
-            'partidas' => [['codigo' => '2.3.1 5', 'descripcion' => 'Materiales de escritorio', 'monto' => '120.50']],
-            'recursos' => [['tipo' => 'Servicios', 'descripcion' => 'Hosting', 'cantidad' => 1]],
+            'recursos' => [
+                ['tipo' => 'Bienes', 'descripcion' => 'Papel bond A4', 'codigo' => '2.3.1.5.1 · Materiales y útiles de oficina', 'unidad' => 'Millar', 'cantidad' => '2', 'costo' => '28.25'],
+                ['tipo' => 'Bienes', 'descripcion' => 'Laptop propia', 'codigo' => '– · Sin código (bien propio a costo 0)', 'unidad' => 'Unidad', 'cantidad' => '1', 'costo' => '0'],
+                ['tipo' => 'Servicios', 'descripcion' => 'Internet', 'codigo' => '2.3.2.2.2', 'unidad' => 'Mes', 'cantidad' => '6', 'costo' => '10.00'],
+                ['tipo' => 'Bienes', 'descripcion' => '', 'codigo' => '', 'unidad' => '', 'cantidad' => '', 'costo' => ''],
+            ],
             'colaboradores' => [['nombres' => 'Juan Pérez', 'institucion' => 'UNT', 'rol' => 'Asesoría estadística']],
             'documento' => $this->pdf('F1.pdf'),
         ], $extra);
@@ -57,15 +61,22 @@ final class RegistroProyectoTest extends TesisTestCase
         $this->assertMatchesRegularExpression('/^PT-\d{4}-\d{3}$/', $p->codigo);
         $this->assertNotNull($p->id_archivo_documento);
         $this->assertSame(2, $p->integrantesActivos()->count());
-        $this->assertSame(1, $p->actividades()->count(), 'Las filas vacías no se guardan.');
-        $this->assertEquals(120.5, $p->partidas()->first()->monto());
+        $this->assertSame(2, $p->actividades()->count(), 'Las filas vacías no se guardan.');
+        $this->assertSame(6, (int) $p->duracion_meses, 'Duración calculada del cronograma (01/09/2026 al 28/02/2027).');
+        $this->assertSame('Pre-experimental', $p->diseno);
+        $this->assertSame(3, $p->recursos()->count(), 'Una fila = un recurso; las vacías no se guardan.');
+        $partidas = $p->partidas()->orderBy('id_partida')->get();
+        $this->assertSame(['2.3.1.5.1', null, '2.3.2.2.2'], $partidas->pluck('codigo_clasificador')->all(), 'Se guarda solo el código; «–» queda sin código.');
+        $this->assertSame(['Millar', 'Unidad', 'Mes'], $partidas->pluck('unidad')->all());
+        $this->assertTrue($partidas->every(fn ($x) => $x->id_recurso !== null), 'Cada partida está ligada a su recurso.');
+        $this->assertEqualsWithDelta(116.5, $partidas->sum(fn ($x) => $x->monto()), 0.001);
         $this->assertSame(1, $p->colaboradores()->count());
         $this->assertDatabaseHas('tesis.historial_estado', ['id_proyecto' => $p->id_proyecto, 'estado_anterior' => null, 'estado_nuevo' => 'Registrado']);
         $this->assertSame(1, DB::table('comun.notificacion')->where('id_usuario_destino', $this->idUsuario('alumno2@portal.local'))->count());
         $this->assertSame(1, DB::table('comun.notificacion')->where('id_usuario_destino', $this->idUsuario('director@portal.local'))->count());
 
         $this->como('alumno2@portal.local')->get(route('tesis-proyecto-tesis.alumno.panel'))->assertOk()->assertSee($p->codigo)->assertSee('Lucía Ramírez Torres');
-        $this->como('alumno@portal.local')->get(route('tesis-proyecto-tesis.alumno.proyecto'))->assertOk()->assertSee('Revisión bibliográfica')->assertSee('120.50');
+        $this->como('alumno@portal.local')->get(route('tesis-proyecto-tesis.alumno.proyecto'))->assertOk()->assertSee('Revisión bibliográfica')->assertSee('S/ 56.50')->assertSee('S/ 60.00')->assertSee('S/ 116.50')->assertSee('Materiales y útiles de oficina')->assertSee('6 meses');
     }
 
     public function test_registro_individual_sin_coautor(): void
@@ -94,17 +105,32 @@ final class RegistroProyectoTest extends TesisTestCase
                 'titulo' => str_repeat('palabra ', 21),
                 'linea' => 'NO-EXISTE',
                 'enfoque' => 'Otro',
-                'duracion_meses' => 0,
-                'actividades' => [['descripcion' => 'Etapa', 'fecha_inicio' => '2026-10-10', 'fecha_fin' => '2026-10-01']],
+                'diseno' => 'Otro',
+                'actividades' => [['descripcion' => 'Etapa', 'fecha_inicio' => '2026-10-10', 'fecha_fin' => '2026-10-01', 'horas' => '']],
+                'recursos' => [['tipo' => 'Local', 'descripcion' => 'Aula', 'codigo' => 'abc', 'unidad' => '', 'cantidad' => '0', 'costo' => '-1']],
                 'documento' => \Illuminate\Http\UploadedFile::fake()->create('f1.docx', 10, 'application/msword'),
             ]))
-            ->assertSessionHasErrors(['titulo', 'linea', 'enfoque', 'duracion_meses', 'actividades.0.fecha_fin', 'documento']);
+            ->assertSessionHasErrors(['titulo', 'linea', 'enfoque', 'diseno_otro', 'actividades.0.fecha_fin', 'actividades.0.horas', 'documento',
+                'recursos.0.tipo', 'recursos.0.codigo', 'recursos.0.unidad', 'recursos.0.cantidad', 'recursos.0.costo']);
+
+        // El cronograma no puede superar el máximo de meses.
+        $this->como('alumno@portal.local')
+            ->post(route('tesis-proyecto-tesis.alumno.proyecto.guardar'), $this->datos(['actividades' => [
+                ['descripcion' => 'Todo', 'fecha_inicio' => '2026-01-01', 'fecha_fin' => '2029-06-30', 'horas' => 5],
+            ]]))
+            ->assertSessionHasErrors(['actividades' => 'El cronograma dura 42 meses; el máximo es 36. Revisa las fechas de inicio y término.']);
 
         $this->como('alumno@portal.local')
             ->post(route('tesis-proyecto-tesis.alumno.proyecto.guardar'), $this->datos(['actividades' => [], 'documento' => null]))
             ->assertSessionHasErrors(['actividades', 'documento']);
 
         $this->assertSame(0, Proyecto::count());
+
+        // «Otro» diseño se guarda con su descripción.
+        $this->como('alumno@portal.local')
+            ->post(route('tesis-proyecto-tesis.alumno.proyecto.guardar'), $this->datos(['coautor_codigo' => '', 'diseno' => 'Otro', 'diseno_otro' => 'Investigación-acción']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('Otro: Investigación-acción', Proyecto::query()->latest('id_proyecto')->first()->diseno);
     }
 
     public function test_coautor_inexistente_o_uno_mismo_es_rechazado(): void

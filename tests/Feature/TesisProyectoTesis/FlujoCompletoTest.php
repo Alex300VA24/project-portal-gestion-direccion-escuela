@@ -26,8 +26,8 @@ final class FlujoCompletoTest extends TesisTestCase
         $this->como('alumno@portal.local')->post(route('tesis-proyecto-tesis.alumno.proyecto.guardar'), [
             'titulo' => 'Sistema web con asistente conversacional para la orientación académica de ingresantes',
             'resumen' => 'Asistente conversacional para orientar a los ingresantes de la escuela.',
-            'linea' => 'LI-SW', 'enfoque' => 'Cuantitativo', 'tipo_investigacion' => 'Aplicada', 'diseno' => 'Preexperimental',
-            'lugar_ejecucion' => 'Trujillo', 'institucion' => 'UNT', 'duracion_meses' => 8, 'financiamiento' => 'Autofinanciado',
+            'linea' => 'LI-SW', 'enfoque' => 'Cuantitativo', 'tipo_investigacion' => 'Aplicada', 'diseno' => 'Pre-experimental',
+            'lugar_ejecucion' => 'Trujillo', 'institucion' => 'UNT', 'financiamiento' => 'Autofinanciado',
             'coautor_codigo' => '1027004588',
             'actividades' => [['descripcion' => 'Revisión bibliográfica', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2026-09-30', 'horas' => 8]],
             'documento' => $this->pdf('F1.pdf'),

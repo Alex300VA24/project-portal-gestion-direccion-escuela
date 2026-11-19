@@ -2,12 +2,17 @@
 
 namespace App\Modules\TesisProyectoTesis\Services;
 
+use App\Modules\TesisProyectoTesis\Models\ActividadCronograma;
+use App\Modules\TesisProyectoTesis\Models\Colaborador;
 use App\Modules\TesisProyectoTesis\Models\Entrega;
 use App\Modules\TesisProyectoTesis\Models\Observacion;
+use App\Modules\TesisProyectoTesis\Models\PartidaPresupuesto;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
+use App\Modules\TesisProyectoTesis\Models\Recurso;
 use App\Modules\TesisProyectoTesis\Models\Resolucion;
 use App\Modules\TesisProyectoTesis\Models\Revision;
 use App\Modules\TesisProyectoTesis\Support\Estados;
+use App\Modules\TesisProyectoTesis\Support\Parametros;
 
 /**
  * Datos de lectura del expediente para las pantallas (ficha, pasos, historial).
@@ -124,6 +129,68 @@ final class SeguimientoService
             ->whereIn('id_revision', Revision::query()->select('id_revision')->whereIn('id_entrega', Entrega::query()->select('id_entrega')->where('id_proyecto', $proyecto->id_proyecto)))
             ->where('estado', 'Pendiente')
             ->count();
+    }
+
+    /**
+     * Detalle del formato F1 para las fichas (estudiante, asesor y Director): datos generales, cronograma,
+     * recursos con su partida (subtotales y totales por tipo), personal y colaboradores.
+     *
+     * @return array<string, mixed>
+     */
+    public function detalleF1(Proyecto $proyecto): array
+    {
+        $ficha = $this->ficha($proyecto);
+        $partidas = PartidaPresupuesto::query()->where('id_proyecto', $proyecto->id_proyecto)
+            ->orderBy('id_partida')->get(['id_partida', 'id_recurso', 'codigo_clasificador', 'descripcion', 'cantidad', 'unidad', 'costo_unitario']);
+        $recursos = Recurso::query()->where('id_proyecto', $proyecto->id_proyecto)->where('tipo', '<>', 'Personal')
+            ->orderBy('id_recurso')->get(['id_recurso', 'tipo', 'descripcion', 'cantidad'])->keyBy('id_recurso');
+
+        $filas = [];
+        foreach ($partidas as $p) {
+            $r = $p->id_recurso !== null ? $recursos->pull($p->id_recurso) : null;
+            $codigo = $p->codigo_clasificador ?? Parametros::SIN_CODIGO;
+            $filas[] = [
+                'tipo' => $r?->tipo ?? '—',
+                'descripcion' => $p->descripcion ?? $r?->descripcion ?? '—',
+                'codigo' => $codigo,
+                'concepto' => Parametros::CLASIFICADOR_GASTOS[$codigo] ?? null,
+                'unidad' => $p->unidad,
+                'cantidad' => (float) $p->cantidad,
+                'costo' => (float) $p->costo_unitario,
+                'subtotal' => round((float) $p->cantidad * (float) $p->costo_unitario, 2),
+            ];
+        }
+        // Recursos antiguos sin partida (registrados antes del formato con presupuesto por fila).
+        foreach ($recursos as $r) {
+            $filas[] = ['tipo' => $r->tipo, 'descripcion' => $r->descripcion, 'codigo' => null, 'concepto' => null, 'unidad' => null,
+                'cantidad' => $r->cantidad !== null ? (float) $r->cantidad : null, 'costo' => null, 'subtotal' => 0.0];
+        }
+
+        $total = fn (?string $tipo) => round(array_sum(array_map(fn ($f) => $tipo === null || $f['tipo'] === $tipo ? $f['subtotal'] : 0, $filas)), 2);
+
+        return [
+            'generales' => [
+                'Enfoque' => $proyecto->enfoque,
+                'Tipo por el fin que persigue' => $proyecto->tipo_investigacion,
+                'Diseño de contrastación' => $proyecto->diseno,
+                'Línea de investigación' => $ficha['linea'],
+                'Lugar de ejecución' => $proyecto->lugar_ejecucion,
+                'Institución' => $proyecto->institucion,
+                'Duración' => $proyecto->duracion_meses ? $proyecto->duracion_meses.' '.($proyecto->duracion_meses === 1 ? 'mes' : 'meses') : null,
+                'Financiamiento' => $proyecto->financiamiento,
+            ],
+            'ayudaFinanciamiento' => Parametros::FINANCIAMIENTO_AYUDA[$proyecto->financiamiento] ?? null,
+            'actividades' => ActividadCronograma::query()->where('id_proyecto', $proyecto->id_proyecto)->orderBy('orden')
+                ->get(['descripcion', 'fecha_inicio', 'fecha_fin', 'horas_semanales'])->all(),
+            'recursos' => $filas,
+            'totales' => ['Bienes' => $total('Bienes'), 'Servicios' => $total('Servicios'), 'General' => $total(null)],
+            'personal' => [
+                ...array_map(fn ($i) => $i['nombre'].' · estudiante', $ficha['integrantes']),
+                $ficha['asesor'] ? $ficha['asesor']['nombre'].' · asesor' : 'Asesor · por designar (resolución del Decanato)',
+            ],
+            'colaboradores' => Colaborador::query()->where('id_proyecto', $proyecto->id_proyecto)->orderBy('id_colaborador')
+                ->get(['nombres_completos', 'institucion', 'rol_colaboracion'])->all(),
+        ];
     }
 
     public function semanaActual(Proyecto $proyecto): int

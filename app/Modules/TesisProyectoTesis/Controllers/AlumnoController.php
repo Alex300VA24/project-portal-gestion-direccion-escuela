@@ -58,10 +58,9 @@ final class AlumnoController extends BaseController
             return redirect()->route('tesis-proyecto-tesis.alumno.proyecto.registrar');
         }
 
-        $proyecto->load(['colaboradores', 'actividades', 'recursos', 'partidas']);
-
         return $this->vista($request, 'alumno.proyecto', [
             ...$this->seguimiento->ficha($proyecto),
+            'f1' => $this->seguimiento->detalleF1($proyecto),
         ], 'alumno', 'proyecto', ['observaciones' => $this->seguimiento->observacionesPendientes($proyecto)]);
     }
 
@@ -78,14 +77,17 @@ final class AlumnoController extends BaseController
             'yo' => app(IdentidadService::class)->estudiantes([(int) $id->idEstudiante])[(int) $id->idEstudiante] ?? null,
             'parametros' => [
                 'enfoques' => Parametros::ENFOQUES, 'tipos' => Parametros::TIPOS_INVESTIGACION, 'disenos' => Parametros::DISENOS,
-                'financiamientos' => Parametros::FINANCIAMIENTOS, 'recursos' => Parametros::TIPOS_RECURSO,
+                'disenoOtro' => Parametros::DISENO_OTRO, 'financiamientos' => Parametros::FINANCIAMIENTO_AYUDA,
+                'recursos' => Parametros::TIPOS_RECURSO_F1, 'clasificador' => Parametros::CLASIFICADOR_GASTOS,
+                'sinCodigo' => Parametros::SIN_CODIGO, 'unidades' => Parametros::UNIDADES_MEDIDA,
+                'institucion' => Parametros::INSTITUCION_POR_DEFECTO, 'maxMeses' => Parametros::DURACION_MAX_MESES,
             ],
         ], 'alumno', 'proyecto');
     }
 
     public function guardar(RegistrarProyectoRequest $request): RedirectResponse
     {
-        $proyecto = $this->proyectos->registrar($this->identidad($request), $request->validated(), $request->file('documento'));
+        $proyecto = $this->proyectos->registrar($this->identidad($request), $request->datosF1(), $request->file('documento'));
 
         return redirect()->route('tesis-proyecto-tesis.alumno.panel')
             ->with('status', "Proyecto {$proyecto->codigo} registrado. El Director solicitará tu asesor al Decanato.");

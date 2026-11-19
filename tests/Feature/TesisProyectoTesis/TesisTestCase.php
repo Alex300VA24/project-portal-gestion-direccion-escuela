@@ -105,7 +105,7 @@ abstract class TesisTestCase extends TestCase
             'estado' => $estado,
             'enfoque' => 'Cuantitativo',
             'tipo_investigacion' => 'Aplicada',
-            'diseno' => 'Preexperimental',
+            'diseno' => 'Pre-experimental',
             'lugar_ejecucion' => 'Trujillo',
             'institucion' => 'Universidad Nacional de Trujillo',
             'duracion_meses' => 8,

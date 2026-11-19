@@ -20,6 +20,7 @@ abstract class TesisFormRequest extends FormRequest
         return [
             'required' => 'Completa el campo «:attribute».',
             'required_with' => 'Completa el campo «:attribute».',
+            'required_if' => 'Completa el campo «:attribute».',
             'string' => 'El campo «:attribute» debe ser un texto.',
             'array' => 'El campo «:attribute» no tiene el formato esperado. Recarga la página e inténtalo de nuevo.',
             'integer' => 'El campo «:attribute» debe ser un número entero.',

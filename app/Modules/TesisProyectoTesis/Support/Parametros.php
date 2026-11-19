@@ -39,13 +39,47 @@ final class Parametros
 
     public const ENFOQUES = ['Cuantitativo', 'Cualitativo', 'Mixto'];
 
-    public const TIPOS_INVESTIGACION = ['Básica', 'Aplicada', 'Bibliográfica'];
+    /** Tipo por el fin que persigue (formato F1 de la Escuela). */
+    public const TIPOS_INVESTIGACION = ['Básica', 'Aplicada'];
 
-    public const DISENOS = ['Preexperimental', 'Cuasiexperimental', 'Experimental', 'No experimental', 'Descriptivo', 'Correlacional'];
+    /** Diseño de contrastación. «Otro» exige describirlo; se guarda como «Otro: …». */
+    public const DISENOS = ['Experimental', 'Cuasi-experimental', 'Pre-experimental', 'No experimental – descriptivo', 'No experimental – correlacional', 'Otro'];
+
+    public const DISENO_OTRO = 'Otro';
 
     public const FINANCIAMIENTOS = ['Autofinanciado', 'Institucional', 'Externo'];
 
+    /** Línea de ayuda de cada tipo de financiamiento. */
+    public const FINANCIAMIENTO_AYUDA = [
+        'Autofinanciado' => 'Los estudiantes cubren todos los gastos de la investigación.',
+        'Institucional' => 'La Universidad u otra institución pública cubre todo o parte de los gastos.',
+        'Externo' => 'Una empresa, ONG o fondo concursable financia la investigación.',
+    ];
+
+    public const INSTITUCION_POR_DEFECTO = 'Universidad Nacional de Trujillo';
+
+    /** Duración máxima del cronograma, en meses (se calcula del primer inicio al último término). */
+    public const DURACION_MAX_MESES = 36;
+
+    /** Tipos admitidos por tesis.recurso. En la interfaz del F1 solo se ofrecen TIPOS_RECURSO_F1. */
     public const TIPOS_RECURSO = ['Personal', 'Bienes', 'Servicios', 'Local'];
+
+    public const TIPOS_RECURSO_F1 = ['Bienes', 'Servicios'];
+
+    /** Código «sin código»: bienes propios a costo 0 (por ejemplo, la laptop del estudiante). */
+    public const SIN_CODIGO = '–';
+
+    /** Catálogo inicial del clasificador de gastos (código => concepto). */
+    public const CLASIFICADOR_GASTOS = [
+        '2.3.1.5.1' => 'Materiales y útiles de oficina',
+        '2.3.2.2.1' => 'Energía eléctrica',
+        '2.3.2.2.2' => 'Telefonía e internet',
+        '2.3.2.7.11' => 'Otros servicios (impresiones, empastado, anillado)',
+        self::SIN_CODIGO => 'Sin código (bien propio a costo 0)',
+    ];
+
+    /** Sugerencias de unidad de medida (se puede escribir otra). */
+    public const UNIDADES_MEDIDA = ['Unidad', 'Millar', 'Ciento', 'Paquete', 'Ciento de hojas', 'Mes', 'Hora', 'Servicio', 'Global'];
 
     public const SECCIONES_DOCUMENTO = [
         'Título', 'Problema', 'Matriz de consistencia', 'Marco teórico', 'Material y método',

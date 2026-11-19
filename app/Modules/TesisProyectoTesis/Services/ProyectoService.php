@@ -190,23 +190,23 @@ final class ProyectoService
             ]);
         }
 
+        // Recursos y presupuesto (una fila del formulario = un recurso + su partida). «–» = sin código.
         foreach (array_values($datos['recursos'] ?? []) as $r) {
-            Recurso::create([
+            $recurso = Recurso::create([
                 'id_proyecto' => $proyecto->id_proyecto,
                 'tipo' => $r['tipo'],
                 'descripcion' => trim($r['descripcion']),
-                'cantidad' => $r['cantidad'] ?? null,
+                'cantidad' => $r['cantidad'],
             ]);
-        }
-
-        foreach (array_values($datos['partidas'] ?? []) as $p) {
+            $codigo = trim((string) ($r['codigo'] ?? ''));
             PartidaPresupuesto::create([
+                'id_recurso' => $recurso->id_recurso,
                 'id_proyecto' => $proyecto->id_proyecto,
-                'codigo_clasificador' => $p['codigo'] ?? null,
-                'descripcion' => trim($p['descripcion']),
-                'cantidad' => 1,
-                'unidad' => 'Global',
-                'costo_unitario' => $p['monto'],
+                'codigo_clasificador' => $codigo === '' || $codigo === Parametros::SIN_CODIGO ? null : $codigo,
+                'descripcion' => trim($r['descripcion']),
+                'cantidad' => $r['cantidad'],
+                'unidad' => trim($r['unidad']),
+                'costo_unitario' => $r['costo'],
                 'fuente_financiamiento' => $proyecto->financiamiento,
             ]);
         }

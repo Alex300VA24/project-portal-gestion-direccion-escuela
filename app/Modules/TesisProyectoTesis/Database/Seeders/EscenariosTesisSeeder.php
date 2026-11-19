@@ -11,8 +11,10 @@ use App\Modules\TesisProyectoTesis\Models\Entrega;
 use App\Modules\TesisProyectoTesis\Models\HistorialEstado;
 use App\Modules\TesisProyectoTesis\Models\JuradoProyecto;
 use App\Modules\TesisProyectoTesis\Models\Observacion;
+use App\Modules\TesisProyectoTesis\Models\PartidaPresupuesto;
 use App\Modules\TesisProyectoTesis\Models\Proyecto;
 use App\Modules\TesisProyectoTesis\Models\ProyectoEstudiante;
+use App\Modules\TesisProyectoTesis\Models\Recurso;
 use App\Modules\TesisProyectoTesis\Models\ReporteSimilitud;
 use App\Modules\TesisProyectoTesis\Models\Resolucion;
 use App\Modules\TesisProyectoTesis\Models\ResultadoJurado;
@@ -24,6 +26,7 @@ use App\Modules\TesisProyectoTesis\Models\TipoSolicitud;
 use App\Modules\TesisProyectoTesis\Services\ArchivoService;
 use App\Modules\TesisProyectoTesis\Services\CatalogoService;
 use App\Modules\TesisProyectoTesis\Services\NotificacionService;
+use App\Modules\TesisProyectoTesis\Support\DuracionCronograma;
 use App\Modules\TesisProyectoTesis\Support\Estados;
 use App\Modules\TesisProyectoTesis\Support\Parametros;
 use App\Modules\TesisProyectoTesis\Support\PdfSimple;
@@ -296,10 +299,9 @@ final class EscenariosTesisSeeder extends Seeder
             'estado' => Estados::REGISTRADO,
             'enfoque' => 'Cuantitativo',
             'tipo_investigacion' => 'Aplicada',
-            'diseno' => 'Preexperimental',
-            'lugar_ejecucion' => 'Escuela de Ingeniería Informática',
-            'institucion' => 'Universidad Nacional de Trujillo',
-            'duracion_meses' => 8,
+            'diseno' => 'Pre-experimental',
+            'lugar_ejecucion' => 'Trujillo, La Libertad',
+            'institucion' => Parametros::INSTITUCION_POR_DEFECTO,
             'financiamiento' => 'Autofinanciado',
         ]);
         $p->forceFill(['registrado_en' => $registro])->save();
@@ -309,8 +311,27 @@ final class EscenariosTesisSeeder extends Seeder
                 'estado' => 'Activo', 'fecha_incorporacion' => $registro->toDateString()]);
         }
 
-        ActividadCronograma::create(['id_proyecto' => $p->id_proyecto, 'descripcion' => 'Revisión bibliográfica', 'orden' => 1,
-            'fecha_inicio' => $registro->toDateString(), 'fecha_fin' => $registro->copy()->addMonth()->toDateString(), 'horas_semanales' => 8]);
+        // Cronograma de actividades de la investigación (formato F1) y duración calculada.
+        $actividades = [];
+        $inicio = $registro->copy();
+        foreach ([['Revisión bibliográfica', 1, 8], ['Diseño de la solución', 1, 10], ['Desarrollo del prototipo', 2, 12],
+            ['Evaluación y análisis de datos', 1, 10], ['Redacción del informe', 1, 8]] as $i => [$actividad, $meses, $horas]) {
+            $fin = $inicio->copy()->addMonths($meses)->subDay();
+            $actividades[] = ['fecha_inicio' => $inicio->toDateString(), 'fecha_fin' => $fin->toDateString()];
+            ActividadCronograma::create(['id_proyecto' => $p->id_proyecto, 'descripcion' => $actividad, 'orden' => $i + 1,
+                'fecha_inicio' => $inicio->toDateString(), 'fecha_fin' => $fin->toDateString(), 'horas_semanales' => $horas]);
+            $inicio = $fin->copy()->addDay();
+        }
+        $p->update(['duracion_meses' => DuracionCronograma::meses($actividades)]);
+
+        // Recursos y presupuesto: una fila = recurso + partida (código del clasificador, unidad, cantidad, valor unitario).
+        foreach ([['Bienes', 'Papel bond A4 80 g', '2.3.1.5.1', 'Millar', 1, 28.00], ['Bienes', 'Laptop propia', Parametros::SIN_CODIGO, 'Unidad', 1, 0.00],
+            ['Servicios', 'Internet domiciliario', '2.3.2.2.2', 'Mes', 6, 60.00], ['Servicios', 'Impresión y empastado del informe', '2.3.2.7.11', 'Servicio', 3, 35.00]] as [$tipo, $desc, $codigo, $unidad, $cant, $costo]) {
+            $rec = Recurso::create(['id_proyecto' => $p->id_proyecto, 'tipo' => $tipo, 'descripcion' => $desc, 'cantidad' => $cant]);
+            PartidaPresupuesto::create(['id_recurso' => $rec->id_recurso, 'id_proyecto' => $p->id_proyecto, 'descripcion' => $desc,
+                'codigo_clasificador' => $codigo === Parametros::SIN_CODIGO ? null : $codigo, 'unidad' => $unidad, 'cantidad' => $cant,
+                'costo_unitario' => $costo, 'fuente_financiamiento' => 'Autofinanciado']);
+        }
 
         $p->update(['id_archivo_documento' => $this->pdf($alumnos[0], "F1_{$p->codigo}.pdf", "Proyecto de tesis (F1) · {$p->codigo}", [$titulo])]);
 

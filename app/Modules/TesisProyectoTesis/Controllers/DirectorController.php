@@ -40,6 +40,18 @@ final class DirectorController extends BaseController
         ], 'director', 'proyectos');
     }
 
+    /** Ficha del proyecto con el detalle del F1 (datos, cronograma, recursos y presupuesto) e historial. */
+    public function proyecto(Request $request, Proyecto $proyecto, SeguimientoService $seguimiento): View
+    {
+        $this->identidad($request);
+
+        return $this->vista($request, 'director.proyecto', [
+            ...$seguimiento->ficha($proyecto),
+            'f1' => $seguimiento->detalleF1($proyecto),
+            'historial' => $seguimiento->historial($proyecto),
+        ], 'director', 'proyectos');
+    }
+
     public function solicitarAsesor(Request $request, Proyecto $proyecto, DesignacionService $designacion, SeguimientoService $seguimiento): View
     {
         $this->identidad($request);

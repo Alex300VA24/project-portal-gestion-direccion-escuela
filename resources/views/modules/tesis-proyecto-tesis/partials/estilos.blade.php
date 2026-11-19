@@ -208,6 +208,14 @@
     .tz-table th { text-align: left; font-family: 'Fira Code', monospace; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tz-muted); background: var(--tz-alt); padding: 12px 14px; }
     .tz-table td { padding: 14px; border-bottom: 1px solid var(--tz-border); vertical-align: top; }
     .tz-table tr:last-child td { border-bottom: 0; }
+    .tz-table tfoot th, .tz-table tfoot td { padding: 10px 14px; border-top: 1px solid var(--tz-border); background: var(--tz-alt); font-family: inherit; font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--tz-ink); text-align: right; }
+    .tz-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .tz-presupuesto td { vertical-align: middle; }
+    .tz-ayuda-lista { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+    .tz-ayuda-lista li { padding: 2px 6px; border-radius: 6px; }
+    .tz-ayuda-lista li.is-on { background: var(--tz-info-bg); color: var(--tz-info-fg); }
+    .tz-personal { padding: 10px 14px; border: 1px dashed var(--tz-field-border); border-radius: 10px; font-size: 14px; }
+    .tz-personal ul { margin: 4px 0 0; padding-left: 18px; list-style: disc; }
 
     /* ===== Botones ===== */
     .tz-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid transparent; font: 700 15px 'Fira Sans', sans-serif; cursor: pointer; text-decoration: none !important; transition: background 160ms var(--tz-ease), border-color 160ms var(--tz-ease); }

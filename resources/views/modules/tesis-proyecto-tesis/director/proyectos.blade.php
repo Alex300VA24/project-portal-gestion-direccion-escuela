@@ -35,7 +35,7 @@
                     @foreach ($filas as $f)
                         @php($p = $f['proyecto'])
                         <tr>
-                            <td><strong>{{ $p->titulo }}</strong><div class="tz-muted tz-small"><span class="tz-code">{{ $p->codigo }}</span> · {{ $f['linea'] }}</div></td>
+                            <td><a href="{{ route('tesis-proyecto-tesis.director.proyecto', $p) }}"><strong>{{ $p->titulo }}</strong></a><div class="tz-muted tz-small"><span class="tz-code">{{ $p->codigo }}</span> · {{ $f['linea'] }}</div></td>
                             <td>@foreach ($f['estudiantes'] as $n)<div>{{ $n }}</div>@endforeach</td>
                             <td>{{ $f['asesor'] ?? 'Sin asesor' }}</td>
                             <td>{{ $p->etapa }}</td>

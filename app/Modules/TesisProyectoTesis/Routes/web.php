@@ -67,6 +67,8 @@ Route::prefix('tesis-proyecto-tesis')
             Route::middleware('role:director_escuela')->prefix('director')->name('director.')->group(function () {
                 Route::get('/', [DirectorController::class, 'panel'])->name('panel');
                 Route::get('/proyectos', [DirectorController::class, 'proyectos'])->name('proyectos');
+                Route::get('/proyectos/{proyecto}', [DirectorController::class, 'proyecto'])
+                    ->middleware('can:gestionarComoDirector,proyecto')->whereUuid('proyecto')->name('proyecto');
                 Route::get('/proyectos/{proyecto}/solicitar-asesor', [DirectorController::class, 'solicitarAsesor'])
                     ->middleware('can:gestionarComoDirector,proyecto')->whereUuid('proyecto')->name('asesor.solicitar');
                 Route::post('/proyectos/{proyecto}/solicitar-asesor', [DirectorController::class, 'enviarSolicitudAsesor'])->whereUuid('proyecto')->name('asesor.enviar');

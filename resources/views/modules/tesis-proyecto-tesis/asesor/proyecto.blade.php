@@ -66,4 +66,6 @@
             </ul>
         @endif
     </section>
+
+    @include('modules.tesis-proyecto-tesis.partials.detalle-f1')
 @endsection
