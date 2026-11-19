@@ -147,3 +147,5 @@ Estas imágenes proceden de la aplicación real con datos locales de demostraci�
 ![Grupo de estudiante en escritorio](capturas/alumno-grupo-1280.png)
 
 ![Resultados de encuesta en móvil](capturas/director-resultados-390.png)
+
+![Botón Descargar PDF en resultados de sección](capturas/director-resultados-pdf-1280.png)

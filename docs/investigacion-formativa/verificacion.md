@@ -29,6 +29,7 @@ Fecha: 18 de noviembre de 2026. Este registro distingue funciones verificadas, c
 | Cachés y estructura | Blade, rutas y prueba SQL aprobados | Las cachés se limpiaron tras verificar; `modular_database_smoke: OK`. |
 | Manuales | Ortografía, enlaces y referencias revisados | Cinco documentos, cuatro capturas y diez enlaces locales comprobados. |
 | PDF de muestra | Una página A4, 601 bytes | `pdfinfo`, extracción de texto y hash coincidente. No es evidencia de una carga. |
+| Descarga de PDF en navegador | Link presente, `%PDF` en el cuerpo, `Content-Disposition: attachment`, atributo `download` | Recorrido de navegador Firefox headless + geckodriver, base demo `portal_gestion_direccion_test_demo_packete_f_20261118193149`, puerto 8061. Comprueba que el botón "Descargar PDF" apunta a la ruta del reporte, que el servidor devuelve un documento PDF y que el enlace tiene el atributo de descarga. |
 
 La prueba omitida en la suite requiere una base exclusiva de concurrencia. Su resultado separado se indica sin sumarlo a la suite. Las comprobaciones de ancho verifican ausencia de desplazamiento horizontal de toda la página a 1280 y 390 píxeles. No equivalen a una auditoría completa de accesibilidad, lectores de pantalla o todos los navegadores. La ficha de grupo incluye una recarga explícita; los formularios de configuración se vuelven a abrir mediante peticiones nuevas y cambio de sesión. El recorrido resuelve los clics con consultas DOM nuevas, de modo que una actualización de Alpine no deja una referencia de elemento obsoleta.
 
@@ -103,4 +104,36 @@ Los códigos B01–B24 identifican los requisitos y decisiones de implementació
 5. Construir y comprobar la imagen de producción en un entorno de contenedores configurado. Se intentó con Podman temporal; falló antes de ejecutar el Dockerfile porque falta `policy.json` en el host. No se cambió la configuración del sistema.
 6. Realizar la revisión de seguridad dedicada que fue diferida. Se conservaron los controles existentes; las pruebas funcionales no sustituyen esa revisión.
 
-P09 tiene demostración y recorrido parcial verificados; su aceptación completa sigue bloqueada por G4. P10 tiene los cuatro manuales y el registro de regresión; la aceptación final conserva los bloqueos anteriores.
+P09 tiene demostración y recorrido parcial verificados; su aceptación completa sigue bloqueada por G4. P10 tiene los cuatro manuales y el registro de regresión. Packet F añade la verificación de navegador de la descarga de PDF (link presente, cuerpo `%PDF`, disposición `attachment`, atributo `download`) sobre una base de demostración desechable. La aceptación final conserva los bloqueos anteriores (G4, contratos compartidos, revisión de seguridad dedicada).
+
+## Packet F — aceptación (2026-11-19)
+
+### Alcance verificado
+
+Packet F extiende la demostración local con evidencia de regresión del navegador para la exportación a PDF del reporte de sección (Packet E).
+
+### Qué comprueba el recorrido de navegador
+
+En una base de demostración desechable (`_test_demo_`), con Firefox headless + geckodriver:
+
+1. El director inicia sesión y abre «Ver resultados» de una sección.
+2. La pantalla muestra el botón «Descargar PDF».
+3. El enlace del botón apunta a la ruta `investigacion-formativa.director.resultados.pdf` con el filtro de línea conservado.
+4. El servidor responde con un documento PDF (`%PDF` en el cuerpo).
+5. La respuesta tiene `Content-Disposition: attachment`.
+6. El enlace tiene el atributo `download`.
+7. El PDF no incluye comentarios confidenciales de la encuesta.
+8. No se crean registros en `comun.archivo` ni se usa `ArchivoGateway`.
+9. Un filtro de línea de otra escuela devuelve 403 (no se revela el nombre de la línea).
+
+### Estado de los manuales
+
+- `manual-usuario.md`: paso 10 de Dirección («Descargar PDF») y nueva captura `capturas/director-resultados-pdf-1280.png`.
+- `verificacion.md`: fila de evidencia de descarga de PDF en navegador y sección de aceptación Packet F.
+- `manual-arquitectura.md`: ya documenta `ReportePdfService` y el comportamiento de exportación sin archivo.
+- `manual-flujos.md`: sección 6 ya describe el paso de descarga de PDF en resultados.
+- `roles-y-permisos.md`: ya documenta el permiso `files.download` y su límite (no hay endpoint funcional sin G4).
+
+### Bloqueos pendientes (sin cambios)
+
+Todos los bloqueos de aceptación completa permanecen vigentes: G4 (escritor de archivos compartido), contratos de identidad/padrón/competencias/alcance, tres indicadores oficiales de Calidad, fórmula de logro de competencias, plantilla Word/PDF de Calidad, imagen de producción y revisión de seguridad dedicada.
