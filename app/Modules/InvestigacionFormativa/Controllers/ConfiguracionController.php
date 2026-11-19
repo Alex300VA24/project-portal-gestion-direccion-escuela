@@ -69,6 +69,8 @@ final class ConfiguracionController extends Controller
                 array_map('intval', (array) $request->validated('competencia_ids')),
                 $request->integer('version'),
             );
+        } catch (AccesoDenegado $exception) {
+            abort(403, $exception->getMessage());
         } catch (VersionDesactualizada|RecursoBloqueado $exception) {
             $request->flash();
 
@@ -108,6 +110,8 @@ final class ConfiguracionController extends Controller
                 $datos,
                 $request->integer('version'),
             );
+        } catch (AccesoDenegado $exception) {
+            abort(403, $exception->getMessage());
         } catch (VersionDesactualizada|RecursoBloqueado $exception) {
             $request->flash();
 
@@ -144,6 +148,8 @@ final class ConfiguracionController extends Controller
                 array_values((array) $request->validated('fechas')),
                 $request->integer('version'),
             );
+        } catch (AccesoDenegado $exception) {
+            abort(403, $exception->getMessage());
         } catch (VersionDesactualizada|RecursoBloqueado $exception) {
             $request->flash();
 
