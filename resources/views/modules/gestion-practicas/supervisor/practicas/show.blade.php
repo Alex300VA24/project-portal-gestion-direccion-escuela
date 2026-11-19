@@ -2,107 +2,106 @@
     use App\Modules\GestionPracticas\Models\Practica;
 
     $enCurso = $practica->estado === Practica::EN_CURSO;
-    $campo = 'mt-1 block w-full rounded-[10px] border-[#bbc2ce] focus:border-[color:var(--portal-green)] focus:ring-[3px] focus:ring-[rgba(13,122,80,.15)]';
 @endphp
-<x-app-layout>
-    <x-slot name="header"><h2 class="font-['Fira_Sans'] font-bold text-xl text-[color:var(--portal-ink)] leading-tight">Práctica de {{ $estudiante }}</h2></x-slot>
+@extends('modules.gestion-practicas.layout')
 
-    <div class="py-8 min-h-[calc(100vh-8.75rem)] bg-[color:var(--portal-canvas)] font-['Fira_Sans']">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @include('modules.gestion-practicas.partials.menu')
-            @include('modules.gestion-practicas.partials.mensajes')
+@section('title', 'Práctica de '.$estudiante)
+@section('page-label', 'Práctica de '.$estudiante)
 
-            <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <p class="font-medium text-[color:var(--portal-ink)]">{{ $empresa }}</p>
-                    @include('modules.gestion-practicas.partials.estado', ['estado' => $practica->estado])
-                </div>
-                <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
-                    <div><dt class="text-[color:var(--portal-muted)]">Área</dt><dd>{{ $practica->area }}</dd></div>
-                    <div><dt class="text-[color:var(--portal-muted)]">Horas planificadas</dt><dd>{{ $practica->horas_totales }}</dd></div>
-                    <div><dt class="text-[color:var(--portal-muted)]">Inicio</dt><dd>{{ $practica->fecha_inicio->format('d/m/Y') }}</dd></div>
-                    <div><dt class="text-[color:var(--portal-muted)]">Fin</dt><dd>{{ $practica->fecha_fin->format('d/m/Y') }}</dd></div>
-                    <div class="sm:col-span-2"><dt class="text-[color:var(--portal-muted)]">Funciones</dt><dd class="whitespace-pre-line">{{ $practica->funciones }}</dd></div>
-                    @if ($practica->estado === Practica::FINALIZADA)
-                        <div><dt class="text-[color:var(--portal-muted)]">Nota final</dt><dd class="font-bold">{{ $practica->nota_final }} ({{ $practica->resultado }})</dd></div>
-                    @endif
-                </dl>
-            </div>
-
-            <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6">
-                <h3 class="font-bold text-[color:var(--portal-ink)] mb-3">Documentos (carta de aceptación e informes)</h3>
-                @include('modules.gestion-practicas.partials.documentos', ['documentos' => $documentos, 'puedeRevisar' => true])
-            </div>
-
-            <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6 space-y-4">
-                <h3 class="font-bold text-[color:var(--portal-ink)]">Seguimiento</h3>
-
-                @if ($enCurso)
-                    <form method="POST" action="{{ route('gestion-practicas.supervisor.practicas.seguimiento', $practica) }}" class="grid gap-3 sm:grid-cols-2">
-                        @csrf
-                        <div><x-input-label for="fecha" value="Fecha" /><input id="fecha" name="fecha" type="date" max="{{ now()->toDateString() }}" value="{{ old('fecha', now()->toDateString()) }}" required class="{{ $campo }}"></div>
-                        <div>
-                            <x-input-label for="tipo" value="Tipo" />
-                            <select id="tipo" name="tipo" required class="{{ $campo }}">
-                                @foreach ($tiposSeguimiento as $valor => $texto)
-                                    <option value="{{ $valor }}" @selected(old('tipo') === $valor)>{{ $texto }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="sm:col-span-2"><x-input-label for="descripcion" value="Descripción" /><textarea id="descripcion" name="descripcion" rows="3" required class="{{ $campo }}">{{ old('descripcion') }}</textarea></div>
-                        <div class="sm:col-span-2"><x-input-label for="observaciones" value="Observaciones (opcional)" /><textarea id="observaciones" name="observaciones" rows="2" class="{{ $campo }}">{{ old('observaciones') }}</textarea></div>
-                        <div class="sm:col-span-2"><x-primary-button>Registrar seguimiento</x-primary-button></div>
-                    </form>
-                @endif
-
-                <ul class="space-y-3 text-sm {{ $enCurso ? 'border-t border-[color:var(--portal-border)] pt-4' : '' }}">
-                    @forelse ($seguimientos as $seguimiento)
-                        <li class="border-s-4 border-[color:var(--portal-border)] ps-3">
-                            <p class="text-xs text-[color:var(--portal-muted)]">{{ $seguimiento->fecha->format('d/m/Y') }} · {{ str_replace('_', ' ', $seguimiento->tipo) }}</p>
-                            <p>{{ $seguimiento->descripcion }}</p>
-                            @if ($seguimiento->observaciones)<p class="text-[color:var(--portal-muted)]">{{ $seguimiento->observaciones }}</p>@endif
-                        </li>
-                    @empty
-                        <li class="text-[color:var(--portal-muted)]">Todavía no hay seguimientos registrados.</li>
-                    @endforelse
-                </ul>
-            </div>
-
-            <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6 space-y-4">
-                <h3 class="font-bold text-[color:var(--portal-ink)]">Evaluación final</h3>
-
-                @if ($criterios->isEmpty())
-                    <p class="text-sm text-[color:var(--portal-muted)]">No hay criterios de evaluación configurados.</p>
-                @else
-                    <form method="POST" action="{{ route('gestion-practicas.supervisor.practicas.evaluar', $practica) }}" class="space-y-3">
-                        @csrf
-                        @foreach ($criterios as $criterio)
-                            <div class="grid gap-2 sm:grid-cols-[1fr_8rem] items-center">
-                                <label for="nota-{{ $criterio->id_criterio }}" class="text-sm text-[color:var(--portal-muted)]">{{ $criterio->nombre }} <span class="text-[color:var(--portal-muted)]">({{ rtrim(rtrim($criterio->peso, '0'), '.') }}%)</span></label>
-                                <input id="nota-{{ $criterio->id_criterio }}" name="notas[{{ $criterio->id_criterio }}]" type="number" step="0.01" min="0" max="20"
-                                       value="{{ old('notas.'.$criterio->id_criterio, $notasActuales[$criterio->id_criterio] ?? '') }}" @disabled(! $enCurso) required class="rounded-[10px] border-[#bbc2ce] text-sm">
-                            </div>
-                        @endforeach
-                        <div>
-                            <x-input-label for="comentario" value="Observación final" />
-                            <textarea id="comentario" name="comentario" rows="3" @disabled(! $enCurso) class="{{ $campo }}">{{ old('comentario', $evaluacion?->comentario) }}</textarea>
-                        </div>
-                        @if ($enCurso)<x-primary-button>Registrar nota</x-primary-button>@endif
-                    </form>
-                @endif
-
-                @if ($notaFinal !== null)
-                    <p class="text-sm">Nota final calculada: <strong>{{ number_format($notaFinal, 2) }}</strong></p>
-                @endif
-
-                @if ($enCurso)
-                    <form method="POST" action="{{ route('gestion-practicas.supervisor.practicas.cerrar', $practica) }}" class="border-t border-[color:var(--portal-border)] pt-4">
-                        @csrf
-                        <button class="px-4 py-2 bg-[color:var(--portal-navy)] text-white rounded-[10px] text-sm font-bold hover:bg-[color:var(--portal-ink)]">Cerrar práctica</button>
-                        <p class="text-xs text-[color:var(--portal-muted)] mt-2">Requiere la nota registrada y el informe final aprobado.</p>
-                    </form>
-                @endif
-            </div>
+@section('content')
+    <header class="quality-page-heading">
+        <div><h1>Práctica de {{ $estudiante }}</h1><p>{{ $empresa }}</p></div>
+        <div class="gp-actions">
+            @if ($notaFinal !== null)
+                <dl class="quality-inline-stats" aria-label="Nota calculada"><div><dt>Nota final calculada</dt><dd>{{ number_format($notaFinal, 2) }}</dd></div></dl>
+            @endif
+            @include('modules.gestion-practicas.partials.estado', ['estado' => $practica->estado])
         </div>
+    </header>
+
+    <div class="gp-stack">
+        <section class="quality-panel gp-compact" aria-labelledby="detalle-titulo">
+            <header class="quality-panel-heading"><div><h2 id="detalle-titulo">Datos de la práctica</h2></div></header>
+            <div class="quality-compact-list">
+                <article><div><small>Área</small><strong>{{ $practica->area }}</strong></div></article>
+                <article><div><small>Horas planificadas</small><strong>{{ $practica->horas_totales }}</strong></div></article>
+                <article><div><small>Inicio</small><strong>{{ $practica->fecha_inicio->format('d/m/Y') }}</strong></div></article>
+                <article><div><small>Fin</small><strong>{{ $practica->fecha_fin->format('d/m/Y') }}</strong></div></article>
+                @if ($practica->estado === Practica::FINALIZADA)
+                    <article><div><small>Nota final</small><strong>{{ $practica->nota_final }} ({{ $practica->resultado }})</strong></div></article>
+                @endif
+            </div>
+            <div class="gp-body"><h3>Funciones</h3><p class="gp-text">{{ $practica->funciones }}</p></div>
+        </section>
+
+        <section class="quality-panel" aria-labelledby="docs-titulo">
+            <header class="quality-panel-heading"><div><h2 id="docs-titulo">Documentos</h2><p>Carta de aceptación e informes. Apruebe el informe final para poder cerrar la práctica.</p></div></header>
+            @include('modules.gestion-practicas.partials.documentos', ['documentos' => $documentos, 'puedeRevisar' => true])
+        </section>
+
+        <section class="quality-panel" aria-labelledby="seg-titulo">
+            <header class="quality-panel-heading"><div><h2 id="seg-titulo">Seguimiento</h2><p>Reuniones, llamadas y visitas con el estudiante.</p></div></header>
+            @if ($enCurso)
+                <form method="POST" action="{{ route('gestion-practicas.supervisor.practicas.seguimiento', $practica) }}" class="gp-form is-two">
+                    @csrf
+                    @include('modules.gestion-practicas.partials.campo', ['name' => 'fecha', 'label' => 'Fecha', 'tipo' => 'date', 'valor' => now()->toDateString(), 'extra' => ['max' => now()->toDateString()]])
+                    @include('modules.gestion-practicas.partials.campo', ['name' => 'tipo', 'label' => 'Tipo', 'tipo' => 'select', 'opciones' => $tiposSeguimiento])
+                    @include('modules.gestion-practicas.partials.campo', ['name' => 'descripcion', 'label' => 'Descripción', 'tipo' => 'textarea', 'filas' => 3, 'span' => true])
+                    @include('modules.gestion-practicas.partials.campo', ['name' => 'observaciones', 'label' => 'Observaciones (opcional)', 'tipo' => 'textarea', 'filas' => 2, 'requerido' => false, 'span' => true])
+                    <div class="gp-span"><button class="institutional-primary">Registrar seguimiento</button></div>
+                </form>
+            @endif
+            @if ($seguimientos->isEmpty())
+                @include('modules.gestion-practicas.partials.vacio', [
+                    'titulo' => 'Todavía no hay seguimientos registrados',
+                    'texto' => 'Cada reunión o contacto con el estudiante que registre aparecerá aquí.',
+                ])
+            @else
+                <ul class="gp-timeline">
+                    @foreach ($seguimientos as $seguimiento)
+                        <li>
+                            <p>{{ $seguimiento->descripcion }}</p>
+                            @if ($seguimiento->observaciones)<p>{{ $seguimiento->observaciones }}</p>@endif
+                            <small>{{ $seguimiento->fecha->format('d/m/Y') }} · {{ str_replace('_', ' ', $seguimiento->tipo) }}</small>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </section>
+
+        <section class="quality-panel" aria-labelledby="eval-titulo">
+            <header class="quality-panel-heading"><div><h2 id="eval-titulo">Evaluación final</h2><p>Califique cada criterio de 0 a 20; la nota final es el promedio ponderado.</p></div></header>
+            @if ($criterios->isEmpty())
+                @include('modules.gestion-practicas.partials.vacio', [
+                    'titulo' => 'No hay criterios de evaluación configurados',
+                    'texto' => 'Pida al administrador del portal que cargue los criterios del módulo.',
+                ])
+            @else
+                <form method="POST" action="{{ route('gestion-practicas.supervisor.practicas.evaluar', $practica) }}" class="gp-form">
+                    @csrf
+                    @foreach ($criterios as $criterio)
+                        @php($campoNota = 'notas.'.$criterio->id_criterio)
+                        <div class="gp-field">
+                            <div class="gp-grade">
+                                <label for="nota-{{ $criterio->id_criterio }}">{{ $criterio->nombre }} <small>({{ rtrim(rtrim($criterio->peso, '0'), '.') }}%)</small></label>
+                                <input id="nota-{{ $criterio->id_criterio }}" name="notas[{{ $criterio->id_criterio }}]" type="number" step="0.01" min="0" max="20" class="gp-control"
+                                       value="{{ old($campoNota, $notasActuales[$criterio->id_criterio] ?? '') }}" @disabled(! $enCurso) required
+                                       @error($campoNota) aria-invalid="true" aria-describedby="nota-{{ $criterio->id_criterio }}-error" @enderror>
+                            </div>
+                            @error($campoNota)<p class="gp-error" id="nota-{{ $criterio->id_criterio }}-error">{{ $message }}</p>@enderror
+                        </div>
+                    @endforeach
+                    @include('modules.gestion-practicas.partials.campo', ['name' => 'comentario', 'label' => 'Observación final', 'tipo' => 'textarea', 'filas' => 3, 'valor' => $evaluacion?->comentario, 'requerido' => false, 'extra' => $enCurso ? [] : ['disabled' => true]])
+                    @if ($enCurso)<div><button class="institutional-primary">Registrar nota</button></div>@endif
+                </form>
+            @endif
+            @if ($enCurso)
+                <form method="POST" action="{{ route('gestion-practicas.supervisor.practicas.cerrar', $practica) }}" class="gp-body gp-actions">
+                    @csrf
+                    <button class="institutional-secondary">Cerrar práctica</button>
+                    <p class="gp-lead">Requiere la nota registrada y el informe final aprobado.</p>
+                </form>
+            @endif
+        </section>
     </div>
-</x-app-layout>
+@endsection

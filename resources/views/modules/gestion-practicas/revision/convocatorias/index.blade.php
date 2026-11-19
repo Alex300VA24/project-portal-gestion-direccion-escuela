@@ -1,48 +1,46 @@
-<x-app-layout>
-    <x-slot name="header"><h2 class="font-['Fira_Sans'] font-bold text-xl text-[color:var(--portal-ink)] leading-tight">Revisar convocatorias</h2></x-slot>
+@extends('modules.gestion-practicas.layout')
 
-    <div class="py-8 min-h-[calc(100vh-8.75rem)] bg-[color:var(--portal-canvas)] font-['Fira_Sans']">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @include('modules.gestion-practicas.partials.menu')
-            @include('modules.gestion-practicas.partials.mensajes')
+@section('title', 'Revisar convocatorias')
+@section('page-label', 'Revisar convocatorias')
 
-            <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6">
-                <form method="GET" class="flex items-center gap-3 mb-4 text-sm">
-                    <label for="estado" class="text-[color:var(--portal-muted)]">Estado</label>
-                    <select id="estado" name="estado" onchange="this.form.submit()" class="rounded-[10px] border-[#bbc2ce] text-sm">
-                        @foreach (['en_revision' => 'En revisión', 'observada' => 'Observadas', 'publicada' => 'Publicadas', 'cerrada' => 'Cerradas', 'todas' => 'Todas'] as $valor => $texto)
-                            <option value="{{ $valor }}" @selected($estado === $valor)>{{ $texto }}</option>
-                        @endforeach
-                    </select>
-                </form>
+@section('content')
+    @php
+        $filtros = ['en_revision' => 'En revisión', 'observada' => 'Observadas', 'publicada' => 'Publicadas', 'cerrada' => 'Cerradas', 'todas' => 'Todas'];
+    @endphp
+    <header class="quality-page-heading">
+        <div><h1>Revisar convocatorias</h1><p>Apruebe las convocatorias conformes o devuélvalas a la empresa con observaciones.</p></div>
+    </header>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-[color:var(--portal-border)] text-sm">
-                        <thead class="text-left text-[color:var(--portal-muted)]">
-                            <tr>
-                                <th class="py-2 pe-4 font-medium">Empresa</th>
-                                <th class="py-2 pe-4 font-medium">Título</th>
-                                <th class="py-2 pe-4 font-medium">Cierre</th>
-                                <th class="py-2 pe-4 font-medium">Estado</th>
-                                <th class="py-2"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[color:var(--portal-border)]">
-                            @forelse ($convocatorias as $convocatoria)
-                                <tr>
-                                    <td class="py-2 pe-4">{{ $empresas[$convocatoria->id_empresa] ?? '—' }}</td>
-                                    <td class="py-2 pe-4">{{ $convocatoria->titulo }}</td>
-                                    <td class="py-2 pe-4">{{ $convocatoria->fecha_cierre->format('d/m/Y') }}</td>
-                                    <td class="py-2 pe-4">@include('modules.gestion-practicas.partials.estado', ['estado' => $convocatoria->estado])</td>
-                                    <td class="py-2 text-end"><a class="text-[color:var(--portal-green-dark)] hover:underline" href="{{ route('gestion-practicas.revision.convocatorias.show', $convocatoria) }}">Revisar</a></td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="5" class="py-4 text-[color:var(--portal-muted)]">No hay convocatorias en este estado.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <section class="quality-doc-filters" aria-label="Filtros">
+        <div>
+            <strong id="estado-titulo">Estado</strong>
+            <nav class="quality-segment" aria-labelledby="estado-titulo">
+                @foreach ($filtros as $valor => $texto)
+                    <a href="{{ route('gestion-practicas.revision.convocatorias.index', ['estado' => $valor]) }}" @if ($estado === $valor) aria-current="page" @endif>{{ $texto }}</a>
+                @endforeach
+            </nav>
         </div>
-    </div>
-</x-app-layout>
+    </section>
+
+    <section class="quality-panel" aria-labelledby="lista-titulo">
+        <header class="quality-panel-heading">
+            <div><h2 id="lista-titulo">{{ $filtros[$estado] ?? 'Convocatorias' }}</h2><p>{{ count($convocatorias) }} {{ count($convocatorias) === 1 ? 'convocatoria' : 'convocatorias' }}</p></div>
+        </header>
+        @forelse ($convocatorias as $convocatoria)
+            <article class="quality-indicator-row">
+                <div>
+                    <span class="quality-code">{{ $empresas[$convocatoria->id_empresa] ?? '—' }}</span>
+                    <strong>{{ $convocatoria->titulo }}</strong>
+                    <small>Cierra el {{ $convocatoria->fecha_cierre->format('d/m/Y') }}</small>
+                </div>
+                <div>@include('modules.gestion-practicas.partials.estado', ['estado' => $convocatoria->estado])</div>
+                <a class="quality-open-link" href="{{ route('gestion-practicas.revision.convocatorias.show', $convocatoria) }}">Revisar</a>
+            </article>
+        @empty
+            @include('modules.gestion-practicas.partials.vacio', [
+                'titulo' => 'No hay convocatorias en este estado',
+                'texto' => 'Cuando una empresa envíe una convocatoria a revisión aparecerá aquí.',
+            ])
+        @endforelse
+    </section>
+@endsection

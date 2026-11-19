@@ -1,39 +1,39 @@
 @php use App\Modules\GestionPracticas\Support\Catalogos; @endphp
-<x-app-layout>
-    <x-slot name="header"><h2 class="font-['Fira_Sans'] font-bold text-xl text-[color:var(--portal-ink)] leading-tight">{{ $convocatoria->titulo }}</h2></x-slot>
+@extends('modules.gestion-practicas.layout')
 
-    <div class="py-8 min-h-[calc(100vh-8.75rem)] bg-[color:var(--portal-canvas)] font-['Fira_Sans']">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @include('modules.gestion-practicas.partials.menu')
-            @include('modules.gestion-practicas.partials.mensajes')
+@section('title', $convocatoria->titulo)
+@section('page-label', $convocatoria->titulo)
 
-            <div class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6 space-y-4">
-                <p class="font-medium text-[color:var(--portal-ink)]">{{ $empresa }}</p>
-                <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
-                    <div><dt class="text-[color:var(--portal-muted)]">Tipo</dt><dd>{{ Catalogos::TIPOS_PRACTICA[$convocatoria->tipo_practica] ?? $convocatoria->tipo_practica }}</dd></div>
-                    <div><dt class="text-[color:var(--portal-muted)]">Modalidad</dt><dd>{{ Catalogos::MODALIDADES[$convocatoria->modalidad] ?? $convocatoria->modalidad }}</dd></div>
-                    <div><dt class="text-[color:var(--portal-muted)]">Vacantes</dt><dd>{{ $convocatoria->vacantes }}</dd></div>
-                    <div><dt class="text-[color:var(--portal-muted)]">Cierre de postulación</dt><dd>{{ $convocatoria->fecha_cierre->format('d/m/Y') }}</dd></div>
-                    <div class="sm:col-span-2"><dt class="text-[color:var(--portal-muted)]">Descripción</dt><dd class="whitespace-pre-line">{{ $convocatoria->descripcion }}</dd></div>
-                    <div class="sm:col-span-2"><dt class="text-[color:var(--portal-muted)]">Requisitos</dt><dd class="whitespace-pre-line">{{ $convocatoria->requisitos }}</dd></div>
-                </dl>
+@section('content')
+    <header class="quality-page-heading">
+        <div><h1>{{ $convocatoria->titulo }}</h1><p>{{ $empresa }}</p></div>
+    </header>
 
-                <div class="flex flex-wrap items-center gap-3 pt-2">
-                    <a href="{{ $convocatoria->enlace_postulacion }}" target="_blank" rel="noopener" class="px-4 py-2 border border-[#bbc2ce] rounded-[10px] text-sm font-bold text-[color:var(--portal-navy)] hover:bg-[color:var(--portal-surface-alt)]">Acceder al enlace de postulación</a>
-
-                    @if (! $vigente)
-                        <span class="text-sm text-[color:var(--portal-muted)]">La convocatoria ya no está vigente.</span>
-                    @elseif ($yaPostulo)
-                        <span class="text-sm font-bold text-[color:var(--portal-green-dark)]">Ya registró su postulación.</span>
-                    @else
-                        <form method="POST" action="{{ route('gestion-practicas.estudiante.convocatorias.postular', $convocatoria) }}">
-                            @csrf
-                            <x-primary-button>Registrar mi postulación</x-primary-button>
-                        </form>
-                    @endif
-                </div>
-                <p class="text-xs text-[color:var(--portal-muted)]">Postule primero en el enlace de la empresa y luego registre aquí su postulación para llevar el control del proceso.</p>
-            </div>
+    <section class="quality-panel gp-compact" aria-labelledby="detalle-titulo">
+        <header class="quality-panel-heading"><div><h2 id="detalle-titulo">Detalle de la convocatoria</h2></div></header>
+        <div class="quality-compact-list">
+            <article><div><small>Tipo</small><strong>{{ Catalogos::TIPOS_PRACTICA[$convocatoria->tipo_practica] ?? $convocatoria->tipo_practica }}</strong></div></article>
+            <article><div><small>Modalidad</small><strong>{{ Catalogos::MODALIDADES[$convocatoria->modalidad] ?? $convocatoria->modalidad }}</strong></div></article>
+            <article><div><small>Vacantes</small><strong>{{ $convocatoria->vacantes }}</strong></div></article>
+            <article><div><small>Cierre de postulación</small><strong>{{ $convocatoria->fecha_cierre->format('d/m/Y') }}</strong></div></article>
         </div>
-    </div>
-</x-app-layout>
+        <div class="gp-body">
+            <h3>Descripción</h3><p class="gp-text">{{ $convocatoria->descripcion }}</p>
+            <h3>Requisitos</h3><p class="gp-text">{{ $convocatoria->requisitos }}</p>
+        </div>
+        <div class="gp-body gp-actions">
+            <a class="institutional-secondary" href="{{ $convocatoria->enlace_postulacion }}" target="_blank" rel="noopener">Acceder al enlace de postulación<span class="sr-only"> (se abre en una pestaña nueva)</span></a>
+            @if (! $vigente)
+                <span class="quality-status is-neutral">La convocatoria ya no está vigente</span>
+            @elseif ($yaPostulo)
+                <span class="quality-status is-success">Ya registró su postulación</span>
+            @else
+                <form method="POST" action="{{ route('gestion-practicas.estudiante.convocatorias.postular', $convocatoria) }}">
+                    @csrf
+                    <button class="institutional-primary">Registrar mi postulación</button>
+                </form>
+            @endif
+        </div>
+        <div class="gp-body"><p class="gp-lead">Postule primero en el enlace de la empresa y luego registre aquí su postulación para llevar el control del proceso.</p></div>
+    </section>
+@endsection

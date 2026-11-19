@@ -1,17 +1,18 @@
-{{-- Avisos con los colores de estado de docs/DESIGN.md §2: correcto #e3f3ea/#0a5f3f · error #fde9e7/#721c16, radio 10 px. --}}
+{{-- Avisos de DESIGN.md §4: .auth-status (confirmación) y .auth-error-summary (resumen de errores, icono de 21 px, título en negrita). --}}
 @if (session('status'))
-    <div role="status" class="rounded-[10px] bg-[#e3f3ea] px-4 py-3 text-sm font-medium text-[color:var(--portal-success)]">
-        {{ session('status') }}
-    </div>
+    <div class="auth-status gp-aviso" role="status">{{ session('status') }}</div>
 @endif
 
 @if ($errors->any())
-    <div role="alert" class="rounded-[10px] bg-[#fde9e7] px-4 py-3 text-sm text-[#721c16]">
-        <p class="font-bold">No se pudo completar la acción:</p>
-        <ul class="list-disc ms-5 mt-1">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
+    <div class="auth-error-summary gp-aviso" role="alert">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>
+        <div>
+            <strong>No se pudo completar la acción</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     </div>
 @endif

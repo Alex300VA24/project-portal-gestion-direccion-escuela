@@ -1,42 +1,42 @@
-<x-app-layout>
-    <x-slot name="header"><h2 class="font-['Fira_Sans'] font-bold text-xl text-[color:var(--portal-ink)] leading-tight">Registrar empresa</h2></x-slot>
+@extends('modules.gestion-practicas.layout')
 
-    @php
-        $campo = 'mt-1 block w-full rounded-[10px] border-[#bbc2ce] focus:border-[color:var(--portal-green)] focus:ring-[3px] focus:ring-[rgba(13,122,80,.15)]';
-    @endphp
+@section('title', 'Registrar empresa')
+@section('page-label', 'Registrar empresa')
 
-    <div class="py-8 min-h-[calc(100vh-8.75rem)] bg-[color:var(--portal-canvas)] font-['Fira_Sans']">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @include('modules.gestion-practicas.partials.menu')
-            @include('modules.gestion-practicas.partials.mensajes')
+@section('content')
+    <header class="quality-page-heading">
+        <div><h1>Registrar empresa</h1><p>Se crea la empresa y la cuenta con la que su representante inicia sesión.</p></div>
+    </header>
 
-            <form method="POST" action="{{ route('gestion-practicas.empresas.store') }}" class="bg-[color:var(--portal-surface)] border border-[color:var(--portal-border)] rounded-[14px] p-6 space-y-6">
-                @csrf
+    <form method="POST" action="{{ route('gestion-practicas.empresas.store') }}" class="gp-stack">
+        @csrf
 
-                <fieldset class="grid gap-4 sm:grid-cols-2">
-                    <legend class="font-bold text-[color:var(--portal-ink)] mb-2">Datos de la empresa</legend>
-                    <div><x-input-label for="ruc" value="RUC" /><input id="ruc" name="ruc" value="{{ old('ruc') }}" inputmode="numeric" maxlength="11" required class="{{ $campo }}"></div>
-                    <div><x-input-label for="razon_social" value="Razón social" /><input id="razon_social" name="razon_social" value="{{ old('razon_social') }}" required class="{{ $campo }}"></div>
-                    <div><x-input-label for="nombre_comercial" value="Nombre comercial" /><input id="nombre_comercial" name="nombre_comercial" value="{{ old('nombre_comercial') }}" class="{{ $campo }}"></div>
-                    <div><x-input-label for="telefono" value="Teléfono" /><input id="telefono" name="telefono" value="{{ old('telefono') }}" class="{{ $campo }}"></div>
-                    <div class="sm:col-span-2"><x-input-label for="direccion" value="Dirección" /><input id="direccion" name="direccion" value="{{ old('direccion') }}" class="{{ $campo }}"></div>
-                    <div class="sm:col-span-2"><x-input-label for="pagina_web" value="Página web" /><input id="pagina_web" name="pagina_web" type="url" value="{{ old('pagina_web') }}" placeholder="https://" class="{{ $campo }}"></div>
-                </fieldset>
+        <section class="quality-panel" aria-labelledby="datos-empresa">
+            <header class="quality-panel-heading"><div><h2 id="datos-empresa">Datos de la empresa</h2></div></header>
+            <div class="gp-form is-two">
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'ruc', 'label' => 'RUC', 'extra' => ['inputmode' => 'numeric', 'maxlength' => 11]])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'razon_social', 'label' => 'Razón social'])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'nombre_comercial', 'label' => 'Nombre comercial', 'requerido' => false])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'telefono', 'label' => 'Teléfono', 'requerido' => false])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'direccion', 'label' => 'Dirección', 'requerido' => false, 'span' => true])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'pagina_web', 'label' => 'Página web', 'tipo' => 'url', 'requerido' => false, 'span' => true, 'extra' => ['placeholder' => 'https://']])
+            </div>
+        </section>
 
-                <fieldset class="grid gap-4 sm:grid-cols-2">
-                    <legend class="font-bold text-[color:var(--portal-ink)] mb-2">Representante y acceso</legend>
-                    <div><x-input-label for="contacto_dni" value="DNI del representante" /><input id="contacto_dni" name="contacto_dni" value="{{ old('contacto_dni') }}" inputmode="numeric" maxlength="8" required class="{{ $campo }}"></div>
-                    <div><x-input-label for="contacto_nombres" value="Nombres" /><input id="contacto_nombres" name="contacto_nombres" value="{{ old('contacto_nombres') }}" required class="{{ $campo }}"></div>
-                    <div><x-input-label for="contacto_apellido_paterno" value="Apellido paterno" /><input id="contacto_apellido_paterno" name="contacto_apellido_paterno" value="{{ old('contacto_apellido_paterno') }}" required class="{{ $campo }}"></div>
-                    <div><x-input-label for="correo_acceso" value="Correo de acceso" /><input id="correo_acceso" name="correo_acceso" type="email" value="{{ old('correo_acceso') }}" required class="{{ $campo }}"></div>
-                    <div class="sm:col-span-2"><x-input-label for="password" value="Contraseña inicial (mínimo 8 caracteres)" /><input id="password" name="password" type="password" required autocomplete="new-password" class="{{ $campo }}"></div>
-                </fieldset>
+        <section class="quality-panel" aria-labelledby="datos-acceso">
+            <header class="quality-panel-heading"><div><h2 id="datos-acceso">Representante y acceso</h2><p>La persona que gestionará las convocatorias de la empresa.</p></div></header>
+            <div class="gp-form is-two">
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'contacto_dni', 'label' => 'DNI del representante', 'extra' => ['inputmode' => 'numeric', 'maxlength' => 8]])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'contacto_nombres', 'label' => 'Nombres'])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'contacto_apellido_paterno', 'label' => 'Apellido paterno'])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'correo_acceso', 'label' => 'Correo de acceso', 'tipo' => 'email'])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'password', 'label' => 'Contraseña inicial', 'tipo' => 'password', 'span' => true, 'ayuda' => 'Mínimo 8 caracteres. El representante deberá cambiarla al ingresar.', 'extra' => ['autocomplete' => 'new-password']])
+            </div>
+        </section>
 
-                <div class="flex items-center gap-3">
-                    <x-primary-button>Registrar empresa</x-primary-button>
-                    <a href="{{ route('gestion-practicas.empresas.index') }}" class="text-sm text-[color:var(--portal-muted)] hover:underline">Cancelar</a>
-                </div>
-            </form>
+        <div class="gp-actions">
+            <button class="institutional-primary">Registrar empresa</button>
+            <a class="institutional-secondary" href="{{ route('gestion-practicas.empresas.index') }}">Cancelar</a>
         </div>
-    </div>
-</x-app-layout>
+    </form>
+@endsection

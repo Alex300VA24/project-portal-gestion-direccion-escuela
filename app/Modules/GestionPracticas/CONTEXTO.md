@@ -100,22 +100,26 @@ tests/Feature/GestionPracticas/              Pruebas del módulo
 
 ### Diseño visual (`docs/DESIGN.md`)
 
-Las vistas usan `<x-app-layout>` (lo que pide `GUIA_MODULOS.md`) con Tailwind, pero con la paleta y los componentes
-del portal en lugar de los colores genéricos de Breeze:
+El módulo reutiliza el sistema de diseño del portal (los mismos componentes y tokens de `resources/css/portal.css`) con un
+marco propio (`resources/views/modules/gestion-practicas/layout.blade.php`) que replica el de Calidad:
 
-- **Color:** valores arbitrarios de Tailwind que apuntan a los tokens `--portal-*` de `portal.css`
-  (`text-[color:var(--portal-ink)]`, `bg-[color:var(--portal-green)]`, `border-[color:var(--portal-border)]`…). Acción principal
-  en verde `#0d7a50` (hover `#09613f`), selección activa en navy `#17224d`, error `#a11d12`/`#8e1a11`, bordes de campo `#bbc2ce`.
-  No se modificó `tailwind.config.js` ni `portal.css`.
-- **Tipografía:** Fira Sans (y Fira Code disponible) cargada desde Bunny Fonts, igual que `layouts/calidad` y `guest`;
-  títulos y botones en peso 700.
-- **Forma:** radio 10 px en botones, campos y avisos; 14 px en paneles; paneles con borde de 1 px y sin sombra;
-  foco de campo con borde verde y halo `rgba(13,122,80,.15)`. El anillo de foco global (`--portal-focus`) viene de `portal.css`.
-- **Estados:** etiqueta `.quality-status` con `is-success | is-warning | is-danger | is-neutral` (componente del diseño).
-  Avisos con `#e3f3ea`/`#0a5f3f` (correcto) y `#fde9e7`/`#721c16` (error).
-- **Límites:** el marco superior (barra de navegación) lo pone `layouts/app` y no se modificó; por eso no hay tema oscuro,
-  alto contraste ni tamaño de texto (esas preferencias solo las implementa `layouts/calidad`). Las clases `--quality-*`
-  solo existen dentro de `.quality-body`, así que no se usan fuera de ese layout.
+- **Marco:** barra lateral navy de 248 px con las opciones según el rol (`Support/Menu.php`), barra superior de 72 px con
+  rastro de navegación, menú de usuario, enlace de salto y diálogo de **Accesibilidad** (tamaño de texto, alto contraste y
+  tema claro/oscuro, guardados en `localStorage` y aplicados sobre `<html>`).
+- **Componentes de §4:** `.quality-page-heading`, `.quality-panel`, `.quality-indicator-row`, `.quality-status`
+  (`is-success|warning|danger|neutral`), `.quality-empty`, `.quality-document-list`, `.quality-inline-stats`,
+  `.quality-segment` (filtros), `.quality-compact-list`, `.quality-open-link`, `.institutional-primary/secondary`,
+  `.auth-status` y `.auth-error-summary` (avisos). La portada pública usa la pantalla de entrada (`.quality-gateway-*`).
+- **Color y tipografía:** tokens `--portal-*` y `--quality-*` (verde `#0d7a50`, navy `#17224d`, lienzo `#f4f4ef`), Fira Sans y
+  Fira Code, radios de 10/14 px y paneles con borde de 1 px y sin sombra.
+- **Complementos propios (prefijo `gp-`):** los campos de formulario de §4 solo existen dentro del acceso (`.auth-input-wrap`,
+  colores fijos, solo `<input>`), por lo que `gp-field`/`gp-control` replican sus medidas (56 px, borde `#bbc2ce`, radio 10 px,
+  foco verde con halo, `aria-invalid`) usando tokens para respetar el tema oscuro y el alto contraste. Son pocas reglas en
+  el `<style>` del layout; no se modificó `portal.css` ni ningún archivo global.
+- **Accesibilidad:** contraste de texto ≥ 4,5:1 en todos los pares de la paleta (verificado), etiquetas en todos los campos,
+  errores con `aria-invalid`/`aria-describedby`, campos opcionales indicados, filtros con `aria-current`, enlaces que abren
+  pestaña nueva anunciados. Se mantiene lo que fija `DESIGN.md` aunque no llegue a 3:1 en elementos no textuales (borde de
+  campo `#bbc2ce` y anillo de foco `#f2a900`); el modo de alto contraste los refuerza.
 
 ## 4. Pruebas
 
