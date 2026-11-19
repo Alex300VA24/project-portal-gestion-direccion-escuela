@@ -21,7 +21,7 @@
             @if ($sustentacion->fecha_hora->startOfDay()->gt(now()))
                 <section class="tz-panel">@include('modules.tesis-proyecto-tesis.partials.vacio', ['titulo' => 'Aún no es el día de la sustentación', 'texto' => 'Podrás registrar tu resultado desde el día programado.'])</section>
             @else
-                <form method="POST" action="{{ route('tesis-proyecto-tesis.jurado.resultado.registrar', $sustentacion) }}" class="tz-panel" x-data="{ r: @js(old('resultado', '')), enviando: false }" @submit="enviando = true">
+                <form method="POST" action="{{ route('tesis-proyecto-tesis.jurado.resultado.registrar', $sustentacion) }}" class="tz-panel" x-data="{ r: @js(old('resultado', '')), enviando: false }" @submit="setTimeout(() => enviando = true)">
                     @csrf
                     <div class="tz-panel-head"><h2>Tu resultado como {{ $miCargo }}</h2></div>
                     <div class="tz-panel-body tz-form">

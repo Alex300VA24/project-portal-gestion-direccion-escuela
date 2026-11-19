@@ -35,7 +35,7 @@
             </div>
         </section>
     @else
-        <form method="POST" action="{{ route('tesis-proyecto-tesis.asesor.revisar.guardar', [$proyecto, $entrega]) }}" class="tz-form" x-data="Object.assign(@js($inicial), { enviando: false })" @submit="enviando = true">
+        <form method="POST" action="{{ route('tesis-proyecto-tesis.asesor.revisar.guardar', [$proyecto, $entrega]) }}" class="tz-form" x-data="Object.assign(@js($inicial), { enviando: false })" @submit="setTimeout(() => enviando = true)">
             @csrf
             <section class="tz-panel">
                 <div class="tz-panel-head"><h2>Observaciones anteriores</h2><span class="tz-muted tz-small">Marca las respondidas que quedan levantadas</span></div>

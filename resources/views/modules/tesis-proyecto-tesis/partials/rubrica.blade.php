@@ -23,7 +23,10 @@
     };
 </script>
 
-<form method="POST" action="{{ $accionUrl }}" class="tz-form" x-data="tzRubrica(@js($tzInicial))" @submit="enviando = true">
+{{-- La acción viaja en un campo oculto que llena el clic del botón. No se usa name/value en los botones:
+     al enviar, Alpine deshabilita los botones (anti doble envío) y un botón deshabilitado no envía su valor. --}}
+<form method="POST" action="{{ $accionUrl }}" class="tz-form" x-data="tzRubrica(@js($tzInicial))" @submit="setTimeout(() => enviando = true)">
+    <input type="hidden" name="accion" x-ref="accion" value="{{ old('accion', $modo === 'intermedia' ? 'referencial' : '') }}">
     @csrf
     <section class="tz-panel tz-panel-body">
         <dl class="tz-facts" style="margin: 0; align-items: center">
@@ -88,10 +91,10 @@
             </div>
             <div class="tz-actions">
                 @if ($modo === 'intermedia')
-                    <button type="submit" name="accion" value="referencial" class="tz-btn tz-btn-navy" :disabled="enviando || !completos || faltaObs">Registrar revisión intermedia</button>
+                    <button type="submit" data-accion="referencial" @click="$refs.accion.value = 'referencial'" class="tz-btn tz-btn-navy" :disabled="enviando || !completos || faltaObs">Registrar revisión intermedia</button>
                 @else
-                    <button type="submit" name="accion" value="observaciones" class="tz-btn tz-btn-navy" :disabled="enviando || !completos || faltaObs || noCumple === 0">Guardar y enviar observaciones</button>
-                    <button type="submit" name="accion" value="conformidad" class="tz-btn tz-btn-primary" :disabled="enviando || !completos || noCumple > 0">Dar conformidad</button>
+                    <button type="submit" data-accion="observaciones" @click="$refs.accion.value = 'observaciones'" class="tz-btn tz-btn-navy" :disabled="enviando || !completos || faltaObs || noCumple === 0">Guardar y enviar observaciones</button>
+                    <button type="submit" data-accion="conformidad" @click="$refs.accion.value = 'conformidad'" class="tz-btn tz-btn-primary" :disabled="enviando || !completos || noCumple > 0">Dar conformidad</button>
                 @endif
             </div>
         </div>

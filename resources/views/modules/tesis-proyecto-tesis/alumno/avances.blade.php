@@ -17,7 +17,7 @@
 
     <div class="tz-grid-2">
         @if ($recibe)
-            <form class="tz-panel" method="POST" action="{{ route('tesis-proyecto-tesis.alumno.proyecto.avances.subir', $proyecto) }}" enctype="multipart/form-data" x-data="{ enviando: false }" @submit="enviando = true">
+            <form class="tz-panel" method="POST" action="{{ route('tesis-proyecto-tesis.alumno.proyecto.avances.subir', $proyecto) }}" enctype="multipart/form-data" x-data="{ enviando: false }" @submit="setTimeout(() => enviando = true)">
                 @csrf
                 <div class="tz-panel-head"><h2>Nueva entrega</h2></div>
                 <div class="tz-panel-body tz-form">

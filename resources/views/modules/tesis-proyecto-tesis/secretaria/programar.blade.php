@@ -22,7 +22,7 @@
         <div class="tz-alert is-info">Este proyecto no está en condiciones de programarse ({{ \App\Modules\TesisProyectoTesis\Support\Estados::etiqueta($proyecto->estado) }}).</div>
     @else
         <div class="tz-grid-2">
-            <form method="POST" action="{{ route('tesis-proyecto-tesis.secretaria.sustentaciones.guardar', $proyecto) }}" class="tz-panel" x-data="{ enviando: false }" @submit="enviando = true">
+            <form method="POST" action="{{ route('tesis-proyecto-tesis.secretaria.sustentaciones.guardar', $proyecto) }}" class="tz-panel" x-data="{ enviando: false }" @submit="setTimeout(() => enviando = true)">
                 @csrf
                 <div class="tz-panel-head"><h2>Fecha y lugar</h2></div>
                 <div class="tz-panel-body tz-fields">

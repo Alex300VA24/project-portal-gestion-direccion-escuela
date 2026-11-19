@@ -43,7 +43,7 @@
         </div>
     @elseif ($listo)
         <form class="tz-panel" method="POST" action="{{ route('tesis-proyecto-tesis.asesor.similitud.registrar', $proyecto) }}" enctype="multipart/form-data"
-              x-data="{ p: @js(old('porcentaje', '')), max: {{ $maximo }}, ok: @js((bool) old('conformidad')), enviando: false }" @submit="enviando = true">
+              x-data="{ p: @js(old('porcentaje', '')), max: {{ $maximo }}, ok: @js((bool) old('conformidad')), enviando: false }" @submit="setTimeout(() => enviando = true)">
             @csrf
             <div class="tz-panel-head"><h2>Reporte de similitud</h2></div>
             <div class="tz-panel-body tz-form">

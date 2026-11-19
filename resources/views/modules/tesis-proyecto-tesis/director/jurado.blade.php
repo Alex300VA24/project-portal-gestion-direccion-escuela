@@ -22,7 +22,7 @@
 
     @if ($puedeAsignar)
         <form method="POST" action="{{ route('tesis-proyecto-tesis.director.jurado.asignar', $proyecto) }}" class="tz-panel"
-              x-data="{ sel: { Presidente: @js(old('Presidente', '')), Secretario: @js(old('Secretario', '')), Vocal: @js(old('Vocal', '')) }, enviando: false }" @submit="enviando = true">
+              x-data="{ sel: { Presidente: @js(old('Presidente', '')), Secretario: @js(old('Secretario', '')), Vocal: @js(old('Vocal', '')) }, enviando: false }" @submit="setTimeout(() => enviando = true)">
             @csrf
             <div class="tz-panel-head"><h2>Cargos</h2><span class="tz-muted tz-small">El asesor no aparece en la lista: no puede ser jurado de su propio asesorado.</span></div>
             <div class="tz-panel-body tz-fields">
