@@ -1,6 +1,7 @@
 @extends('modules.tesis-proyecto-tesis.layout')
 
 @section('contenido')
+    @include('modules.tesis-proyecto-tesis.partials.volver', ['url' => route('tesis-proyecto-tesis.asesor.proyectos'), 'a' => 'Mis proyectos'])
     <div class="tz-head">
         <div>
             <p class="tz-crumb"><a href="{{ route('tesis-proyecto-tesis.asesor.proyectos') }}">Mis proyectos</a> › <a href="{{ route('tesis-proyecto-tesis.asesor.proyecto', $proyecto) }}">{{ $proyecto->codigo }}</a> › Conformidad</p>

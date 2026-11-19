@@ -45,7 +45,7 @@ final class AvancesRevisionTest extends TesisTestCase
                 ['seccion' => 'Matriz de consistencia', 'descripcion' => 'Define las dimensiones de la variable.'],
                 ['seccion' => 'Marco teórico', 'descripcion' => ''],
             ],
-        ])->assertRedirect(route('tesis-proyecto-tesis.asesor.proyecto', $p))->assertSessionHasNoErrors();
+        ])->assertRedirect(route('tesis-proyecto-tesis.asesor.proyectos'))->assertSessionHasNoErrors();
 
         $this->assertSame('Observada', $v1->refresh()->estado);
         $obs = Observacion::query()->firstOrFail();

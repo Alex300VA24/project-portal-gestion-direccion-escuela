@@ -81,7 +81,7 @@ final class DirectorController extends BaseController
         $d = $request->validated();
         $jurado->reemplazar($proyecto, $this->identidad($request), $d['cargo'], $d['docente'], $d['motivo']);
 
-        return redirect()->route('tesis-proyecto-tesis.director.jurado', $proyecto)->with('status', "Se reemplazó al {$d['cargo']} del jurado.");
+        return redirect()->route('tesis-proyecto-tesis.director.panel')->with('status', "Se reemplazó al {$d['cargo']} del jurado de {$proyecto->codigo}. Se notificó al nuevo miembro y al anterior.");
     }
 
     public function enviarSolicitudAsesor(SolicitarAsesorRequest $request, Proyecto $proyecto, DesignacionService $designacion): RedirectResponse

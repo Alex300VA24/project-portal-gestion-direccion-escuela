@@ -59,7 +59,7 @@ final class JuradoController extends BaseController
             default => 'Verificación guardada. Tus observaciones se enviaron a los estudiantes.',
         };
 
-        return redirect()->route('tesis-proyecto-tesis.jurado.verificar', $proyecto)->with('status', $mensaje);
+        return redirect()->route('tesis-proyecto-tesis.jurado.proyectos')->with('status', "{$proyecto->codigo}: {$mensaje}");
     }
 
     public function sustentaciones(Request $request, SustentacionService $sustentaciones, CatalogoService $catalogo): View
@@ -93,7 +93,7 @@ final class JuradoController extends BaseController
         $d = $request->validated();
         $s = $sustentaciones->registrarResultado($sustentacion, $this->identidad($request), $d['resultado'], (bool) ($d['mencion'] ?? false), $d['hora_fin'] ?? null);
 
-        return redirect()->route('tesis-proyecto-tesis.jurado.resultado', $s)->with('status', $s->estado === 'Realizada'
+        return redirect()->route('tesis-proyecto-tesis.jurado.sustentaciones')->with('status', $s->estado === 'Realizada'
             ? 'Resultado registrado. Con los tres resultados se consolidó: '.($s->resultado === 'Aprobado' ? 'aprobado por '.($s->modo_resultado === 'Unanimidad' ? 'unanimidad' : 'mayoría') : 'desaprobado').'.'
             : 'Resultado registrado. Falta el registro de los demás miembros.');
     }

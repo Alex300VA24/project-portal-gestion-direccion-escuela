@@ -160,6 +160,9 @@
         .tz-user-trigger > svg.tz-i { display: none; }
     }
 
+    .tz-back { display: inline-flex; align-items: center; gap: 8px; justify-self: start; min-height: 44px; padding: 0 12px 0 6px; margin: -8px 0 -10px -6px; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none; color: var(--tz-link) !important; }
+    .tz-back:hover { background: var(--tz-alt); text-decoration: underline; }
+    .tz-back svg.tz-i { width: 18px; height: 18px; }
     .tz-crumb { font-size: 13px; color: var(--tz-muted); margin-bottom: 6px; }
     .tz-crumb a { color: var(--tz-muted); }
     .tz-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }

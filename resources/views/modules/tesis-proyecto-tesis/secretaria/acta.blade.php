@@ -8,6 +8,7 @@
 @endphp
 
 @section('contenido')
+    @include('modules.tesis-proyecto-tesis.partials.volver', ['url' => route('tesis-proyecto-tesis.secretaria.actas'), 'a' => 'Actas y dictámenes'])
     <div class="tz-head">
         <div>
             <p class="tz-crumb"><a href="{{ route('tesis-proyecto-tesis.secretaria.actas') }}">Actas y dictámenes</a> › {{ $proyecto->codigo }}</p>

@@ -67,8 +67,8 @@ final class AsesorController extends BaseController
     {
         $this->revisiones->revisarAvance($proyecto, $entrega, $this->identidad($request), $request->validated());
 
-        return redirect()->route('tesis-proyecto-tesis.asesor.proyecto', $proyecto)
-            ->with('status', "Revisión de la entrega v{$entrega->version} enviada a los estudiantes.");
+        return redirect()->route('tesis-proyecto-tesis.asesor.proyectos')
+            ->with('status', "Revisión de la entrega v{$entrega->version} de {$proyecto->codigo} enviada a los estudiantes.");
     }
 
     public function verificar(Request $request, Proyecto $proyecto, RubricaService $rubrica): View
@@ -95,7 +95,7 @@ final class AsesorController extends BaseController
 
         return $revision->conforme
             ? redirect()->route('tesis-proyecto-tesis.asesor.similitud', $proyecto)->with('status', 'Rúbrica conforme. Ahora registra el reporte de Turnitin.')
-            : redirect()->route('tesis-proyecto-tesis.asesor.verificar', $proyecto)->with('status', 'Verificación guardada. Las observaciones se enviaron a los estudiantes.');
+            : redirect()->route('tesis-proyecto-tesis.asesor.proyectos')->with('status', "Verificación de {$proyecto->codigo} guardada. Las observaciones se enviaron a los estudiantes.");
     }
 
     public function similitud(Request $request, Proyecto $proyecto, SimilitudService $similitud): View
