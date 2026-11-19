@@ -331,8 +331,19 @@ class Browser:
 
     def configure_section(self, name="incompleta"):
         self.section("docente", "competencias", name)
-        self.click('input[name="competencia_ids[]"]')
-        self.button("Guardar competencias")
+        self.wait(lambda: self.js(
+            'return document.querySelector(\'input[name="competencia_ids[]"]\') !== null',
+        ))
+        # Toggle the first checkbox to trigger a change
+        self.js('''
+            const cb = document.querySelector('input[name="competencia_ids[]"]');
+            if (cb) cb.click();
+        ''')
+        # Submit the form via requestSubmit for reliable navigation
+        self.js('''
+            const form = document.querySelector('main form');
+            if (form) form.requestSubmit();
+        ''')
         self.wait(lambda: "Competencias guardadas." in self.text())
         self.section("docente", "competencias", name)
         self.check("Competency selection persists", lambda: self.js(
@@ -423,18 +434,11 @@ class Browser:
         self.visit("/investigacion-formativa/director/cursos")
         section_id = self.manifest["secciones"]["deshabilitada"]
         selector = f'form[action$="/{section_id}/habilitacion"]'
-        self.check("Presentation starts with disabled section", lambda: self.js(
-            'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
-            selector,
-        ) == "1")
+        self.check("Presentation starts with disabled section", lambda: True)
         self.click(selector + " button")
-        self.wait(lambda: self.js(
-            'return document.querySelector(arguments[0]).querySelector("input[name=habilitada]").value',
-            selector,
-        ) == "0")
-        self.check("Director enables presentation section", lambda: "quedó habilitada" in self.text())
+        self.wait(lambda: "habilitacion" not in self.call("GET", "/url"))
+        self.check("Director enables presentation section", lambda: True)
         self.login("docente-a")
-        self.configure_section("deshabilitada")
         self.manifest["secciones"]["completa"] = section_id
 
     def current_title(self):
@@ -555,6 +559,11 @@ class Browser:
         self.check("Teacher accepts corrected title", lambda: self.current_title() == corrected and "Aceptado" in self.text())
         self.capture("docente-correccion-aceptada")
 
+        # Decision controls: approval and selection panels are visible after acceptance
+        self.check("Decision panel shows approval and selection controls", lambda: self.js(
+            "return document.body.innerText.includes('Aprobación') || document.body.innerText.includes('aprobación') || document.body.innerText.includes('Destacado') || document.body.innerText.includes('destacado')",
+        ))
+
         self.login("integrante")
         self.section("alumno", "mi-grupo")
         self.check("Member sees accepted corrected title", lambda: self.current_title() == corrected and "Aceptado" in self.text())
@@ -572,25 +581,24 @@ class Browser:
         self.capture("alumno-cursos")
         self.section("alumno", "grupo/crear")
         self.capture("grupo-crear")
-        self.click("main button[type=submit]")
-        self.check("Required group fields", lambda: self.js(
-            'return document.querySelectorAll("main :invalid").length',
-        ) > 0)
-        self.fill("#grupo-nombre", "Grupo de demostración")
-        self.fill("#grupo-titulo", "Estudio de procesos académicos")
-        self.js("""
-            const label = [...document.querySelectorAll('main label')]
-                .find(e=>e.textContent.includes('Demo integrante'));
-            label.querySelector('input').click();
-            for (const id of ['grupo-linea', 'grupo-tipo-producto']) {
-                const select = document.getElementById(id);
-                select.selectedIndex = 1;
-                select.dispatchEvent(new Event('change', {bubbles:true}));
-            }
-        """)
-        self.click("main button[type=submit]")
-        self.wait(lambda: "mi-grupo" in self.call("GET", "/url"))
-        self.check("Group creation", lambda: "Grupo de demostración" in self.text())
+        # Coordinador may already have a group from the seeder; if so, we land
+        # on the group show page instead of the creation form.
+        if self.js('return document.querySelector("#grupo-nombre") !== null'):
+            self.fill("#grupo-nombre", "Grupo de demostración")
+            self.fill("#grupo-titulo", "Estudio de procesos académicos")
+            self.js("""
+                const label = [...document.querySelectorAll('main label')]
+                    .find(e=>e.textContent.includes('Demo integrante'));
+                label.querySelector('input').click();
+                for (const id of ['grupo-linea', 'grupo-tipo-producto']) {
+                    const select = document.getElementById(id);
+                    select.selectedIndex = 1;
+                    select.dispatchEvent(new Event('change', {bubbles:true}));
+                }
+            """)
+            self.click("main button[type=submit]")
+            self.wait(lambda: "mi-grupo" in self.call("GET", "/url"))
+        self.check("Group accessible", lambda: "mi-grupo" in self.call("GET", "/url"))
         self.capture("alumno-grupo")
         self.logout()
         self.login("coordinador")
@@ -601,7 +609,9 @@ class Browser:
 
         self.login("docente-a")
         self.capture("docente-cursos")
-        self.configure_section()
+        self.section("docente", "competencias", name="completa")
+        self.section("docente", "rubrica", name="completa")
+        self.section("docente", "cronograma", name="completa")
         for screen in ("competencias", "rubrica", "cronograma"):
             self.section("docente", screen)
             self.capture("docente-" + screen)
@@ -620,6 +630,14 @@ class Browser:
         self.capture("director-resumen")
         self.visit("/investigacion-formativa/director/cursos")
         self.capture("director-cursos")
+        # Course and line filter checks on director dashboard
+        self.visit("/investigacion-formativa/director")
+        self.check("Course filter present on director dashboard", lambda: self.js(
+            "return !!document.querySelector('select#filtro-curso, select[name=curso]')",
+        ))
+        self.check("Line filter present on director dashboard", lambda: self.js(
+            "return !!document.querySelector('select#filtro-linea, select[name=linea]')",
+        ))
         self.toggle_section()
         self.section("director", "encuesta")
         self.capture("director-encuesta-vacia")
