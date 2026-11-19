@@ -23,6 +23,7 @@ Las rutas de esta tabla son relativas a `app/Modules/InvestigacionFormativa/`, s
 | `Services/EncuestaService.php` | Borrador, publicación, cierre y respuestas individuales. |
 | `Services/DecisionTrabajoService.php` | Aprobación final, selección manual del trabajo destacado, historial y evidencia versionada. |
 | `Services/ReporteService.php` | Resultados por sección, promedio, empates e historial real. |
+| `Services/ReportePdfService.php` | Genera el PDF del reporte de sección desde datos ya calculados; no crea registros de archivo. |
 | `Services/CalificacionService.php` | Normalización y promedios con centésimas enteras. |
 | `Models/`, `Policies/` | Tablas del módulo y autorización de sus recursos. |
 | `Commands/`, `Support/CsvImportReader.php` | Cuatro importaciones atómicas con validación previa. |
@@ -117,6 +118,16 @@ Los reportes limitan las secciones al alcance antes de leer sus datos. El resume
 El tablero de dirección acepta `escuela`, `periodo`, `curso` y `linea`. El filtro de línea incluye las secciones con al menos un proyecto de esa línea. Dentro de esas secciones, los grupos, las decisiones y los conteos por umbral se restringen a la línea. La encuesta es un dato por sección: no se desagrega por línea y sus totales cubren las secciones incluidas completas. Un `curso` o una `linea` fuera del alcance devuelve 403.
 
 Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos son estadística descriptiva; no son los tres indicadores oficiales de Calidad ni un indicador de satisfacción. Si la base es cero, no se calcula un porcentaje.
+
+## Exportación a PDF de resultados
+
+El director puede descargar el reporte de una sección como PDF desde «Ver resultados». El servicio `Services/ReportePdfService.php` genera el documento con dompdf a partir de los datos ya calculados por `ReporteService`.
+
+- Fuente DejaVu Sans; recursos remotos y JavaScript deshabilitados; carpeta temporal `storage/app/dompdf`.
+- Incluye título, curso, sección, periodo, escuela, filtros activos, hora de generación, tablas de calificaciones, distribuciones de encuesta y notas de lectura.
+- Excluye los comentarios confidenciales de la encuesta. Estos se conservan en la pantalla de resultados con su paginación propia.
+- La generación es estadística descriptiva. No crea registros en `comun.archivo`, no usa `ArchivoGateway` y no modifica datos.
+- El PDF se envía como adjunto con `Cache-Control: no-store, private`.
 
 ## Archivos: estado actual y trabajo pendiente
 

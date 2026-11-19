@@ -154,8 +154,9 @@ Actor: director. Datos iniciales: escuela asignada y periodos reales con seccion
 6. Consulte las notas por unidad, la nota final y todos los empates.
 7. Consulte los conteos de trabajos aprobados y destacados, y el trabajo destacado de la sección.
 8. Vuelva al historial y abra una sección cerrada de otro periodo.
+9. Pulse «Descargar PDF» para guardar el reporte con los filtros aplicados. El archivo no incluye los comentarios confidenciales de la encuesta y no crea un registro de archivo.
 
-Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye.
+Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye. El PDF exporta los mismos datos visibles con los filtros activos, sin comentarios confidenciales.
 
 El tablero muestra barras y tablas equivalentes. «> 16» y «> 18» son umbrales estrictos y superpuestos: un proyecto con nota mayor a 18 también cuenta en mayor a 16. La base de ambos es el total de proyectos completos. Los conteos son estadística descriptiva, no los tres indicadores oficiales de Calidad. La línea restringe grupos, notas y decisiones; no desagrega la encuesta, que se prepara por sección.
 

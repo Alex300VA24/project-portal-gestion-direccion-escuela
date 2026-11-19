@@ -19,6 +19,7 @@ Si no puede entrar, solicite que revisen su cuenta, su vinculación académica y
 7. Revise el texto completo. Publicar impide editar las preguntas.
 8. Cierre la encuesta al terminar. No se puede reabrir.
 9. Abra «Ver resultados» para consultar respuestas, comentarios y calificaciones.
+10. Pulse «Descargar PDF» para guardar el reporte con los filtros aplicados. El archivo no incluye los comentarios confidenciales de la encuesta y no crea un registro de archivo.
 
 «Habilitada» permite las operaciones del módulo si también se cumplen sus requisitos. «Deshabilitada» detiene las escrituras y conserva los datos. El estado académico de una sección es un dato distinto. Las secciones cerradas siguen disponibles en resultados e historial.
 
