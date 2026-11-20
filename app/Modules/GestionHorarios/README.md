@@ -1,0 +1,11 @@
+﻿# Gestión de Horarios Académicos
+
+Módulo Laravel/Livewire para consulta y preparación académica; Python y OR-Tools resuelven el contrato CP-SAT. El sistema todavía no está habilitado para generar, aprobar o publicar horarios institucionales. La policy local observada permite navegación por rol, pero no acredita escuela. La escritura de oferta y sus asociaciones exige además un proveedor verificable de escuelas autorizadas; sin él se rechaza.
+
+La instalación y las extensiones se coordinan con los responsables del portal. No ejecute migraciones o seeders contra una base compartida. Las pruebas que crean esquemas, ejecutan workers o terminan procesos requieren PostgreSQL y procesos aislados identificados por cada suite. Configure el entorno indicado por los tests antes de ejecutarlos; una prueba omitida no cuenta como aprobada.
+
+Documentos: [manual de usuario](docs/MANUAL_USUARIO_GESTION_HORARIOS.md), [flujos](docs/MANUAL_FLUJOS_GESTION_HORARIOS.md), [arquitectura](docs/ARQUITECTURA_GESTION_HORARIOS.md), [autorización](docs/AUTENTICACION_AUTORIZACION.md), [acuerdos pendientes con Core y Seguridad (27C.11)](docs/CONTRATOS_CORE_SEGURIDAD_27C11.md), [alcance de recursos compartidos (27C.12)](docs/AISLAMIENTO_RECURSOS_27C12.md), [consultas de recursos acotadas (27C.13)](docs/PROYECCIONES_RECURSOS_27C13.md), [Prematrícula](docs/INTEGRACION_PREMATRICULA.md), [contrato CP-SAT](docs/CONTRATO_GENERACION_CPSAT.md) y [pendientes](docs/PENDIENTES_INTEGRACION.md).
+
+Comprobaciones sin base institucional: `php vendor/bin/phpunit tests/Unit/GestionHorarios/DemandaTest.php tests/Unit/GestionHorarios/PrepararDemandaProveedorTest.php`; `vendor/bin/pint --test`; `git diff --check`. Las pruebas del motor real necesitan Python con OR-Tools y `HORARIOS_PYTHON_AISLADO`. El paso global de Pint puede señalar archivos ajenos preexistentes; no aplicar formato masivo sin revisión.
+
+En 27C.7 se ensayó el filtrado de revisiones y asignaciones con datos de dos escuelas, y la presentación de bloqueo Livewire sin adscripción. Las pruebas que ejercitan PostgreSQL verifican el nombre de base de ensayo y requieren `HORARIOS_27B2_POSTGRES_AISLADO=1` y la credencial aislada. No configuran ni utilizan la base institucional.
