@@ -1,8 +1,8 @@
-# Manual de flujo · contacto, encuesta e historial del egresado · S3-17 a S3-22
+# Manual de flujos · Seguimiento al Egresado
 
-**Responsable:** Álvaro. **Referencias:** `docs/seguimiento-egresado/arquitectura.md`, `docs/seguimiento-egresado/permisos-middleware.md`, `docs/seguimiento-egresado/correo.md` y `docs/seguimiento-egresado/manual-usuario.md`.
+Referencias: [arquitectura.md](arquitectura.md), [permisos-middleware.md](permisos-middleware.md), [correo.md](correo.md) y [manual-usuario.md](manual-usuario.md).
 
-Describe cómo recorre el sistema un egresado, desde que la Secretaría le genera un enlace hasta que consulta su historial. Cada flujo indica la pantalla, la regla que se aplica y lo que queda en la BD.
+Tiene dos partes. La primera describe cómo recorre el sistema un egresado, desde que la Secretaría le genera un enlace hasta que consulta su historial: cada flujo indica la pantalla, la regla que se aplica y lo que queda en la BD. La segunda, **Pruebas por flujo**, lista los recorridos completos del sistema con sus pasos y el resultado esperado, para ponerlos a prueba.
 
 ## Quién entra y cómo
 
@@ -147,3 +147,30 @@ El expediente ofrece todo lo pendiente, entre con el enlace que entre.
 | Responder la encuesta | `medicion_laboral`, `satisfaccion_egresado`, `medicion_habilidad`, `formacion_posterior`, `contacto_egresado`, `invitacion_egresado` |
 
 `enviado_en` solo se marca si el correo salió de verdad (ver `docs/seguimiento-egresado/correo.md`).
+
+---
+
+## Pruebas por flujo
+
+Sirven para comprobar que el módulo funciona de punta a punta. Se hacen sobre una **base nueva** con las migraciones del portal y el seeder general (cuentas `secretaria@portal.local` y `director@portal.local`, ver [README.md](README.md)). Para el recorrido desde cero se usa el archivo [`datos/alumnos-aptos-demo.csv`](datos/alumnos-aptos-demo.csv). Si se quiere ver el sistema ya con datos, se carga además `SeguimientoEgresadoSeeder`. Para comprobar la entrega real de correos, ver [correo.md](correo.md).
+
+| Caso | Pasos | Resultado esperado |
+|---|---|---|
+| F01. Ingreso | Entra como Secretaría desde el acceso del portal y abre el módulo desde el selector. Repite como Dirección. Abre el padrón sin haber iniciado sesión. | El menú muestra las operaciones del perfil. Sin sesión, el acceso interno vuelve al inicio de sesión. |
+| F02. Plan y promoción | **Padrón y promociones → + Nueva promoción**. Año 2019 y seis ingresantes. Si falta el plan, **+ Otro plan** con su vigencia. Guarda y vuelve a abrir la promoción. | Se muestra el paso de carga y los valores se conservan. |
+| F03. Padrón | **Descargar el formato modelo**. Carga el CSV desde la promoción. Repite la carga y prueba una copia con una fila inválida. | Se crean los alumnos aptos. La repetición no duplica. Con una fila inválida se indica cuál y se rechaza todo el archivo. |
+| F04. Contacto | Elige una fecha límite y pulsa **Enviar enlaces**. Abre uno con otra sesión, prueba un correo inválido y luego guarda un correo y un celular válidos. | Hay un enlace por alumno y el correo llega al destino configurado. Al volver a la promoción se ve el contacto completado. |
+| F05. Egreso | En **Consultar alumnos y grados**, abre una ficha y confirma el egreso con una fecha pasada. Prueba una fecha futura y un alumno sin contacto. | El alumno pasa a Egresado con su periodo (por ejemplo 2025-I) y conserva su contacto. La fecha futura se rechaza. Sin contacto se confirma, pero se avisa que falta. |
+| F06. Campaña | Crea una campaña de egresados con la promoción, el periodo vigente y fechas que incluyan hoy. En **Ver detalle**, envía invitaciones, repite y recuerda a un pendiente. | Se convoca solo a egresados confirmados con correo personal. La segunda emisión no duplica. El recordatorio genera un enlace nuevo. |
+| F07. Encuesta del egresado | Abre su enlace. Marca **Trabaja**, responde sobre su trabajo y su satisfacción, autoriza contactar a su empresa y envía. Abre **Mi historial**. Repite sin empleo o sin autorización. | Aparecen solo las preguntas que corresponden. Se guarda la respuesta y la invitación pasa a respondida. Un segundo envío no se acepta. |
+| F08. Empresas | Crea una campaña de empleadores. Genera un enlace de desempeño para quien autorizó el contacto y otros de mercado. Responde sin iniciar sesión y vuelve a abrir uno ya usado. | Se guardan las respuestas. El enlace usado no acepta otra respuesta. Las de mercado no entran en I5. |
+| F09. Ver respuestas | En el detalle de la campaña pulsa **Ver respuesta** en un egresado. En **Encuesta empresarial**, en una empresa. Repite como Dirección. | La respuesta se abre en una ventana sobre la misma lista. La Dirección ve las de empresas, no las individuales de egresados. |
+| F10. Evaluación | La Secretaría guarda informes de objetivos y competencias en borrador, un cambio propuesto y un plan. La Dirección revisa y valida, y marca el cambio como implementado con documento y fecha. | I3 cuenta el informe validado. I6 suma el cambio implementado. |
+| F11. Indicadores y descargas | Filtra **Indicadores** por promoción, años desde el egreso y fecha. Exporta. Descarga los CSV de campañas e invitados y los formatos F5, F7, F8, F9, F10 y F11 en Excel. | Los archivos abren con sus encabezados y las cifras coinciden con las de pantalla. |
+| F12. Permisos | La Dirección consulta el padrón y los indicadores. Intenta cargar alumnos. La Secretaría intenta validar un informe. Cierra sesión y vuelve a abrir el padrón. | La Dirección no ve los botones de carga y, si fuerza la dirección, recibe 403. La Secretaría no puede validar. Sin sesión se pide el acceso. |
+
+Además, en cada repetición conviene probar: búsquedas sin resultados, enlaces vencidos o inventados (muestran «Este enlace no es válido o ya venció»), una nueva descarga después de cambiar los filtros, y que ningún dato de demostración aparezca en una base que partió vacía.
+
+**Cómo comprobar bien un cambio.** Una página que carga no confirma que se guardó. Después de guardar, vuelve a abrir la ficha o el detalle y verifica el valor. Si algo falla, anota con qué cuenta partiste, qué dato usaste y en qué orden actuaste.
+
+**Usabilidad (Secretaría).** Observa si una persona nueva puede, sin ayuda, encontrar una promoción, abrir la ficha de un alumno, enviar un enlace y localizar un reporte.

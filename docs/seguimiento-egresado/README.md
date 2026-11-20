@@ -1,14 +1,14 @@
 # Seguimiento al Egresado
 
-Módulo `seguimiento-egresado` del portal (esquema PostgreSQL `seguimiento_egresado`). Registra el padrón de egresados, convoca campañas de seguimiento por enlace personal, recoge la encuesta del egresado y de las empresas, y calcula los indicadores I1 a I6 y los formatos F1 a F11.
+Módulo `seguimiento-egresado` del portal (esquema PostgreSQL `seguimiento_egresado`). Registra el padrón de egresados, convoca campañas de seguimiento por enlace personal, recoge la encuesta del egresado y de las empresas, y calcula los indicadores I1 a I6 y los formatos institucionales F5, F7 y F8 a F11 en Excel.
 
 ## Documentos
 
 | Documento | Para quién | Contenido |
 |---|---|---|
 | [guion-demostracion.md](guion-demostracion.md) | Presentación | Recorrido completo paso a paso, con datos, comandos y resultados esperados. |
-| [manual-usuario.md](manual-usuario.md) | Secretaría, Dirección, egresados | Cómo usar cada pantalla. |
-| [flujo.md](flujo.md) | Pruebas y revisión | Flujos del sistema con sus reglas y lo que queda en la BD. |
+| [manual-usuario.md](manual-usuario.md) | Secretaría, Dirección, egresados | Cómo usar cada pantalla, paso a paso y con capturas. |
+| [flujo.md](flujo.md) | Pruebas y revisión | Flujos del sistema con sus reglas, lo que queda en la BD y los recorridos completos para ponerlo a prueba. |
 | [arquitectura.md](arquitectura.md) | Desarrollo | Capas, archivos, decisiones y pruebas. |
 | [permisos-middleware.md](permisos-middleware.md) | Desarrollo | Roles, capacidades y middleware, con código. |
 | [base-de-datos.md](base-de-datos.md) | Desarrollo y despliegue | Migraciones del esquema, qué cambió respecto a la primera versión y cómo verificarlo. |

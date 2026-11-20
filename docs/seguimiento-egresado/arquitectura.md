@@ -2,6 +2,17 @@
 
 Módulo `seguimiento-egresado` del monolito modular del portal (Laravel 13, Blade, PostgreSQL, esquema `seguimiento_egresado`). Sigue la estructura de `GUIA_MODULOS.md`: todo su código vive en `app/Modules/SeguimientoEgresado/`, sus vistas en `resources/views/modules/seguimiento-egresado/` y sus pruebas en `tests/*/SeguimientoEgresado/`.
 
+## Tecnologías
+
+| Componente | Implementación |
+|---|---|
+| Aplicación | Laravel 13 sobre PHP 8.4. En Docker, Apache y PostgreSQL 17. |
+| Interfaz | Blade, CSS propio (`public/css/seguimiento-egresado.css`, tokens de [DESIGN.md](../DESIGN.md)) y JavaScript sin dependencias; gráficas con Chart.js. |
+| Acceso | Laravel y los roles de Spatie para Secretaría y Dirección; enlace personal para el egresado y para la empresa. |
+| Datos | Esquema PostgreSQL `seguimiento_egresado`, con sus tablas y vistas analíticas (ver [base-de-datos.md](base-de-datos.md)). |
+| Correo | Mailer de Laravel, con envío limitado o redirigido para pruebas (ver [correo.md](correo.md)). |
+| Exportaciones | Formatos oficiales y tablero en Excel (`.xlsx`, generado con la extensión `zip` de PHP, incluida en el Dockerfile); listas de campañas e invitados en CSV. |
+
 ## Capas
 
 ```
@@ -49,6 +60,25 @@ Navegador ──► Routes/web.php ──► Middleware (auth, RequiereCapacidad
 7. **Nombres calificados y reglas de validación con conexión.** Las consultas usan `seguimiento_egresado.<tabla>`. Las reglas `exists`/`unique` leen `a.b` como «conexión.tabla», por lo que se construyen con `Support\Esquema::validar()`.
 8. **Autoría real.** Quién crea o registra algo queda en `usuario_interno`, enlazado con la cuenta del portal.
 
+## Dónde cambia el estado
+
+- **Importar el padrón** valida todo el archivo antes de crear expedientes (todo o nada) y registra el resultado, incluidas las filas rechazadas.
+- **Confirmar el egreso** cierra la vigencia del estado anterior, abre la siguiente y calcula el periodo con la fecha efectiva.
+- **Emitir invitaciones** selecciona a los egresados confirmados con correo personal y no repite una invitación por campaña. Un recordatorio sustituye el enlace y suma al contador.
+- **Responder** distingue desempeño y mercado. Un enlace de empresa ya usado devuelve 409. Reemplazar un enlace ya entregado pide confirmación.
+- **Los informes de logro** tienen borrador y validación; valida la Dirección. El tablero toma de ellos I3 y, de los cambios implementados con fecha y documento, I6.
+
+## Indicadores
+
+| Código | Base del cálculo |
+|---|---|
+| I1 | Egresados entre ingresantes de las promociones que ya cumplieron su duración. |
+| I2 | Respuestas elegibles que indican trabajo relacionado con la carrera. |
+| I3 | Objetivos logrados en el último informe validado de cada promoción, entre el total de objetivos. |
+| I4 | Respuestas de egresados que expresan satisfacción con la formación. |
+| I5 | Evaluaciones de desempeño de empresas con satisfacción. |
+| I6 | Mejoras implementadas cuyo origen es el seguimiento. |
+
 ## Aislamiento entre módulos
 
 - Ningún archivo del módulo importa clases de otro módulo (`ModuleStructureTest`).
@@ -57,7 +87,7 @@ Navegador ──► Routes/web.php ──► Middleware (auth, RequiereCapacidad
 
 ## Dependencias del esqueleto del portal que se conservan
 
-`SeguimientoEgresadoController` (portada y ruta `index`, `create`, `store`), `Registro`, `RegistroPolicy`, `SeguimientoEgresadoRequest`, `SeguimientoEgresadoService` y `Routes/api.php` siguen como los entregó el portal: `ModularRouteTest` y `ModuleSchemaIsolationTest` dependen de ellos. La portada (`/seguimiento-egresado`) es pública y muestra el nombre y el esquema del módulo.
+`SeguimientoEgresadoController` (solo la portada, ruta `index`), `Registro`, `RegistroPolicy` y `Routes/api.php` siguen como los entregó el portal: `ModularRouteTest` y `ModuleSchemaIsolationTest` dependen de ellos. Las rutas heredadas `create` y `store` se retiraron porque no guardaban nada. La portada (`/seguimiento-egresado`) es pública y muestra el nombre y el esquema del módulo.
 
 ## Pruebas
 
