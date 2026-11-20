@@ -21,6 +21,7 @@ createdb "$DB_DATABASE"
 php artisan module:migrate all --force
 read -rs -p 'Contraseña local de al menos 12 caracteres: ' IF_DEMO_PASSWORD
 export IF_DEMO_PASSWORD
+export IF_DEMO_MODE=workflow
 export IF_DEMO_EXPORT_DIR="/tmp/if-demo-exports"
 php artisan db:seed --class='App\Modules\InvestigacionFormativa\Database\Seeders\InvestigacionDemoSeeder'
 npm run build
@@ -29,7 +30,9 @@ PHP_CLI_SERVER_WORKERS=4 php artisan serve --host=127.0.0.1 --port=8059 --no-rel
 
 El servidor PostgreSQL y las credenciales de estos ejemplos corresponden a la verificación local. Adapte el puerto y el usuario a su entorno. La base debe contener `_test_demo_` en su nombre. El seeder solo funciona en `local` o `testing`. No imprime la contraseña. Crea cuentas nuevas; no cambia contraseñas ni roles de cuentas existentes.
 
-El seeder imprime los correos y las secciones. Exporta un directorio por lote con `demo.json` y cinco CSV. No exporta contraseñas. Los CSV contienen IDs devueltos por esa misma base y no sirven como catálogo institucional.
+El seeder exige `IF_DEMO_MODE` con uno de dos valores. `workflow` crea el recorrido operativo sin decisiones: dos grupos, seis entregas, seis evaluaciones y una encuesta publicada con tres respuestas. `showcase` crea el mismo recorrido y agrega dos aprobaciones y un trabajo destacado vigente. Cada ejecución crea un lote nuevo con códigos propios; los lotes anteriores se conservan y cada lote usa IDs distintos.
+
+El seeder imprime los correos, las secciones y la cantidad de datos de muestra. Exporta un directorio por lote con `demo.json` y cinco CSV. No exporta contraseñas. Los CSV contienen IDs devueltos por esa misma base y no sirven como catálogo institucional.
 
 | Archivo exportado | Comando de validación |
 |---|---|
@@ -41,7 +44,9 @@ El seeder imprime los correos y las secciones. Exporta un directorio por lote co
 
 Sustituya `RUTA` por el archivo del lote. `--dry-run` valida sin escribir. Solo `--apply` aplica una importación. No combine ambas opciones. Los roles de Laravel se asignan por separado; importar una identidad no concede un rol.
 
-La demostración incluye dos escuelas, dos periodos, dos directores, una secretaria de escuela, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. La sección `completa` está lista para crear grupos. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
+`competencias.csv` es una foto del lote. La sección `completa` ya tiene entregas, por lo que el comando rechaza el reemplazo de competencias en esa sección y no escribe nada. Valide el formato con un CSV que contenga solo secciones sin entregas.
+
+La demostración incluye dos escuelas, dos periodos, dos directores, una secretaria de escuela, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. El plan de la escuela A tiene dos cursos: uno con Investigación Formativa y otro sin el módulo en el mismo periodo, para contrastar el denominador del indicador 3.1. La sección `completa` está configurada y tiene grupos, entregas, evaluaciones y encuesta. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
 
 ## 1. Habilitación y configuración
 

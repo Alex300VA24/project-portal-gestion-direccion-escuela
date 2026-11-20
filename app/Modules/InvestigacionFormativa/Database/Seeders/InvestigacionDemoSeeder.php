@@ -3,9 +3,6 @@
 namespace App\Modules\InvestigacionFormativa\Database\Seeders;
 
 use App\Models\User;
-use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
-use App\Modules\InvestigacionFormativa\Exceptions\RecursoBloqueado;
-use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
 use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
@@ -24,6 +21,9 @@ use RuntimeException;
 
 final class InvestigacionDemoSeeder extends Seeder
 {
+    /** @var list<string> */
+    private const MODOS = ['workflow', 'showcase'];
+
     public function run(): void
     {
         if (! app()->environment(['local', 'testing'])
@@ -32,13 +32,18 @@ final class InvestigacionDemoSeeder extends Seeder
             throw new RuntimeException('Use local/testing y una base PostgreSQL desechable con _test_demo_ en su nombre.');
         }
 
+        $modo = strtolower(trim((string) getenv('IF_DEMO_MODE')));
+        if (! in_array($modo, self::MODOS, true)) {
+            throw new RuntimeException('Defina IF_DEMO_MODE=workflow o IF_DEMO_MODE=showcase.');
+        }
+
         $password = (string) getenv('IF_DEMO_PASSWORD');
         if (strlen($password) < 12) {
             throw new RuntimeException('Defina IF_DEMO_PASSWORD con al menos 12 caracteres. No se imprime ni se guarda en archivos.');
         }
 
-        $resultado = DB::transaction(fn (): array => $this->crearDatos($password));
-        $this->command?->info('Datos de demostración creados. Use la contraseña suministrada en IF_DEMO_PASSWORD.');
+        $resultado = DB::transaction(fn (): array => $this->crearDatos($password, $modo));
+        $this->command?->info("Datos de demostración creados en modo {$modo} (lote {$resultado['lote']}). Use la contraseña suministrada en IF_DEMO_PASSWORD.");
         $this->command?->table(['Cuenta', 'Correo', 'Roles'], array_map(
             static fn (array $cuenta): array => [$cuenta['nombre'], $cuenta['email'], implode(', ', $cuenta['roles'])],
             $resultado['cuentas'],
@@ -47,14 +52,37 @@ final class InvestigacionDemoSeeder extends Seeder
             static fn (int $id, string $nombre): array => [$nombre, $id, '/investigacion-formativa/director/secciones/'.$id.'/resultados'],
             $resultado['secciones'], array_keys($resultado['secciones']),
         ));
+        $this->command?->table(['Dato de muestra', 'Cantidad'], [
+            ['Grupos', count($resultado['muestra']['grupos'])],
+            ['Entregas', $resultado['muestra']['entregas']],
+            ['Evaluaciones', $resultado['muestra']['evaluaciones']],
+            ['Respuestas de encuesta', $resultado['muestra']['respuestas']],
+            ['Aprobaciones', $resultado['muestra']['aprobaciones']],
+            ['Selección vigente', $resultado['muestra']['seleccion'] === null ? 0 : 1],
+        ]);
         if ($directorio = getenv('IF_DEMO_EXPORT_DIR')) {
             $this->exportar($directorio, $resultado);
         }
-        $this->command?->warn('No se crean grupos, entregas, archivos ni notas. La integración de archivos sigue pendiente.');
+        $this->command?->warn('Los archivos de las entregas son fixtures locales. La integración de archivos en producción sigue pendiente.');
     }
 
-    /** @return array{cuentas: list<array>, secciones: array<string, int>, lote: string} */
-    private function crearDatos(string $password): array
+    /**
+     * @return array{
+     *     modo: string,
+     *     cuentas: list<array>,
+     *     secciones: array<string, int>,
+     *     lote: string,
+     *     muestra: array{
+     *         grupos: array<string, array{id_grupo: int, id_proyecto: int}>,
+     *         entregas: int,
+     *         evaluaciones: int,
+     *         respuestas: int,
+     *         aprobaciones: int,
+     *         seleccion: int|null
+     *     }
+     * }
+     */
+    private function crearDatos(string $password, string $modo): array
     {
         $this->call(InvestigacionPermisosSeeder::class);
         $lote = strtolower(Str::random(8));
@@ -84,6 +112,7 @@ final class InvestigacionDemoSeeder extends Seeder
         $escuelas = [];
         $planes = [];
         $cursos = [];
+        $lineas = [];
         foreach (['A', 'B'] as $indice => $codigo) {
             $escuelas[$indice] = $this->insertar('core.escuela_profesional', 'id_escuela', [
                 'id_facultad' => $facultad, 'codigo' => 'IFD-'.$lote.'-'.$codigo,
@@ -103,11 +132,23 @@ final class InvestigacionDemoSeeder extends Seeder
                 'id_plan' => $planes[$indice], 'id_curso' => $curso, 'ciclo' => 5,
                 'tipo' => 'Obligatorio', 'id_area' => $area, 'creditos_requeridos' => 0,
             ]);
-            $this->insertar('core.linea_investigacion', 'id_linea', [
+            $lineas[$indice] = $this->insertar('core.linea_investigacion', 'id_linea', [
                 'id_escuela' => $escuelas[$indice], 'codigo' => 'IFD-'.$lote.'-'.$codigo,
                 'nombre' => 'Línea de demostración '.$codigo, 'estado' => 'Activo',
             ]);
         }
+
+        // Curso sin Investigación Formativa dentro del mismo plan y periodo.
+        // Sirve como experiencia curricular implementada que no aplica el
+        // módulo y permite comprobar el denominador del indicador 3.1.
+        $cursoNoIf = $this->insertar('core.curso', 'id_curso', [
+            'codigo' => 'IFD-'.$lote.'-C', 'nombre' => 'Gestión de proyectos de demostración C',
+            'creditos' => 2, 'estado' => 'Activo',
+        ]);
+        $cursos[2] = $this->insertar('core.curso_plan', 'id_curso_plan', [
+            'id_plan' => $planes[0], 'id_curso' => $cursoNoIf, 'ciclo' => 6,
+            'tipo' => 'Obligatorio', 'id_area' => $area, 'creditos_requeridos' => 0,
+        ]);
 
         // Líneas de investigación oficiales de la "antigua" currícula.
         // Datos de muestra proporcionados por el propietario del proyecto.
@@ -131,7 +172,9 @@ final class InvestigacionDemoSeeder extends Seeder
                 'estado' => 'Activo',
             ]);
         }
-        $this->insertar('investigacion_formativa.tipo_producto', 'id_tipo_producto', ['nombre' => 'Informe de demostración '.$lote]);
+        $idTipoProducto = $this->insertar('investigacion_formativa.tipo_producto', 'id_tipo_producto', [
+            'nombre' => 'Informe de demostración '.$lote,
+        ]);
 
         $cuentas = [];
         $docentes = [];
@@ -185,20 +228,26 @@ final class InvestigacionDemoSeeder extends Seeder
                     'id_periodo_ingreso' => $periodos[0], 'id_modalidad_ingreso' => $modalidad, 'estado' => 'Activo',
                 ]);
             }
-            $cuentas[$nombre] = ['nombre' => $nombre, 'email' => $email, 'roles' => $roles, 'user' => $user];
+            $cuentas[$nombre] = [
+                'nombre' => $nombre,
+                'email' => $email,
+                'roles' => $roles,
+                'user' => $user,
+                'id_usuario' => $usuario,
+            ];
         }
 
         $secciones = [];
         foreach ([
-            'completa' => [0, 1, 'docente-a', 'Activa'],
-            'incompleta' => [0, 1, 'docente-a', 'Activa'],
-            'deshabilitada' => [0, 1, 'docente-a', 'Activa'],
-            'historica' => [0, 0, 'docente-a', 'Cerrada'],
-            'otra-escuela' => [1, 1, 'docente-b', 'Activa'],
-        ] as $nombre => [$escuela, $periodo, $docente, $estado]) {
+            'completa' => [0, 1, 'docente-a', 'Activa', 0],
+            'incompleta' => [0, 1, 'docente-a', 'Activa', 0],
+            'deshabilitada' => [0, 1, 'docente-a', 'Activa', 2],
+            'historica' => [0, 0, 'docente-a', 'Cerrada', 0],
+            'otra-escuela' => [1, 1, 'docente-b', 'Activa', 1],
+        ] as $nombre => [$escuela, $periodo, $docente, $estado, $curso]) {
             $id = $this->insertar('core.seccion', 'id_seccion', [
-                'id_periodo' => $periodos[$periodo], 'id_curso_plan' => $cursos[$escuela],
-                'codigo' => 'IFD-'.$nombre, 'capacidad' => 30,
+                'id_periodo' => $periodos[$periodo], 'id_curso_plan' => $cursos[$curso],
+                'codigo' => 'IFD-'.$lote.'-'.$nombre, 'capacidad' => 30,
                 'id_docente_responsable' => $docentes[$docente], 'estado' => $estado,
             ]);
             $secciones[$nombre] = $id;
@@ -242,9 +291,24 @@ final class InvestigacionDemoSeeder extends Seeder
             [30, 60, 90],
         ), 3);
 
-        $this->crearDatosMuestra($actor, $secciones, $cuentas, $docentes, $estudiantes, $periodos);
+        $muestra = $this->crearDatosMuestra(
+            $modo,
+            $lote,
+            $actor,
+            $lineas[0],
+            $idTipoProducto,
+            $secciones,
+            $cuentas,
+            $estudiantes,
+        );
 
-        return ['cuentas' => array_values($cuentas), 'secciones' => $secciones, 'lote' => $lote];
+        return [
+            'modo' => $modo,
+            'cuentas' => array_values($cuentas),
+            'secciones' => $secciones,
+            'lote' => $lote,
+            'muestra' => $muestra,
+        ];
     }
 
     private function exportar(string $directorio, array $resultado): void
@@ -278,26 +342,45 @@ final class InvestigacionDemoSeeder extends Seeder
             'nombre' => $cuenta['nombre'], 'email' => $cuenta['email'], 'roles' => $cuenta['roles'], 'user_id' => $cuenta['user']->id,
         ], $resultado['cuentas']);
         File::put($destino.'/demo.json', json_encode([
-            'cuentas' => $cuentas, 'secciones' => $resultado['secciones'],
+            'version' => 2,
+            'modo' => $resultado['modo'],
+            'lote' => $resultado['lote'],
+            'cuentas' => $cuentas,
+            'secciones' => $resultado['secciones'],
+            'muestra' => $resultado['muestra'],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
         $this->command?->info('Ejemplos CSV y datos de acceso sin contraseña: '.$destino);
     }
 
     /**
-     * Crea datos de muestra completos a través de los servicios normales del
-     * módulo: grupos, entregas, evaluaciones, decisiones y respuestas de encuesta.
+     * Crea los datos de muestra a través de los servicios normales del módulo.
      *
-     * Usa rutas reales de servicio (no inserciones directas de negocio) para que
-     * los datos de demostración reflejen flujos operativos válidos.
+     * El modo workflow crea grupos, entregas, evaluaciones y la encuesta con
+     * respuestas, pero no registra decisiones. El modo showcase agrega dos
+     * aprobaciones y una selección vigente. Las entregas y sus archivos son
+     * fixtures locales porque el módulo aún no expone un servicio de escritura
+     * de entregas en producción.
+     *
+     * @return array{
+     *     grupos: array<string, array{id_grupo: int, id_proyecto: int}>,
+     *     entregas: int,
+     *     evaluaciones: int,
+     *     respuestas: int,
+     *     aprobaciones: int,
+     *     seleccion: int|null
+     * }
      */
     private function crearDatosMuestra(
+        string $modo,
+        string $lote,
         ActorInvestigacion $actor,
+        int $idLinea,
+        int $idTipoProducto,
         array $secciones,
         array $cuentas,
-        array $docentes,
         array $estudiantes,
-        array $periodos,
-    ): void {
+    ): array {
+        $acceso = app(AccesoInvestigacionService::class);
         $gruposService = app(GrupoService::class);
         $evaluacionService = app(EvaluacionService::class);
         $decisionService = app(DecisionTrabajoService::class);
@@ -305,45 +388,7 @@ final class InvestigacionDemoSeeder extends Seeder
 
         $seccionCompleta = $secciones['completa'];
 
-        // Si ya existen grupos en cualquier sección, los datos de muestra ya
-        // fueron creados (idempotencia para re-seed en misma base).
-        $gruposExistentes = DB::table('investigacion_formativa.grupo')
-            ->count();
-        if ($gruposExistentes > 0) {
-            return;
-        }
-
-        // Línea de investigación de la escuela de la sección (scoped, no global-first)
-        // Obtenemos el id_escuela de la sección completa como valor escalar para
-        // evitar ambigüedades de nombres de columna en el WHERE.
-        $seccionEscuela = DB::table('core.seccion as s')
-            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
-            ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
-            ->where('s.id_seccion', $seccionCompleta)
-            ->value('pe.id_escuela');
-
-        if ($seccionEscuela === null) {
-            throw new RuntimeException('No se encontró escuela para la sección completa.');
-        }
-
-        $idLinea = DB::table('core.linea_investigacion')
-            ->where('id_escuela', $seccionEscuela)
-            ->where('estado', 'Activo')
-            ->orderBy('id_linea')
-            ->value('id_linea');
-
-        if ($idLinea === null) {
-            throw new RuntimeException('No se encontró línea de investigación activa para la escuela de la sección completa.');
-        }
-
-        $idTipoProducto = DB::table('investigacion_formativa.tipo_producto')
-            ->value('id_tipo_producto');
-
-        if ($idTipoProducto === null) {
-            throw new RuntimeException('No se encontró tipo de producto.');
-        }
-
-        // 1. Crear grupos y proyectos a través del servicio normal
+        // 1. Crear grupos y proyectos a través del servicio normal.
         // Cada grupo usa a su propio coordinador como actor creador.
         $grupos = [
             [
@@ -360,10 +405,9 @@ final class InvestigacionDemoSeeder extends Seeder
             ],
         ];
 
-        $proyectos = [];
+        $gruposCreados = [];
         foreach ($grupos as $grupo) {
-            $actorGrupo = app(AccesoInvestigacionService::class)
-                ->resolver($cuentas[$grupo['coordinador']]['user']);
+            $actorGrupo = $acceso->resolver($cuentas[$grupo['coordinador']]['user']);
 
             $resultado = $gruposService->crear($actorGrupo, $seccionCompleta, [
                 'nombre' => $grupo['nombre'],
@@ -374,23 +418,31 @@ final class InvestigacionDemoSeeder extends Seeder
                     },
                     $grupo['integrantes'],
                 ),
-                'id_linea' => (int) $idLinea,
-                'id_tipo_producto' => (int) $idTipoProducto,
+                'id_linea' => $idLinea,
+                'id_tipo_producto' => $idTipoProducto,
             ]);
-            $proyectos[] = (int) $resultado->id_proyecto;
+
+            $gruposCreados[$grupo['nombre']] = [
+                'id_grupo' => (int) $resultado->id_grupo,
+                'id_proyecto' => (int) $resultado->id_proyecto,
+            ];
         }
 
-        // 2. Crear entregas y evaluaciones para cada proyecto (unidades 1, 2, 3)
+        // 2. Fixtures de entrega y archivo. El módulo no tiene escritura de
+        // entregas en producción; solo se insertan estas filas de soporte.
         $idModulo = DB::table('seguridad.modulo_sistema')
             ->where('codigo', 'investigacion_formativa')
             ->value('id_modulo');
+
+        if ($idModulo === null) {
+            throw new RuntimeException('No se encontró el módulo Investigación Formativa.');
+        }
 
         $entregables = DB::table('investigacion_formativa.entregable')
             ->where('id_seccion', $seccionCompleta)
             ->orderBy('orden')
             ->get(['id_entregable', 'orden']);
 
-        // Obtener los criterios de la rúbrica de la sección para crear evaluaciones válidas
         $idRubrica = DB::table('investigacion_formativa.seccion_configuracion')
             ->where('id_seccion', $seccionCompleta)
             ->value('id_rubrica');
@@ -405,16 +457,25 @@ final class InvestigacionDemoSeeder extends Seeder
             ->pluck('id_criterio')
             ->all();
 
-        foreach ($proyectos as $indiceProyecto => $idProyecto) {
+        $entregasCreadas = 0;
+        $evaluacionesCreadas = 0;
+
+        foreach ($grupos as $indiceGrupo => $grupo) {
+            $idProyecto = $gruposCreados[$grupo['nombre']]['id_proyecto'];
+            $idUsuarioSubida = (int) $cuentas[$grupo['coordinador']]['id_usuario'];
+            $nivel = $indiceGrupo === 0 ? 4 : 3;
+
             foreach ($entregables as $entregable) {
+                $nombreArchivo = 'muestra-proyecto-'.$idProyecto.'-u'.(int) $entregable->orden.'.pdf';
                 $idArchivo = DB::table('comun.archivo')->insertGetId([
                     'id_modulo' => (int) $idModulo,
-                    'nombre_original' => 'muestra-proyecto-'.$idProyecto.'-u'.(int) $entregable->orden.'.pdf',
-                    'ruta_almacenamiento' => 'investigacion-formativa/test/muestra-proyecto-'.$idProyecto.'-u'.(int) $entregable->orden.'.pdf',
+                    'nombre_original' => $nombreArchivo,
+                    'ruta_almacenamiento' => 'investigacion-formativa/test/'.$lote.'/'.$nombreArchivo,
                     'tipo_mime' => 'application/pdf',
-                    'tamano_bytes' => 1024,
-                    'hash_sha256' => str_repeat('a', 64),
-                    'subido_por' => $cuentas['coordinador']['user']->id,
+                    // El fixture no tiene archivo almacenado: tamaño cero y sin hash.
+                    'tamano_bytes' => 0,
+                    'hash_sha256' => null,
+                    'subido_por' => $idUsuarioSubida,
                 ], 'id_archivo');
 
                 $idEntrega = DB::table('investigacion_formativa.entrega')->insertGetId([
@@ -423,9 +484,8 @@ final class InvestigacionDemoSeeder extends Seeder
                     'version' => 1,
                     'id_archivo' => (int) $idArchivo,
                 ], 'id_entrega');
+                $entregasCreadas++;
 
-                // Evaluar con notas variadas para generar diferentes promedios
-                $nivel = $indiceProyecto === 0 ? 4 : ($indiceProyecto === 1 ? 3 : 2);
                 $niveles = [];
                 foreach ($criteriosIds as $idCriterio) {
                     $niveles[] = ['id_criterio' => (int) $idCriterio, 'nivel' => $nivel];
@@ -440,77 +500,86 @@ final class InvestigacionDemoSeeder extends Seeder
                     ['Observación de demostración generada automáticamente.'],
                     0,
                 );
+                $evaluacionesCreadas++;
             }
         }
 
-        // 3. Decisiones de aprobación y selección para proyectos completos
-        foreach ($proyectos as $idProyecto) {
-            $decisionService->aprobar($actor, $idProyecto, 0);
+        // 3. Solo el modo showcase registra decisiones docentes.
+        $aprobaciones = 0;
+        $seleccion = null;
+
+        if ($modo === 'showcase') {
+            foreach ($gruposCreados as $grupoCreado) {
+                $decisionService->aprobar($actor, $grupoCreado['id_proyecto'], 0);
+                $aprobaciones++;
+            }
+
+            if ($gruposCreados !== []) {
+                $primerProyecto = $gruposCreados['Grupo Alfa']['id_proyecto'];
+                $decisionService->seleccionar($actor, $primerProyecto, 0);
+                $seleccion = $primerProyecto;
+            }
         }
 
-        // Seleccionar solo el primer proyecto como trabajo destacado
-        if ($proyectos !== []) {
-            $decisionService->seleccionar($actor, $proyectos[0], 0);
-        }
-
-        // 4. Crear y publicar encuesta, luego agregar respuestas de estudiantes
-        $actorDirector = app(AccesoInvestigacionService::class)
-            ->resolver($cuentas['director-a']['user']);
+        // 4. Crear y publicar la encuesta; registrar respuestas por servicio.
+        $actorDirector = $acceso->resolver($cuentas['director-a']['user']);
 
         $encuestaResultado = $encuestaService->guardarBorrador(
             $actorDirector,
             $seccionCompleta,
             [
-                '¿El trabajo de investigación fortalece la formación profesional?',
+                'Satisfacción general con la experiencia de investigación formativa',
                 '¿La orientación del docente responsable fue clara y oportuna?',
             ],
             0,
         );
 
-        $encuestaModel = Encuesta::query()->find((int) $encuestaResultado->id_encuesta);
+        $encuestaModel = Encuesta::query()->findOrFail((int) $encuestaResultado->id_encuesta);
         $encuestaService->publicar($actorDirector, $encuestaModel, (int) $encuestaResultado->version);
 
-        $encuesta = DB::table('investigacion_formativa.encuesta')
-            ->where('id_seccion', $seccionCompleta)
-            ->where('estado', 'publicada')
-            ->first();
+        $preguntas = $encuestaService->vistaGestor($seccionCompleta)->preguntas;
 
-        $preguntas = DB::table('investigacion_formativa.encuesta_pregunta')
-            ->where('id_encuesta', (int) $encuesta->id_encuesta)
-            ->orderBy('orden')
-            ->get(['id_pregunta']);
+        $respuestasMuestra = [
+            'coordinador' => ['valores' => [5, 4], 'comentario' => 'Respuesta de muestra del estudiante coordinador.'],
+            'integrante' => ['valores' => [4, 5], 'comentario' => 'Respuesta de muestra del estudiante integrante.'],
+            'segundo-grupo' => ['valores' => [3, 4], 'comentario' => 'Respuesta de muestra del estudiante segundo-grupo.'],
+        ];
 
-        foreach (['coordinador', 'integrante', 'segundo-grupo'] as $nombreEstudiante) {
-            if (! isset($estudiantes[$nombreEstudiante])) {
-                continue;
-            }
-            $idEstudiante = (int) $estudiantes[$nombreEstudiante];
-            $yaResponde = DB::table('investigacion_formativa.encuesta_respuesta')
-                ->where('id_encuesta', (int) $encuesta->id_encuesta)
-                ->where('id_estudiante', $idEstudiante)
-                ->exists();
-            if ($yaResponde) {
-                continue;
+        $respuestasCreadas = 0;
+        foreach ($respuestasMuestra as $nombreEstudiante => $respuestaMuestra) {
+            if (count($preguntas) !== count($respuestaMuestra['valores'])) {
+                throw new RuntimeException('Las respuestas de demostración no coinciden con las preguntas publicadas.');
             }
 
-            $idRespuesta = DB::table('investigacion_formativa.encuesta_respuesta')->insertGetId([
-                'id_encuesta' => (int) $encuesta->id_encuesta,
-                'id_estudiante' => $idEstudiante,
-                'comentario' => 'Respuesta de muestra del estudiante '.$nombreEstudiante,
-                'respondida_en' => now('UTC')->format('Y-m-d H:i:sP'),
-            ], 'id_respuesta');
+            $respuestas = [];
+            foreach ($preguntas as $indice => $pregunta) {
+                $respuestas[] = [
+                    'id_pregunta' => $pregunta->id_pregunta,
+                    'valor' => $respuestaMuestra['valores'][$indice],
+                ];
+            }
 
-            $valor = 1;
-            foreach ($preguntas as $pregunta) {
-                DB::table('investigacion_formativa.encuesta_respuesta_item')->insert([
-                    'id_encuesta' => (int) $encuesta->id_encuesta,
-                    'id_respuesta' => (int) $idRespuesta,
-                    'id_pregunta' => (int) $pregunta->id_pregunta,
-                    'valor' => $valor,
-                ]);
-                $valor = $valor === 5 ? 1 : $valor + 1;
+            $actorEstudiante = $acceso->resolver($cuentas[$nombreEstudiante]['user']);
+            $resultado = $encuestaService->responder(
+                $actorEstudiante,
+                $encuestaModel,
+                $respuestas,
+                $respuestaMuestra['comentario'],
+            );
+
+            if (! $resultado->ya_respondida) {
+                $respuestasCreadas++;
             }
         }
+
+        return [
+            'grupos' => $gruposCreados,
+            'entregas' => $entregasCreadas,
+            'evaluaciones' => $evaluacionesCreadas,
+            'respuestas' => $respuestasCreadas,
+            'aprobaciones' => $aprobaciones,
+            'seleccion' => $seleccion,
+        ];
     }
 
     private function insertar(string $tabla, string $clave, array $datos): int
