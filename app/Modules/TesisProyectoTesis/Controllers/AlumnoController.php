@@ -179,14 +179,14 @@ final class AlumnoController extends BaseController
             return response()->json(['encontrado' => false, 'mensaje' => 'No se encontró un estudiante activo con ese código.'], 404);
         }
 
-        $ocupado = $this->proyectos->tieneProyectoActivo($e['id']);
+        $motivo = $this->proyectos->motivoCoautorNoDisponible($e['id']);
 
         return response()->json([
             'encontrado' => true,
             'nombre' => $e['nombre'],
             'codigo' => $e['codigo'],
-            'disponible' => ! $ocupado,
-            'mensaje' => $ocupado ? 'Este estudiante ya tiene un proyecto activo.' : 'Disponible para integrar el proyecto.',
+            'disponible' => $motivo === null,
+            'mensaje' => $motivo ?? 'Disponible para integrar el proyecto.',
         ]);
     }
 }

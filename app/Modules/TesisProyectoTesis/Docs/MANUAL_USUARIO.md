@@ -115,6 +115,7 @@ El formulario sigue el formato F1 de la Escuela.
 3. Si trabajas con un compañero, escribe su **código universitario** en «Coautor» y pulsa **Buscar**. Un proyecto puede tener como máximo 2 estudiantes.
    - Si está disponible, aparece un recuadro verde con su nombre y el texto «Se agregará como integrante 2 al registrar el proyecto». **No hay que pulsar otro botón**: quedará incluido cuando pulses **Registrar proyecto** al final.
    - Si te equivocaste de compañero, pulsa **Quitar** en ese recuadro y el campo queda vacío.
+   - No puede ser coautor quien ya tiene un proyecto activo («Este estudiante ya tiene un proyecto activo.») ni quien ya tiene su tesis aprobada («Este estudiante ya tiene su tesis aprobada.»).
 4. **Cronograma de actividades**: anota las actividades de tu investigación (por ejemplo, revisión bibliográfica, diseño, desarrollo, análisis de datos, evaluación y redacción del informe), **no** las etapas del trámite. Para cada una indica el inicio, el término y cuántas **horas por semana** le dedicarás. Con **+ Agregar actividad** sumas filas; la duración total aparece arriba de la tabla.
 5. **Recursos y presupuesto** (una sola tabla). Por cada recurso indica:
    - el tipo (**Bienes** o **Servicios**) y la descripción;
@@ -391,6 +392,7 @@ Los votos de cada uno se muestran recién cuando están los tres.
 | «No puedes agregarte a ti mismo como coautor.» | Deja el campo vacío si trabajas solo. |
 | Junto al nombre de tu coautor aparece un aviso en rojo | Ya tiene otro proyecto activo. Un estudiante solo puede tener uno. |
 | «En el estado actual del proyecto (…) no se reciben entregas.» | Espera a que tu asesor sea designado o a que termine la etapa en curso. |
+| «Este estudiante ya tiene su tesis aprobada.» (coautor) | Quien ya aprobó su tesis no puede integrar otro proyecto. Elige otro compañero o registra el proyecto sin coautor. |
 | «Elige una entrega de tu proyecto posterior a la observada.» | Adjunta el documento corregido en la respuesta o elige una versión posterior a la observada. |
 | «No adjuntaste el documento corregido ni elegiste una versión…» (aviso amarillo) | Tu respuesta se envió. Si ya corregiste el documento, vuelve a responder adjuntándolo o eligiendo la versión. |
 | «Describe el diseño de contrastación cuando eliges «Otro».» | Escribe el diseño en el campo que aparece debajo. |

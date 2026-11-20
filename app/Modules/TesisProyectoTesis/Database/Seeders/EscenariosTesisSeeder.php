@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\DB;
  * SOLO DESARROLLO Y PRUEBAS. Deja once proyectos PT-DEMO-NN en distintos puntos del flujo,
  * cada uno con sus PDF de ejemplo reales y el aviso de la acción pendiente.
  * Idempotente: al volver a ejecutarlo borra los PT-DEMO-* y los proyectos que las cuentas de los
- * escenarios (nuevo@, est01…11@) crearon durante un ensayo, con sus archivos y avisos, y recrea los PT-DEMO-*.
+ * escenarios (nuevo@, coautor@, est01…11@) crearon o integraron durante un ensayo, con sus archivos y avisos, y recrea los PT-DEMO-*.
  * No toca los proyectos de las demás cuentas (p. ej. PT-2026-001 de alumno@portal.local).
  *
  * php artisan db:seed --class="App\Modules\TesisProyectoTesis\Database\Seeders\EscenariosTesisSeeder"
@@ -50,6 +50,8 @@ final class EscenariosTesisSeeder extends Seeder
     /** Cuentas de estudiante de los escenarios: correo => [nombres, paterno, materno, código, dni]. */
     public const ESTUDIANTES = [
         'nuevo@portal.local' => ['Valeria', 'Campos', 'Rojas', '1027005001', '7100000'],
+        // Sin proyecto: coautor libre para la demo (el reinicio borra cualquier proyecto de ensayo donde figure).
+        'coautor@portal.local' => ['Paula', 'Ríos', 'Castro', '1027005002', '7100012'],
         'est01@portal.local' => ['Kevin', 'Aguilar', 'Ríos', '1027005011', '7100001'],
         'est02@portal.local' => ['Sofía', 'Benites', 'León', '1027005012', '7100002'],
         'est03@portal.local' => ['Marco', 'Gutiérrez', 'Paz', '1027005013', '7100003'],

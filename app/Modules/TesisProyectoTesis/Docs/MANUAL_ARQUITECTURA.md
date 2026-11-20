@@ -400,7 +400,7 @@ Con Turnitin > 21 % el proyecto **no cambia de estado**: la entrega queda Observ
 | `TipoSolicitudSeeder` | Todos | Designación de asesor, Designación de jurado, Programación de sustentación |
 | `DemoTesisSeeder` | Solo `local`/`testing` | Facultad, escuela, periodo, líneas, ambientes y cuentas `*@portal.local` (inserta en `core`, `seguridad` y `public`) |
 | `LineasInvestigacionSeeder` | Solo `local`/`testing` | Preparado para la lista oficial de líneas (`LINEAS`, vacía por ahora). En producción las carga gestión en `core` |
-| `EscenariosTesisSeeder` | Solo `local`/`testing` | 11 proyectos `PT-DEMO-01…11` en cada punto del flujo, con PDF reales y avisos. Idempotente: además borra los proyectos de ensayo de las cuentas `nuevo@` y `est01…11@` y conserva los de otras cuentas (ver [Manual de flujos](MANUAL_FLUJOS.md#escenarios-pt-demo)) |
+| `EscenariosTesisSeeder` | Solo `local`/`testing` | 11 proyectos `PT-DEMO-01…11` en cada punto del flujo, con PDF reales y avisos. Idempotente: además borra los proyectos de ensayo de las cuentas `nuevo@`, `coautor@` y `est01…11@` y conserva los de otras cuentas (ver [Manual de flujos](MANUAL_FLUJOS.md#escenarios-pt-demo)) |
 
 ```bash
 # Rúbrica, tipos y demo
@@ -418,7 +418,7 @@ Siembra **dentro** del contenedor `app` y como `www-data`, para que los PDF qued
 
 | Suite | Cantidad |
 |---|---|
-| `tests/Feature/TesisProyectoTesis/` | 18 archivos de prueba (más el ayudante `EnviaFormularios`), 104 pruebas |
+| `tests/Feature/TesisProyectoTesis/` | 18 archivos de prueba (más el ayudante `EnviaFormularios`), 106 pruebas |
 | `tests/Unit/TesisProyectoTesis/` | 1 archivo, 2 pruebas |
 | `tests/Unit/ModuleStructureTest.php`, `ModuleSchemaIsolationTest.php` | Aislamiento entre módulos (globales) |
 

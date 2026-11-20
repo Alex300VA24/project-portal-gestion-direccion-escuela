@@ -167,6 +167,24 @@ final class RegistroProyectoTest extends TesisTestCase
             ->assertSessionHasNoErrors();
     }
 
+    public function test_estudiante_con_tesis_aprobada_no_puede_ser_coautor(): void
+    {
+        $this->proyecto(['alumno2@portal.local'], Estados::TESIS_APROBADA, Estados::ETAPA_TESIS);
+
+        $this->como('alumno@portal.local')->getJson(route('tesis-proyecto-tesis.alumno.coautor', ['codigo' => '1027004588']))
+            ->assertOk()
+            ->assertExactJson(['encontrado' => true, 'nombre' => 'Diego Salazar Vega', 'codigo' => '1027004588', 'disponible' => false, 'mensaje' => 'Este estudiante ya tiene su tesis aprobada.']);
+
+        $this->como('alumno@portal.local')->post(route('tesis-proyecto-tesis.alumno.proyecto.guardar'), $this->datos())
+            ->assertSessionHasErrors(['coautor_codigo' => 'Este estudiante ya tiene su tesis aprobada.']);
+        $this->assertSame(1, Proyecto::count(), 'No se registra el proyecto.');
+
+        // Un retiro (integrante inactivo) no cuenta: solo la tesis aprobada como integrante activo.
+        DB::table('tesis.proyecto_estudiante')->where('id_estudiante', $this->idEstudiante('alumno2@portal.local'))->update(['estado' => 'Retirado']);
+        $this->como('alumno@portal.local')->getJson(route('tesis-proyecto-tesis.alumno.coautor', ['codigo' => '1027004588']))
+            ->assertOk()->assertJson(['disponible' => true]);
+    }
+
     public function test_busqueda_de_coautor_devuelve_solo_datos_minimos(): void
     {
         $this->como('alumno@portal.local')->getJson(route('tesis-proyecto-tesis.alumno.coautor', ['codigo' => '1027004588']))

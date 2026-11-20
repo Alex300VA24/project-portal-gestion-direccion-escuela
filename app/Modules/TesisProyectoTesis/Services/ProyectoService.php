@@ -21,6 +21,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class ProyectoService
 {
+    public const MENSAJE_TESIS_APROBADA = 'Este estudiante ya tiene su tesis aprobada.';
+
     public function __construct(
         private readonly IdentidadService $identidad,
         private readonly CatalogoService $catalogo,
@@ -54,6 +56,27 @@ final class ProyectoService
             ->where('tesis.proyecto_estudiante.estado', 'Activo')
             ->whereNotIn('p.estado', Estados::FINALES)
             ->exists();
+    }
+
+    /** El estudiante integra un proyecto con la tesis aprobada: ya no puede ser coautor de otro (D72). */
+    public function tieneTesisAprobada(int $idEstudiante): bool
+    {
+        return ProyectoEstudiante::query()
+            ->join('tesis.proyecto_tesis as p', 'p.id_proyecto', '=', 'tesis.proyecto_estudiante.id_proyecto')
+            ->where('tesis.proyecto_estudiante.id_estudiante', $idEstudiante)
+            ->where('tesis.proyecto_estudiante.estado', 'Activo')
+            ->where('p.estado', Estados::TESIS_APROBADA)
+            ->exists();
+    }
+
+    /** Motivo por el que un estudiante no puede ser coautor, o null si está disponible. */
+    public function motivoCoautorNoDisponible(int $idEstudiante): ?string
+    {
+        return match (true) {
+            $this->tieneProyectoActivo($idEstudiante) => 'Este estudiante ya tiene un proyecto activo.',
+            $this->tieneTesisAprobada($idEstudiante) => self::MENSAJE_TESIS_APROBADA,
+            default => null,
+        };
     }
 
     /**
@@ -108,6 +131,9 @@ final class ProyectoService
                             ? 'Ya tienes un proyecto de tesis activo.'
                             : 'El coautor ya tiene un proyecto de tesis activo.',
                     ]);
+                }
+                if ($i > 0 && $this->tieneTesisAprobada($id)) {
+                    throw ValidationException::withMessages(['coautor_codigo' => self::MENSAJE_TESIS_APROBADA]);
                 }
             }
 

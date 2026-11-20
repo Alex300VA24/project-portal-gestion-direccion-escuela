@@ -160,6 +160,25 @@ final class EscenariosNotificacionesTest extends TesisTestCase
         $this->como('nuevo@portal.local')->get(route('tesis-proyecto-tesis.alumno.panel'))->assertSee('Aún no registras tu proyecto de tesis');
     }
 
+    public function test_coautor_demo_queda_libre_tras_cada_reinicio(): void
+    {
+        $this->seed(EscenariosTesisSeeder::class);
+        $buscar = fn () => $this->como('nuevo@portal.local')->getJson(route('tesis-proyecto-tesis.alumno.coautor', ['codigo' => '1027005002']));
+
+        $buscar()->assertOk()->assertExactJson(['encontrado' => true, 'nombre' => 'Paula Ríos Castro', 'codigo' => '1027005002', 'disponible' => true, 'mensaje' => 'Disponible para integrar el proyecto.']);
+        $this->assertTrue($this->user('coautor@portal.local')->hasRole('alumno'));
+
+        // Ensayo: nuevo@ registra con coautor@; mientras tanto ya no está disponible.
+        $ensayo = $this->proyecto(['nuevo@portal.local', 'coautor@portal.local']);
+        $buscar()->assertOk()->assertJson(['disponible' => false, 'mensaje' => 'Este estudiante ya tiene un proyecto activo.']);
+
+        $this->seed(EscenariosTesisSeeder::class);
+
+        $this->assertNull(Proyecto::query()->find($ensayo->id_proyecto));
+        $this->assertSame(0, DB::table('tesis.proyecto_estudiante')->where('id_estudiante', $this->idEstudiante('coautor@portal.local'))->count(), 'coautor@ no integra ningún proyecto.');
+        $buscar()->assertOk()->assertJson(['disponible' => true]);
+    }
+
     public function test_reiniciar_borra_tambien_el_oficio_de_la_solicitud(): void
     {
         $this->seed(EscenariosTesisSeeder::class);

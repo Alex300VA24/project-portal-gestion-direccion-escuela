@@ -66,8 +66,8 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 **Reglas para repetir los casos**
 
 - El seeder es **idempotente**. Cada vez que se ejecuta:
-  - borra los proyectos `PT-DEMO-*` y los proyectos de ensayo de las cuentas de los escenarios (`nuevo@`, `est01…11@`), con sus PDF y avisos; por ejemplo, el `PT-2026-002` que registró `nuevo@` durante un ensayo;
-  - vuelve a crear los `PT-DEMO-*`, así `nuevo@` queda otra vez sin proyecto;
+  - borra los proyectos `PT-DEMO-*` y los proyectos de ensayo de las cuentas de los escenarios (`nuevo@`, `coautor@`, `est01…11@`), con sus PDF y avisos; por ejemplo, el `PT-2026-002` que registró `nuevo@` durante un ensayo;
+  - vuelve a crear los `PT-DEMO-*`, así `nuevo@` y `coautor@` quedan otra vez sin proyecto;
   - no toca los proyectos de las demás cuentas, como el `PT-2026-001` de `alumno@`.
 - Vuelve a sembrar **antes de cada caso** que cambie el estado de un escenario. Por ejemplo, después de F-04 el escenario PT-DEMO-05 ya no sirve para F-05.
 - Las fechas de las sustentaciones son relativas al día de la siembra: PT-DEMO-10 está programada **hoy** a las 09:00 y PT-DEMO-11 fue **ayer**. Si cambias de día, vuelve a sembrar.
@@ -86,6 +86,7 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
 | `jurado3@portal.local` | profesor | Vocal del jurado en los PT-DEMO |
 | `profesor@portal.local` | profesor | Docente sin asignaciones |
 | `nuevo@portal.local` | alumno | Estudiante sin proyecto |
+| `coautor@portal.local` | alumno | Paula Ríos Castro, código `1027005002`: coautor libre para la demo (sin proyecto; cada reinicio lo deja libre) |
 | `est01@` … `est11@portal.local` | alumno | Autor del escenario PT-DEMO-01 … PT-DEMO-11 |
 | `alumno3@portal.local` | alumno | Coautor de PT-DEMO-03 |
 
@@ -606,8 +607,12 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 - Paso 5: la ficha muestra «Otro: Investigación tecnológica», 6 meses, el cronograma y la tabla con los mismos totales.
 - Paso 6: la ficha del asesor y la del Director (con «← Volver a Todos los proyectos») muestran los datos del F1 y los totales (PT-DEMO-04: bienes S/ 28.00, servicios S/ 465.00, total S/ 493.00).
 - Errores en español: horas vacías, «Otro» sin describir, código con letras, cronograma de más de 36 meses.
+- Coautor (campo «Coautor» → **Buscar**):
+  - `1027005002` (coautor@, Paula Ríos Castro): recuadro verde, «Se agregará como integrante 2…».
+  - `1027005013` (est03, con PT-DEMO-03 activo): «Marco Gutiérrez Paz · Este estudiante ya tiene un proyecto activo.»
+  - Un estudiante con la tesis aprobada: «… · Este estudiante ya tiene su tesis aprobada.» Si se fuerza el envío, el registro se rechaza con el mismo mensaje.
 
-**Pruebas automáticas:** `FormatoF1Test` (las cuatro pruebas), `RegistroProyectoTest::test_alumno_registra_proyecto_con_coautor`, `test_validacion_de_campos_obligatorios_y_formato`.
+**Pruebas automáticas:** `FormatoF1Test` (las cuatro pruebas), `RegistroProyectoTest::test_alumno_registra_proyecto_con_coautor`, `test_estudiante_con_tesis_aprobada_no_puede_ser_coautor`, `test_validacion_de_campos_obligatorios_y_formato`, `EscenariosNotificacionesTest::test_coautor_demo_queda_libre_tras_cada_reinicio`.
 
 ---
 
@@ -751,7 +756,7 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 ## Pruebas automáticas
 
 ```bash
-vendor/bin/phpunit --filter=TesisProyectoTesis           # 106 pruebas del módulo
+vendor/bin/phpunit --filter=TesisProyectoTesis           # 108 pruebas del módulo
 vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre módulos
 ```
 
@@ -762,7 +767,7 @@ vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre mó
 | Archivo | Qué cubre |
 |---|---|
 | `BaseModuloTest` | Migraciones, rúbrica, seeders, identidad, uuid, Policy, portada, descargas, historial, API |
-| `RegistroProyectoTest` | Registro F1, coautor, proyecto activo único, panel del estudiante |
+| `RegistroProyectoTest` | Registro F1, coautor (sin proyecto activo ni tesis aprobada), proyecto activo único, panel del estudiante |
 | `DesignacionAsesorTest` | Solicitud al Decanato, resolución, autorización del Director y la Secretaría |
 | `AvancesRevisionTest` | Avances, revisión, respuesta y levantamiento, accesos cruzados |
 | `VerificacionAsesorTest` | Rúbrica del asesor, Turnitin, límites |
