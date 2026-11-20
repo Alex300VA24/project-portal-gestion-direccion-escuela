@@ -119,6 +119,38 @@ El tablero de dirección acepta `escuela`, `periodo`, `curso` y `linea`. El filt
 
 Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos son estadística descriptiva; no son los tres indicadores oficiales de Calidad ni un indicador de satisfacción. Si la base es cero, no se calcula un porcentaje.
 
+## Indicadores oficiales de Calidad (datos de muestra provisionales)
+
+Los tres indicadores oficiales de Calidad se proporcionan como datos de muestra procedentes de la "antigua" currícula. Son entradas de muestra que deben ser sustituidas por la fuente académica autorizada; el módulo no los calcula ni los valida como métricas institucionales. El tablero de dirección sigue siendo estadística descriptiva independiente de estos indicadores.
+
+### Indicador 3.1 — Experiencias curriculares con investigación formativa
+
+**Definición:** Porcentaje de experiencias curriculares que aplican la investigación formativa como estrategia de enseñanza-aprendizaje, sobre el total de experiencias curriculares implementadas.
+
+**Fórmula:** `(N° de experiencias curriculares que aplican la investigación formativa / N° total de experiencias curriculares implementadas) × 100`
+
+**Alcance:** Solo sobre las experiencias curriculares que aplican la estrategia.
+
+**Estado:** Dato de muestra. No implementado como cálculo del módulo; no equívale a la nota final ni al promedio del curso.
+
+### Indicador 3.2 — Satisfacción estudiantil con estrategias de investigación formativa
+
+**Definición:** Porcentaje de estudiantes satisfechos y muy satisfechos con las estrategias de enseñanza-aprendizaje basadas en investigación formativa, por experiencia curricular.
+
+**Fórmula:** `(N° de estudiantes satisfechos + muy satisfechos con las estrategias de enseñanza-aprendizaje / N° total de estudiantes encuestados de cada experiencia curricular) × 100`
+
+**Alcance:** Por experiencia curricular.
+
+**Estado:** Dato de muestra. No implementado como cálculo del módulo; los comentarios de encuesta del módulo se excluyen del reporte PDF por confidencialidad y no se agregan como satisfacción institucional.
+
+### Indicador 3.3 — Nivel de logro de competencias del perfil de egreso relacionadas con investigación
+
+**Definición:** Informe de los docentes responsables de experiencias curriculares con responsabilidad directa en el desarrollo de capacidades/competencias relacionadas con la investigación.
+
+**Base:** Matriz de Competencia, unidades de competencia, elementos de competencia y experiencias curriculares establecida en el currículo.
+
+**Estado:** Dato de muestra. No implementado como cálculo del módulo; la nota final del módulo no se usa como nivel de logro de competencia y no se infiere aprobación académica de las mismas.
+
 ## Exportación a PDF de resultados
 
 El director puede descargar el reporte de una sección como PDF desde «Ver resultados». El servicio `Services/ReportePdfService.php` genera el documento con dompdf a partir de los datos ya calculados por `ReporteService`.

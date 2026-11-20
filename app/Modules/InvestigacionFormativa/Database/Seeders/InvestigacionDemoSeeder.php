@@ -107,6 +107,27 @@ final class InvestigacionDemoSeeder extends Seeder
                 'nombre' => 'Línea de demostración '.$codigo, 'estado' => 'Activo',
             ]);
         }
+
+        // Líneas de investigación oficiales de la "antigua" currícula.
+        // Datos de muestra proporcionados por el propietario del proyecto.
+        // Son un reemplazo candidato: las líneas oficiales definitivas deben
+        // suministrarse por la fuente académica autorizada y estas filas de
+        // demostración deben ser sustituidas, no combinadas con las oficiales.
+        foreach ([
+            'Algoritmos y complejidad',
+            'Ingeniería de software',
+            'Administración de la información',
+            'Sistemas inteligentes',
+            'Arquitectura de computadoras, redes y comunicaciones',
+            'Gráficos, visualización e interacción humano-computador',
+        ] as $orden => $nombre) {
+            $this->insertar('core.linea_investigacion', 'id_linea', [
+                'id_escuela' => $escuelas[0],
+                'codigo' => 'IF-ANT-'.str_pad($orden + 1, 2, '0', STR_PAD_LEFT),
+                'nombre' => $nombre,
+                'estado' => 'Activo',
+            ]);
+        }
         $this->insertar('investigacion_formativa.tipo_producto', 'id_tipo_producto', ['nombre' => 'Informe de demostración '.$lote]);
 
         $cuentas = [];
