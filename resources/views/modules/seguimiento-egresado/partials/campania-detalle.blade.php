@@ -57,7 +57,7 @@
       @csrf
       <button class="sg-button sg-button-secondary" type="submit" @disabled($cerrada || $pendientesConvocables === 0)>
         @include('modules.seguimiento-egresado.partials.icon', ['name' => 'mail'])
-        <span>Recordar a {{ $pendientesConvocables === 1 ? 'el pendiente' : 'los '.$pendientesConvocables.' pendientes' }}</span>
+        <span>Recordar {{ $pendientesConvocables === 1 ? 'al pendiente' : 'a los '.$pendientesConvocables.' pendientes' }}</span>
       </button>
     </form>
   @endif

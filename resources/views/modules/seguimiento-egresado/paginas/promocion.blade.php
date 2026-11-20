@@ -87,7 +87,7 @@
     <div><dt>Total de ingresantes</dt><dd>{{ $promocion->total_ingresantes }}</dd></div>
     <div><dt>Plan de estudios</dt><dd>{{ $promocion->planCurricular?->codigo_version ?? '—' }}</dd></div>
   </dl>
-  <button type="button" class="sg-button sg-button-secondary" onclick="abrirEditarPromocion(@js($datosPromocion))">Editar</button>
+  @if($puedeGestionar)<button type="button" class="sg-button sg-button-secondary" onclick="abrirEditarPromocion(@js($datosPromocion))">Editar</button>@endif
 </section>
 
 {{-- PASO 2 · CARGAR ALUMNOS --}}
@@ -98,6 +98,9 @@
     <span class="sg-paso-estado sg-badge {{ $hecho[2] ? 'sg-badge-success' : 'sg-badge-warning' }}">{{ $hecho[2] ? $avance['total'].' cargados' : 'Te toca' }}</span>
   </div>
   <p class="sg-help" style="margin-bottom: var(--sg-space-3);">Sube el archivo (CSV o Excel) con los alumnos que ya cumplen para egresar. <strong>Todos quedan unidos a la Promoción {{ $promocion->anio_ingreso }}.</strong> Si una fila tiene un problema no se guarda ninguna, y se te dice cuál corregir.</p>
+  @unless($puedeGestionar)
+    <p class="sg-help">Solo la Secretaría carga a los alumnos. Aquí puedes consultar cuántos hay.</p>
+  @else
   <form method="POST" action="{{ route('seguimiento-egresado.padron.importar') }}" enctype="multipart/form-data" class="sg-fila-form">
     @csrf
     <input type="hidden" name="promocion" value="{{ $promocion->id }}">
@@ -108,6 +111,7 @@
     <button type="submit" class="sg-button">{{ $hecho[2] ? 'Cargar más alumnos' : 'Cargar alumnos' }}</button>
     <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.padron.plantilla') }}">Descargar el formato modelo</a>
   </form>
+  @endunless
   <p class="sg-help" style="margin-top: var(--sg-space-2);">Cada alumno necesita matrícula, documento, nombres, apellido paterno y correo institucional.</p>
 </section>
 
@@ -122,7 +126,10 @@
   @if($avance['con_avance'] && $avance['fecha_limite'])
     <p class="sg-help" style="margin-bottom: var(--sg-space-3);">Fecha límite actual: <strong>{{ $fecha($avance['fecha_limite']) }}</strong>. Puedes enviar enlaces a quienes aún no tienen uno.</p>
   @endif
-  @unless($bloqueado[3])
+  @if(! $puedeGestionar)
+    <p class="sg-help">Solo la Secretaría envía los enlaces. Abajo ves quién ya completó su contacto.</p>
+  @endif
+  @unless($bloqueado[3] || ! $puedeGestionar)
     <form method="POST" action="{{ route('seguimiento-egresado.padron.contacto-inicial.cohorte') }}" class="sg-fila-form"
           data-sg-confirmar="Se enviará un enlace a cada alumno de la promoción que aún no dejó su contacto. ¿Continuar?">
       @csrf
@@ -229,12 +236,14 @@
                   @if($fila['estado'] === 'completo')
                     <span class="sg-badge sg-badge-success">✓ Contacto completado</span>
                   @else
+                    @if($puedeGestionar)
                     <form method="POST" action="{{ route('seguimiento-egresado.padron.contacto-inicial.egresado', $alumno->id) }}">
                       @csrf
                       <input type="hidden" name="q" value="{{ $filtros['q'] }}">
                       <input type="hidden" name="estado" value="{{ $filtros['estado'] }}">
                       <button type="submit" class="sg-button sg-button-secondary">{{ $fila['estado'] === 'sin_enlace' ? 'Generar enlace' : 'Enlace nuevo' }}</button>
                     </form>
+                    @endif
                     <span class="sg-help" style="display: block; margin-top: 4px; color: var(--sg-danger);">Aún no debería egresar</span>
                   @endif
                 </td>

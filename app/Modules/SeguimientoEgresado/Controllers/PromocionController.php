@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\SeguimientoEgresado\Models\Cohorte;
 use App\Modules\SeguimientoEgresado\Models\Egresado;
 use App\Modules\SeguimientoEgresado\Models\PlanCurricular;
+use App\Modules\SeguimientoEgresado\Services\Accesos\SesionAcceso;
 use App\Modules\SeguimientoEgresado\Services\Invitaciones\ContactoInicialService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -26,7 +27,14 @@ final class PromocionController extends Controller
         return view('modules.seguimiento-egresado.paginas.promociones', [
             'avances' => $this->contactoInicial->avancePorPromocion(),
             'planes' => PlanCurricular::orderBy('vigencia_desde')->get(['id', 'codigo_version', 'estado']),
+            'puedeGestionar' => $this->puedeGestionar(),
         ]);
+    }
+
+    /** Solo la Secretaría escribe en el padrón; la Dirección lo consulta, así que no se le ofrecen botones que no puede usar. */
+    private function puedeGestionar(): bool
+    {
+        return (bool) SesionAcceso::desde(request())->actual()?->puede('padron.gestionar');
     }
 
     public function show(Request $request, Cohorte $promocion): View
@@ -63,6 +71,7 @@ final class PromocionController extends Controller
             'planes' => PlanCurricular::orderBy('vigencia_desde')->get(['id', 'codigo_version', 'estado']),
             'fechaLimiteSugerida' => now()->addDays(max(1, (int) config('seguimiento-egresado.correo.dias_contacto_inicial')))->toDateString(),
             'filtros' => ['q' => $filtros['q'] ?? '', 'estado' => $estado],
+            'puedeGestionar' => $this->puedeGestionar(),
         ]);
     }
 }

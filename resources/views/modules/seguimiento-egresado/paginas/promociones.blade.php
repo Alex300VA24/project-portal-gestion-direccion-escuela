@@ -22,7 +22,7 @@
   <h1 id="sg-promociones-title">Padrón y promociones</h1>
   <p>Cada promoción avanza por cuatro pasos: <strong>registrarla, cargar a sus alumnos, enviarles el enlace de contacto y ver quién lo completó</strong>. Elige una para continuar donde la dejaste.</p>
   <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <button type="button" class="sg-button" onclick="abrirNuevaPromocion()">+ Nueva promoción</button>
+    @if($puedeGestionar)<button type="button" class="sg-button" onclick="abrirNuevaPromocion()">+ Nueva promoción</button>@endif
     <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.padron.consulta') }}">Consultar alumnos y grados</a>
   </div>
 </section>
@@ -30,8 +30,12 @@
 @if($avances->isEmpty())
   <section class="sg-panel" aria-labelledby="sg-sin-promociones">
     <h2 class="sg-section-title" id="sg-sin-promociones">Aún no hay promociones</h2>
-    <p class="sg-help" style="margin-bottom: var(--sg-space-4);">Empieza registrando la primera: su año de ingreso y su total de ingresantes. Después cargarás a sus alumnos.</p>
-    <button type="button" class="sg-button" onclick="abrirNuevaPromocion()">+ Nueva promoción</button>
+    @if($puedeGestionar)
+      <p class="sg-help" style="margin-bottom: var(--sg-space-4);">Empieza registrando la primera: su año de ingreso y su total de ingresantes. Después cargarás a sus alumnos.</p>
+      <button type="button" class="sg-button" onclick="abrirNuevaPromocion()">+ Nueva promoción</button>
+    @else
+      <p class="sg-help">La Secretaría registrará las promociones y aparecerán aquí.</p>
+    @endif
   </section>
 @else
   <section class="sg-panel" aria-labelledby="sg-lista-promociones">
@@ -56,7 +60,7 @@
               $promocion = $fila['promocion'];
               $paso = $fila['paso'];
               $porcentaje = $fila['total'] > 0 ? (int) round($fila['completaron'] * 100 / $fila['total']) : 0;
-              $accion = $fila['terminada'] ? 'Ver' : [2 => 'Cargar alumnos →', 3 => 'Enviar enlaces →', 4 => 'Ver seguimiento →'][$paso];
+              $accion = ($fila['terminada'] || ! $puedeGestionar) ? 'Ver' : [2 => 'Cargar alumnos →', 3 => 'Enviar enlaces →', 4 => 'Ver seguimiento →'][$paso];
               $chips = [
                   [1, 'Promoción', true],
                   [2, 'Alumnos', $fila['total'] > 0],
@@ -88,7 +92,7 @@
                 @endif
               </td>
               <td>
-                <a class="sg-button {{ $fila['terminada'] ? 'sg-button-secondary' : '' }}" href="{{ route('seguimiento-egresado.padron.promocion', $promocion->id) }}#paso-{{ $fila['terminada'] ? 4 : $paso }}">{{ $accion }}</a>
+                <a class="sg-button {{ ($fila['terminada'] || ! $puedeGestionar) ? 'sg-button-secondary' : '' }}" href="{{ route('seguimiento-egresado.padron.promocion', $promocion->id) }}#paso-{{ ($fila['terminada'] || ! $puedeGestionar) ? 4 : $paso }}">{{ $accion }}</a>
               </td>
             </tr>
           @endforeach

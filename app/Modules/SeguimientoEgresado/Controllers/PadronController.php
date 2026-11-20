@@ -11,6 +11,7 @@ use App\Modules\SeguimientoEgresado\Models\HistorialEstadoAcademico;
 use App\Modules\SeguimientoEgresado\Models\ImportacionPadron;
 use App\Modules\SeguimientoEgresado\Models\PlanCurricular;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
+use App\Modules\SeguimientoEgresado\Services\Accesos\SesionAcceso;
 use App\Modules\SeguimientoEgresado\Services\IndicadoresService;
 use App\Modules\SeguimientoEgresado\Services\PadronImportService;
 use App\Modules\SeguimientoEgresado\Support\Esquema;
@@ -102,7 +103,7 @@ class PadronController extends Controller
             'cohorteFiltro',
             'estadoFiltro',
             'i1Data'
-        ));
+        ))->with('puedeGestionar', (bool) SesionAcceso::desde($request)->actual()?->puede('padron.gestionar'));
     }
 
     /**

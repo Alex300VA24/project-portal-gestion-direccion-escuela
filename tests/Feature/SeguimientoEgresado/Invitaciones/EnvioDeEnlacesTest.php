@@ -63,6 +63,24 @@ class EnvioDeEnlacesTest extends TestCase
         );
     }
 
+    public function test_la_hora_de_envio_no_depende_de_la_zona_horaria_de_la_base(): void
+    {
+        Mail::fake();
+        // La base puede correr en otra zona que la aplicación (UTC): la hora guardada debe seguir siendo el momento real del envío.
+        DB::statement("SET TIME ZONE 'America/Lima'");
+        $invitacion = $this->invitacion();
+
+        try {
+            app(EnvioDeEnlaces::class)->enviar($invitacion, 'token-de-prueba');
+            $desfase = abs((float) DB::table('seguimiento_egresado.invitacion_egresado')->where('id', $invitacion->id)
+                ->selectRaw('extract(epoch from enviado_en) - extract(epoch from now()) as d')->value('d'));
+        } finally {
+            DB::statement("SET TIME ZONE 'UTC'");
+        }
+
+        $this->assertLessThan(60, $desfase, 'La hora de envío quedó desfasada respecto al momento real.');
+    }
+
     public function test_con_lista_de_permitidos_solo_se_envia_a_esas_direcciones(): void
     {
         Mail::fake();

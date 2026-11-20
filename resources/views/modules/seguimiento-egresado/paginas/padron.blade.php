@@ -732,15 +732,11 @@
 </section>
 
 <!-- ========================================================================= -->
-<!-- NAVEGACIÓN PRINCIPAL DEL MÓDULO (4 PESTAÑAS) -->
+<!-- NAVEGACIÓN PRINCIPAL DEL MÓDULO (2 PESTAÑAS) -->
 <!-- ========================================================================= -->
 <nav class="sg-module-tabs" role="tablist" aria-label="Secciones de la consulta">
   <button type="button" class="sg-module-tab is-active" id="btn-tab-egresados" role="tab" aria-selected="true" aria-controls="panel-egresados" onclick="activarModuloTab('egresados')">
     Alumnos
-  </button>
-
-  <button type="button" class="sg-module-tab" id="btn-tab-acreditacion" role="tab" aria-selected="false" aria-controls="panel-acreditacion" onclick="activarModuloTab('acreditacion')">
-    Grados y títulos
   </button>
 
   <button type="button" class="sg-module-tab" id="btn-tab-importaciones" role="tab" aria-selected="false" aria-controls="panel-importaciones" onclick="activarModuloTab('importaciones')">
@@ -843,9 +839,9 @@
       <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">Alumnos aptos para egresar y egresados de Ingeniería Informática. Desde aquí se confirma el egreso de cada alumno.</p>
     </div>
     <div class="sg-actions">
-      <button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">
+      @if($puedeGestionar)<button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">
         <span>+ Registrar un alumno</span>
-      </button>
+      </button>@endif
     </div>
   </div>
 
@@ -916,7 +912,7 @@
     <h3 class="sg-empty-title">Aún no hay alumnos registrados</h3>
     <p class="sg-empty-desc">Inicie el registro ingresando un nuevo egresado de forma individual o cargue el archivo oficial emitido por Secretaría Académica.</p>
     <div class="sg-empty-actions">
-      <button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">+ Registrar un alumno</button>
+      @if($puedeGestionar)<button type="button" class="sg-button" onclick="abrirModalNuevoExpediente()">+ Registrar un alumno</button>@endif
       <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.padron') }}">Ir a las promociones</a>
     </div>
   </div>
@@ -924,63 +920,7 @@
 
 
 <!-- ========================================================================= -->
-<!-- PESTAÑA 3: ACREDITACIÓN Y ESTADOS ACADÉMICOS (historial_estado_academico) -->
-<!-- ========================================================================= -->
-<section id="panel-acreditacion" role="tabpanel" aria-labelledby="btn-tab-acreditacion" style="display: none;">
-  <div class="sg-panel" style="margin-bottom: var(--sg-space-5);">
-    <div class="sg-section-title" style="margin-bottom: 8px;">
-      <div>
-        <h2 style="font-size: 17px; margin: 0;">Grados y títulos</h2>
-        <p style="font-size: 13px; color: var(--sg-muted); margin: 2px 0 0;">
-          Grado académico de cada alumno, si está apto para graduarse y las resoluciones que lo respaldan.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="sg-table-wrap" tabindex="0" role="region" aria-label="Tabla de grados y títulos">
-    <table class="sg-table" id="tabla-acreditacion">
-      <caption>Grados académicos y resoluciones de cada alumno</caption>
-      <thead>
-        <tr>
-          <th scope="col">Matrícula</th>
-          <th scope="col">Alumno</th>
-          <th scope="col">Grado actual</th>
-          <th scope="col">Créditos</th>
-          <th scope="col">Condición</th>
-          <th scope="col">Resolución Bachiller</th>
-          <th scope="col">Resolución Título</th>
-          <th scope="col">Registrado por</th>
-          <th scope="col" class="sg-numeric">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-acreditacion">
-        <!-- Renderizado dinámico de acreditación -->
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Barra de Paginación de Acreditación -->
-  <nav class="sg-pagination-bar" id="paginacion-acreditacion" aria-label="Paginación de grados y títulos">
-    <div class="sg-pagination-info">
-      <span>Mostrando <strong id="acred-desde">1</strong> - <strong id="acred-hasta">10</strong> de <strong id="acred-total">24</strong> registros</span>
-      <label style="display: inline-flex; align-items: center; gap: 6px; margin-left: 10px;">
-        <span>Filas:</span>
-        <select class="sg-page-size-select" id="acred-por-pagina" onchange="cambiarFilasPorPaginaAcred(this.value)" aria-label="Cantidad de filas por página">
-          <option value="10" selected>10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-        </select>
-      </label>
-    </div>
-    <div class="sg-pagination-controls" id="acred-paginas-controles">
-      <!-- Generado dinámicamente -->
-    </div>
-  </nav>
-</section>
-
-<!-- ========================================================================= -->
-<!-- PESTAÑA 4: CARGAS MASIVAS DE SECRETARÍA -->
+<!-- PESTAÑA 2: CARGAS MASIVAS DE SECRETARÍA -->
 <!-- ========================================================================= -->
 <section id="panel-importaciones" role="tabpanel" aria-labelledby="btn-tab-importaciones" style="display: none;">
   <div class="sg-section-title">
@@ -1146,7 +1086,7 @@
     <div class="sg-modal-foot">
       <button type="button" class="sg-button sg-button-secondary" onclick="cerrarModalExpediente()">Cerrar Ficha</button>
       <button type="button" class="sg-button sg-button-secondary" id="btn-confirmar-egreso" style="display: none;" onclick="abrirConfirmarEgreso()">Confirmar egreso</button>
-      <button type="button" class="sg-button" onclick="abrirModalActualizarEstadoDesdeFicha()">Actualizar Estado Académico</button>
+      @if($puedeGestionar)<button type="button" class="sg-button" onclick="abrirModalActualizarEstadoDesdeFicha()">Actualizar Estado Académico</button>@endif
     </div>
   </div>
 </div>
@@ -1391,6 +1331,7 @@
 
 @push('scripts')
 <script>
+  const PUEDE_GESTIONAR = @json((bool) $puedeGestionar);
   // =========================================================================
   // MODELO DE DATOS M1: CONEXIÓN INTEGRAL POSTGRESQL / ELOQUENT
   // =========================================================================
@@ -1504,9 +1445,6 @@
   let padronFilasPorPagina = 10;
   let padronFilasFiltradas = null;
 
-  let acredPaginaActual = 1;
-  let acredFilasPorPagina = 10;
-  let acredFilasFiltradas = null;
 
   let impPaginaActual = 1;
   let impFilasPorPagina = 10;
@@ -1621,7 +1559,7 @@
   // CONTROL DE PESTAÑAS PRINCIPALES DEL MÓDULO M1
   // =========================================================================
   function activarModuloTab(tabName) {
-    const tabs = ['egresados', 'acreditacion', 'importaciones'];
+    const tabs = ['egresados', 'importaciones'];
     tabs.forEach(t => {
       const btn = document.getElementById('btn-tab-' + t);
       const panel = document.getElementById('panel-' + t);
@@ -1638,7 +1576,6 @@
       }
     });
 
-    if (tabName === 'acreditacion') renderizarTablaAcreditacion();
     if (tabName === 'importaciones') renderizarTablaImportaciones();
   }
 
@@ -1905,9 +1842,9 @@
             <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirExpediente(${item.id})">
               Ver
             </button>
-            <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirEditarExpediente(${item.id})" title="Editar datos del expediente">
+            ${PUEDE_GESTIONAR ? `<button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirEditarExpediente(${item.id})" title="Editar datos del expediente">
               Editar
-            </button>
+            </button>` : ""}
           </div>
         </td>
       `;
@@ -2036,101 +1973,6 @@
     });
   }
 
-  // =========================================================================
-  // GESTIÓN DE ACREDITACIÓN Y ESTADOS ACADÉMICOS (historial_estado_academico)
-  // =========================================================================
-  function renderizarTablaAcreditacion(filas = null) {
-    const tbody = document.getElementById('tbody-acreditacion');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    acredFilasFiltradas = filas || Object.values(padronData);
-    const data = acredFilasFiltradas;
-    const totalFiltrados = data.length;
-
-    if (totalFiltrados === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--sg-muted); padding: 32px;">Aún no hay alumnos con grado o título registrado.</td></tr>';
-      crearControlesPaginacion({
-        contenedorId: 'acred-paginas-controles',
-        totalFilas: 0,
-        paginaActual: 1,
-        filasPorPagina: acredFilasPorPagina,
-        alCambiarPagina: () => {},
-        desdeId: 'acred-desde',
-        hastaId: 'acred-hasta',
-        totalId: 'acred-total'
-      });
-      return;
-    }
-
-    const totalPaginas = Math.ceil(totalFiltrados / acredFilasPorPagina) || 1;
-    if (acredPaginaActual > totalPaginas) acredPaginaActual = totalPaginas;
-    if (acredPaginaActual < 1) acredPaginaActual = 1;
-
-    const inicio = (acredPaginaActual - 1) * acredFilasPorPagina;
-    const fin = inicio + acredFilasPorPagina;
-    const filasPagina = data.slice(inicio, fin);
-
-    filasPagina.forEach(item => {
-      const tr = document.createElement('tr');
-      let gradoPill = '';
-      if (item.grado === 'TITULADO') gradoPill = '<span class="sg-status-pill sg-pill-success">Titulado Profesional</span>';
-      else if (item.grado === 'BACHILLER') gradoPill = '<span class="sg-status-pill sg-pill-primary">Bachiller</span>';
-      else if (item.grado === 'PROXIMO') gradoPill = '<span class="sg-status-pill sg-pill-warning">Apto para egresar</span>';
-      else gradoPill = '<span class="sg-status-pill sg-pill-neutral">Egresado</span>';
-
-      let aptoBadge = item.aptoF1 === 'APTO'
-        ? '<span class="sg-status-pill sg-pill-success">Apto</span>'
-        : '<span class="sg-status-pill sg-pill-warning">Trámite Pendiente</span>';
-
-      tr.innerHTML = `
-        <td><strong style="color: var(--sg-navy);">${item.codigo}</strong></td>
-        <td>
-          <div style="font-weight: 600; color: var(--sg-text);">${item.nombreCompleto}</div>
-          <small style="color: var(--sg-muted); font-size: 12px;">DNI: ${item.dni}</small>
-        </td>
-        <td>${gradoPill}</td>
-        <td>${item.creditos}</td>
-        <td>${aptoBadge}</td>
-        <td>
-          <div>${item.resBachiller || '<span style="color:var(--sg-muted); font-size:12px;">Sin resolución</span>'}</div>
-          <small style="color: var(--sg-muted); font-size: 11px;">${item.fechaBachiller || ''}</small>
-        </td>
-        <td>
-          <div>${item.resTitulo || '<span style="color:var(--sg-muted); font-size:12px;">Sin resolución</span>'}</div>
-          <small style="color: var(--sg-muted); font-size: 11px;">${item.fechaTitulo || ''}</small>
-        </td>
-        <td style="font-size: 13px; color: var(--sg-muted);">${item.responsable}</td>
-        <td class="sg-numeric">
-          <button type="button" class="sg-button sg-button-secondary" style="min-height: 32px; padding: 4px 10px; font-size: 12px;" onclick="abrirModalActualizarEstado(${item.id})">
-            Actualizar Grado
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    crearControlesPaginacion({
-      contenedorId: 'acred-paginas-controles',
-      totalFilas: totalFiltrados,
-      paginaActual: acredPaginaActual,
-      filasPorPagina: acredFilasPorPagina,
-      alCambiarPagina: (nuevaPagina) => {
-        acredPaginaActual = nuevaPagina;
-        renderizarTablaAcreditacion(acredFilasFiltradas);
-      },
-      desdeId: 'acred-desde',
-      hastaId: 'acred-hasta',
-      totalId: 'acred-total'
-    });
-  }
-
-  function cambiarFilasPorPaginaAcred(n) {
-    acredFilasPorPagina = parseInt(n, 10) || 10;
-    acredPaginaActual = 1;
-    renderizarTablaAcreditacion(acredFilasFiltradas);
-  }
-
   function abrirModalActualizarEstado(id) {
     const item = padronData[id];
     if (!item) return;
@@ -2209,7 +2051,6 @@
 
     cerrarModalEstado();
     renderizarTablaPadron();
-    renderizarTablaAcreditacion();
     mostrarToast(`Se actualizó el grado de ${item.nombreCompleto}.`);
   }
 
@@ -2380,7 +2221,7 @@
   async function abrirExpediente(id) {
     const egresado = padronData[id];
     if (!egresado) return;
-    document.getElementById('btn-confirmar-egreso').style.display = egresado.grado === 'PROXIMO' ? '' : 'none';
+    document.getElementById('btn-confirmar-egreso').style.display = (PUEDE_GESTIONAR && egresado.grado === 'PROXIMO') ? '' : 'none';
 
     document.getElementById('modal-expediente').setAttribute('data-active-id', id);
     document.getElementById('modal-exp-title').textContent = egresado.nombreCompleto;
@@ -2625,7 +2466,6 @@
     cerrarModalNuevoExpediente();
     renderizarCardsCohortes();
     renderizarTablaPadron();
-    renderizarTablaAcreditacion();
     mostrarToast(`El alumno con matrícula ${cod} quedó registrado.`);
   }
 
@@ -2655,12 +2495,11 @@
     actualizarFranjaMetricaCohorte('');
     actualizarSelectorCohortesForm();
     renderizarTablaPadron();
-    renderizarTablaAcreditacion();
     renderizarTablaImportaciones();
 
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['egresados', 'acreditacion', 'importaciones'].includes(tab)) {
+    if (tab && ['egresados', 'importaciones'].includes(tab)) {
       activarModuloTab(tab);
     }
   });

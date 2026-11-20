@@ -24,7 +24,9 @@
       'Contacto del jefe' => $trabaja ? $m['contacto_jefe'] : null,
     ],
     'Residencia e idiomas' => [
-      'Reside en' => trim(($m['ciudad_residencia'] ?? '').' '.($m['pais_residencia'] ? '('.$m['pais_residencia'].')' : '')),
+      'Reside en' => ($m['ciudad_residencia'] ?? '') !== ''
+        ? $m['ciudad_residencia'].($m['pais_residencia'] ? ' ('.$m['pais_residencia'].')' : '')
+        : $m['pais_residencia'],
       'Inglés' => $ingles[$m['nivel_ingles']] ?? null,
       'Otros idiomas' => $m['otros_idiomas'],
     ],

@@ -68,7 +68,7 @@ final class EnvioDeEnlaces
         }
 
         $invitacion->update([
-            'enviado_en' => now(),
+            'enviado_en' => now()->format('Y-m-d H:i:s.uP'),
             'entrega_fallida' => false,
             'id_canal_envio' => CatCanalEnvio::where('codigo', $canal)->value('id') ?? $invitacion->id_canal_envio,
         ]);

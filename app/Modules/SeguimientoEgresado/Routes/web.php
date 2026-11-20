@@ -41,8 +41,6 @@ Route::prefix('seguimiento-egresado')
 
         // Portada del módulo (pública: presenta el módulo y lleva a cada área).
         Route::get('/', [SeguimientoEgresadoController::class, 'index'])->name('index');
-        Route::get('/crear', [SeguimientoEgresadoController::class, 'create'])->name('create');
-        Route::post('/', [SeguimientoEgresadoController::class, 'store'])->name('store');
 
         // Padrón oficial, cohortes e importación
         Route::get('/padron', [PromocionController::class, 'index'])->middleware($interna('padron.consultar'))->name('padron');
