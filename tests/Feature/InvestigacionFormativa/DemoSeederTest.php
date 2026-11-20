@@ -315,6 +315,14 @@ final class DemoSeederTest extends TestCase
         $this->assertSame(2, DB::table('investigacion_formativa.configuracion_indicador')
             ->where('indicador', '3.2')
             ->count());
+        $this->assertSame(2, DB::table('investigacion_formativa.configuracion_indicador')
+            ->where('indicador', '3.3')
+            ->count());
+        $this->assertSame(1, DB::table('investigacion_formativa.indicador_competencia_criterio')
+            ->where('id_competencia', DB::table('investigacion_formativa.competencia_seccion')
+                ->where('id_seccion', $seccion)
+                ->value('id_competencia'))
+            ->count());
 
         $idEscuela = (int) DB::table('core.curso_plan as cp')
             ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
@@ -338,6 +346,12 @@ final class DemoSeederTest extends TestCase
         $this->assertSame(3, $indicadores->satisfaccion->denominador);
         $this->assertSame(66.67, $indicadores->satisfaccion->valor);
         $this->assertTrue($indicadores->satisfaccion->provisional);
+        $this->assertSame(2, $indicadores->logro_competencias->numerador);
+        $this->assertSame(3, $indicadores->logro_competencias->denominador);
+        $this->assertSame(66.67, $indicadores->logro_competencias->valor);
+        $this->assertSame(100.0, $indicadores->logro_competencias->cobertura);
+        $this->assertTrue($indicadores->logro_competencias->provisional);
+        $this->assertCount(1, $indicadores->logro_competencias->competencias);
 
         $multi = User::where('email', 'multirrol.'.$lote.'@demo.example.test')->firstOrFail();
         $this->assertTrue($multi->hasAllRoles(['profesor', 'alumno']));

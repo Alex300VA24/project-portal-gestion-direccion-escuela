@@ -4,7 +4,7 @@
 
 Ingrese con el correo y la contraseña asignados. Abra Investigación Formativa en el portal. Si tiene varios roles, elija «Docencia», «Estudiante» o «Dirección de escuela». Elegir un espacio no cambia sus permisos.
 
-El módulo permite configurar secciones, formar grupos, revisar títulos, evaluar entregas existentes, aplicar encuestas, consultar resultados y revisar los indicadores 3.1 y 3.2. La carga y descarga de archivos permanece pendiente del contrato compartido. No hay una acción de entrega funcional en esta versión.
+El módulo permite configurar secciones, formar grupos, revisar títulos, evaluar entregas existentes, aplicar encuestas, consultar resultados y revisar los indicadores 3.1, 3.2 y 3.3. La carga y descarga de archivos permanece pendiente del contrato compartido. No hay una acción de entrega funcional en esta versión.
 
 Si no puede entrar, solicite que revisen su cuenta, su vinculación académica y el rol asignado. No comparta su contraseña. Los datos de demostración son ejemplos locales, no datos académicos oficiales.
 
@@ -12,23 +12,23 @@ Si no puede entrar, solicite que revisen su cuenta, su vinculación académica y
 
 1. Abra el resumen de dirección. Verá las escuelas asignadas a su cuenta.
 2. Seleccione escuela, periodo, curso o línea de investigación y aplique el filtro. La lista incluye secciones históricas.
-3. Revise los indicadores 3.1 y 3.2. Cada tarjeta muestra el valor, el numerador, el denominador, la regla y la fuente. Las experiencias sin clasificación se señalan aparte.
+3. Revise los indicadores 3.1, 3.2 y 3.3. Cada tarjeta muestra el valor, el numerador, el denominador, la regla y la fuente. Las experiencias sin clasificación se señalan aparte.
 4. Abra «Ver cursos y habilitar secciones» para permitir el trabajo en una sección.
 5. Revise el curso, periodo, sección y docente antes de cambiar su estado.
 6. Abra la encuesta de la sección para preparar las preguntas.
 7. Agregue o quite preguntas. Guarde el borrador antes de publicar.
 8. Revise el texto completo. Publicar impide editar las preguntas.
 9. Cierre la encuesta al terminar. No se puede reabrir.
-10. Abra «Ver resultados» para consultar respuestas, comentarios, calificaciones y el indicador 3.2 de la sección.
+10. Abra «Ver resultados» para consultar respuestas, comentarios, calificaciones y los indicadores 3.2 y 3.3 de la sección.
 11. Pulse «Descargar PDF» para guardar el reporte con los filtros aplicados. El archivo no incluye los comentarios confidenciales de la encuesta y no crea un registro de archivo.
 
 «Habilitada» permite las operaciones del módulo si también se cumplen sus requisitos. «Deshabilitada» detiene las escrituras y conserva los datos. El estado académico de una sección es un dato distinto. Las secciones cerradas siguen disponibles en resultados e historial.
 
 El resumen también muestra conteos descriptivos: proyectos por línea, proyectos completos por umbral y decisiones docentes. «> 16» y «> 18» se superponen: un proyecto con nota mayor a 18 también cuenta en mayor a 16. Las barras y tablas describen los datos registrados; no se confunden con los indicadores ni son metas. Si no hay datos, la pantalla muestra un estado vacío y no inventa ceros ni promedios.
 
-El indicador 3.1 cuenta una experiencia por curso del plan y periodo. El denominador incluye las experiencias que no aplican Investigación Formativa. El indicador 3.2 cuenta estudiantes distintos y muestra la pregunta y las categorías configuradas. Las entradas y categorías del lote de demostración son provisionales; solicite la fuente institucional antes de usarlas como resultado oficial.
+El indicador 3.1 cuenta una experiencia por curso del plan y periodo. El denominador incluye las experiencias que no aplican Investigación Formativa. El indicador 3.2 cuenta estudiantes distintos y muestra la pregunta y las categorías configuradas. El indicador 3.3 usa la unidad estudiante y competencia: normaliza los puntajes de los criterios mapeados, exige la cobertura mínima configurada y cuenta los estudiantes que alcanzan una banda lograda. La nota final, el título aceptado y las decisiones docentes no participan del cálculo. Las entradas, categorías, pesos y bandas del lote de demostración son provisionales; solicite la fuente institucional antes de usarlas como resultado oficial.
 
-El filtro de línea restringe los grupos, las notas y las decisiones a esa línea. La encuesta se prepara por sección y no se desagrega por línea; los totales de encuesta cubren las secciones incluidas completas. La línea tampoco reduce el denominador del indicador 3.1.
+El filtro de línea restringe los grupos, las notas, las decisiones y la evidencia del indicador 3.3 a esa línea. La encuesta se prepara por sección y no se desagrega por línea; los totales de encuesta cubren las secciones incluidas completas. La línea tampoco reduce el denominador del indicador 3.1.
 
 Los comentarios se muestran sin nombres de estudiantes. Son confidenciales, no anónimos: el sistema conserva la identidad de quien responde para evitar envíos duplicados.
 

@@ -29,7 +29,7 @@
 
         <nav class="if-actions" aria-label="Secciones de resultados">
             <a class="if-link" href="#encuesta">Encuesta</a>
-            <a class="if-link" href="#indicadores">Indicador 3.2</a>
+            <a class="if-link" href="#indicadores">Indicadores</a>
             <a class="if-link" href="#calificaciones">Calificaciones</a>
             <a class="if-link" href="#decisiones">Decisiones docentes</a>
             <a class="if-link" href="{{ route('investigacion-formativa.director.index', array_filter(['periodo' => $seccion->periodo->codigo, 'escuela' => request('escuela'), 'curso' => request('curso'), 'linea' => request('linea')])) }}">Historial del periodo</a>
@@ -120,6 +120,7 @@
 
         @php
             $satisfaccionIndicador = $reporte->indicador_satisfaccion;
+            $logroIndicador = $reporte->indicador_logro_competencias;
         @endphp
 
         <section
@@ -128,7 +129,8 @@
             style="margin-top: 22px; padding: 22px;"
             aria-labelledby="titulo-indicadores"
         >
-            <h2 id="titulo-indicadores" class="if-section-title">Indicador 3.2 · Satisfacción de la sección</h2>
+            <h2 id="titulo-indicadores" class="if-section-title">Indicadores de la sección</h2>
+            <h3 class="if-card-title">Indicador 3.2 · Satisfacción</h3>
             <p>{{ $satisfaccionIndicador->nombre }}</p>
             <p style="font-size: 1.8rem; font-weight: 700; margin: 8px 0;">
                 {{ $satisfaccionIndicador->valor === null ? 'No calculable' : $satisfaccionIndicador->valor.'%' }}
@@ -203,6 +205,84 @@
                 El indicador agregado 3.1 se calcula en el resumen de dirección con el alcance de
                 escuela, periodo y curso. Esta vista de sección no lo duplica.
             </p>
+
+            <div style="margin-top: 26px;">
+                <h3 class="if-card-title">Indicador 3.3 · Logro de competencias</h3>
+                <p>{{ $logroIndicador->nombre }}</p>
+                <p style="font-size: 1.8rem; font-weight: 700; margin: 8px 0;">
+                    {{ $logroIndicador->valor === null ? 'No calculable' : $logroIndicador->valor.'%' }}
+                </p>
+
+                <dl class="if-inline-stats" aria-label="Numerador, denominador y cobertura del indicador 3.3">
+                    <div>
+                        <dt>En banda lograda</dt>
+                        <dd>{{ $logroIndicador->numerador }}</dd>
+                    </div>
+                    <div>
+                        <dt>Estudiantes válidos</dt>
+                        <dd>{{ $logroIndicador->denominador }}</dd>
+                    </div>
+                    <div>
+                        <dt>Cobertura</dt>
+                        <dd>
+                            {{ $logroIndicador->cobertura === null ? 'No calculable' : $logroIndicador->cobertura.'%' }}
+                        </dd>
+                    </div>
+                </dl>
+
+                <p class="if-note" style="margin-top: 12px;">
+                    <strong>Regla:</strong> {{ $logroIndicador->regla }}
+                </p>
+
+                @if ($logroIndicador->provisional)
+                    <p style="margin-top: 12px;">
+                        <span class="if-status is-warning">Configuración provisional</span>
+                    </p>
+                @endif
+
+                @if ($logroIndicador->fuente !== null)
+                    <p class="if-note">Fuente: {{ $logroIndicador->fuente }}</p>
+                @endif
+
+                @if ($logroIndicador->motivo !== null)
+                    <div class="if-alert" role="status" style="margin-top: 12px;">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                        <span>{{ $logroIndicador->motivo }}</span>
+                    </div>
+                @endif
+
+                @if ($logroIndicador->competencias !== [])
+                    <div class="if-table-wrap" style="margin-top: 16px;">
+                        <table class="if-table">
+                            <caption class="sr-only">Logro y cobertura por competencia</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Competencia</th>
+                                    <th scope="col">Logro</th>
+                                    <th scope="col">Cobertura</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($logroIndicador->competencias as $competencia)
+                                    <tr>
+                                        <td data-label="Competencia">
+                                            <strong>{{ $competencia->codigo }}</strong> · {{ $competencia->descripcion }}
+                                        </td>
+                                        <td data-label="Logro">
+                                            {{ $competencia->valor === null ? 'No calculable' : $competencia->valor.'%' }}
+                                        </td>
+                                        <td data-label="Cobertura">
+                                            {{ $competencia->cobertura === null ? 'No calculable' : $competencia->cobertura.'%' }}
+                                        </td>
+                                        <td data-label="Estado">{{ $competencia->estado }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
         </section>
 
         <section id="calificaciones" class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-calificaciones">

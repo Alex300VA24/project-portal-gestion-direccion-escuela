@@ -73,7 +73,7 @@ final class ExportacionPdfTest extends TestCase
 
         $this->assertStringContainsString('Notas de lectura', $texto);
         $this->assertStringContainsString('no incluye comentarios de la encuesta', $texto);
-        $this->assertStringContainsString('no son indicadores oficiales de Calidad', $texto);
+        $this->assertStringContainsString('no son los indicadores 3.1, 3.2 y 3.3', $texto);
         $this->assertStringContainsString('Indicador 3.2 de la sección', $texto);
         $this->assertStringContainsString('El indicador agregado 3.1 se calcula en el resumen de dirección', $texto);
     }
@@ -101,6 +101,36 @@ final class ExportacionPdfTest extends TestCase
             'El indicador agregado 3.1 se calcula en el resumen de dirección',
             $texto,
         );
+    }
+
+    public function test_el_pdf_incluye_el_indicador_3_3_desde_criterios_mapeados(): void
+    {
+        $proyecto = $this->proyecto();
+        $this->evaluar($proyecto, 1, [4, 4, 2]);
+        $this->configurarLogroIndicador();
+        $idRubrica = DB::table('investigacion_formativa.seccion_configuracion')
+            ->where('id_seccion', 9901)
+            ->value('id_rubrica');
+        $criterios = DB::table('investigacion_formativa.criterio')
+            ->where('id_rubrica', $idRubrica)
+            ->orderBy('orden')
+            ->pluck('id_criterio');
+        $pesos = [0.5, 0.3, 0.2];
+
+        foreach ($criterios->values() as $indice => $idCriterio) {
+            $this->registrarMapeoIndicador(9861, (int) $idCriterio, $pesos[$indice]);
+        }
+
+        $texto = $this->textoDelPdf(
+            (string) $this->actingAs($this->datos['users']['director'])->get($this->ruta())->getContent()
+        );
+
+        $this->assertStringContainsString('Indicador 3.3 de la sección', $texto);
+        $this->assertStringContainsString('100%', $texto);
+        $this->assertStringContainsString('Estudiantes válidos 1', $texto);
+        $this->assertStringContainsString('Cobertura 100%', $texto);
+        $this->assertStringContainsString('Configuración provisional', $texto);
+        $this->assertStringContainsString('C1', $texto);
     }
 
     public function test_el_pdf_muestra_los_datos_pendientes_sin_inventar_ceros(): void

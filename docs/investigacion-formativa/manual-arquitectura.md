@@ -2,7 +2,7 @@
 
 ## Alcance y estado
 
-El módulo usa el monolito Laravel y PostgreSQL del portal. No inicia servicios separados. La configuración, los grupos, los títulos, las evaluaciones, las encuestas, los reportes y los indicadores 3.1 y 3.2 tienen implementación y pruebas funcionales. La carga y descarga de archivos sigue pendiente de G4, el contrato del escritor compartido de archivos.
+El módulo usa el monolito Laravel y PostgreSQL del portal. No inicia servicios separados. La configuración, los grupos, los títulos, las evaluaciones, las encuestas, los reportes y los indicadores 3.1, 3.2 y 3.3 tienen implementación y pruebas funcionales. La carga y descarga de archivos sigue pendiente de G4, el contrato del escritor compartido de archivos.
 
 Las asignaciones de identidad, padrón, competencias y alcance de dirección tienen contratos locales explícitos. Falta confirmar su integración con los responsables de los datos compartidos. No se deducen de correos ni se sustituyen por contenido académico inventado.
 
@@ -122,7 +122,7 @@ El tablero de dirección acepta `escuela`, `periodo`, `curso` y `linea`. El filt
 
 Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos de proyectos, notas y decisiones son estadística descriptiva. No se confunden con los indicadores 3.1, 3.2 y 3.3, que se calculan por separado y muestran regla, denominador y fuente. Si una base es cero, no se calcula un porcentaje.
 
-El filtro de línea no reduce el denominador del indicador 3.1 porque una experiencia curricular no tiene línea. El indicador 3.2 sí usa las secciones visibles por el filtro para respetar que la encuesta no se desagrega por línea. El resumen agregado 3.1 pertenece al tablero con alcance; el reporte de una sección no lo duplica.
+El filtro de línea no reduce el denominador del indicador 3.1 porque una experiencia curricular no tiene línea. El indicador 3.2 sí usa las secciones visibles por el filtro para respetar que la encuesta no se desagrega por línea. El indicador 3.3 restringe la evidencia y los estudiantes esperados a los proyectos de la línea seleccionada. El resumen agregado 3.1 pertenece al tablero con alcance; el reporte de una sección no lo duplica.
 
 ## Indicadores de Calidad
 
@@ -167,7 +167,7 @@ Los indicadores 3.1, 3.2 y 3.3 tienen una implementación local con entradas ree
 El director puede descargar el reporte de una sección como PDF desde «Ver resultados». El servicio `Services/ReportePdfService.php` genera el documento con dompdf a partir de los datos ya calculados por `ReporteService`.
 
 - Fuente DejaVu Sans; recursos remotos y JavaScript deshabilitados; carpeta temporal `storage/app/dompdf`.
-- Incluye título, curso, sección, periodo, escuela, filtros activos, hora de generación, tablas de calificaciones, distribuciones de encuesta, el indicador 3.2 de la sección y notas de lectura.
+- Incluye título, curso, sección, periodo, escuela, filtros activos, hora de generación, tablas de calificaciones, distribuciones de encuesta, los indicadores 3.2 y 3.3 de la sección y notas de lectura.
 - Explica que el indicador agregado 3.1 se calcula en el tablero de dirección con alcance. No lo duplica en el PDF de una sección.
 - Excluye los comentarios confidenciales de la encuesta. Estos se conservan en la pantalla de resultados con su paginación propia.
 - La generación no crea registros en `comun.archivo`, no usa `ArchivoGateway` y no modifica datos.

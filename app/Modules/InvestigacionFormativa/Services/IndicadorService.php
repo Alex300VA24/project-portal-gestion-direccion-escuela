@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Calcula los indicadores 3.1 y 3.2 con reglas explícitas y configurables.
+ * El indicador 3.3 se delega al servicio de logro de competencias.
  *
  * Indicador 3.1: porcentaje de experiencias curriculares que aplican
  * Investigación Formativa sobre las experiencias implementadas del alcance. La
@@ -31,21 +32,27 @@ final class IndicadorService
         .'Investigación Formativa. Denominador: todas las experiencias implementadas del alcance, '
         .'incluidas las que no aplican el módulo. Sin denominador no hay valor.';
 
+    public function __construct(
+        private readonly LogroCompetenciasService $logros,
+    ) {}
+
     /**
      * Indicadores del alcance de las escuelas indicadas.
      *
      * @param  list<int>  $idsEscuela
-     * @param  list<int>  $idsSeccionesEncuesta  Secciones cuyas encuestas alimentan el indicador 3.2.
+     * @param  list<int>  $idsSeccionesVisibles  Secciones visibles que alimentan los indicadores 3.2 y 3.3.
      * @return object{
      *     experiencia_curricular: object,
-     *     satisfaccion: object
+     *     satisfaccion: object,
+     *     logro_competencias: object
      * }
      */
     public function indicadoresDeAlcance(
         array $idsEscuela,
         ?string $periodo = null,
         ?int $idCurso = null,
-        array $idsSeccionesEncuesta = [],
+        array $idsSeccionesVisibles = [],
+        ?int $idLinea = null,
     ): object {
         $idsEscuela = array_values(array_unique(array_map('intval', $idsEscuela)));
         $experiencias = $this->experienciasCurriculares($idsEscuela, $periodo, $idCurso);
@@ -57,11 +64,11 @@ final class IndicadorService
             }
         }
 
-        $idsSeccionesEncuesta = array_values(array_intersect(
-            array_unique($idsSeccionesEncuesta),
+        $idsSeccionesVisibles = array_values(array_intersect(
+            array_unique($idsSeccionesVisibles),
             array_unique($idsSeccionesAlcance),
         ));
-        $seccionesPorExperiencia = $this->seccionesPorExperiencia($idsSeccionesEncuesta);
+        $seccionesPorExperiencia = $this->seccionesPorExperiencia($idsSeccionesVisibles);
         $satisfaccionPorExperiencia = $this->satisfaccionPorExperiencia($seccionesPorExperiencia);
 
         $filas = [];
@@ -131,6 +138,7 @@ final class IndicadorService
                 'alcance' => 'Suma de las experiencias del alcance. Un estudiante que respondió en dos '
                     .'experiencias cuenta una vez en cada experiencia.',
             ],
+            'logro_competencias' => $this->logros->porSecciones($idsSeccionesVisibles, $idLinea),
         ];
     }
 
@@ -148,6 +156,14 @@ final class IndicadorService
         }
 
         return $resultado;
+    }
+
+    /**
+     * Indicador 3.3 de una sección.
+     */
+    public function logroDeSeccion(int $idSeccion, ?int $idLinea = null): object
+    {
+        return $this->logros->porSeccion($idSeccion, $idLinea);
     }
 
     /**

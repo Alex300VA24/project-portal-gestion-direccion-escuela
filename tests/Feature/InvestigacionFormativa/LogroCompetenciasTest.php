@@ -162,6 +162,35 @@ final class LogroCompetenciasTest extends TestCase
         ]);
     }
 
+    public function test_el_filtro_de_linea_restringe_la_evidencia_del_logro(): void
+    {
+        DB::table('core.linea_investigacion')->insert([
+            'id_linea' => 9899,
+            'id_escuela' => 920,
+            'codigo' => 'LIN-C',
+            'nombre' => 'Línea C',
+            'estado' => 'Activo',
+        ]);
+        $this->configurarLogroIndicador();
+        $this->registrarMapeos();
+        $this->evaluarProyecto($this->grupos['alumno_a']['id_proyecto'], 1, [4, 4]);
+        $this->evaluarProyecto($this->grupos['multi']['id_proyecto'], 1, [3, 2]);
+        DB::table('investigacion_formativa.proyecto')
+            ->where('id_proyecto', $this->grupos['multi']['id_proyecto'])
+            ->update(['id_linea' => 9899]);
+
+        $lineaA = $this->logro()->porSeccion(9901, 9801);
+        $lineaC = $this->logro()->porSeccion(9901, 9899);
+        $todas = $this->logro()->porSeccion(9901);
+
+        $this->assertSame(1, $lineaA->denominador);
+        $this->assertSame(100.0, $lineaA->valor);
+        $this->assertSame(1, $lineaC->denominador);
+        $this->assertSame(0.0, $lineaC->valor);
+        $this->assertSame(2, $todas->denominador);
+        $this->assertSame(50.0, $todas->valor);
+    }
+
     public function test_sin_configuracion_o_mapeo_no_inventa_un_valor(): void
     {
         $sinConfiguracion = $this->logro()->porSeccion(9901);

@@ -326,6 +326,34 @@ final class InvestigacionDemoSeeder extends Seeder
             );
         }
 
+        $fuenteLogro = 'Configuración de demostración del lote '.$lote.'; sustituir por la matriz institucional.';
+        foreach ([
+            [
+                'parametro' => 'bandas_logro',
+                'valor' => json_encode([
+                    ['etiqueta' => 'Por lograr', 'minimo' => 0, 'maximo' => 60, 'alcanzado' => false],
+                    ['etiqueta' => 'En proceso', 'minimo' => 60, 'maximo' => 80, 'alcanzado' => false],
+                    ['etiqueta' => 'Logrado', 'minimo' => 80, 'maximo' => 100, 'alcanzado' => true],
+                ], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'parametro' => 'cobertura_minima',
+                'valor' => '100',
+            ],
+        ] as $configuracionLogro) {
+            DB::table('investigacion_formativa.configuracion_indicador')->updateOrInsert(
+                [
+                    'indicador' => '3.3',
+                    'parametro' => $configuracionLogro['parametro'],
+                ],
+                [
+                    'valor' => $configuracionLogro['valor'],
+                    'fuente' => $fuenteLogro,
+                    'provisional' => true,
+                ],
+            );
+        }
+
         $configuracion = app(ConfiguracionService::class);
         $actor = app(AccesoInvestigacionService::class)->resolver($cuentas['docente-a']['user']);
         $seccion = $secciones['completa'];
@@ -340,6 +368,31 @@ final class InvestigacionDemoSeeder extends Seeder
                 ], [1, 2, 3, 4]),
             ]],
         ], 2);
+
+        $idRubricaIndicador = DB::table('investigacion_formativa.seccion_configuracion')
+            ->where('id_seccion', $seccion)
+            ->value('id_rubrica');
+
+        if ($idRubricaIndicador === null) {
+            throw new RuntimeException('La sección completa no tiene rúbrica para el indicador 3.3.');
+        }
+
+        $fuenteMapeo = 'Mapeo de demostración del lote '.$lote.'; sustituir por la matriz autorizada.';
+        $criteriosIndicador = DB::table('investigacion_formativa.criterio')
+            ->where('id_rubrica', $idRubricaIndicador)
+            ->orderBy('orden')
+            ->get(['id_criterio']);
+
+        foreach ($criteriosIndicador as $criterioIndicador) {
+            DB::table('investigacion_formativa.indicador_competencia_criterio')->insert([
+                'id_competencia' => $competencia,
+                'id_criterio' => $criterioIndicador->id_criterio,
+                'peso' => 1,
+                'fuente' => $fuenteMapeo,
+                'provisional' => true,
+            ]);
+        }
+
         $configuracion->guardarCronograma($actor, $seccion, array_map(
             static fn (int $dias): string => now('America/Lima')->addDays($dias)->format('Y-m-d\TH:i'),
             [30, 60, 90],

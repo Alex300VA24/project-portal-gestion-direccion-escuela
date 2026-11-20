@@ -42,6 +42,7 @@ final class ReporteService
      *     seleccion_destacada: object{id_proyecto: int, id_grupo: int, nombre: string, titulo: string, desactualizada: bool, decidido_en: string|null}|null,
      *     entregas_evaluadas: int,
      *     indicador_satisfaccion: object,
+     *     indicador_logro_competencias: object,
      * }
      */
     public function porSeccion(
@@ -180,6 +181,7 @@ final class ReporteService
                 0,
             ),
             'indicador_satisfaccion' => $this->indicadores->satisfaccionDeSeccion($idSeccion),
+            'indicador_logro_competencias' => $this->indicadores->logroDeSeccion($idSeccion, $idLinea),
         ];
     }
 
@@ -239,7 +241,7 @@ final class ReporteService
      *         }>
      *     },
      *     decisiones: object{aprobados: int, destacados: int},
-     *     indicadores: object{experiencia_curricular: object, satisfaccion: object},
+     *     indicadores: object{experiencia_curricular: object, satisfaccion: object, logro_competencias: object},
      *     totales: object{
      *         secciones: int,
      *         habilitadas: int,
@@ -471,6 +473,7 @@ final class ReporteService
             $periodo,
             $idCurso,
             array_column($seccionesBase, 'id_seccion'),
+            $idLinea,
         );
 
         return (object) [

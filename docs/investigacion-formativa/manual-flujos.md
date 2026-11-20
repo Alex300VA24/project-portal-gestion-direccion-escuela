@@ -1,6 +1,6 @@
 # Flujos de Investigación Formativa
 
-El módulo permite configurar secciones, formar grupos, revisar títulos, evaluar entregas existentes, aplicar encuestas, consultar resultados y revisar los indicadores 3.1 y 3.2. La carga y descarga de archivos permanece pendiente del contrato compartido.
+El módulo permite configurar secciones, formar grupos, revisar títulos, evaluar entregas existentes, aplicar encuestas, consultar resultados y revisar los indicadores 3.1, 3.2 y 3.3. La carga y descarga de archivos permanece pendiente del contrato compartido.
 
 ## Preparación de una demostración local
 
@@ -46,7 +46,7 @@ Sustituya `RUTA` por el archivo del lote. `--dry-run` valida sin escribir. Solo 
 
 `competencias.csv` es una foto del lote. La sección `completa` ya tiene entregas, por lo que el comando rechaza el reemplazo de competencias en esa sección y no escribe nada. Valide el formato con un CSV que contenga solo secciones sin entregas.
 
-La demostración incluye dos escuelas, dos periodos, dos directores, una secretaria de escuela, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. El plan de la escuela A tiene dos cursos en el periodo actual: uno con Investigación Formativa y otro sin el módulo. El segundo tiene una sección `sin-investigacion` que no habilita el módulo. Así contrasta el denominador del indicador 3.1. El lote también registra la experiencia histórica como no aplicable a Investigación Formativa y crea una configuración provisional de satisfacción para 3.2. La sección `completa` está configurada y tiene grupos, entregas, evaluaciones y encuesta. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
+La demostración incluye dos escuelas, dos periodos, dos directores, una secretaria de escuela, dos docentes responsables, un docente sin sección y seis cuentas con rol de estudiante. Una de estas también tiene rol de profesor. Incluye un estudiante retirado y otro de una escuela distinta. El plan de la escuela A tiene dos cursos en el periodo actual: uno con Investigación Formativa y otro sin el módulo. El segundo tiene una sección `sin-investigacion` que no habilita el módulo. Así contrasta el denominador del indicador 3.1. El lote también registra la experiencia histórica como no aplicable a Investigación Formativa y crea configuraciones provisionales para 3.2 y 3.3. La sección `completa` está configurada y tiene grupos, entregas, evaluaciones y encuesta. `incompleta` permite configurar. `deshabilitada` impide escrituras. `historica` está cerrada.
 
 ## 1. Habilitación y configuración
 
@@ -152,20 +152,20 @@ Reinicio: use un lote nuevo. No existe una acción de borrado o reapertura para 
 Actor: director. Datos iniciales: escuela asignada y periodos reales con secciones.
 
 1. Abra el resumen de dirección y seleccione escuela, periodo, curso o línea de investigación.
-2. Revise los indicadores 3.1 y 3.2. Compruebe el numerador, el denominador, la regla, la fuente y las experiencias sin clasificar.
+2. Revise los indicadores 3.1, 3.2 y 3.3. Compruebe el numerador, el denominador, la regla, la fuente y las experiencias sin clasificar.
 3. Revise los totales y las tarjetas descriptivas: proyectos por línea, umbrales de nota y decisiones docentes.
 4. Abra «Ver resultados» de una sección.
 5. Consulte la encuesta, sus promedios y la distribución por pregunta. Con un filtro de línea activo, la encuesta sigue siendo de la sección completa.
-6. Consulte el indicador 3.2 de la sección. Verifique la pregunta, las categorías y la fuente provisional.
+6. Consulte los indicadores 3.2 y 3.3 de la sección. Verifique la pregunta, las categorías, los mapeos, las bandas y las fuentes provisionales.
 7. Cambie de página o tamaño en comentarios. Los filtros deben conservarse.
 8. Consulte las notas por unidad, la nota final y todos los empates.
 9. Consulte los conteos de trabajos aprobados y destacados, y el trabajo destacado de la sección.
 10. Vuelva al historial y abra una sección cerrada de otro periodo.
 11. Pulse «Descargar PDF» para guardar el reporte con los filtros aplicados. El archivo no incluye los comentarios confidenciales de la encuesta y no crea un registro de archivo.
 
-Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye. El indicador 3.1 agrega experiencias del alcance; el 3.2 cuenta estudiantes distintos por experiencia. El PDF exporta los mismos datos visibles con los filtros activos, incluye el 3.2 de la sección y remite el 3.1 agregado al tablero, sin comentarios confidenciales.
+Resultado: se cuentan cabeceras de respuesta, no ítems. La participación usa el padrón activo actual. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula. Los proyectos incompletos no entran en la clasificación ni se convierten en ceros. El promedio indica cuántos proyectos incluye. El indicador 3.1 agrega experiencias del alcance; el 3.2 cuenta estudiantes distintos por experiencia; el 3.3 cuenta casos de estudiante y competencia con evidencia de criterios. El PDF exporta los mismos datos visibles con los filtros activos, incluye los indicadores 3.2 y 3.3 de la sección y remite el 3.1 agregado al tablero, sin comentarios confidenciales.
 
-El tablero muestra barras y tablas equivalentes. «> 16» y «> 18» son umbrales estrictos y superpuestos: un proyecto con nota mayor a 18 también cuenta en mayor a 16. La base de ambos es el total de proyectos completos. Los conteos de proyectos, notas y decisiones son estadística descriptiva. Los indicadores 3.1 y 3.2 muestran su regla y fuente; la satisfacción de demostración es provisional. La línea restringe grupos, notas y decisiones; no desagrega la encuesta, que se prepara por sección, y no reduce el denominador del indicador 3.1.
+El tablero muestra barras y tablas equivalentes. «> 16» y «> 18» son umbrales estrictos y superpuestos: un proyecto con nota mayor a 18 también cuenta en mayor a 16. La base de ambos es el total de proyectos completos. Los conteos de proyectos, notas y decisiones son estadística descriptiva. Los indicadores 3.1, 3.2 y 3.3 muestran su regla y fuente; las configuraciones de demostración son provisionales. La línea restringe grupos, notas, decisiones y evidencia de 3.3; no desagrega la encuesta, que se prepara por sección, y no reduce el denominador del indicador 3.1.
 
 Ruta negativa: escuela, curso o línea fuera del alcance, sección ajena o permiso ausente. Se devuelve 403. Una consulta válida sin datos muestra un estado vacío. No existen tendencias ni notas de ejemplo en las pantallas reales.
 

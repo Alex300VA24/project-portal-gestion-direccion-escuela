@@ -172,6 +172,21 @@ final class ReportesTest extends TestCase
             9902 => 4,
             9905 => 3,
         ]);
+        $proyecto = $this->proyecto();
+        $this->evaluar($proyecto, 1, [4, 4, 2]);
+        $this->configurarLogroIndicador();
+        $idRubrica = DB::table('investigacion_formativa.seccion_configuracion')
+            ->where('id_seccion', 9901)
+            ->value('id_rubrica');
+        $criterios = DB::table('investigacion_formativa.criterio')
+            ->where('id_rubrica', $idRubrica)
+            ->orderBy('orden')
+            ->pluck('id_criterio');
+        $pesos = [0.5, 0.3, 0.2];
+
+        foreach ($criterios->values() as $indice => $idCriterio) {
+            $this->registrarMapeoIndicador(9861, (int) $idCriterio, $pesos[$indice]);
+        }
 
         $resumen = $this->resumen();
 
@@ -182,16 +197,24 @@ final class ReportesTest extends TestCase
         $this->assertSame(3, $resumen->indicadores->satisfaccion->denominador);
         $this->assertSame(66.67, $resumen->indicadores->satisfaccion->valor);
         $this->assertTrue($resumen->indicadores->satisfaccion->provisional);
+        $this->assertSame(100.0, $resumen->indicadores->logro_competencias->valor);
+        $this->assertSame(1, $resumen->indicadores->logro_competencias->numerador);
+        $this->assertSame(1, $resumen->indicadores->logro_competencias->denominador);
+        $this->assertSame(100.0, $resumen->indicadores->logro_competencias->cobertura);
+        $this->assertTrue($resumen->indicadores->logro_competencias->provisional);
 
         $seccion = $this->reporte();
         $this->assertSame(2, $seccion->indicador_satisfaccion->numerador);
         $this->assertSame(3, $seccion->indicador_satisfaccion->denominador);
+        $this->assertSame(100.0, $seccion->indicador_logro_competencias->valor);
+        $this->assertSame(1, $seccion->indicador_logro_competencias->denominador);
 
         $this->actingAs($this->datos['users']['director'])
             ->get(route('investigacion-formativa.director.index'))
             ->assertOk()
             ->assertSee('Indicador 3.1 · Experiencias curriculares')
             ->assertSee('Indicador 3.2 · Satisfacción estudiantil')
+            ->assertSee('Indicador 3.3 · Logro de competencias')
             ->assertSee('50%')
             ->assertSee('66.67%')
             ->assertSee('Experiencias curriculares del denominador')

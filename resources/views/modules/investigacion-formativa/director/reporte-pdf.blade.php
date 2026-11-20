@@ -79,6 +79,7 @@
 
     @php
         $satisfaccionIndicador = $reporte->indicador_satisfaccion;
+        $logroIndicador = $reporte->indicador_logro_competencias;
     @endphp
 
     <h2>Indicador 3.2 de la sección</h2>
@@ -144,6 +145,74 @@
         El indicador agregado 3.1 se calcula en el resumen de dirección con el alcance de escuela,
         periodo y curso. Este PDF de sección no lo duplica.
     </p>
+
+    <h2>Indicador 3.3 de la sección</h2>
+    <p>{{ $logroIndicador->nombre }}</p>
+    <table>
+        <tbody>
+            <tr>
+                <th>Valor</th>
+                <td class="num">
+                    {{ $logroIndicador->valor === null ? 'No calculable' : $logroIndicador->valor.'%' }}
+                </td>
+                <th>En banda lograda</th>
+                <td class="num">{{ $logroIndicador->numerador }}</td>
+                <th>Estudiantes válidos</th>
+                <td class="num">{{ $logroIndicador->denominador }}</td>
+            </tr>
+            <tr>
+                <th>Cobertura</th>
+                <td class="num">
+                    {{ $logroIndicador->cobertura === null ? 'No calculable' : $logroIndicador->cobertura.'%' }}
+                </td>
+                <th>Esperados</th>
+                <td class="num">{{ $logroIndicador->esperados }}</td>
+                <th>Estado</th>
+                <td>{{ $logroIndicador->estado }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <p class="nota">
+        <strong>Regla:</strong> {{ $logroIndicador->regla }}
+    </p>
+    @if ($logroIndicador->provisional)
+        <p class="nota">Configuración provisional. La matriz, los pesos y las bandas deben sustituirla antes de un uso institucional.</p>
+    @endif
+    @if ($logroIndicador->fuente !== null)
+        <p class="nota">Fuente: {{ $logroIndicador->fuente }}</p>
+    @endif
+    @if ($logroIndicador->motivo !== null)
+        <p class="alerta">{{ $logroIndicador->motivo }}</p>
+    @endif
+
+    @if ($logroIndicador->competencias !== [])
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Competencia</th>
+                    <th class="num">Logro</th>
+                    <th class="num">Cobertura</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($logroIndicador->competencias as $competencia)
+                    <tr>
+                        <td>{{ $competencia->codigo }}</td>
+                        <td>{{ $competencia->descripcion }}</td>
+                        <td class="num">
+                            {{ $competencia->valor === null ? 'No calculable' : $competencia->valor.'%' }}
+                        </td>
+                        <td class="num">
+                            {{ $competencia->cobertura === null ? 'No calculable' : $competencia->cobertura.'%' }}
+                        </td>
+                        <td>{{ $competencia->estado }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 
     <h2>Calificaciones por grupo</h2>
     @if ($reporte->grupos === [])
@@ -292,7 +361,7 @@
         <li>La participación usa respuestas / participantes activos actuales. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula.</li>
         <li>La aprobación final y el trabajo destacado son decisiones explícitas del docente. No se deducen de la nota ni del estado del título.</li>
         <li>Este reporte no incluye comentarios de la encuesta. La pantalla conserva su paginación confidencial.</li>
-        <li>Los conteos descriptivos no son indicadores oficiales de Calidad. El indicador 3.2 identifica su configuración provisional y no reemplaza la definición institucional.</li>
+        <li>Los conteos descriptivos no son los indicadores 3.1, 3.2 y 3.3. Los indicadores 3.2 y 3.3 identifican su configuración provisional y no reemplazan las definiciones institucionales.</li>
         <li>El reporte se generó una vez con los datos vigentes al momento indicado. No crea registros de archivo.</li>
     </ul>
 
