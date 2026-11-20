@@ -33,6 +33,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libonig-dev \
         libpq-dev \
+        libzip-dev \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
         mbstring \
@@ -40,6 +41,7 @@ RUN apt-get update \
         pcntl \
         pdo_pgsql \
         pgsql \
+        zip \
     && a2enmod rewrite \
     && sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" \
         /etc/apache2/sites-available/*.conf \
