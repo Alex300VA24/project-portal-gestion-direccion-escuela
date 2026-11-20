@@ -666,6 +666,10 @@ class PadronImportService
      */
     public function parsearXlsx(string $ruta): array
     {
+        if (! class_exists(\ZipArchive::class)) {
+            throw new \RuntimeException('este equipo no puede leer archivos de Excel. Guarda la lista como CSV y vuelve a cargarla.');
+        }
+
         $zip = new \ZipArchive;
         if ($zip->open($ruta) !== true) {
             throw new \RuntimeException('No se pudo abrir el archivo XLSX como contenedor ZIP.');
