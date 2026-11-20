@@ -24,6 +24,7 @@ Las rutas de esta tabla son relativas a `app/Modules/InvestigacionFormativa/`, s
 | `Services/DecisionTrabajoService.php` | Aprobación final, selección manual del trabajo destacado, historial y evidencia versionada. |
 | `Services/ReporteService.php` | Resultados por sección, promedio, empates, historial real e integración de indicadores. |
 | `Services/IndicadorService.php` | Cálculo trazable de los indicadores 3.1 y 3.2 con reglas y denominadores explícitos. |
+| `Services/LogroCompetenciasService.php` | Cálculo trazable del indicador 3.3 desde mapeos de criterios, pesos y bandas configurables. |
 | `Services/ReportePdfService.php` | Genera el PDF del reporte de sección desde datos ya calculados; no crea registros de archivo. |
 | `Services/CalificacionService.php` | Normalización y promedios con centésimas enteras. |
 | `Models/`, `Policies/` | Tablas del módulo y autorización de sus recursos. |
@@ -58,7 +59,7 @@ La lectura sigue las flechas desde el formulario hasta los datos y vuelve a la p
 
 ## Esquema y propiedad de datos
 
-El esquema `investigacion_formativa` tiene 26 tablas. Las claves académicas referencian `core`; los usuarios académicos y módulos referencian `seguridad`. `public.users` es la identidad de inicio de sesión. El catálogo compartido de archivos pertenece a `comun`.
+El esquema `investigacion_formativa` tiene 27 tablas. Las claves académicas referencian `core`; los usuarios académicos y módulos referencian `seguridad`. `public.users` es la identidad de inicio de sesión. El catálogo compartido de archivos pertenece a `comun`.
 
 | Grupo | Tablas |
 |---|---|
@@ -67,11 +68,11 @@ El esquema `investigacion_formativa` tiene 26 tablas. Las claves académicas ref
 | Evaluación | `rubrica`, `criterio`, `criterio_nivel`, `entregable`, `entrega`, `evaluacion`, `evaluacion_criterio`, `observacion` |
 | Encuesta | `encuesta`, `encuesta_pregunta`, `encuesta_respuesta`, `encuesta_respuesta_item` |
 | Decisiones | `decision_trabajo` |
-| Indicadores | `indicador_experiencia`, `configuracion_indicador` |
+| Indicadores | `indicador_experiencia`, `configuracion_indicador`, `indicador_competencia_criterio` |
 
 La base impide múltiples grupos del mismo estudiante en una sección y múltiples coordinadores por grupo. La creación del servicio incluye al coordinador como integrante. Las encuestas tienen unicidad por sección y por estudiante; las claves compuestas de los ítems impiden mezclar preguntas y respuestas de encuestas distintas. `decision_trabajo` es un registro append-only: cada fila guarda tipo, acción, actor, fecha, versión y la instantánea de las tres unidades.
 
-Los cambios no alteran las notas oficiales de matrícula. La migración base del módulo y 21 migraciones posteriores describen el estado actual. Las migraciones posteriores se agregan sin reescribir el historial de otros módulos.
+Los cambios no alteran las notas oficiales de matrícula. La migración base del módulo y 22 migraciones posteriores describen el estado actual. Las migraciones posteriores se agregan sin reescribir el historial de otros módulos.
 
 ## Contratos de integración
 
@@ -119,13 +120,13 @@ Los reportes limitan las secciones al alcance antes de leer sus datos. El resume
 
 El tablero de dirección acepta `escuela`, `periodo`, `curso` y `linea`. El filtro de línea incluye las secciones con al menos un proyecto de esa línea. Dentro de esas secciones, los grupos, las decisiones y los conteos por umbral se restringen a la línea. La encuesta es un dato por sección: no se desagrega por línea y sus totales cubren las secciones incluidas completas. Un `curso` o una `linea` fuera del alcance devuelve 403.
 
-Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos de proyectos, notas y decisiones son estadística descriptiva. No se confunden con los indicadores 3.1 y 3.2, que se calculan por separado y muestran regla, denominador y fuente. Si una base es cero, no se calcula un porcentaje.
+Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos de proyectos, notas y decisiones son estadística descriptiva. No se confunden con los indicadores 3.1, 3.2 y 3.3, que se calculan por separado y muestran regla, denominador y fuente. Si una base es cero, no se calcula un porcentaje.
 
 El filtro de línea no reduce el denominador del indicador 3.1 porque una experiencia curricular no tiene línea. El indicador 3.2 sí usa las secciones visibles por el filtro para respetar que la encuesta no se desagrega por línea. El resumen agregado 3.1 pertenece al tablero con alcance; el reporte de una sección no lo duplica.
 
 ## Indicadores de Calidad
 
-Los indicadores 3.1 y 3.2 tienen una implementación local con entradas reemplazables. Las filas del seedor son datos de demostración: la fuente académica y la definición institucional deben sustituirlas. El indicador 3.3 todavía no tiene una matriz ni una escala institucional que permita calcularlo. Ninguna nota final, título aceptado o aprobación de trabajo se usa como sustituto del logro de competencias.
+Los indicadores 3.1, 3.2 y 3.3 tienen una implementación local con entradas reemplazables. Las filas del seedor son datos de demostración: la fuente académica y la definición institucional deben sustituirlas. El 3.3 usa una regla provisional porque todavía no existe una matriz, una escala ni una meta institucional confirmadas. Ninguna nota final, título aceptado o aprobación de trabajo se usa como sustituto del logro de competencias.
 
 ### Indicador 3.1 — Experiencias curriculares con investigación formativa
 
@@ -155,9 +156,11 @@ Los indicadores 3.1 y 3.2 tienen una implementación local con entradas reemplaz
 
 **Definición:** Informe de los docentes responsables de experiencias curriculares con responsabilidad directa en el desarrollo de capacidades/competencias relacionadas con la investigación.
 
-**Base requerida:** Matriz de competencia, elemento, criterio y experiencia curricular, además de una escala de logro y una regla de agregación aprobadas.
+**Entradas:** `indicador_competencia_criterio` declara de forma explícita qué criterio evidencia cada competencia y conserva su peso y fuente. `configuracion_indicador` declara las bandas de logro y la cobertura mínima. Los pesos son relativos y se normalizan entre los criterios disponibles. Las bandas no se superponen y deben cubrir el intervalo de 0 a 100.
 
-**Estado:** Pendiente. La matriz oficial, los pesos, las bandas de logro, la unidad de agregación, la regla de cobertura y la meta no están disponibles. La nota final del módulo, la aceptación del título y la aprobación docente no equivalen al logro de competencia.
+**Unidad y evidencia:** La unidad es el estudiante dentro de una competencia de la sección. El servicio normaliza el puntaje de cada criterio con su máximo de rúbrica y usa solo evaluaciones vigentes de la versión actual de cada entrega. Un estudiante entra al denominador cuando la cobertura de sus criterios alcanza el mínimo configurado. El porcentaje cuenta los estudiantes que caen en una banda marcada como alcanzada.
+
+**Estado:** Implementación local provisional. La matriz oficial, los pesos, las bandas, la unidad de agregación, la regla de cobertura y la meta no están aprobados. La nota final del módulo, la aceptación del título y la aprobación docente no participan del cálculo ni sustituyen el logro de competencia.
 
 ## Exportación a PDF de resultados
 

@@ -40,6 +40,51 @@ trait CreaDatosIndicador
         ]);
     }
 
+    protected function configurarLogroIndicador(
+        ?array $bandas = null,
+        string $coberturaMinima = '100',
+        bool $provisional = true,
+    ): void {
+        $bandas ??= [
+            ['etiqueta' => 'Por lograr', 'minimo' => 0, 'maximo' => 60, 'alcanzado' => false],
+            ['etiqueta' => 'En proceso', 'minimo' => 60, 'maximo' => 80, 'alcanzado' => false],
+            ['etiqueta' => 'Logrado', 'minimo' => 80, 'maximo' => 100, 'alcanzado' => true],
+        ];
+
+        DB::table('investigacion_formativa.configuracion_indicador')->insert([
+            [
+                'indicador' => '3.3',
+                'parametro' => 'bandas_logro',
+                'valor' => json_encode($bandas, JSON_THROW_ON_ERROR),
+                'fuente' => 'Configuración de prueba; sustituir por la definición oficial.',
+                'provisional' => $provisional,
+            ],
+            [
+                'indicador' => '3.3',
+                'parametro' => 'cobertura_minima',
+                'valor' => $coberturaMinima,
+                'fuente' => 'Configuración de prueba; sustituir por la definición oficial.',
+                'provisional' => $provisional,
+            ],
+        ]);
+    }
+
+    protected function registrarMapeoIndicador(
+        int $idCompetencia,
+        int $idCriterio,
+        float $peso,
+        bool $provisional = true,
+        string $fuente = 'Mapeo de prueba; sustituir por la matriz autorizada.',
+    ): void {
+        DB::table('investigacion_formativa.indicador_competencia_criterio')->insert([
+            'id_competencia' => $idCompetencia,
+            'id_criterio' => $idCriterio,
+            'peso' => $peso,
+            'fuente' => $fuente,
+            'provisional' => $provisional,
+        ]);
+    }
+
     protected function registrarExperienciaIndicador(
         int $idPeriodo,
         int $idCursoPlan,
