@@ -21,7 +21,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | Módulo | `gestion_practicas` | 11 | Gestión de Prácticas |
 | Módulo | `tesis` | 22 | Tesis y Proyecto de Tesis |
 | Módulo | `gestion_matriculas` | 9 | Gestión de Matrículas (más la vista `v_historial_academico`) |
-| Módulo | `seguimiento_egresado` | 40 | Seguimiento al Egresado |
+| Módulo | `seguimiento_egresado` | 45 | Seguimiento al Egresado (más 10 vistas de indicadores) |
 
 `config/modules.php` es el inventario oficial de módulos y esquemas. La tabla `seguridad.modulo_sistema` se siembra con los 12 módulos.
 
@@ -59,7 +59,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | `gestion_practicas` | convocatoria, criterio_evaluacion, documento_practica, empresa_usuario, evaluacion, evaluacion_criterio, observacion_convocatoria, observacion_practica, postulacion, practica, seguimiento |
 | `tesis` | acta, actividad_cronograma, asesor_proyecto, colaborador, criterio_rubrica, detalle_evaluacion, entrega, historial_estado, jurado_proyecto, observacion, partida_presupuesto, proyecto_estudiante, proyecto_tesis, recurso, reporte_similitud, resolucion, resultado_jurado, revision, rubrica, solicitud, sustentacion, tipo_solicitud |
 | `gestion_matriculas` | acta_notas, asistencia, componente_evaluacion, cronograma_matricula, limite_creditos, matricula, matricula_detalle, nota, reserva_matricula |
-| `seguimiento_egresado` | 40 tablas: catálogos `cat_*`, campañas, cohortes, egresado, contacto, formación posterior, medición laboral, competencias, objetivos educacionales, satisfacción, importación de padrón, planes de acción, reportes e indicadores |
+| `seguimiento_egresado` | 45 tablas: catálogos `cat_*`, campañas, cohortes, egresado, contacto con historial, invitaciones, formación posterior, medición laboral, competencias, objetivos educacionales, satisfacción, importación de padrón, planes de acción, reportes e indicadores. Más 10 vistas `vw_*` (indicadores I1 a I6, cobertura e historial) |
 
 ## 4. Funciones, triggers y vistas
 
