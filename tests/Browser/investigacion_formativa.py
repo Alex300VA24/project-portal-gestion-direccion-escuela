@@ -517,10 +517,72 @@ class Browser:
         self.capture("director-secretaria-cerrada")
 
     def review_title(self, href):
+        reason = "Delimitar el estudio a los procesos de matrícula."
+        corrected = "Estudio de procesos de matrícula en la escuela"
+
         # Navigate to the group page and verify it loads
         self.visit(href.removeprefix(self.app))
         self.capture("docente-grupo")
         self.check("Grupo page loads", lambda: "Grupo" in self.text())
+
+        # Docente requests title change with reason
+        self.click('input[name=estado][value="Cambio solicitado"]')
+        self.fill("#motivo-revision", reason)
+        self.button("Registrar revisión")
+        self.wait(lambda: "Cambio solicitado" in self.text() and reason in self.text())
+        self.check("Docente solicita cambio de título con motivo", lambda: reason in self.text())
+        self.capture("docente-cambio-solicitado")
+
+        # Integrante reads correction, has no title editor
+        self.login("integrante")
+        self.section("alumno", "mi-grupo")
+        self.check("Integrante ve solicitud de cambio", lambda: reason in self.text())
+        self.check("Integrante no tiene editor de título", lambda: self.js(
+            'return document.querySelector("#titulo-propuesto") === null && document.querySelector(\'main form[action$="/titulo"]\') === null',
+        ))
+        self.capture("integrante-solo-lectura")
+
+        # Coordinador corrects title
+        self.login("coordinador")
+        self.section("alumno", "mi-grupo")
+        self.check("Coordinador ve motivo de corrección", lambda: reason in self.text())
+        self.fill("#titulo-propuesto", corrected)
+        self.button("Guardar título")
+        self.wait(lambda: self.current_title() == corrected)
+        self.check("Título corregido vuelve a Registrado", lambda: self.js(
+            'return document.querySelector("section[aria-labelledby=titulo-propuesta] > div span").textContent.includes("Registrado")',
+        ))
+        self.check("Corrección conserva feedback previo", lambda: reason in self.text())
+        self.capture("coordinador-titulo-corregido")
+        self.logout()
+        self.login("coordinador")
+        self.section("alumno", "mi-grupo")
+        self.check("Título corregido persiste tras login", lambda: self.current_title() == corrected)
+
+        # Docente accepts corrected title
+        self.login("docente-a")
+        self.visit(href.removeprefix(self.app))
+        self.check("Docente ve título corregido actual", lambda: self.current_title() == corrected)
+        self.click("input[name=estado][value=Aceptado]")
+        self.button("Registrar revisión")
+        self.wait(lambda: "Aceptado" in self.text())
+        self.check("Docente acepta título corregido", lambda: self.current_title() == corrected and "Aceptado" in self.text())
+        self.capture("docente-correccion-aceptada")
+
+        # Decision controls visible after acceptance
+        self.check("Panel de decisiones muestra aprobación y selección", lambda: self.js(
+            "return document.body.innerText.includes('Aprobación') || document.body.innerText.includes('aprobación') || document.body.innerText.includes('Destacado') || document.body.innerText.includes('destacado')",
+        ))
+
+        # Integrante reads accepted title, cannot edit
+        self.login("integrante")
+        self.section("alumno", "mi-grupo")
+        self.check("Integrante ve título aceptado", lambda: self.current_title() == corrected and "Aceptado" in self.text())
+        self.check("Integrante no tiene editor de título", lambda: self.js(
+            'return document.querySelector("#titulo-propuesto") === null && document.querySelector(\'main form[action$="/titulo"]\') === null',
+        ))
+        self.check("Integrante ve historial completo", lambda: reason in self.text() and "Estudio de procesos académicos" in self.text() and "Historial de revisiones" in self.text())
+        self.capture("integrante-titulo-aceptado")
 
     def run(self):
         self.login("coordinador")
