@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\InvestigacionFormativa\Exceptions\EstadoInvalido;
 use App\Modules\InvestigacionFormativa\Exceptions\RecursoBloqueado;
 use App\Modules\InvestigacionFormativa\Exceptions\VersionDesactualizada;
+use App\Modules\InvestigacionFormativa\Models\Encuesta;
 use App\Modules\InvestigacionFormativa\Models\Entrega;
 use App\Modules\InvestigacionFormativa\Services\AccesoInvestigacionService;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
@@ -113,6 +114,8 @@ final class InvestigacionDemoSeeder extends Seeder
         // Son un reemplazo candidato: las líneas oficiales definitivas deben
         // suministrarse por la fuente académica autorizada y estas filas de
         // demostración deben ser sustituidas, no combinadas con las oficiales.
+        // Los códigos usan el lote actual para ser únicos en cada base de
+        // demostración y permitir re-siembra sin colisiones de código único.
         foreach ([
             'Algoritmos y complejidad',
             'Ingeniería de software',
@@ -123,7 +126,7 @@ final class InvestigacionDemoSeeder extends Seeder
         ] as $orden => $nombre) {
             $this->insertar('core.linea_investigacion', 'id_linea', [
                 'id_escuela' => $escuelas[0],
-                'codigo' => 'IF-ANT-'.str_pad($orden + 1, 2, '0', STR_PAD_LEFT),
+                'codigo' => $lote.'-ANT-'.str_pad($orden + 1, 2, '0', STR_PAD_LEFT),
                 'nombre' => $nombre,
                 'estado' => 'Activo',
             ]);
@@ -301,21 +304,47 @@ final class InvestigacionDemoSeeder extends Seeder
         $encuestaService = app(EncuestaService::class);
 
         $seccionCompleta = $secciones['completa'];
+
+        // Si ya existen grupos en cualquier sección, los datos de muestra ya
+        // fueron creados (idempotencia para re-seed en misma base).
+        $gruposExistentes = DB::table('investigacion_formativa.grupo')
+            ->count();
+        if ($gruposExistentes > 0) {
+            return;
+        }
+
+        // Línea de investigación de la escuela de la sección (scoped, no global-first)
+        // Obtenemos el id_escuela de la sección completa como valor escalar para
+        // evitar ambigüedades de nombres de columna en el WHERE.
+        $seccionEscuela = DB::table('core.seccion as s')
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
+            ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
+            ->where('s.id_seccion', $seccionCompleta)
+            ->value('pe.id_escuela');
+
+        if ($seccionEscuela === null) {
+            throw new RuntimeException('No se encontró escuela para la sección completa.');
+        }
+
         $idLinea = DB::table('core.linea_investigacion')
+            ->where('id_escuela', $seccionEscuela)
             ->where('estado', 'Activo')
             ->orderBy('id_linea')
             ->value('id_linea');
+
+        if ($idLinea === null) {
+            throw new RuntimeException('No se encontró línea de investigación activa para la escuela de la sección completa.');
+        }
+
         $idTipoProducto = DB::table('investigacion_formativa.tipo_producto')
             ->value('id_tipo_producto');
 
-        $entregables = DB::table('investigacion_formativa.entregable')
-            ->where('id_seccion', $seccionCompleta)
-            ->orderBy('orden')
-            ->get(['id_entregable', 'orden']);
+        if ($idTipoProducto === null) {
+            throw new RuntimeException('No se encontró tipo de producto.');
+        }
 
         // 1. Crear grupos y proyectos a través del servicio normal
-        // Cada grupo usa a su propio coordinador como actor creador, para no
-        // compartir integrantes entre grupos.
+        // Cada grupo usa a su propio coordinador como actor creador.
         $grupos = [
             [
                 'nombre' => 'Grupo Alfa',
@@ -335,41 +364,46 @@ final class InvestigacionDemoSeeder extends Seeder
         foreach ($grupos as $grupo) {
             $actorGrupo = app(AccesoInvestigacionService::class)
                 ->resolver($cuentas[$grupo['coordinador']]['user']);
-            try {
-                $resultado = $gruposService->crear($actorGrupo, $seccionCompleta, [
-                    'nombre' => $grupo['nombre'],
-                    'titulo' => $grupo['titulo'],
-                    'integrante_ids' => array_map(
-                        function (string $nombre) use ($estudiantes): int {
-                            return (int) $estudiantes[$nombre];
-                        },
-                        $grupo['integrantes'],
-                    ),
-                    'id_linea' => (int) $idLinea,
-                    'id_tipo_producto' => (int) $idTipoProducto,
-                ]);
-                $proyectos[] = (int) $resultado->id_proyecto;
-            } catch (EstadoInvalido|RecursoBloqueado|AccesoDenegado $e) {
-                // El grupo ya puede existir en una ejecución previa; buscarlo por nombre
-                $existente = DB::table('investigacion_formativa.grupo')
-                    ->where('id_seccion', $seccionCompleta)
-                    ->where('nombre', $grupo['nombre'])
-                    ->first();
-                if ($existente) {
-                    $proyectoExistente = DB::table('investigacion_formativa.proyecto')
-                        ->where('id_grupo', (int) $existente->id_grupo)
-                        ->first();
-                    if ($proyectoExistente) {
-                        $proyectos[] = (int) $proyectoExistente->id_proyecto;
-                    }
-                }
-            }
+
+            $resultado = $gruposService->crear($actorGrupo, $seccionCompleta, [
+                'nombre' => $grupo['nombre'],
+                'titulo' => $grupo['titulo'],
+                'integrante_ids' => array_map(
+                    function (string $nombre) use ($estudiantes): int {
+                        return (int) $estudiantes[$nombre];
+                    },
+                    $grupo['integrantes'],
+                ),
+                'id_linea' => (int) $idLinea,
+                'id_tipo_producto' => (int) $idTipoProducto,
+            ]);
+            $proyectos[] = (int) $resultado->id_proyecto;
         }
 
         // 2. Crear entregas y evaluaciones para cada proyecto (unidades 1, 2, 3)
         $idModulo = DB::table('seguridad.modulo_sistema')
             ->where('codigo', 'investigacion_formativa')
             ->value('id_modulo');
+
+        $entregables = DB::table('investigacion_formativa.entregable')
+            ->where('id_seccion', $seccionCompleta)
+            ->orderBy('orden')
+            ->get(['id_entregable', 'orden']);
+
+        // Obtener los criterios de la rúbrica de la sección para crear evaluaciones válidas
+        $idRubrica = DB::table('investigacion_formativa.seccion_configuracion')
+            ->where('id_seccion', $seccionCompleta)
+            ->value('id_rubrica');
+
+        if ($idRubrica === null) {
+            throw new RuntimeException('La sección completa no tiene rúbrica configurada.');
+        }
+
+        $criteriosIds = DB::table('investigacion_formativa.criterio')
+            ->where('id_rubrica', $idRubrica)
+            ->orderBy('orden')
+            ->pluck('id_criterio')
+            ->all();
 
         foreach ($proyectos as $indiceProyecto => $idProyecto) {
             foreach ($entregables as $entregable) {
@@ -392,121 +426,90 @@ final class InvestigacionDemoSeeder extends Seeder
 
                 // Evaluar con notas variadas para generar diferentes promedios
                 $nivel = $indiceProyecto === 0 ? 4 : ($indiceProyecto === 1 ? 3 : 2);
-                $niveles = [['id_criterio' => 1, 'nivel' => $nivel]];
-
-                try {
-                    $evaluacionService->guardar(
-                        $actor,
-                        new Entrega(['id_entrega' => (int) $idEntrega]),
-                        $niveles,
-                        'Evaluación de muestra para la unidad '.(int) $entregable->orden,
-                        false,
-                        ['Observación de demostración generada automáticamente.'],
-                        0,
-                    );
-                } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
-                    // Continuar con la siguiente entrega
+                $niveles = [];
+                foreach ($criteriosIds as $idCriterio) {
+                    $niveles[] = ['id_criterio' => (int) $idCriterio, 'nivel' => $nivel];
                 }
+
+                $evaluacionService->guardar(
+                    $actor,
+                    new Entrega(['id_entrega' => (int) $idEntrega]),
+                    $niveles,
+                    'Evaluación de muestra para la unidad '.(int) $entregable->orden,
+                    false,
+                    ['Observación de demostración generada automáticamente.'],
+                    0,
+                );
             }
         }
 
         // 3. Decisiones de aprobación y selección para proyectos completos
-        foreach ($proyectos as $indiceProyecto => $idProyecto) {
-            try {
-                $decisionService->aprobar($actor, $idProyecto, 0);
-            } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
-                // Continuar
-            }
+        foreach ($proyectos as $idProyecto) {
+            $decisionService->aprobar($actor, $idProyecto, 0);
         }
 
         // Seleccionar solo el primer proyecto como trabajo destacado
         if ($proyectos !== []) {
-            try {
-                $decisionService->seleccionar($actor, $proyectos[0], 0);
-            } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
-                // Continuar
-            }
+            $decisionService->seleccionar($actor, $proyectos[0], 0);
         }
 
         // 4. Crear y publicar encuesta, luego agregar respuestas de estudiantes
-        try {
-            $actorDirector = app(AccesoInvestigacionService::class)
-                ->resolver($cuentas['director-a']['user']);
+        $actorDirector = app(AccesoInvestigacionService::class)
+            ->resolver($cuentas['director-a']['user']);
 
-            $encuestaResultado = null;
-            try {
-                $encuestaResultado = $encuestaService->guardarBorrador(
-                    $actorDirector,
-                    $seccionCompleta,
-                    [
-                        '¿El trabajo de investigación fortalece la formación profesional?',
-                        '¿La orientación del docente responsable fue clara y oportuna?',
-                    ],
-                    0,
-                );
-            } catch (EstadoInvalido|RecursoBloqueado|VersionDesactualizada|AccesoDenegado $e) {
-                // La encuesta podría ya existir de una ejecución previa
+        $encuestaResultado = $encuestaService->guardarBorrador(
+            $actorDirector,
+            $seccionCompleta,
+            [
+                '¿El trabajo de investigación fortalece la formación profesional?',
+                '¿La orientación del docente responsable fue clara y oportuna?',
+            ],
+            0,
+        );
+
+        $encuestaModel = Encuesta::query()->find((int) $encuestaResultado->id_encuesta);
+        $encuestaService->publicar($actorDirector, $encuestaModel, (int) $encuestaResultado->version);
+
+        $encuesta = DB::table('investigacion_formativa.encuesta')
+            ->where('id_seccion', $seccionCompleta)
+            ->where('estado', 'publicada')
+            ->first();
+
+        $preguntas = DB::table('investigacion_formativa.encuesta_pregunta')
+            ->where('id_encuesta', (int) $encuesta->id_encuesta)
+            ->orderBy('orden')
+            ->get(['id_pregunta']);
+
+        foreach (['coordinador', 'integrante', 'segundo-grupo'] as $nombreEstudiante) {
+            if (! isset($estudiantes[$nombreEstudiante])) {
+                continue;
+            }
+            $idEstudiante = (int) $estudiantes[$nombreEstudiante];
+            $yaResponde = DB::table('investigacion_formativa.encuesta_respuesta')
+                ->where('id_encuesta', (int) $encuesta->id_encuesta)
+                ->where('id_estudiante', $idEstudiante)
+                ->exists();
+            if ($yaResponde) {
+                continue;
             }
 
-            if ($encuestaResultado !== null) {
-                try {
-                    $encuestaModel = Encuesta::query()->find((int) $encuestaResultado->id_encuesta);
-                    $encuestaService->publicar($actorDirector, $encuestaModel, (int) $encuestaResultado->version);
-                } catch (\Throwable $e) {
-                    // Publicar falló; marcar como publicada directamente para la demostración
-                    DB::table('investigacion_formativa.encuesta')
-                        ->where('id_encuesta', (int) $encuestaResultado->id_encuesta)
-                        ->update([
-                            'estado' => 'publicada',
-                            'publicada_en' => now('UTC'),
-                            'version' => 2,
-                        ]);
-                }
+            $idRespuesta = DB::table('investigacion_formativa.encuesta_respuesta')->insertGetId([
+                'id_encuesta' => (int) $encuesta->id_encuesta,
+                'id_estudiante' => $idEstudiante,
+                'comentario' => 'Respuesta de muestra del estudiante '.$nombreEstudiante,
+                'respondida_en' => now('UTC')->format('Y-m-d H:i:sP'),
+            ], 'id_respuesta');
+
+            $valor = 1;
+            foreach ($preguntas as $pregunta) {
+                DB::table('investigacion_formativa.encuesta_respuesta_item')->insert([
+                    'id_encuesta' => (int) $encuesta->id_encuesta,
+                    'id_respuesta' => (int) $idRespuesta,
+                    'id_pregunta' => (int) $pregunta->id_pregunta,
+                    'valor' => $valor,
+                ]);
+                $valor = $valor === 5 ? 1 : $valor + 1;
             }
-
-            $encuesta = DB::table('investigacion_formativa.encuesta')
-                ->where('id_seccion', $seccionCompleta)
-                ->where('estado', 'publicada')
-                ->first();
-            if ($encuesta) {
-                $preguntas = DB::table('investigacion_formativa.encuesta_pregunta')
-                    ->where('id_encuesta', (int) $encuesta->id_encuesta)
-                    ->orderBy('orden')
-                    ->get(['id_pregunta']);
-
-                foreach (['coordinador', 'integrante', 'segundo-grupo'] as $nombreEstudiante) {
-                    if (! isset($estudiantes[$nombreEstudiante])) {
-                        continue;
-                    }
-                    $idEstudiante = (int) $estudiantes[$nombreEstudiante];
-                    $yaResponde = DB::table('investigacion_formativa.encuesta_respuesta')
-                        ->where('id_encuesta', (int) $encuesta->id_encuesta)
-                        ->where('id_estudiante', $idEstudiante)
-                        ->exists();
-                    if ($yaResponde) {
-                        continue;
-                    }
-                    $idRespuesta = DB::table('investigacion_formativa.encuesta_respuesta')->insertGetId([
-                        'id_encuesta' => (int) $encuesta->id_encuesta,
-                        'id_estudiante' => $idEstudiante,
-                        'comentario' => 'Respuesta de muestra del estudiante '.$nombreEstudiante,
-                        'respondida_en' => now('UTC')->format('Y-m-d H:i:sP'),
-                    ], 'id_respuesta');
-
-                    $valor = 1;
-                    foreach ($preguntas as $pregunta) {
-                        DB::table('investigacion_formativa.encuesta_respuesta_item')->insert([
-                            'id_encuesta' => (int) $encuesta->id_encuesta,
-                            'id_respuesta' => (int) $idRespuesta,
-                            'id_pregunta' => (int) $pregunta->id_pregunta,
-                            'valor' => $valor,
-                        ]);
-                        $valor = $valor === 5 ? 1 : $valor + 1;
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            fwrite(STDERR, 'Encuesta falló: '.get_class($e).': '.$e->getMessage().PHP_EOL);
         }
     }
 
