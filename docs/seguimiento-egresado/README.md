@@ -47,7 +47,13 @@ El egresado no tiene cuenta: entra con el enlace de su invitación.
 
 Para ver «Enviar enlaces»: Padrón → Promoción 2020 (paso 3) o Promoción 2019 (Valeria y Andrés sin enlace). Los alumnos aptos de ejemplo son Valeria Quispe y Andrés Torres (correos `.test`; los dos correos institucionales reales de la demostración **no** están precargados: entran al cargar `datos/alumnos-aptos-demo.csv`); dos egresados que aún no responden la campaña 2026, Joaquín Rojas y Fiorella Mendoza (`alvaroenrique080199@gmail.com` y `arimanuelg544@gmail.com`).
 
-## Configuración
+## Cambio fuera del módulo: extensión `zip` en el Dockerfile
+
+El módulo entrega los formatos F5, F7 y F8 a F11 y el tablero de indicadores en **Excel (`.xlsx`)** y permite cargar el padrón en Excel. Un `.xlsx` es un archivo comprimido, así que PHP necesita la extensión **`zip`**, que la imagen de Docker del portal no traía.
+
+Por eso se modificó el `Dockerfile` de la raíz, con dos líneas: el paquete `libzip-dev` y `zip` en la lista de `docker-php-ext-install`. Es el único archivo del portal que este trabajo toca fuera del módulo.
+
+Si algún entorno no puede tener la extensión, el módulo no se rompe: las descargas salen en CSV y, al cargar un Excel, la pantalla pide guardarlo como CSV. En un PHP local se activa con `extension=zip` en `php.ini`.
 
 Variables opcionales del `.env` (detalle en [correo.md](correo.md)):
 
