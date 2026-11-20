@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 /**
  * Verifica la estructura del esquema gestion_horarios en PostgreSQL:
- * 15 tablas, claves primarias, destinos permitidos de las claves
+ * 17 tablas, claves primarias, destinos permitidos de las claves
  * foráneas y comentarios de catálogo de las cuatro tablas nuevas.
  *
  * Las pruebas de reglas de negocio (rechazos) viven en
@@ -31,6 +31,8 @@ final class GestionHorariosDatabaseTest extends TestCase
         'declaracion_disponibilidad',
         'validacion_horario',
         'conflicto_horario',
+        'demanda_instantanea',
+        'demanda_curso',
     ];
 
     private const TABLAS_NUEVAS = [
@@ -40,7 +42,7 @@ final class GestionHorariosDatabaseTest extends TestCase
         'conflicto_horario',
     ];
 
-    public function test_the_module_has_exactly_fifteen_tables(): void
+    public function test_the_module_has_exactly_seventeen_tables(): void
     {
         $this->requirePostgres();
 
@@ -68,7 +70,7 @@ final class GestionHorariosDatabaseTest extends TestCase
               WHERE table_schema = 'gestion_horarios' AND constraint_type = 'PRIMARY KEY'"
         );
 
-        $this->assertSame(15, (int) $filas[0]->total);
+        $this->assertSame(17, (int) $filas[0]->total);
     }
 
     public function test_foreign_keys_only_point_to_allowed_schemas(): void
@@ -98,7 +100,7 @@ final class GestionHorariosDatabaseTest extends TestCase
 
         foreach (self::TABLAS_NUEVAS as $tabla) {
             $existe = DB::selectOne(
-                "SELECT obj_description(?::regclass) IS NOT NULL AS ok",
+                'SELECT obj_description(?::regclass) IS NOT NULL AS ok',
                 ["gestion_horarios.{$tabla}"]
             );
 
