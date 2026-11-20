@@ -103,7 +103,7 @@ La fase 5 sigue abierta. Los flujos disponibles y sus permisos se describen en [
 | C | Solicitud, programación, petición de cambio, reprogramación, cancelación, registro y corrección de la atención, participantes, cumplimiento del compromiso, avisos dentro del módulo, alta y reasignación manual por Coordinación con habilitación y capacidad. | Finalización sin relevo, asignación automática, seguimiento longitudinal y cruce con la agenda de Consejería. |
 | D | Consulta de alertas SAT registradas en el expediente del tutor autorizado. | Evaluación con criterios aprobados y evidencia por sección, agenda de Consejería y derivaciones con respuesta de Bienestar. |
 | E | Consulta personal del perfil, brechas, inscripciones, asistencia y calificaciones publicadas. | Recepción y procedencia de puntajes, diagnóstico, aprobación y publicación de ofertas, inscripción y recepción de resultados de la fuente autorizada. |
-| F | Borrador, presentación y revisión versionada del aporte del tutor por Coordinación, con población de la escuela y período. | Plan general, informes, indicadores I1–I8 y publicación acordada con Calidad. |
+| F | Borrador, presentación y revisión versionada del aporte del tutor. Registro, consulta y retiro del PDF del plan general F4 ya aprobado, por escuela y período. | Informes, indicadores I1–I8 y publicación acordada con Calidad. |
 | G | Consulta de la situación académica que ya figura en el expediente del tutor. | Evidencia oficial de continuidad, reglas y bloqueo de cierre, rectificación y canalización de casos. |
 
 Los flujos de prueba usan una instancia aislada. Las migraciones de las entregas agregan estructura. Los contratos institucionales y la provisión de cuentas, catálogos y datos se tratan aparte.

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Tests\Support\CreatesPrematriculaAcademicData;
@@ -621,6 +622,77 @@ final class AccesoTest extends TestCase
         $this->actingAs($tutor);
         DB::table('seguimiento_estudiante.tutor_asignacion')->where('id_docente', 101)->update(['fecha_fin' => '2026-11-18']);
         $this->postJson($guardar, $presentar)->assertNotFound();
+    }
+
+    public function test_general_tutoring_plan_preserves_versions_and_restricts_pdf_access(): void
+    {
+        Storage::fake('local');
+        $coordinador = User::factory()->create();
+        $this->link($coordinador, 1001);
+        $this->grantPermission($coordinador, 'seguimiento-estudiante.view');
+        $this->grantPermission($coordinador, 'seguimiento-estudiante.plan-general.publicar');
+
+        $ambito = [20, 202602];
+        $mostrar = route('seguimiento-estudiante.plan-general.mostrar', $ambito);
+        $publicar = route('seguimiento-estudiante.plan-general.publicar', $ambito);
+        $contenido = "%PDF-1.4\nPlan general sintético\n%%EOF";
+        $form = [
+            'version' => 0,
+            'request_id' => (string) Str::uuid(),
+            'title' => 'Plan general de Tutoría 2026',
+            'approval_reference' => 'ACTA-42',
+            'approved_by' => 'Dirección de Escuela',
+            'approved_on' => '2026-11-10',
+            'valid_from' => '2026-11-11',
+            'valid_until' => '2026-12-01',
+            'approval_confirmed' => '1',
+        ];
+        $pdf = fn () => UploadedFile::fake()->createWithContent('plan.pdf', $contenido);
+
+        $this->actingAs($coordinador)->post($publicar, $form + ['pdf' => $pdf()])->assertNotFound();
+        DB::table('seguimiento_estudiante.coordinacion_ambito')->insert([
+            'id_persona' => 1001, 'id_escuela' => 20, 'id_periodo' => 202602,
+        ]);
+        $this->get(route('seguimiento-estudiante.plan-general.index'))->assertOk()->assertSee($mostrar);
+        $this->get($mostrar)->assertOk()->assertSee('Sin publicación');
+        $this->post($publicar, $form + ['pdf' => $pdf()])->assertRedirect($mostrar);
+        $this->post($publicar, $form + ['pdf' => $pdf()])->assertRedirect($mostrar);
+        $this->postJson($publicar, array_replace($form, ['request_id' => (string) Str::uuid(), 'pdf' => $pdf()]))
+            ->assertUnprocessable()->assertJsonValidationErrors('version');
+        $this->post($publicar, array_replace($form, [
+            'version' => 1, 'request_id' => (string) Str::uuid(), 'title' => 'Segunda versión del plan', 'pdf' => $pdf(),
+        ]))->assertRedirect($mostrar);
+        $this->get($mostrar)->assertOk()->assertSee('Estado del plan: Vigente')->assertSee('Versión 2')->assertSee('Versión 1');
+
+        $registro = json_decode(DB::table('seguimiento_estudiante.operacion')
+            ->where('id_escuela', 20)->where('clave', 'f4-general-tutoria|202602')->value('datos'), true);
+        $this->assertCount(2, $registro['documents']);
+        $actual = collect($registro['documents'])->firstWhere('version', 2);
+        $descargar = route('seguimiento-estudiante.plan-general.descargar', [...$ambito, $actual['id']]);
+        $retirar = route('seguimiento-estudiante.plan-general.retirar', [...$ambito, $actual['id']]);
+        $motivo = ['version' => 2, 'reason' => 'Retiro autorizado por Dirección.'];
+
+        $tutor = User::factory()->create();
+        $this->link($tutor, 1002);
+        $this->grantPermission($tutor, 'seguimiento-estudiante.view');
+        $this->grantPermission($tutor, 'seguimiento-estudiante.tutoria.view');
+        $this->actingAs($tutor)->get($descargar)->assertNotFound();
+        DB::table('core.docente')->insert([
+            'id_docente' => 101, 'id_persona' => 1002, 'id_departamento' => 30,
+            'codigo_docente' => 'D-101', 'estado' => 'Activo',
+        ]);
+        DB::table('seguimiento_estudiante.tutor_asignacion')->insert([
+            'id_estudiante' => 1001, 'id_docente' => 101, 'id_periodo' => 202602, 'fecha_asignacion' => '2026-11-01',
+        ]);
+        $this->get($descargar)->assertOk()->assertDownload('F4-general-v2.pdf')->assertContent($contenido);
+        $this->get(route('seguimiento-estudiante.plan-general.descargar', [21, 202602, $actual['id']]))->assertNotFound();
+        $this->postJson($retirar, $motivo)->assertForbidden();
+
+        $this->actingAs($coordinador)->post($retirar, $motivo)->assertRedirect($mostrar);
+        $this->get($mostrar)->assertSee('Estado del plan: Retirado')->assertSee($motivo['reason']);
+        $this->get($descargar)->assertOk()->assertContent($contenido);
+        Storage::disk('local')->put('seguimiento-estudiante/plan-general/20/202602/'.$actual['sha256'].'.pdf', 'Daño de prueba');
+        $this->get($descargar)->assertServiceUnavailable();
     }
 
     public function test_coordination_assigns_and_reassigns_without_losing_the_previous_tutor_history(): void

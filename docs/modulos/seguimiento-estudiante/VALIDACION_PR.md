@@ -26,7 +26,7 @@ Integrar el código de SSE-EPI con la sesión y los permisos del portal. Las mig
 - Tutoría con asignación y reasignación manual, solicitudes, agenda, atención, rectificaciones, compromisos, avisos y constancia personal.
 - Secretaría con prevalidación, validación de referencias, lotes versionados y confirmación para futura entrega.
 - Consulta del perfil de ingreso y resultados publicados de Nivelación. Documentos PDF y materiales privados con autorización por inscripción o ámbito de gestión.
-- Presentación y revisión del aporte tutorial conservando versiones y la separación del borrador privado.
+- Presentación y revisión del aporte tutorial conservando versiones y la separación del borrador privado. Registro, consulta y retiro del PDF del plan general F4 previamente aprobado.
 - Consulta de alertas y situación académica existentes. Cola del portal para recordatorios de citas.
 
 **Verificación reproducida en un entorno descartable**
@@ -39,6 +39,7 @@ Integrar el código de SSE-EPI con la sesión y los permisos del portal. Las mig
 | Imagen del portal con PHP 8.4.28 y Apache | Sesión HTTP, expediente propio, descarga PDF, rechazo de un recurso fuera de alcance y carga del JavaScript compilado. |
 | Envíos y trabajadores simultáneos | Dos validaciones del mismo lote devolvieron una revisión. Dos trabajadores dejaron un solo aviso y ningún trabajo fallido. |
 | Verificación estática | Composer, Pint del módulo, compilación de Vite y git diff --check. |
+| Seguimiento después de integrar F4 | 18 pruebas funcionales y 461 aserciones en PostgreSQL 18.6 aislado. Se verificaron versiones, reintentos, acceso por ámbito y retiro sin perder el PDF. |
 
 Se usaron contenedores aislados de Podman sin publicar puertos y con sockets locales descartables. El paquete de ejecución excluye el almacenamiento privado y los archivos generados por pruebas. El caso de una cuenta con expedientes propios en dos escuelas verifica el perfil seleccionado en Nivelación y la constancia que corresponde a la solicitud.
 
@@ -52,6 +53,6 @@ Se usaron contenedores aislados de Podman sin publicar puertos y con sockets loc
 
 - Secretaría confirma el lote dentro de Seguimiento. Sigue pendiente el contrato de entrega, aplicación oficial y recuperación con Gestión de Matrículas.
 - Consejería y Nivelación conservan los recorridos parciales registrados en el plan. El informe final se genera a partir de un cierre publicado. La aprobación y publicación operativa del cierre pertenece al flujo académico pendiente.
-- La asignación automática, el plan general, los indicadores I1–I8, la continuidad y el cierre del proceso académico siguen pendientes.
+- La asignación automática, los indicadores I1–I8, la continuidad y el cierre del proceso académico siguen pendientes.
 
 Consulta [el estado de las fases 5 y 6](README.md#5-incorporar-los-procesos-por-entregas) y [los permisos y contratos](DATOS_Y_ACCESOS.md#contratos-con-otros-módulos).

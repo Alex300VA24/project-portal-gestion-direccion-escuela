@@ -31,6 +31,12 @@
         </div>
     @endcan
 
+    @canany(['seguimiento-estudiante.plan-general.publicar', 'seguimiento-estudiante.tutoria.view'])
+        <div class="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
+            <a class="text-indigo-700 underline" href="{{ route('seguimiento-estudiante.plan-general.index') }}">Plan general de Tutoría</a>
+        </div>
+    @endcanany
+
     @can('seguimiento-estudiante.secretaria.lotes')
         <div class="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
             <a class="text-indigo-700 underline" href="{{ route('seguimiento-estudiante.secretaria.lotes.index') }}">Lotes de Secretaría</a>

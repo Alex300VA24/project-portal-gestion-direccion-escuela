@@ -3,6 +3,7 @@
 use App\Modules\SeguimientoEstudiante\Controllers\AsignacionTutoriaController;
 use App\Modules\SeguimientoEstudiante\Controllers\AvisoTutoriaController;
 use App\Modules\SeguimientoEstudiante\Controllers\DocumentosNivelacionController;
+use App\Modules\SeguimientoEstudiante\Controllers\PlanGeneralTutoriaController;
 use App\Modules\SeguimientoEstudiante\Controllers\PlanTutoriaController;
 use App\Modules\SeguimientoEstudiante\Controllers\RecepcionSecretariaController;
 use App\Modules\SeguimientoEstudiante\Controllers\SeguimientoEstudianteController;
@@ -34,6 +35,19 @@ Route::prefix('seguimiento-estudiante')
         Route::middleware('can:seguimiento-estudiante.secretaria.prevalidar')->group(function () {
             Route::get('/secretaria/recepcion', [RecepcionSecretariaController::class, 'index'])->name('secretaria.recepcion');
             Route::post('/secretaria/recepcion', [RecepcionSecretariaController::class, 'prevalidar'])->name('secretaria.prevalidar');
+        });
+        Route::prefix('plan-general-de-tutoria')->name('plan-general.')->group(function () {
+            Route::get('/', [PlanGeneralTutoriaController::class, 'index'])->name('index');
+            Route::get('/{escuela}/{periodo}', [PlanGeneralTutoriaController::class, 'mostrar'])
+                ->whereNumber(['escuela', 'periodo'])->name('mostrar');
+            Route::get('/{escuela}/{periodo}/{documento}', [PlanGeneralTutoriaController::class, 'descargar'])
+                ->whereNumber(['escuela', 'periodo'])->whereUuid('documento')->name('descargar');
+            Route::middleware('can:seguimiento-estudiante.plan-general.publicar')->group(function () {
+                Route::post('/{escuela}/{periodo}', [PlanGeneralTutoriaController::class, 'publicar'])
+                    ->whereNumber(['escuela', 'periodo'])->name('publicar');
+                Route::post('/{escuela}/{periodo}/{documento}/retirar', [PlanGeneralTutoriaController::class, 'retirar'])
+                    ->whereNumber(['escuela', 'periodo'])->whereUuid('documento')->name('retirar');
+            });
         });
         Route::middleware('can:seguimiento-estudiante.plan-tutoria.revisar')->group(function () {
             Route::get('/coordinacion/planes-de-tutoria', [PlanTutoriaController::class, 'coordinacion'])->name('planes.coordinacion');

@@ -208,6 +208,8 @@ El lote se identifica por escuela, período, tipo y referencia de origen. Cada r
 
 La revisión de aportes de Tutoría requiere `seguimiento-estudiante.plan-tutoria.revisar` y `coordinacion_ambito` en un período activo. Coordinación consulta la última versión presentada. La revisión guarda comentario, decisión y responsable en esa versión. Las ediciones posteriores del borrador se mantienen privadas al tutor y una revisión con una versión desactualizada se rechaza.
 
+El plan general F4 registra un PDF previamente aprobado y su referencia institucional. Publicar y retirar exige `seguimiento-estudiante.plan-general.publicar` y una designación vigente en `coordinacion_ambito`. Quien tenga `seguimiento-estudiante.tutoria.view` y una asignación tutorial vigente puede consultar y descargar publicaciones de su escuela y período. Se conservan las versiones, la vigencia y el retiro en `seguimiento_estudiante.operacion`. El PDF privado se guarda en `storage/app/private/seguimiento-estudiante/plan-general/`, con respaldo en el volumen privado del portal. La acción registra la aprobación externa que declara Coordinación.
+
 
 ## Aceptación
 
