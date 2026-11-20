@@ -33,6 +33,7 @@ Módulo **Tesis y Proyecto de Tesis** (`/tesis-proyecto-tesis`). Cada flujo est�
   - [F-18 · «Volver» y regreso a la lista de origen](#f-18--volver-y-regreso-a-la-lista-de-origen)
   - [F-19 · Mensajes en español y «Dar conformidad»](#f-19--mensajes-en-español-y-dar-conformidad)
   - [F-20 · Recorrido completo con clics reales](#f-20--recorrido-completo-con-clics-reales)
+  - [F-21 · Documento corregido en las pantallas del revisor](#f-21--documento-corregido-en-las-pantallas-del-revisor)
 - [Pruebas automáticas](#pruebas-automáticas)
 
 ---
@@ -717,10 +718,40 @@ Las listas de asesor (resolución de Secretaría) y de jurado (Director) muestra
 
 ---
 
+## F-21 · Documento corregido en las pantallas del revisor
+
+| | |
+|---|---|
+| **Objetivo** | El PDF corregido que adjunta el estudiante al responder se ve en **todas** las listas del revisor, no solo en la ficha: también en la rúbrica del asesor y en «Tus observaciones abiertas» del jurado (revisión del proyecto, revisión intermedia y revisión final). Solo lo abre quien tiene relación con el proyecto. |
+| **Cuentas** | est04@, asesor@, est08@, jurado1@, jurado2@, profesor@ |
+| **Escenario** | PT-DEMO-04 (observaciones del asesor) y PT-DEMO-08 (revisión intermedia). |
+| **Datos** | Siembra los escenarios. |
+
+**Pasos**
+
+1. **est04@** → Observaciones: responde la primera **adjuntando un PDF** y la segunda **sin adjuntar ni elegir versión**.
+2. **asesor@** → Mis proyectos → PT-DEMO-04 → **Verificar con rúbrica**: revisa «Tus observaciones abiertas». Repite en **Revisar avance** y en la ficha del proyecto.
+3. **asesor@**: pulsa **Ver documento corregido (vN)**.
+4. **jurado1@** → Proyectos asignados → PT-DEMO-08 → **Revisión intermedia**: marca un criterio ✗ con su observación → **Registrar revisión intermedia**.
+5. **est08@** → Observaciones: responde la observación del jurado **adjuntando un PDF**.
+6. **jurado1@** → PT-DEMO-08 (pantalla de verificación) → «Tus observaciones abiertas» → **Ver documento corregido (vN)** → **Dar por levantada**.
+7. **profesor@** (sin relación con los proyectos): abre la dirección del documento corregido.
+
+**Resultado esperado**
+
+- Pasos 2 y 6: junto a la respuesta aparece «· corregida en vN» y el enlace **Ver documento corregido (vN)**, antes del botón **Dar por levantada**. La respuesta sin adjunto muestra «· sin versión corregida indicada». Es el mismo bloque que en la ficha del proyecto (`partials/correccion`).
+- Paso 3 y 6: el PDF se abre en otra pestaña (200, `application/pdf`). También lo abren los demás miembros activos del jurado y el asesor del proyecto.
+- Paso 7: **403**. Tampoco lo abre un estudiante de otro proyecto.
+- Con clics reales se hizo con un proyecto nuevo de **nuevo@**: respondió con PDF una observación del asesor y otra de la revisión intermedia de jurado1@; ambos revisores vieron el enlace en su pantalla de verificación, abrieron el PDF y la dieron por levantada. profesor@ recibió 403 en los dos enlaces. Resultado: 34 de 34 pasos correctos, sin errores de JavaScript.
+
+**Pruebas automáticas:** `DocumentoCorregidoRevisorTest` (asesor en verificar, revisar y ficha; jurado en la revisión intermedia; descargas 200/403).
+
+---
+
 ## Pruebas automáticas
 
 ```bash
-vendor/bin/phpunit --filter=TesisProyectoTesis           # 104 pruebas del módulo
+vendor/bin/phpunit --filter=TesisProyectoTesis           # 106 pruebas del módulo
 vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre módulos
 ```
 
@@ -745,6 +776,7 @@ vendor/bin/phpunit tests/Unit/ModuleStructureTest.php    # aislamiento entre mó
 | `MensajesValidacionTest` | Mensajes de validación en español en todos los FormRequest |
 | `VolverTest` | «← Volver a …» y regreso a la lista de origen |
 | `RespuestaConDocumentoTest` | Respuesta a observaciones con el PDF corregido |
+| `DocumentoCorregidoRevisorTest` | Enlace al documento corregido en las pantallas de verificación del asesor y del jurado; descarga 200/403 |
 | `FormatoF1Test` | Formulario F1, duración, fichas con totales, seeder de líneas |
 | `OficioDecanatoTest` | Oficio al Decanato y su constancia en PDF |
 | `Unit/ParametrosEstadosTest` | Parámetros del proceso y etiquetas de estado |

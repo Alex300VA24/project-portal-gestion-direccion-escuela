@@ -187,7 +187,7 @@ En **Mis proyectos** ves los proyectos que asesoras y cifras de lo pendiente. Ca
    - **Proyecto culminado**: el documento pasa a la verificación con la rúbrica.
 
    Si escribiste observaciones nuevas, solo puedes elegir «Con observaciones».
-5. Si el estudiante respondió observaciones anteriores, puedes marcarlas como **Dar por levantada** en la misma pantalla.
+5. Si el estudiante respondió observaciones anteriores, puedes marcarlas como **Dar por levantada** en la misma pantalla. Junto a cada respuesta está el enlace **Ver documento corregido (vN)**.
 6. Pulsa **Enviar revisión**.
 
 ![Revisión de un avance](img/asesor-revisar.png)
@@ -195,6 +195,8 @@ En **Mis proyectos** ves los proyectos que asesoras y cifras de lo pendiente. Ca
 ### Dar por levantada una observación
 
 En el detalle del proyecto, sección «Observaciones del proyecto», junto a la respuesta del estudiante aparece **Ver documento corregido (vN)**: ábrelo para revisar la corrección. Luego pulsa **Dar por levantada**. Si el estudiante no indicó la versión, verás «sin versión corregida indicada». Solo puedes levantar las observaciones que tú registraste.
+
+El mismo enlace aparece en «Tus observaciones abiertas» de la pantalla **Verificar con rúbrica**, así que puedes levantarlas ahí antes de registrar Turnitin.
 
 Al final del detalle del proyecto están los datos del F1: datos de la investigación, cronograma y recursos con sus totales.
 
@@ -340,6 +342,8 @@ Menú: **Proyectos asignados**, **Sustentaciones**.
 3. Pulsa **Dar conformidad** si todo cumple, o **Guardar y enviar observaciones** si hay algo por corregir.
 
 Puedes ver si los otros miembros ya revisaron y cuántos criterios marcaron como cumplidos, pero no su detalle. Cuando los tres dan su conformidad, el proyecto avanza solo.
+
+En la misma pantalla, «Tus observaciones abiertas» lista lo que observaste (en la revisión del proyecto, la intermedia o la final). Cuando el estudiante responde, junto a su respuesta aparece **Ver documento corregido (vN)** (o «sin versión corregida indicada»). Ábrelo y pulsa **Dar por levantada**.
 
 ![Proyectos del jurado](img/jurado-proyectos.png)
 

@@ -18,11 +18,6 @@
 @if ($o->respuesta_estudiante && $o->estado !== 'Pendiente')
     <div class="tz-small" style="background: var(--tz-alt); border-radius: 10px; padding: 10px 12px">
         <strong>Respuesta del estudiante:</strong> {{ $o->respuesta_estudiante }}
-        @if ($o->entregaCorreccion)
-            <span class="tz-muted">· corregida en v{{ $o->entregaCorreccion->version }}</span>
-            <a class="tz-doc-link" href="{{ route('tesis-proyecto-tesis.archivos.descargar', ['entrega', $o->entregaCorreccion->uuid]) }}" target="_blank" rel="noopener">Ver documento corregido (v{{ $o->entregaCorreccion->version }})</a>
-        @else
-            <span class="tz-warning-text">· sin versión corregida indicada</span>
-        @endif
+        @include('modules.tesis-proyecto-tesis.partials.correccion')
     </div>
 @endif

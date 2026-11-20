@@ -49,7 +49,7 @@
                                 <div class="tz-tags"><span class="tz-status is-{{ $o->estado === 'Respondida' ? 'info' : 'warning' }}">{{ $o->estado }}</span> <span class="tz-muted tz-small">v{{ $o->version_entrega }} · {{ $o->seccion_documento ?? 'General' }}</span></div>
                                 <span>{{ $o->descripcion }}</span>
                                 @if ($o->estado === 'Respondida')
-                                    <span class="tz-small"><strong>Respuesta:</strong> {{ $o->respuesta_estudiante }} @if ($o->entregaCorreccion)<span class="tz-muted">· corregida en v{{ $o->entregaCorreccion->version }}</span>@endif</span>
+                                    <span class="tz-small"><strong>Respuesta:</strong> {{ $o->respuesta_estudiante }} @include('modules.tesis-proyecto-tesis.partials.correccion')</span>
                                     <label class="tz-check"><input type="checkbox" name="levantar[]" value="{{ $o->uuid }}" x-model="levantar"> Dar por levantada</label>
                                 @endif
                             </li>

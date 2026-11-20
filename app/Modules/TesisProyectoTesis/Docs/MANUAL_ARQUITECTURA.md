@@ -418,7 +418,7 @@ Siembra **dentro** del contenedor `app` y como `www-data`, para que los PDF qued
 
 | Suite | Cantidad |
 |---|---|
-| `tests/Feature/TesisProyectoTesis/` | 17 archivos de prueba (más el ayudante `EnviaFormularios`), 102 pruebas |
+| `tests/Feature/TesisProyectoTesis/` | 18 archivos de prueba (más el ayudante `EnviaFormularios`), 104 pruebas |
 | `tests/Unit/TesisProyectoTesis/` | 1 archivo, 2 pruebas |
 | `tests/Unit/ModuleStructureTest.php`, `ModuleSchemaIsolationTest.php` | Aislamiento entre módulos (globales) |
 

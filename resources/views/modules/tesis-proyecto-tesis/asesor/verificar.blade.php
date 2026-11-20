@@ -23,7 +23,7 @@
                         <div class="tz-tags"><span class="tz-status is-{{ $o->estado === 'Respondida' ? 'info' : 'warning' }}">{{ $o->estado }}</span> <span class="tz-muted tz-small">v{{ $o->version_entrega }} · {{ $o->seccion_documento ?? 'General' }}</span></div>
                         <span>{{ $o->descripcion }}</span>
                         @if ($o->estado === 'Respondida')
-                            <span class="tz-small"><strong>Respuesta:</strong> {{ $o->respuesta_estudiante }}</span>
+                            <span class="tz-small"><strong>Respuesta:</strong> {{ $o->respuesta_estudiante }} @include('modules.tesis-proyecto-tesis.partials.correccion')</span>
                             <form method="POST" action="{{ route('tesis-proyecto-tesis.asesor.observaciones.levantar', [$proyecto, $o->uuid]) }}">@csrf<button class="tz-btn tz-btn-secondary tz-btn-sm" type="submit">Dar por levantada</button></form>
                         @endif
                     </li>
