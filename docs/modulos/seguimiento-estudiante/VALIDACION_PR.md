@@ -24,6 +24,7 @@ Integrar el código de SSE-EPI con la sesión y los permisos del portal. Las mig
 
 - Identidad académica vinculada a la sesión del portal, acceso por permiso de Spatie y alcance de escuela, período y expediente.
 - Tutoría con asignación y reasignación manual, solicitudes, agenda, atención, rectificaciones, compromisos, avisos y constancia personal.
+- Cierre de asignaciones de Tutoría con causa vigente y reemplazo cuando corresponda. Coordinación registra el catálogo con evidencia de aprobación.
 - Secretaría con prevalidación, validación de referencias, lotes versionados y confirmación para futura entrega.
 - Consulta del perfil de ingreso y resultados publicados de Nivelación. Documentos PDF y materiales privados con autorización por inscripción o ámbito de gestión.
 - Presentación y revisión del aporte tutorial conservando versiones y la separación del borrador privado. Registro, consulta y retiro del PDF del plan general F4 previamente aprobado.
@@ -40,12 +41,13 @@ Integrar el código de SSE-EPI con la sesión y los permisos del portal. Las mig
 | Envíos y trabajadores simultáneos | Dos validaciones del mismo lote devolvieron una revisión. Dos trabajadores dejaron un solo aviso y ningún trabajo fallido. |
 | Verificación estática | Composer, Pint del módulo, compilación de Vite y git diff --check. |
 | Seguimiento después de integrar F4 | 18 pruebas funcionales y 461 aserciones en PostgreSQL 18.6 aislado. Se verificaron versiones, reintentos, acceso por ámbito y retiro sin perder el PDF. |
+| Seguimiento después de integrar el cierre de asignaciones | 19 pruebas funcionales y 496 aserciones en PostgreSQL 18.6 aislado. Se verificaron permisos, ámbito, aprobación de catálogo, cierre con o sin relevo y reintentos. |
 
 Se usaron contenedores aislados de Podman sin publicar puertos y con sockets locales descartables. El paquete de ejecución excluye el almacenamiento privado y los archivos generados por pruebas. El caso de una cuenta con expedientes propios en dos escuelas verifica el perfil seleccionado en Nivelación y la constancia que corresponde a la solicitud.
 
 **Impacto operativo**
 
-- Aplicar las 20 migraciones nuevas únicamente en el entorno aprobado. El esquema de Seguimiento queda con 38 tablas. La migración de asignaciones conserva los episodios previos al reasignar. Una reversión posterior a la creación de dichos episodios puede requerir un plan específico porque la restricción anterior no admite el historial repetido.
+- Aplicar las 21 migraciones nuevas únicamente en el entorno aprobado. El esquema de Seguimiento queda con 38 tablas. Las migraciones de asignaciones conservan los episodios previos y la causa de cierre. Una reversión posterior a la creación de dichos episodios puede requerir un plan específico porque la restricción anterior no admite el historial repetido.
 - Provisionar vínculos y permisos de Spatie por persona y sus ámbitos académicos con los responsables del portal.
 - Respaldar y persistir el almacenamiento privado de Nivelación. Sus adjuntos usan el catálogo institucional. Programar el planificador del portal y un trabajador que consuma la cola seguimiento-estudiante.
 

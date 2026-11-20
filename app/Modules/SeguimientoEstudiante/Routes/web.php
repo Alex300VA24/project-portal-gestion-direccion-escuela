@@ -23,6 +23,14 @@ Route::prefix('seguimiento-estudiante')
                 ->whereNumber(['escuela', 'periodo'])->name('asignaciones.mostrar');
             Route::post('/asignaciones-de-tutoria/{escuela}/{periodo}', [AsignacionTutoriaController::class, 'guardar'])
                 ->whereNumber(['escuela', 'periodo'])->name('asignaciones.guardar');
+            Route::post('/asignaciones-de-tutoria/{escuela}/{periodo}/finalizar', [AsignacionTutoriaController::class, 'finalizar'])
+                ->whereNumber(['escuela', 'periodo'])->name('asignaciones.finalizar');
+            Route::middleware('can:seguimiento-estudiante.tutoria.causas.gestionar')->group(function () {
+                Route::get('/asignaciones-de-tutoria/{escuela}/{periodo}/causas', [AsignacionTutoriaController::class, 'catalogo'])
+                    ->whereNumber(['escuela', 'periodo'])->name('asignaciones.causas');
+                Route::post('/asignaciones-de-tutoria/{escuela}/{periodo}/causas', [AsignacionTutoriaController::class, 'guardarCatalogo'])
+                    ->whereNumber(['escuela', 'periodo'])->name('asignaciones.causas.guardar');
+            });
         });
         Route::middleware('can:seguimiento-estudiante.secretaria.lotes')->group(function () {
             Route::get('/secretaria/lotes', [RecepcionSecretariaController::class, 'lotes'])->name('secretaria.lotes.index');

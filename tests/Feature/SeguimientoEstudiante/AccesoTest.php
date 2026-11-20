@@ -833,6 +833,100 @@ final class AccesoTest extends TestCase
         ]);
     }
 
+    public function test_coordination_closes_tutor_assignments_using_the_current_approved_catalogue(): void
+    {
+        DB::table('core.persona')->insert([
+            'id_persona' => 1003, 'tipo_documento' => 'DNI', 'numero_documento' => '70000003',
+            'nombres' => 'Coordinación', 'apellido_paterno' => 'Prueba',
+            'id_pais_nacionalidad' => 1, 'id_distrito_domicilio' => 1,
+        ]);
+        DB::table('core.docente')->insert([
+            'id_docente' => 101, 'id_persona' => 1002, 'id_departamento' => 30, 'codigo_docente' => 'D-101', 'estado' => 'Activo',
+        ]);
+        $asignacion = DB::table('seguimiento_estudiante.tutor_asignacion')->insertGetId([
+            'id_estudiante' => 1001, 'id_docente' => 101, 'id_periodo' => 202602, 'fecha_asignacion' => '2026-11-01',
+        ], 'id_asignacion');
+        $coordinador = User::factory()->create();
+        $this->link($coordinador, 1003);
+        $tutor = User::factory()->create();
+        $this->link($tutor, 1002);
+        $this->grantPermission($tutor, 'seguimiento-estudiante.view');
+        $this->grantPermission($tutor, 'seguimiento-estudiante.tutoria.view');
+        $ambito = [20, 202602];
+        $catalogo = route('seguimiento-estudiante.asignaciones.causas', $ambito);
+        $guardar = route('seguimiento-estudiante.asignaciones.causas.guardar', $ambito);
+        $mostrar = route('seguimiento-estudiante.asignaciones.mostrar', $ambito);
+        $finalizar = route('seguimiento-estudiante.asignaciones.finalizar', $ambito);
+        $datos = [
+            'revision' => 0, 'estado' => 'VIGENTE', 'referencia' => 'Acta institucional 07',
+            'motivo' => 'Publicación con aprobación registrada.', 'autoridad' => 'Dirección de Escuela',
+            'fecha_aprobacion' => '2026-11-18', 'aprobado' => '1',
+            'causas' => [
+                ['codigo' => 'CESAR', 'nombre' => 'Finalización aprobada', 'efecto' => 'FINALIZAR', 'habilitada' => true],
+                ['codigo' => 'CAMBIO', 'nombre' => 'Cambio obligatorio', 'efecto' => 'REASIGNAR', 'habilitada' => true],
+            ],
+        ];
+        $this->actingAs($coordinador);
+        $this->grantPermission($coordinador, 'seguimiento-estudiante.view');
+        $this->grantPermission($coordinador, 'seguimiento-estudiante.tutoria.asignar');
+        $this->postJson($guardar, $datos)->assertForbidden();
+        $this->grantPermission($coordinador, 'seguimiento-estudiante.tutoria.causas.gestionar');
+        $this->postJson($guardar, $datos)->assertNotFound();
+        DB::table('seguimiento_estudiante.coordinacion_ambito')->insert([
+            'id_persona' => 1003, 'id_escuela' => 20, 'id_periodo' => 202602,
+        ]);
+        $this->get($catalogo)->assertOk();
+        $this->postJson($guardar, array_replace($datos, ['aprobado' => '0']))->assertUnprocessable()->assertJsonValidationErrors('aprobado');
+        $this->post($guardar, $datos)->assertRedirect($catalogo);
+        $this->postJson($guardar, $datos)->assertUnprocessable()->assertJsonValidationErrors('revision');
+        $this->get($mostrar)->assertOk()->assertSee('Cerrar asignación con causa');
+        $registro = json_decode(DB::table('seguimiento_estudiante.operacion')
+            ->where('id_escuela', 20)->where('clave', 'causas-asignacion|202602')->value('datos'), true);
+        $form = [
+            'id_estudiante' => 1001, 'id_asignacion' => $asignacion, 'version_causa' => $registro['activa'],
+            'causa' => 'CESAR', 'motivo' => 'Cese de la asignación autorizado.',
+        ];
+        $this->postJson($finalizar, array_replace($form, ['version_causa' => (string) Str::uuid()]))
+            ->assertUnprocessable()->assertJsonValidationErrors('version_causa');
+        $this->postJson($finalizar, array_replace($form, ['causa' => 'CAMBIO']))
+            ->assertUnprocessable()->assertJsonValidationErrors('reemplazo');
+        $this->actingAs($tutor)->get(route('seguimiento-estudiante.expediente', 1001))->assertOk();
+        $this->postJson($finalizar, $form)->assertForbidden();
+
+        $this->actingAs($coordinador)->post($finalizar, $form)->assertRedirect($mostrar);
+        $this->post($finalizar, $form)->assertRedirect($mostrar);
+        $this->assertDatabaseHas('seguimiento_estudiante.tutor_asignacion', [
+            'id_asignacion' => $asignacion, 'estado' => 'Finalizada', 'causa_fin' => 'CESAR',
+            'version_causa_fin' => $registro['activa'], 'id_usuario_finalizador' => $coordinador->getKey(),
+        ]);
+        $this->assertDatabaseCount('seguimiento_estudiante.tutor_asignacion', 1);
+        $this->actingAs($tutor)->get(route('seguimiento-estudiante.expediente', 1001))->assertNotFound();
+
+        DB::table('core.docente')->insert([
+            'id_docente' => 102, 'id_persona' => 1003, 'id_departamento' => 30, 'codigo_docente' => 'D-102', 'estado' => 'Activo',
+        ]);
+        DB::table('seguimiento_estudiante.tutor_habilitado')->insert([
+            'id_docente' => 101, 'id_escuela' => 20, 'id_periodo' => 202602,
+        ]);
+        $nueva = DB::table('seguimiento_estudiante.tutor_asignacion')->insertGetId([
+            'id_estudiante' => 1001, 'id_docente' => 102, 'id_periodo' => 202602, 'fecha_asignacion' => '2026-11-19',
+        ], 'id_asignacion');
+        $cambio = array_replace($form, [
+            'id_asignacion' => $nueva, 'causa' => 'CAMBIO', 'reemplazo' => 101,
+            'motivo' => 'Reemplazo formal autorizado.',
+        ]);
+        $this->actingAs($coordinador)->post($finalizar, $cambio)->assertRedirect($mostrar);
+        $this->post($finalizar, $cambio)->assertRedirect($mostrar);
+        $this->assertDatabaseHas('seguimiento_estudiante.tutor_asignacion', [
+            'id_asignacion' => $nueva, 'estado' => 'Finalizada', 'causa_fin' => 'CAMBIO',
+            'version_causa_fin' => $registro['activa'], 'id_usuario_finalizador' => $coordinador->getKey(),
+        ]);
+        $this->assertDatabaseHas('seguimiento_estudiante.tutor_asignacion', [
+            'id_estudiante' => 1001, 'id_docente' => 101, 'estado' => 'Activa',
+        ]);
+        $this->assertDatabaseCount('seguimiento_estudiante.tutor_asignacion', 3);
+    }
+
     public function test_student_with_two_academic_profiles_can_download_from_the_selected_school(): void
     {
         DB::table('core.escuela_profesional')->insert([

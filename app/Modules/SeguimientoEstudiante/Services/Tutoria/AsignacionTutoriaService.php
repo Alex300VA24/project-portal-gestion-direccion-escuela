@@ -122,7 +122,7 @@ final class AsignacionTutoriaService
                 DB::table(self::ASIGNACIONES)->where('id_asignacion', $anterior->id_asignacion)->update([
                     'estado' => 'Finalizada', 'fecha_fin' => $hoy, 'causa_fin' => 'REASIGNACION', 'observacion' => $datos['motivo'],
                 ]);
-                $this->trasladarSolicitudes($estudiante->id_estudiante, $periodo, $anterior->id_asignacion, $cuenta);
+                $this->cancelarCitas($estudiante->id_estudiante, $periodo, $anterior->id_asignacion, $cuenta, 'Tutor reasignado. Debe acordarse una nueva cita.');
                 $personaAnterior = DB::table('core.docente')->where('id_docente', $anterior->id_docente)->value('id_persona');
                 $this->avisos->avisar($personaAnterior, 'Una de tus asignaciones de tutoría se reasignó.');
             }
@@ -140,7 +140,67 @@ final class AsignacionTutoriaService
         });
     }
 
-    private function trasladarSolicitudes(int $estudiante, int $periodo, int $asignacion, int $cuenta): void
+    public function finalizar(int $persona, int $cuenta, int $escuela, int $periodo, array $datos, CausasAsignacionService $causas): void
+    {
+        DB::transaction(function () use ($persona, $cuenta, $escuela, $periodo, $datos, $causas): void {
+            SolicitudTutoriaService::bloquearAgenda();
+            $ambito = $this->ambitos($persona)->where('ambito.id_escuela', $escuela)->where('ambito.id_periodo', $periodo)
+                ->sharedLock()->first(['ambito.id_persona']);
+            abort_if($ambito === null, 404);
+            $estudiante = $this->estudiantes($escuela)->where('id_estudiante', $datos['id_estudiante'])
+                ->lockForUpdate()->first(['id_estudiante', 'id_persona']);
+            abort_if($estudiante === null, 404);
+            $historial = DB::table(self::ASIGNACIONES)->where('id_estudiante', $estudiante->id_estudiante)
+                ->where('id_periodo', $periodo)->where('tipo', 'Tutoria');
+            $asignacion = (clone $historial)->where('id_asignacion', $datos['id_asignacion'])->lockForUpdate()->first();
+            abort_if($asignacion === null, 404);
+
+            $hoy = now('America/Lima')->toDateString();
+            $activas = (clone $historial)->where('estado', 'Activa')
+                ->where(fn (Builder $q) => $q->whereNull('fecha_fin')->orWhere('fecha_fin', '>=', $hoy))
+                ->lockForUpdate()->get(['id_asignacion', 'id_docente']);
+            $reemplazo = (int) ($datos['reemplazo'] ?? 0);
+            $mismoResultado = $reemplazo === 0 ? $activas->isEmpty()
+                : $activas->count() === 1 && (int) $activas->first()->id_docente === $reemplazo;
+            if ($mismoResultado && $asignacion->estado === 'Finalizada'
+                && (int) $asignacion->id_usuario_finalizador === $cuenta
+                && $asignacion->version_causa_fin === $datos['version_causa']
+                && $asignacion->causa_fin === $datos['causa'] && $asignacion->observacion === $datos['motivo']) {
+                return;
+            }
+            if ($activas->count() !== 1 || (int) $activas->first()->id_asignacion !== (int) $asignacion->id_asignacion
+                || ($asignacion->fecha_inicio ?? $asignacion->fecha_asignacion) > $hoy) {
+                throw ValidationException::withMessages(['id_asignacion' => 'La asignación vigente cambió. Vuelve a consultarla.']);
+            }
+
+            $causa = $causas->resolver($escuela, $periodo, $datos['version_causa'], $datos['causa']);
+            if (($causa['efecto'] === 'REASIGNAR') !== ($reemplazo > 0)) {
+                throw ValidationException::withMessages(['reemplazo' => 'Selecciona un reemplazo únicamente cuando lo exija la causa.']);
+            }
+
+            if ($reemplazo > 0) {
+                $this->asignar($persona, $cuenta, $escuela, $periodo, $datos + ['id_docente' => $reemplazo]);
+            }
+            $historial->where('id_asignacion', $asignacion->id_asignacion)->update([
+                'estado' => 'Finalizada',
+                'fecha_fin' => $hoy,
+                'causa_fin' => $datos['causa'],
+                'observacion' => $datos['motivo'],
+                'version_causa_fin' => $datos['version_causa'],
+                'id_usuario_finalizador' => $cuenta,
+            ]);
+            if ($reemplazo > 0) {
+                return;
+            }
+            $this->cancelarCitas($estudiante->id_estudiante, $periodo, $asignacion->id_asignacion, $cuenta, 'La asignación de tutoría finalizó. La solicitud queda pendiente.');
+            $tutor = DB::table('core.docente')->where('id_docente', $asignacion->id_docente)->value('id_persona');
+            foreach (array_unique([$estudiante->id_persona, $tutor, $persona]) as $destinatario) {
+                $this->avisos->avisar($destinatario, 'Una asignación de tutoría finalizó y requiere revisión manual.');
+            }
+        });
+    }
+
+    private function cancelarCitas(int $estudiante, int $periodo, int $asignacion, int $cuenta, string $motivo): void
     {
         $solicitudes = DB::table('seguimiento_estudiante.solicitud_estudiante')
             ->where('id_estudiante', $estudiante)->where('id_periodo', $periodo)->where('tipo', 'Tutoria')
@@ -156,7 +216,7 @@ final class AsignacionTutoriaService
                 'id_atencion' => $cita->id_atencion, 'id_usuario' => $cuenta, 'tipo' => 'cancelacion',
                 'fecha_programada' => $cita->fecha_hora, 'modalidad' => $cita->modalidad,
                 'duracion_minutos' => $cita->duracion_minutos, 'lugar' => $cita->lugar,
-                'motivo' => 'Tutor reasignado. Debe acordarse una nueva cita.',
+                'motivo' => $motivo,
             ]);
         }
 
