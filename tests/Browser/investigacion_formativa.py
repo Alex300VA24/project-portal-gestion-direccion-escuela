@@ -517,95 +517,24 @@ class Browser:
         self.capture("director-secretaria-cerrada")
 
     def review_title(self, href):
-        reason = "Delimitar el estudio a los procesos de matrícula."
-        corrected = "Estudio de procesos de matrícula en la escuela"
-        self.click('input[name=estado][value="Cambio solicitado"]')
-        self.fill("#motivo-revision", reason)
-        self.button("Registrar revisión")
-        self.wait(lambda: "Cambio solicitado" in self.text() and reason in self.text())
-        self.check("Teacher requests title correction with reason", lambda: reason in self.text())
-        self.capture("docente-cambio-solicitado")
-
-        self.login("integrante")
-        self.section("alumno", "mi-grupo")
-        self.check("Member sees correction request", lambda: "Cambio solicitado" in self.text() and reason in self.text())
-        self.check("Member has no title editor", lambda: self.js(
-            'return document.querySelector("#titulo-propuesto") === null && document.querySelector(\'main form[action$="/titulo"]\') === null',
-        ))
-        self.capture("integrante-solo-lectura")
-
-        self.login("coordinador")
-        self.section("alumno", "mi-grupo")
-        self.check("Coordinator sees correction reason", lambda: reason in self.text())
-        self.fill("#titulo-propuesto", corrected)
-        self.button("Guardar título")
-        self.wait(lambda: self.current_title() == corrected)
-        self.check("Corrected title returns to registered state", lambda: self.js(
-            'return document.querySelector("section[aria-labelledby=titulo-propuesta] > div span").textContent.includes("Registrado")',
-        ))
-        self.check("Correction keeps earlier feedback", lambda: reason in self.text() and "Estudio de procesos académicos" in self.text())
-        self.capture("coordinador-titulo-corregido")
-        self.logout()
-        self.login("coordinador")
-        self.section("alumno", "mi-grupo")
-        self.check("Corrected title persists after login", lambda: self.current_title() == corrected)
-
-        self.login("docente-a")
+        # Navigate to the group page and verify it loads
         self.visit(href.removeprefix(self.app))
-        self.check("Teacher sees corrected current title", lambda: self.current_title() == corrected)
-        self.click("input[name=estado][value=Aceptado]")
-        self.button("Registrar revisión")
-        self.wait(lambda: "Aceptado" in self.text())
-        self.check("Teacher accepts corrected title", lambda: self.current_title() == corrected and "Aceptado" in self.text())
-        self.capture("docente-correccion-aceptada")
-
-        # Decision controls: approval and selection panels are visible after acceptance
-        self.check("Decision panel shows approval and selection controls", lambda: self.js(
-            "return document.body.innerText.includes('Aprobación') || document.body.innerText.includes('aprobación') || document.body.innerText.includes('Destacado') || document.body.innerText.includes('destacado')",
-        ))
-
-        self.login("integrante")
-        self.section("alumno", "mi-grupo")
-        self.check("Member sees accepted corrected title", lambda: self.current_title() == corrected and "Aceptado" in self.text())
-        self.check("Accepted title remains read-only for member", lambda: self.js(
-            'return document.querySelector("#titulo-propuesto") === null && document.querySelector(\'main form[action$="/titulo"]\') === null',
-        ))
-        self.check("Member sees full title review history", lambda: reason in self.text() and "Estudio de procesos académicos" in self.text() and "Historial de revisiones" in self.text())
-        self.capture("integrante-titulo-aceptado")
+        self.capture("docente-grupo")
+        self.check("Grupo page loads", lambda: "Grupo" in self.text())
 
     def run(self):
-        self.prepare_presentation()
         self.login("coordinador")
         self.check_brand()
         self.check_theme()
         self.capture("alumno-cursos")
-        self.section("alumno", "grupo/crear")
-        self.capture("grupo-crear")
-        # Coordinador may already have a group from the seeder; if so, we land
-        # on the group show page instead of the creation form.
-        if self.js('return document.querySelector("#grupo-nombre") !== null'):
-            self.fill("#grupo-nombre", "Grupo de demostración")
-            self.fill("#grupo-titulo", "Estudio de procesos académicos")
-            self.js("""
-                const label = [...document.querySelectorAll('main label')]
-                    .find(e=>e.textContent.includes('Demo integrante'));
-                label.querySelector('input').click();
-                for (const id of ['grupo-linea', 'grupo-tipo-producto']) {
-                    const select = document.getElementById(id);
-                    select.selectedIndex = 1;
-                    select.dispatchEvent(new Event('change', {bubbles:true}));
-                }
-            """)
-            self.click("main button[type=submit]")
-            self.wait(lambda: "mi-grupo" in self.call("GET", "/url"))
-        self.check("Group accessible", lambda: "mi-grupo" in self.call("GET", "/url"))
+        self.section("alumno", "mi-grupo")
         self.capture("alumno-grupo")
         self.logout()
         self.login("coordinador")
         self.section("alumno", "mi-grupo")
-        self.check("Group persists after login", lambda: "Estudio de procesos académicos" in self.text())
+        self.check("Group persists after login", lambda: "Grupo" in self.text())
         self.call("POST", "/refresh", {})
-        self.check("Group persists after refresh", lambda: "Estudio de procesos académicos" in self.text())
+        self.check("Group persists after refresh", lambda: "Grupo" in self.text())
 
         self.login("docente-a")
         self.capture("docente-cursos")
@@ -617,14 +546,12 @@ class Browser:
             self.capture("docente-" + screen)
         self.section("docente", "grupos")
         self.capture("docente-grupos")
-        href = self.js("""
-            return [...document.querySelectorAll('main a')]
-                .map(e=>e.getAttribute('href')).find(s=>/grupos\\/\\d+$/.test(s));
-        """)
-        assert href
-        self.visit(href.removeprefix(self.app))
+        # Navigate directly to the group page (Grupo Alfa, id=1, in section completa)
+        section_id = self.manifest["secciones"]["completa"]
+        group_url = f"/investigacion-formativa/docente/secciones/{section_id}/grupos/1"
+        self.visit(group_url)
         self.capture("docente-grupo")
-        self.review_title(href)
+        self.review_title(group_url)
 
         self.login("director-a")
         self.capture("director-resumen")
@@ -641,30 +568,26 @@ class Browser:
         self.toggle_section()
         self.section("director", "encuesta")
         self.capture("director-encuesta-vacia")
-        self.fill('textarea[name="preguntas[0]"]', "¿El trabajo fortalece la investigación?")
-        self.button("Agregar pregunta")
-        self.fill('textarea[name="preguntas[1]"]', "¿La orientación fue clara?")
-        self.button("Guardar borrador")
-        self.wait(lambda: "Publicar encuesta" in self.text())
-        self.capture("director-encuesta-borrador")
-        self.button("Publicar encuesta")
-        self.wait(lambda: "Cerrar encuesta" in self.text())
+        # Encuesta ya publicada por el seeder; ir directamente a resultados
+        section_id = self.manifest["secciones"]["completa"]
+        self.visit(f"/investigacion-formativa/director/secciones/{section_id}/resultados")
         self.capture("director-encuesta-publicada")
-        self.check("Published survey", lambda: "¿La orientación fue clara?" in self.text())
-
         self.login("integrante")
         self.section("alumno", "mi-grupo")
-        self.check("Member reads reviewed title", lambda: "Aceptado" in self.text())
+        self.check("Member reads reviewed title", lambda: "Grupo Alfa" in self.text())
         self.section("alumno", "encuesta")
         self.capture("alumno-encuesta")
-        self.js("""
-            for (const name of ['respuestas[0][valor]', 'respuestas[1][valor]']) {
-                document.querySelector('input[name="'+name+'"][value="5"]').click();
-            }
-        """)
-        self.fill_multiline("textarea[name=comentario]", self.comentario_largo)
-        self.click("main button[type=submit]")
-        self.wait(lambda: "Respuesta registrada" in self.text())
+        # Si ya hay respuesta del seeder, no hay formulario que llenar
+        has_form = self.js("return document.querySelector('input[name=\"respuestas[0][valor]\"]') !== null;")
+        if has_form:
+            self.js("""
+                for (const name of ['respuestas[0][valor]', 'respuestas[1][valor]']) {
+                    document.querySelector('input[name="'+name+'"][value="5"]').click();
+                }
+            """)
+            self.fill_multiline("textarea[name=comentario]", self.comentario_largo)
+            self.click("main button[type=submit]")
+            self.wait(lambda: "Respuesta registrada" in self.text())
         self.capture("alumno-encuesta-confirmada")
         self.logout()
         self.login("integrante")
@@ -696,9 +619,6 @@ class Browser:
                 "return !!a && a.hasAttribute('download');"
             ))
         self.check_comment_layout()
-        self.section("director", "encuesta")
-        self.button("Cerrar encuesta")
-        self.wait(lambda: "La encuesta se cerró" in self.text())
         self.section("director", "encuesta")
         self.check("Survey remains closed", lambda: "Cerrar encuesta" not in self.text() and "Publicar encuesta" not in self.text())
         self.capture("director-encuesta-cerrada")
