@@ -7,7 +7,7 @@ Módulo `seguimiento-egresado` del portal (esquema PostgreSQL `seguimiento_egres
 | Documento | Para quién | Contenido |
 |---|---|---|
 | [guion-demostracion.md](guion-demostracion.md) | Presentación | Recorrido completo paso a paso, con datos, comandos y resultados esperados. |
-| [manual-usuario.md](manual-usuario.md) | Secretaría, Dirección, egresados | Cómo usar cada pantalla, paso a paso y con capturas. |
+| [manual-usuario.md](manual-usuario.md) y [manual-usuario.docx](manual-usuario.docx) | Secretaría, Dirección, egresados | Cómo usar cada pantalla, paso a paso y con capturas. El Word es la versión en lenguaje sencillo para quien no usa Markdown. |
 | [flujo.md](flujo.md) | Pruebas y revisión | Flujos del sistema con sus reglas, lo que queda en la BD y los recorridos completos para ponerlo a prueba. |
 | [arquitectura.md](arquitectura.md) | Desarrollo | Capas, archivos, decisiones y pruebas. |
 | [permisos-middleware.md](permisos-middleware.md) | Desarrollo | Roles, capacidades y middleware, con código. |
