@@ -71,6 +71,7 @@ final class DirectorController extends Controller
             'umbrales' => $reporte->umbrales,
             'encuesta' => $reporte->encuesta,
             'decisiones' => $reporte->decisiones,
+            'indicadores' => $reporte->indicadores,
             'totales' => $reporte->totales,
             'filtros' => [
                 'escuela' => $idEscuela,

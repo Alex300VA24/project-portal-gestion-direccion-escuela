@@ -2,7 +2,7 @@
 
 ## Alcance y estado
 
-El módulo usa el monolito Laravel y PostgreSQL del portal. No inicia servicios separados. La configuración, los grupos, los títulos, las evaluaciones, las encuestas y los reportes tienen implementación y pruebas funcionales. La carga y descarga de archivos sigue pendiente de G4, el contrato del escritor compartido de archivos.
+El módulo usa el monolito Laravel y PostgreSQL del portal. No inicia servicios separados. La configuración, los grupos, los títulos, las evaluaciones, las encuestas, los reportes y los indicadores 3.1 y 3.2 tienen implementación y pruebas funcionales. La carga y descarga de archivos sigue pendiente de G4, el contrato del escritor compartido de archivos.
 
 Las asignaciones de identidad, padrón, competencias y alcance de dirección tienen contratos locales explícitos. Falta confirmar su integración con los responsables de los datos compartidos. No se deducen de correos ni se sustituyen por contenido académico inventado.
 
@@ -22,7 +22,8 @@ Las rutas de esta tabla son relativas a `app/Modules/InvestigacionFormativa/`, s
 | `Services/EvaluacionService.php` | Evaluación por entrega, corrección y observaciones históricas. |
 | `Services/EncuestaService.php` | Borrador, publicación, cierre y respuestas individuales. |
 | `Services/DecisionTrabajoService.php` | Aprobación final, selección manual del trabajo destacado, historial y evidencia versionada. |
-| `Services/ReporteService.php` | Resultados por sección, promedio, empates e historial real. |
+| `Services/ReporteService.php` | Resultados por sección, promedio, empates, historial real e integración de indicadores. |
+| `Services/IndicadorService.php` | Cálculo trazable de los indicadores 3.1 y 3.2 con reglas y denominadores explícitos. |
 | `Services/ReportePdfService.php` | Genera el PDF del reporte de sección desde datos ya calculados; no crea registros de archivo. |
 | `Services/CalificacionService.php` | Normalización y promedios con centésimas enteras. |
 | `Models/`, `Policies/` | Tablas del módulo y autorización de sus recursos. |
@@ -57,7 +58,7 @@ La lectura sigue las flechas desde el formulario hasta los datos y vuelve a la p
 
 ## Esquema y propiedad de datos
 
-El esquema `investigacion_formativa` tiene 24 tablas. Las claves académicas referencian `core`; los usuarios académicos y módulos referencian `seguridad`. `public.users` es la identidad de inicio de sesión. El catálogo compartido de archivos pertenece a `comun`.
+El esquema `investigacion_formativa` tiene 26 tablas. Las claves académicas referencian `core`; los usuarios académicos y módulos referencian `seguridad`. `public.users` es la identidad de inicio de sesión. El catálogo compartido de archivos pertenece a `comun`.
 
 | Grupo | Tablas |
 |---|---|
@@ -66,10 +67,11 @@ El esquema `investigacion_formativa` tiene 24 tablas. Las claves académicas ref
 | Evaluación | `rubrica`, `criterio`, `criterio_nivel`, `entregable`, `entrega`, `evaluacion`, `evaluacion_criterio`, `observacion` |
 | Encuesta | `encuesta`, `encuesta_pregunta`, `encuesta_respuesta`, `encuesta_respuesta_item` |
 | Decisiones | `decision_trabajo` |
+| Indicadores | `indicador_experiencia`, `configuracion_indicador` |
 
 La base impide múltiples grupos del mismo estudiante en una sección y múltiples coordinadores por grupo. La creación del servicio incluye al coordinador como integrante. Las encuestas tienen unicidad por sección y por estudiante; las claves compuestas de los ítems impiden mezclar preguntas y respuestas de encuestas distintas. `decision_trabajo` es un registro append-only: cada fila guarda tipo, acción, actor, fecha, versión y la instantánea de las tres unidades.
 
-Los cambios no alteran las notas oficiales de matrícula. La migración base del módulo y 20 migraciones posteriores describen el estado actual. Las migraciones posteriores se agregan sin reescribir el historial de otros módulos.
+Los cambios no alteran las notas oficiales de matrícula. La migración base del módulo y 21 migraciones posteriores describen el estado actual. Las migraciones posteriores se agregan sin reescribir el historial de otros módulos.
 
 ## Contratos de integración
 
@@ -117,11 +119,13 @@ Los reportes limitan las secciones al alcance antes de leer sus datos. El resume
 
 El tablero de dirección acepta `escuela`, `periodo`, `curso` y `linea`. El filtro de línea incluye las secciones con al menos un proyecto de esa línea. Dentro de esas secciones, los grupos, las decisiones y los conteos por umbral se restringen a la línea. La encuesta es un dato por sección: no se desagrega por línea y sus totales cubren las secciones incluidas completas. Un `curso` o una `linea` fuera del alcance devuelve 403.
 
-Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos son estadística descriptiva; no son los tres indicadores oficiales de Calidad ni un indicador de satisfacción. Si la base es cero, no se calcula un porcentaje.
+Los umbrales de nota final son estrictos y superpuestos: `> 16` incluye a `> 18`. La base de ambos es el número de proyectos con las tres unidades evaluadas. El tablero presenta barras HTML/CSS con etiquetas numéricas y una tabla equivalente. Los conteos de proyectos, notas y decisiones son estadística descriptiva. No se confunden con los indicadores 3.1 y 3.2, que se calculan por separado y muestran regla, denominador y fuente. Si una base es cero, no se calcula un porcentaje.
 
-## Indicadores oficiales de Calidad (datos de muestra provisionales)
+El filtro de línea no reduce el denominador del indicador 3.1 porque una experiencia curricular no tiene línea. El indicador 3.2 sí usa las secciones visibles por el filtro para respetar que la encuesta no se desagrega por línea. El resumen agregado 3.1 pertenece al tablero con alcance; el reporte de una sección no lo duplica.
 
-Los tres indicadores oficiales de Calidad se proporcionan como datos de muestra procedentes de la "antigua" currícula. Son entradas de muestra que deben ser sustituidas por la fuente académica autorizada; el módulo no los calcula ni los valida como métricas institucionales. El tablero de dirección sigue siendo estadística descriptiva independiente de estos indicadores.
+## Indicadores de Calidad
+
+Los indicadores 3.1 y 3.2 tienen una implementación local con entradas reemplazables. Las filas del seedor son datos de demostración: la fuente académica y la definición institucional deben sustituirlas. El indicador 3.3 todavía no tiene una matriz ni una escala institucional que permita calcularlo. Ninguna nota final, título aceptado o aprobación de trabajo se usa como sustituto del logro de competencias.
 
 ### Indicador 3.1 — Experiencias curriculares con investigación formativa
 
@@ -129,36 +133,41 @@ Los tres indicadores oficiales de Calidad se proporcionan como datos de muestra 
 
 **Fórmula:** `(N° de experiencias curriculares que aplican la investigación formativa / N° total de experiencias curriculares implementadas) × 100`
 
-**Alcance:** Solo sobre las experiencias curriculares que aplican la estrategia.
+**Unidad de conteo:** Un curso del plan implementado en un periodo académico. Varias secciones del mismo curso y periodo cuentan como una sola experiencia.
 
-**Estado:** Dato de muestra. No implementado como cálculo del módulo; no equívale a la nota final ni al promedio del curso.
+**Entradas:** `indicador_experiencia` declara, por periodo y curso del plan, si la experiencia aplica Investigación Formativa y conserva su fuente. El denominador incluye todas las experiencias implementadas del alcance, incluidas las que no aplican el módulo. La habilitación o configuración de una sección no sustituye esta entrada. Las experiencias sin clasificación se muestran aparte. Si no hay experiencias, el valor queda sin calcular.
+
+**Alcance:** Escuela, periodo y curso seleccionados en el tablero de dirección. El filtro de línea no reduce el denominador.
 
 ### Indicador 3.2 — Satisfacción estudiantil con estrategias de investigación formativa
 
 **Definición:** Porcentaje de estudiantes satisfechos y muy satisfechos con las estrategias de enseñanza-aprendizaje basadas en investigación formativa, por experiencia curricular.
 
-**Fórmula:** `(N° de estudiantes satisfechos + muy satisfechos con las estrategias de enseñanza-aprendizaje / N° total de estudiantes encuestados de cada experiencia curricular) × 100`
+**Fórmula:** `(N° de estudiantes clasificados como satisfechos / N° de estudiantes distintos que respondieron la pregunta de satisfacción) × 100`
 
-**Alcance:** Por experiencia curricular.
+**Entradas:** `configuracion_indicador` declara una pregunta exacta de satisfacción y sus categorías. Cada valor pertenece a una sola categoría. En la demostración, `4 = Satisfecho` y `5 = Muy satisfecho`; las demás categorías no son satisfactorias. Esta clasificación es provisional y debe reemplazarse por la definición institucional. El módulo no usa promedios de preguntas arbitrarias.
 
-**Estado:** Dato de muestra. No implementado como cálculo del módulo; los comentarios de encuesta del módulo se excluyen del reporte PDF por confidencialidad y no se agregan como satisfacción institucional.
+**Conteo de personas:** Se cuentan estudiantes distintos. Si una persona respondió en más de una sección de la misma experiencia, se usa su respuesta más reciente. Los ítems de la encuesta no son el denominador. En el agregado del tablero, una persona cuenta una vez por cada experiencia en la que respondió.
+
+**Alcance:** Se muestra por sección y se suma por experiencia en el tablero. La encuesta es por sección y no se desagrega por línea.
 
 ### Indicador 3.3 — Nivel de logro de competencias del perfil de egreso relacionadas con investigación
 
 **Definición:** Informe de los docentes responsables de experiencias curriculares con responsabilidad directa en el desarrollo de capacidades/competencias relacionadas con la investigación.
 
-**Base:** Matriz de Competencia, unidades de competencia, elementos de competencia y experiencias curriculares establecida en el currículo.
+**Base requerida:** Matriz de competencia, elemento, criterio y experiencia curricular, además de una escala de logro y una regla de agregación aprobadas.
 
-**Estado:** Dato de muestra. No implementado como cálculo del módulo; la nota final del módulo no se usa como nivel de logro de competencia y no se infiere aprobación académica de las mismas.
+**Estado:** Pendiente. La matriz oficial, los pesos, las bandas de logro, la unidad de agregación, la regla de cobertura y la meta no están disponibles. La nota final del módulo, la aceptación del título y la aprobación docente no equivalen al logro de competencia.
 
 ## Exportación a PDF de resultados
 
 El director puede descargar el reporte de una sección como PDF desde «Ver resultados». El servicio `Services/ReportePdfService.php` genera el documento con dompdf a partir de los datos ya calculados por `ReporteService`.
 
 - Fuente DejaVu Sans; recursos remotos y JavaScript deshabilitados; carpeta temporal `storage/app/dompdf`.
-- Incluye título, curso, sección, periodo, escuela, filtros activos, hora de generación, tablas de calificaciones, distribuciones de encuesta y notas de lectura.
+- Incluye título, curso, sección, periodo, escuela, filtros activos, hora de generación, tablas de calificaciones, distribuciones de encuesta, el indicador 3.2 de la sección y notas de lectura.
+- Explica que el indicador agregado 3.1 se calcula en el tablero de dirección con alcance. No lo duplica en el PDF de una sección.
 - Excluye los comentarios confidenciales de la encuesta. Estos se conservan en la pantalla de resultados con su paginación propia.
-- La generación es estadística descriptiva. No crea registros en `comun.archivo`, no usa `ArchivoGateway` y no modifica datos.
+- La generación no crea registros en `comun.archivo`, no usa `ArchivoGateway` y no modifica datos.
 - El PDF se envía como adjunto con `Cache-Control: no-store, private`.
 
 ## Archivos: estado actual y trabajo pendiente
@@ -167,7 +176,7 @@ El proveedor enlaza `ArchivoGateway` con `UnavailableArchivoGateway`. Sus métod
 
 El ciclo pendiente debe cubrir almacenamiento privado, metadatos compartidos en la misma conexión, limpieza de temporales al fallar y descargas autorizadas por entrega. Todavía no se declara verificado ese ciclo. No se instala un adaptador de producción ni se escriben metadatos compartidos para aparentar integración.
 
-Las pruebas de lectura pueden insertar entregas y metadatos de prueba dentro de una base exclusiva. El seeder de demostración no los crea. El PDF de muestra tiene 601 bytes y SHA-256 `477ac889a46353abee504e726e420b78d0241f7ff244448376c8160d0644fd0a`; queda disponible para la futura integración.
+Las pruebas de lectura pueden insertar entregas y metadatos de prueba dentro de una base exclusiva. El seeder de demostración crea fixtures de entrega y archivo sin binario: tamaño cero, hash nulo y ruta de prueba. No agrega un escritor de producción ni demuestra una carga real. El PDF de muestra tiene 601 bytes y SHA-256 `477ac889a46353abee504e726e420b78d0241f7ff244448376c8160d0644fd0a`; queda disponible para la futura integración.
 
 ## Entorno, compilación y pruebas
 
@@ -193,6 +202,6 @@ El Dockerfile crea dependencias sin paquetes de desarrollo, compila Vite y sirve
 
 ## Reglas implementadas y límites de aceptación
 
-Los formularios de configuración, rúbrica, cronograma, grupos, evaluación, encuesta y resultados corresponden a las interfaces requeridas. Las restricciones de membresía fija, versiones, congelación, promedio sin ponderación y publicación sin reapertura son decisiones locales propuestas. Falta su validación académica; no se describen como una norma institucional. El tablero de dirección usa conteos descriptivos; no se presentan como indicadores oficiales ni como metas.
+Los formularios de configuración, rúbrica, cronograma, grupos, evaluación, encuesta y resultados corresponden a las interfaces requeridas. Las restricciones de membresía fija, versiones, congelación, promedio sin ponderación y publicación sin reapertura son decisiones locales propuestas. Falta su validación académica; no se describen como una norma institucional. El tablero conserva los conteos descriptivos y separa los indicadores 3.1 y 3.2, con fuentes y denominadores visibles. Las entradas de demostración y la configuración provisional de satisfacción no se presentan como valores institucionales ni como metas.
 
 La demostración prueba los flujos disponibles con PostgreSQL y Firefox. La aceptación completa sigue pendiente de G4, su recorrido de archivos y evaluación, la confirmación de contratos compartidos y la revisión de seguridad dedicada que fue diferida. No se ocultan estos límites mediante archivos o notas de ejemplo en la aplicación.

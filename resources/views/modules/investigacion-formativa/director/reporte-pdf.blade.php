@@ -77,6 +77,74 @@
         </tbody>
     </table>
 
+    @php
+        $satisfaccionIndicador = $reporte->indicador_satisfaccion;
+    @endphp
+
+    <h2>Indicador 3.2 de la sección</h2>
+    <p>{{ $satisfaccionIndicador->nombre }}</p>
+    <table>
+        <tbody>
+            <tr>
+                <th>Valor</th>
+                <td class="num">
+                    {{ $satisfaccionIndicador->valor === null ? 'No calculable' : $satisfaccionIndicador->valor.'%' }}
+                </td>
+                <th>Satisfechos</th>
+                <td class="num">{{ $satisfaccionIndicador->numerador }}</td>
+                <th>Respondientes</th>
+                <td class="num">{{ $satisfaccionIndicador->denominador }}</td>
+            </tr>
+            <tr>
+                <th>Pregunta</th>
+                <td colspan="5">
+                    {{ $satisfaccionIndicador->pregunta ?? 'Sin pregunta configurada' }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <p class="nota">
+        <strong>Regla:</strong> {{ $satisfaccionIndicador->regla }}
+    </p>
+    @if ($satisfaccionIndicador->provisional)
+        <p class="nota">Configuración provisional. La fuente debe sustituirla antes de un uso institucional.</p>
+    @endif
+    @if ($satisfaccionIndicador->fuente !== null)
+        <p class="nota">Fuente: {{ $satisfaccionIndicador->fuente }}</p>
+    @endif
+    @if ($satisfaccionIndicador->motivo !== null)
+        <p class="alerta">{{ $satisfaccionIndicador->motivo }}</p>
+    @endif
+
+    @if ($satisfaccionIndicador->categorias !== [])
+        <table>
+            <thead>
+                <tr>
+                    <th class="num">Valor</th>
+                    <th>Categoría</th>
+                    <th class="num">Estudiantes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($satisfaccionIndicador->categorias as $categoria)
+                    <tr>
+                        <td class="num">{{ $categoria->valor }}</td>
+                        <td>
+                            {{ $categoria->etiqueta }}
+                            {{ $categoria->satisfecho ? ' · Satisfactoria' : '' }}
+                        </td>
+                        <td class="num">{{ $categoria->conteo }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    <p class="nota">
+        El indicador agregado 3.1 se calcula en el resumen de dirección con el alcance de escuela,
+        periodo y curso. Este PDF de sección no lo duplica.
+    </p>
+
     <h2>Calificaciones por grupo</h2>
     @if ($reporte->grupos === [])
         <p>No hay grupos registrados en la sección para el filtro seleccionado.</p>
@@ -224,7 +292,7 @@
         <li>La participación usa respuestas / participantes activos actuales. Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula.</li>
         <li>La aprobación final y el trabajo destacado son decisiones explícitas del docente. No se deducen de la nota ni del estado del título.</li>
         <li>Este reporte no incluye comentarios de la encuesta. La pantalla conserva su paginación confidencial.</li>
-        <li>Los conteos descriptivos no son los tres indicadores oficiales de Calidad. La plantilla oficial sigue pendiente.</li>
+        <li>Los conteos descriptivos no son indicadores oficiales de Calidad. El indicador 3.2 identifica su configuración provisional y no reemplaza la definición institucional.</li>
         <li>El reporte se generó una vez con los datos vigentes al momento indicado. No crea registros de archivo.</li>
     </ul>
 

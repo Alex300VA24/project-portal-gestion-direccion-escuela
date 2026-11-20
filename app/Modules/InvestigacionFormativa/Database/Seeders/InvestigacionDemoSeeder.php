@@ -24,6 +24,8 @@ final class InvestigacionDemoSeeder extends Seeder
     /** @var list<string> */
     private const MODOS = ['workflow', 'showcase'];
 
+    private const PREGUNTA_SATISFACCION = 'Satisfacción general con la experiencia de investigación formativa';
+
     public function run(): void
     {
         if (! app()->environment(['local', 'testing'])
@@ -244,6 +246,7 @@ final class InvestigacionDemoSeeder extends Seeder
             'deshabilitada' => [0, 1, 'docente-a', 'Activa', 2],
             'historica' => [0, 0, 'docente-a', 'Cerrada', 0],
             'otra-escuela' => [1, 1, 'docente-b', 'Activa', 1],
+            'sin-investigacion' => [0, 1, 'docente-libre', 'Activa', 2],
         ] as $nombre => [$escuela, $periodo, $docente, $estado, $curso]) {
             $id = $this->insertar('core.seccion', 'id_seccion', [
                 'id_periodo' => $periodos[$periodo], 'id_curso_plan' => $cursos[$curso],
@@ -251,6 +254,11 @@ final class InvestigacionDemoSeeder extends Seeder
                 'id_docente_responsable' => $docentes[$docente], 'estado' => $estado,
             ]);
             $secciones[$nombre] = $id;
+
+            if ($nombre === 'sin-investigacion') {
+                continue;
+            }
+
             DB::table('investigacion_formativa.seccion_configuracion')->insert([
                 'id_seccion' => $id, 'habilitada' => in_array($nombre, ['completa', 'incompleta', 'otra-escuela'], true), 'version' => 1,
             ]);
@@ -270,6 +278,52 @@ final class InvestigacionDemoSeeder extends Seeder
                     'fuente' => 'Demostración local', 'referencia_origen' => $lote,
                 ]);
             }
+        }
+
+        $fuenteExperiencias = 'Catálogo de demostración del lote '.$lote.'; sustituir por la fuente académica autorizada.';
+        foreach ([
+            [$periodos[1], $cursos[0], $escuelas[0], true],
+            [$periodos[1], $cursos[2], $escuelas[0], false],
+            [$periodos[0], $cursos[0], $escuelas[0], false],
+            [$periodos[1], $cursos[1], $escuelas[1], true],
+        ] as [$idPeriodo, $idCursoPlan, $idEscuela, $aplica]) {
+            DB::table('investigacion_formativa.indicador_experiencia')->insert([
+                'id_periodo' => $idPeriodo,
+                'id_curso_plan' => $idCursoPlan,
+                'id_escuela' => $idEscuela,
+                'aplica_investigacion_formativa' => $aplica,
+                'fuente' => $fuenteExperiencias,
+            ]);
+        }
+
+        $fuenteSatisfaccion = 'Configuración de demostración del lote '.$lote.'; sustituir por la definición institucional.';
+        foreach ([
+            [
+                'parametro' => 'pregunta_satisfaccion',
+                'valor' => self::PREGUNTA_SATISFACCION,
+            ],
+            [
+                'parametro' => 'categorias_satisfaccion',
+                'valor' => json_encode([
+                    ['valor' => 1, 'etiqueta' => 'Muy insatisfecho', 'satisfecho' => false],
+                    ['valor' => 2, 'etiqueta' => 'Insatisfecho', 'satisfecho' => false],
+                    ['valor' => 3, 'etiqueta' => 'Neutral', 'satisfecho' => false],
+                    ['valor' => 4, 'etiqueta' => 'Satisfecho', 'satisfecho' => true],
+                    ['valor' => 5, 'etiqueta' => 'Muy satisfecho', 'satisfecho' => true],
+                ], JSON_THROW_ON_ERROR),
+            ],
+        ] as $configuracionSatisfaccion) {
+            DB::table('investigacion_formativa.configuracion_indicador')->updateOrInsert(
+                [
+                    'indicador' => '3.2',
+                    'parametro' => $configuracionSatisfaccion['parametro'],
+                ],
+                [
+                    'valor' => $configuracionSatisfaccion['valor'],
+                    'fuente' => $fuenteSatisfaccion,
+                    'provisional' => true,
+                ],
+            );
         }
 
         $configuracion = app(ConfiguracionService::class);
@@ -528,7 +582,7 @@ final class InvestigacionDemoSeeder extends Seeder
             $actorDirector,
             $seccionCompleta,
             [
-                'Satisfacción general con la experiencia de investigación formativa',
+                self::PREGUNTA_SATISFACCION,
                 '¿La orientación del docente responsable fue clara y oportuna?',
             ],
             0,

@@ -140,6 +140,204 @@
                 Puede superar el 100% después de retiros. Sin participantes activos, la tasa no se calcula.
             </p>
 
+            @php
+                $experienciaIndicador = $indicadores->experiencia_curricular;
+                $satisfaccionIndicador = $indicadores->satisfaccion;
+            @endphp
+
+            <section
+                id="indicadores"
+                class="if-panel if-stack"
+                style="margin-top: 22px; padding: 22px;"
+                aria-labelledby="titulo-indicadores"
+            >
+                <div class="if-panel-heading">
+                    <div>
+                        <h2 id="titulo-indicadores">Indicadores de alcance</h2>
+                        <p>
+                            Los indicadores usan el alcance de escuela, periodo y curso seleccionado.
+                            Cada valor muestra su regla, denominador y fuente de entrada.
+                        </p>
+                    </div>
+                </div>
+
+                @if (($filtros['linea'] ?? null) !== null)
+                    <p class="if-note">
+                        El filtro de línea no reduce el denominador del indicador 3.1. Las experiencias
+                        curriculares no tienen línea; la encuesta del indicador 3.2 no se desagrega por línea.
+                    </p>
+                @endif
+
+                <div class="if-grid-wide">
+                    <div class="if-card">
+                        <h3 class="if-card-title">Indicador 3.1 · Experiencias curriculares</h3>
+                        <p>{{ $experienciaIndicador->nombre }}</p>
+                        <p style="font-size: 1.8rem; font-weight: 700; margin: 8px 0;">
+                            {{ $experienciaIndicador->valor === null ? 'No calculable' : $experienciaIndicador->valor.'%' }}
+                        </p>
+
+                        <dl class="if-inline-stats" aria-label="Numerador y denominador del indicador 3.1">
+                            <div>
+                                <dt>Con IF</dt>
+                                <dd>{{ $experienciaIndicador->numerador }}</dd>
+                            </div>
+                            <div>
+                                <dt>Total</dt>
+                                <dd>{{ $experienciaIndicador->denominador }}</dd>
+                            </div>
+                            <div>
+                                <dt>Sin clasificar</dt>
+                                <dd>{{ $experienciaIndicador->sin_clasificar }}</dd>
+                            </div>
+                        </dl>
+
+                        <p class="if-note" style="margin-top: 12px;">
+                            <strong>Regla:</strong> {{ $experienciaIndicador->regla }}
+                        </p>
+                        <p class="if-note">
+                            <strong>Unidad:</strong> {{ $experienciaIndicador->unidad }}
+                        </p>
+
+                        @if ($experienciaIndicador->sin_clasificar > 0)
+                            <div class="if-alert" role="status" style="margin-top: 12px;">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                                <span>
+                                    Hay experiencias sin una entrada de fuente. El valor no debe interpretarse
+                                    como un dato institucional definitivo hasta completar esa clasificación.
+                                </span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="if-card">
+                        <h3 class="if-card-title">Indicador 3.2 · Satisfacción estudiantil</h3>
+                        <p>{{ $satisfaccionIndicador->nombre }}</p>
+                        <p style="font-size: 1.8rem; font-weight: 700; margin: 8px 0;">
+                            {{ $satisfaccionIndicador->valor === null ? 'No calculable' : $satisfaccionIndicador->valor.'%' }}
+                        </p>
+
+                        <dl class="if-inline-stats" aria-label="Numerador y denominador del indicador 3.2">
+                            <div>
+                                <dt>Satisfechos</dt>
+                                <dd>{{ $satisfaccionIndicador->numerador }}</dd>
+                            </div>
+                            <div>
+                                <dt>Respondientes</dt>
+                                <dd>{{ $satisfaccionIndicador->denominador }}</dd>
+                            </div>
+                        </dl>
+
+                        <p class="if-note" style="margin-top: 12px;">
+                            <strong>Pregunta:</strong>
+                            {{ $satisfaccionIndicador->pregunta ?? 'Sin pregunta configurada' }}
+                        </p>
+                        <p class="if-note">
+                            <strong>Regla:</strong> {{ $satisfaccionIndicador->regla }}
+                        </p>
+                        <p class="if-note">
+                            <strong>Alcance:</strong> {{ $satisfaccionIndicador->alcance }}
+                        </p>
+
+                        @if ($satisfaccionIndicador->provisional)
+                            <p style="margin-top: 12px;">
+                                <span class="if-status is-warning">Configuración provisional</span>
+                            </p>
+                        @endif
+
+                        @if ($satisfaccionIndicador->fuente !== null)
+                            <p class="if-note">Fuente: {{ $satisfaccionIndicador->fuente }}</p>
+                        @endif
+
+                        @if ($satisfaccionIndicador->motivo !== null)
+                            <div class="if-alert" role="status" style="margin-top: 12px;">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                                <span>{{ $satisfaccionIndicador->motivo }}</span>
+                            </div>
+                        @endif
+
+                        @if ($satisfaccionIndicador->categorias !== [])
+                            <div class="if-table-wrap" style="margin-top: 16px;">
+                                <table class="if-table">
+                                    <caption class="sr-only">Distribución de respuestas por categoría de satisfacción</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Valor</th>
+                                            <th scope="col">Categoría</th>
+                                            <th scope="col">Estudiantes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($satisfaccionIndicador->categorias as $categoria)
+                                            <tr>
+                                                <td data-label="Valor">{{ $categoria->valor }}</td>
+                                                <td data-label="Categoría">
+                                                    {{ $categoria->etiqueta }}
+                                                    @if ($categoria->satisfecho)
+                                                        <span class="if-status is-success">Satisfactoria</span>
+                                                    @endif
+                                                </td>
+                                                <td data-label="Estudiantes">{{ $categoria->conteo }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="if-card-title">Experiencias curriculares del denominador</h3>
+                    @if ($experienciaIndicador->experiencias === [])
+                        <div class="if-empty" style="min-height: 160px;">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+                            <h3>Sin experiencias implementadas</h3>
+                            <p>El alcance seleccionado no tiene secciones de cursos implementadas.</p>
+                        </div>
+                    @else
+                        <div class="if-table-wrap" style="margin-top: 12px;">
+                            <table class="if-table">
+                                <caption class="sr-only">Experiencias curriculares y clasificación del indicador 3.1</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Escuela</th>
+                                        <th scope="col">Periodo</th>
+                                        <th scope="col">Curso</th>
+                                        <th scope="col">Secciones</th>
+                                        <th scope="col">Aplica IF</th>
+                                        <th scope="col">Fuente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($experienciaIndicador->experiencias as $experiencia)
+                                        <tr>
+                                            <td data-label="Escuela">{{ $experiencia->escuela }}</td>
+                                            <td data-label="Periodo">{{ $experiencia->periodo }}</td>
+                                            <td data-label="Curso">
+                                                <strong>{{ $experiencia->curso_codigo }}</strong> · {{ $experiencia->curso }}
+                                            </td>
+                                            <td data-label="Secciones">{{ $experiencia->secciones }}</td>
+                                            <td data-label="Aplica IF">
+                                                @if ($experiencia->aplica === true)
+                                                    <span class="if-status is-success">Sí</span>
+                                                @elseif ($experiencia->aplica === false)
+                                                    <span class="if-status is-neutral">No</span>
+                                                @else
+                                                    <span class="if-status is-warning">Sin clasificar</span>
+                                                @endif
+                                            </td>
+                                            <td data-label="Fuente">
+                                                {{ $experiencia->fuente ?? 'Sin fuente registrada' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </section>
+
             <section class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-estadisticas">
                 <div class="if-panel-heading">
                     <div>

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\InvestigacionFormativa\Database\Seeders\InvestigacionDemoSeeder;
 use App\Modules\InvestigacionFormativa\Services\ConfiguracionService;
 use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
+use App\Modules\InvestigacionFormativa\Services\IndicadorService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -254,11 +255,11 @@ final class DemoSeederTest extends TestCase
         $secciones = $manifest['secciones'];
         $seccion = (int) $secciones['completa'];
 
-        $this->assertCount(5, $secciones);
+        $this->assertCount(6, $secciones);
         $this->assertSame(2, DB::table('core.escuela_profesional')
             ->where('codigo', 'like', 'IFD-'.$lote.'-%')
             ->count());
-        $this->assertSame(5, DB::table('core.seccion')
+        $this->assertSame(6, DB::table('core.seccion')
             ->where('codigo', 'like', 'IFD-'.$lote.'-%')
             ->count());
         $this->assertSame(12, User::where('email', 'like', '%'.$lote.'@demo.example.test')->count());
@@ -294,6 +295,49 @@ final class DemoSeederTest extends TestCase
             (int) DB::table('core.seccion')->where('id_seccion', $seccion)->value('id_periodo'),
             (int) DB::table('core.seccion')->where('id_seccion', (int) $secciones['deshabilitada'])->value('id_periodo'),
         );
+
+        $idSeccionSinIf = (int) $secciones['sin-investigacion'];
+        $this->assertSame(0, DB::table('investigacion_formativa.seccion_configuracion')
+            ->where('id_seccion', $idSeccionSinIf)
+            ->count());
+        $this->assertSame(0, DB::table('investigacion_formativa.competencia_seccion')
+            ->where('id_seccion', $idSeccionSinIf)
+            ->count());
+
+        $idsCursoPlan = DB::table('core.seccion')
+            ->whereIn('id_seccion', array_values($secciones))
+            ->distinct()
+            ->pluck('id_curso_plan')
+            ->all();
+        $this->assertSame(4, DB::table('investigacion_formativa.indicador_experiencia')
+            ->whereIn('id_curso_plan', $idsCursoPlan)
+            ->count());
+        $this->assertSame(2, DB::table('investigacion_formativa.configuracion_indicador')
+            ->where('indicador', '3.2')
+            ->count());
+
+        $idEscuela = (int) DB::table('core.curso_plan as cp')
+            ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
+            ->where('cp.id_curso_plan', $planCompleta)
+            ->value('pe.id_escuela');
+        $idPeriodo = (int) DB::table('core.seccion')->where('id_seccion', $seccion)->value('id_periodo');
+        $periodo = (string) DB::table('core.periodo_academico')
+            ->where('id_periodo', $idPeriodo)
+            ->value('codigo');
+        $indicadores = app(IndicadorService::class)->indicadoresDeAlcance(
+            [$idEscuela],
+            $periodo,
+            null,
+            [$seccion],
+        );
+
+        $this->assertSame(1, $indicadores->experiencia_curricular->numerador);
+        $this->assertSame(2, $indicadores->experiencia_curricular->denominador);
+        $this->assertSame(50.0, $indicadores->experiencia_curricular->valor);
+        $this->assertSame(2, $indicadores->satisfaccion->numerador);
+        $this->assertSame(3, $indicadores->satisfaccion->denominador);
+        $this->assertSame(66.67, $indicadores->satisfaccion->valor);
+        $this->assertTrue($indicadores->satisfaccion->provisional);
 
         $multi = User::where('email', 'multirrol.'.$lote.'@demo.example.test')->firstOrFail();
         $this->assertTrue($multi->hasAllRoles(['profesor', 'alumno']));

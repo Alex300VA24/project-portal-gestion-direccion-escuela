@@ -29,6 +29,7 @@
 
         <nav class="if-actions" aria-label="Secciones de resultados">
             <a class="if-link" href="#encuesta">Encuesta</a>
+            <a class="if-link" href="#indicadores">Indicador 3.2</a>
             <a class="if-link" href="#calificaciones">Calificaciones</a>
             <a class="if-link" href="#decisiones">Decisiones docentes</a>
             <a class="if-link" href="{{ route('investigacion-formativa.director.index', array_filter(['periodo' => $seccion->periodo->codigo, 'escuela' => request('escuela'), 'curso' => request('curso'), 'linea' => request('linea')])) }}">Historial del periodo</a>
@@ -115,6 +116,93 @@
             <div class="if-pagination">
                 {{ $reporte->comentarios->fragment('encuesta')->links('modules.investigacion-formativa.partials.paginacion') }}
             </div>
+        </section>
+
+        @php
+            $satisfaccionIndicador = $reporte->indicador_satisfaccion;
+        @endphp
+
+        <section
+            id="indicadores"
+            class="if-panel if-stack"
+            style="margin-top: 22px; padding: 22px;"
+            aria-labelledby="titulo-indicadores"
+        >
+            <h2 id="titulo-indicadores" class="if-section-title">Indicador 3.2 · Satisfacción de la sección</h2>
+            <p>{{ $satisfaccionIndicador->nombre }}</p>
+            <p style="font-size: 1.8rem; font-weight: 700; margin: 8px 0;">
+                {{ $satisfaccionIndicador->valor === null ? 'No calculable' : $satisfaccionIndicador->valor.'%' }}
+            </p>
+
+            <dl class="if-inline-stats" aria-label="Numerador y denominador del indicador 3.2">
+                <div>
+                    <dt>Satisfechos</dt>
+                    <dd>{{ $satisfaccionIndicador->numerador }}</dd>
+                </div>
+                <div>
+                    <dt>Respondientes</dt>
+                    <dd>{{ $satisfaccionIndicador->denominador }}</dd>
+                </div>
+            </dl>
+
+            <p class="if-note" style="margin-top: 12px;">
+                <strong>Pregunta:</strong>
+                {{ $satisfaccionIndicador->pregunta ?? 'Sin pregunta configurada' }}
+            </p>
+            <p class="if-note">
+                <strong>Regla:</strong> {{ $satisfaccionIndicador->regla }}
+            </p>
+
+            @if ($satisfaccionIndicador->provisional)
+                <p style="margin-top: 12px;">
+                    <span class="if-status is-warning">Configuración provisional</span>
+                </p>
+            @endif
+
+            @if ($satisfaccionIndicador->fuente !== null)
+                <p class="if-note">Fuente: {{ $satisfaccionIndicador->fuente }}</p>
+            @endif
+
+            @if ($satisfaccionIndicador->motivo !== null)
+                <div class="if-alert" role="status" style="margin-top: 12px;">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>
+                    <span>{{ $satisfaccionIndicador->motivo }}</span>
+                </div>
+            @endif
+
+            @if ($satisfaccionIndicador->categorias !== [])
+                <div class="if-table-wrap" style="margin-top: 16px;">
+                    <table class="if-table">
+                        <caption class="sr-only">Distribución de respuestas por categoría de satisfacción</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Valor</th>
+                                <th scope="col">Categoría</th>
+                                <th scope="col">Estudiantes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($satisfaccionIndicador->categorias as $categoria)
+                                <tr>
+                                    <td data-label="Valor">{{ $categoria->valor }}</td>
+                                    <td data-label="Categoría">
+                                        {{ $categoria->etiqueta }}
+                                        @if ($categoria->satisfecho)
+                                            <span class="if-status is-success">Satisfactoria</span>
+                                        @endif
+                                    </td>
+                                    <td data-label="Estudiantes">{{ $categoria->conteo }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            <p class="if-note" style="margin-top: 12px;">
+                El indicador agregado 3.1 se calcula en el resumen de dirección con el alcance de
+                escuela, periodo y curso. Esta vista de sección no lo duplica.
+            </p>
         </section>
 
         <section id="calificaciones" class="if-panel if-stack" style="margin-top: 22px; padding: 22px;" aria-labelledby="titulo-calificaciones">

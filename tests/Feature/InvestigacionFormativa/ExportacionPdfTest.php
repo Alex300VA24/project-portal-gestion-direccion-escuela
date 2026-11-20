@@ -5,12 +5,14 @@ namespace Tests\Feature\InvestigacionFormativa;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Process\Process;
+use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosIndicador;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosInvestigacion;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosReporte;
 use Tests\TestCase;
 
 final class ExportacionPdfTest extends TestCase
 {
+    use CreaDatosIndicador;
     use CreaDatosInvestigacion;
     use CreaDatosReporte;
     use DatabaseTransactions;
@@ -71,7 +73,34 @@ final class ExportacionPdfTest extends TestCase
 
         $this->assertStringContainsString('Notas de lectura', $texto);
         $this->assertStringContainsString('no incluye comentarios de la encuesta', $texto);
-        $this->assertStringContainsString('no son los tres indicadores oficiales', $texto);
+        $this->assertStringContainsString('no son indicadores oficiales de Calidad', $texto);
+        $this->assertStringContainsString('Indicador 3.2 de la sección', $texto);
+        $this->assertStringContainsString('El indicador agregado 3.1 se calcula en el resumen de dirección', $texto);
+    }
+
+    public function test_el_pdf_incluye_el_indicador_3_2_y_delega_el_3_1_al_resumen(): void
+    {
+        $this->configurarSatisfaccionIndicador();
+        $this->crearEncuestaSatisfaccionIndicador(9901, [
+            9901 => 5,
+            9902 => 4,
+            9905 => 3,
+        ]);
+
+        $texto = $this->textoDelPdf(
+            (string) $this->actingAs($this->datos['users']['director'])->get($this->ruta())->getContent()
+        );
+
+        $this->assertStringContainsString('Indicador 3.2 de la sección', $texto);
+        $this->assertStringContainsString('66.67%', $texto);
+        $this->assertStringContainsString('Satisfechos 2', $texto);
+        $this->assertStringContainsString('Respondientes 3', $texto);
+        $this->assertStringContainsString(self::PREGUNTA_SATISFACCION_INDICADOR, $texto);
+        $this->assertStringContainsString('Configuración provisional', $texto);
+        $this->assertStringContainsString(
+            'El indicador agregado 3.1 se calcula en el resumen de dirección',
+            $texto,
+        );
     }
 
     public function test_el_pdf_muestra_los_datos_pendientes_sin_inventar_ceros(): void

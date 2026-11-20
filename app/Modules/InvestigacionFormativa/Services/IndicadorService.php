@@ -85,6 +85,7 @@ final class IndicadorService
             $filas[] = (object) [
                 'clave' => $experiencia['clave'],
                 'id_escuela' => $experiencia['id_escuela'],
+                'escuela' => $experiencia['escuela'],
                 'id_periodo' => $experiencia['id_periodo'],
                 'periodo' => $experiencia['periodo'],
                 'id_curso_plan' => $experiencia['id_curso_plan'],
@@ -155,6 +156,7 @@ final class IndicadorService
      * @return list<array{
      *     clave: string,
      *     id_escuela: int,
+     *     escuela: string,
      *     id_periodo: int,
      *     periodo: string,
      *     id_curso_plan: int,
@@ -175,6 +177,7 @@ final class IndicadorService
         $filas = DB::table('core.seccion as s')
             ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
             ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')
+            ->join('core.escuela_profesional as e', 'e.id_escuela', '=', 'pe.id_escuela')
             ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
             ->join('core.periodo_academico as p', 'p.id_periodo', '=', 's.id_periodo')
             ->whereIn('pe.id_escuela', $idsEscuela)
@@ -187,6 +190,7 @@ final class IndicadorService
                 's.id_periodo',
                 's.id_curso_plan',
                 'pe.id_escuela',
+                'e.nombre as escuela',
                 'p.codigo as periodo',
                 'c.id_curso',
                 'c.codigo as curso_codigo',
@@ -202,6 +206,7 @@ final class IndicadorService
                 $experiencias[$clave] = [
                     'clave' => $clave,
                     'id_escuela' => (int) $fila->id_escuela,
+                    'escuela' => (string) $fila->escuela,
                     'id_periodo' => (int) $fila->id_periodo,
                     'periodo' => (string) $fila->periodo,
                     'id_curso_plan' => (int) $fila->id_curso_plan,

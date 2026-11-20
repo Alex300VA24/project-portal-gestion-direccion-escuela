@@ -7,12 +7,14 @@ use App\Modules\InvestigacionFormativa\Services\DecisionTrabajoService;
 use App\Modules\InvestigacionFormativa\Services\ReporteService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosIndicador;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosInvestigacion;
 use Tests\Feature\InvestigacionFormativa\Concerns\CreaDatosReporte;
 use Tests\TestCase;
 
 final class ReportesTest extends TestCase
 {
+    use CreaDatosIndicador;
     use CreaDatosInvestigacion;
     use CreaDatosReporte;
     use DatabaseTransactions;
@@ -157,6 +159,45 @@ final class ReportesTest extends TestCase
             ->assertOk()
             ->assertSee('Escala 1–5')
             ->assertSee('estadística descriptiva');
+    }
+
+    public function test_el_resumen_expone_los_indicadores_3_1_y_3_2_con_su_denominador(): void
+    {
+        $this->crearExperienciaCurricularNoIf();
+        $this->registrarExperienciaIndicador(202602, 9501, 920, true, 'Fuente institucional de prueba.');
+        $this->registrarExperienciaIndicador(202602, 9503, 920, false, 'Fuente institucional de prueba.');
+        $this->configurarSatisfaccionIndicador();
+        $this->crearEncuestaSatisfaccionIndicador(9901, [
+            9901 => 5,
+            9902 => 4,
+            9905 => 3,
+        ]);
+
+        $resumen = $this->resumen();
+
+        $this->assertSame(1, $resumen->indicadores->experiencia_curricular->numerador);
+        $this->assertSame(2, $resumen->indicadores->experiencia_curricular->denominador);
+        $this->assertSame(50.0, $resumen->indicadores->experiencia_curricular->valor);
+        $this->assertSame(2, $resumen->indicadores->satisfaccion->numerador);
+        $this->assertSame(3, $resumen->indicadores->satisfaccion->denominador);
+        $this->assertSame(66.67, $resumen->indicadores->satisfaccion->valor);
+        $this->assertTrue($resumen->indicadores->satisfaccion->provisional);
+
+        $seccion = $this->reporte();
+        $this->assertSame(2, $seccion->indicador_satisfaccion->numerador);
+        $this->assertSame(3, $seccion->indicador_satisfaccion->denominador);
+
+        $this->actingAs($this->datos['users']['director'])
+            ->get(route('investigacion-formativa.director.index'))
+            ->assertOk()
+            ->assertSee('Indicador 3.1 · Experiencias curriculares')
+            ->assertSee('Indicador 3.2 · Satisfacción estudiantil')
+            ->assertSee('50%')
+            ->assertSee('66.67%')
+            ->assertSee('Experiencias curriculares del denominador')
+            ->assertSee('IF-NO-503')
+            ->assertSee('Fuente institucional de prueba.')
+            ->assertSee('Configuración provisional');
     }
 
     public function test_los_retiros_cambian_el_denominador_sin_limitar_la_tasa(): void
@@ -439,7 +480,7 @@ final class ReportesTest extends TestCase
         $this->assertContains('2025-I', $resumen->periodos);
         $pagina = $this->actingAs($this->datos['users']['director'])
             ->get(route('investigacion-formativa.director.index', ['periodo' => '2025-I']))
-            ->assertOk()->assertSee('HIST-IF')->assertDontSee('IF-501');
+            ->assertOk()->assertSee('HIST-IF')->assertDontSee('Sección A');
         $this->guardarHtml('historial', $pagina->getContent());
         $this->get($this->ruta(9991))->assertOk()->assertSee('2025-I')->assertSee('Cerrada');
         $this->assertNotContains(9991, array_column($this->resumen('2026-II')->secciones, 'id_seccion'));
@@ -582,6 +623,35 @@ final class ReportesTest extends TestCase
         foreach ($estados as $estado) {
             $this->assertNotNull($estado->seleccion);
         }
+    }
+
+    private function crearExperienciaCurricularNoIf(): void
+    {
+        DB::table('core.curso')->insert([
+            'id_curso' => 9703,
+            'codigo' => 'IF-NO-503',
+            'nombre' => 'Curso sin Investigación Formativa',
+            'creditos' => 3,
+            'estado' => 'Activo',
+        ]);
+        DB::table('core.curso_plan')->insert([
+            'id_curso_plan' => 9503,
+            'id_plan' => 950,
+            'id_curso' => 9703,
+            'ciclo' => 6,
+            'tipo' => 'Obligatorio',
+            'id_area' => 960,
+            'creditos_requeridos' => 0,
+        ]);
+        DB::table('core.seccion')->insert([
+            'id_seccion' => 9903,
+            'id_periodo' => 202602,
+            'id_curso_plan' => 9503,
+            'codigo' => 'C',
+            'capacidad' => 30,
+            'id_docente_responsable' => 9801,
+            'estado' => 'Activa',
+        ]);
     }
 
     private function reporte(): object

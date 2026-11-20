@@ -18,6 +18,7 @@ final class ReporteService
         private readonly DatosAcademicosService $datos,
         private readonly CalificacionService $calificacion,
         private readonly DecisionTrabajoService $decisiones,
+        private readonly IndicadorService $indicadores,
     ) {}
 
     /**
@@ -40,6 +41,7 @@ final class ReporteService
      *     destacados_count: int,
      *     seleccion_destacada: object{id_proyecto: int, id_grupo: int, nombre: string, titulo: string, desactualizada: bool, decidido_en: string|null}|null,
      *     entregas_evaluadas: int,
+     *     indicador_satisfaccion: object,
      * }
      */
     public function porSeccion(
@@ -177,6 +179,7 @@ final class ReporteService
                 static fn (int $acumulado, object $grupo): int => $acumulado + (int) $grupo->entregas_evaluadas,
                 0,
             ),
+            'indicador_satisfaccion' => $this->indicadores->satisfaccionDeSeccion($idSeccion),
         ];
     }
 
@@ -236,6 +239,7 @@ final class ReporteService
      *         }>
      *     },
      *     decisiones: object{aprobados: int, destacados: int},
+     *     indicadores: object{experiencia_curricular: object, satisfaccion: object},
      *     totales: object{
      *         secciones: int,
      *         habilitadas: int,
@@ -459,6 +463,16 @@ final class ReporteService
             ? round($totales->respuestas / $totales->roster_activo * 100, 2)
             : null;
 
+        $idsEscuelaIndicadores = $idEscuela !== null
+            ? [$idEscuela]
+            : array_map('intval', array_column($escuelas, 'id_escuela'));
+        $indicadores = $this->indicadores->indicadoresDeAlcance(
+            $idsEscuelaIndicadores,
+            $periodo,
+            $idCurso,
+            array_column($seccionesBase, 'id_seccion'),
+        );
+
         return (object) [
             'escuelas' => $escuelas,
             'periodos' => $periodos,
@@ -482,6 +496,7 @@ final class ReporteService
                 'aprobados' => $totales->aprobados,
                 'destacados' => $totales->destacados,
             ],
+            'indicadores' => $indicadores,
             'totales' => $totales,
         ];
     }

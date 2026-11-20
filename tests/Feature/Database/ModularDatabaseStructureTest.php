@@ -16,7 +16,7 @@ final class ModularDatabaseStructureTest extends TestCase
         'calidad' => 12,
         'tesis' => 22,
         'bienestar' => 18,
-        'investigacion_formativa' => 24,
+        'investigacion_formativa' => 26,
         'seguimiento_estudiante' => 23,
         'seguimiento_egresado' => 40,
     ];
