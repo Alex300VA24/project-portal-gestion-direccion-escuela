@@ -245,6 +245,110 @@ final class CotecuService extends ModuleService
     }
 
     /**
+     * Sílabos Validados de un semestre para el listado general (la
+     * opción Sílabos del director y de la secretaría): solo los
+     * aprobados, con los datos del curso y el ciclo para listarlos.
+     *
+     * El filtro de ciclo es opcional y depende del semestre elegido
+     * (ver ciclosDePeriodo): un valor vacío no filtra y "especial"
+     * selecciona los cursos de un ciclo abierto en el semestre que no
+     * le corresponde.
+     *
+     * @return Collection<int, Silabo>
+     */
+    public function silabosValidados(?PeriodoAcademico $periodo, ?string $ciclo = null): Collection
+    {
+        if ($periodo === null) {
+            return new Collection();
+        }
+
+        $query = Silabo::query()
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'cotecu.silabos.id_curso_plan')
+            ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
+            ->where('cotecu.silabos.id_periodo', $periodo->id_periodo)
+            ->where('cotecu.silabos.estado', 'Validado');
+
+        if ($ciclo === 'especial') {
+            // En -II (semestre par) lo especial es un ciclo impar y en
+            // -I (impar) un ciclo par: la paridad que no corresponde.
+            $paridad = $this->esSegundoSemestre((string) $periodo->codigo) ? 1 : 0;
+            $query->whereRaw('cp.ciclo % 2 = ?', [$paridad]);
+        } elseif ($ciclo !== null && $ciclo !== '') {
+            $query->where('cp.ciclo', (int) $ciclo);
+        }
+
+        return $query
+            ->orderBy('c.codigo')
+            ->select(
+                'cotecu.silabos.id',
+                'cotecu.silabos.version',
+                'cotecu.silabos.archivo_url',
+                'cp.ciclo',
+                'c.codigo as curso_codigo',
+                'c.nombre as curso_nombre',
+            )
+            ->get();
+    }
+
+    /**
+     * Opciones del filtro de ciclo de la pantalla Sílabos según el
+     * semestre elegido: en un semestre -I se dictan los ciclos impares
+     * (1, 3, 5, 7 y 9) y en -II los pares (2, 4, 6, 8 y 10);
+     * "especial" queda siempre al final por si abren un curso de un
+     * ciclo en el semestre que no le corresponde.
+     *
+     * @return array<string, string> valor del filtro => etiqueta
+     */
+    public function ciclosDePeriodo(?string $codigoPeriodo): array
+    {
+        $ciclos = $this->esSegundoSemestre((string) $codigoPeriodo)
+            ? [2, 4, 6, 8, 10]
+            : [1, 3, 5, 7, 9];
+
+        // La opción vacía es el valor por defecto: muestra todos los
+        // ciclos del semestre, como hasta ahora.
+        $opciones = ['' => 'Todos los ciclos'];
+
+        foreach ($ciclos as $ciclo) {
+            $opciones[(string) $ciclo] = $this->etiquetaCiclo($ciclo).' Ciclo';
+        }
+
+        $opciones['especial'] = 'Especial';
+
+        return $opciones;
+    }
+
+    /**
+     * El código del periodo termina en -I (primer semestre) o en -II
+     * (segundo semestre); cualquier otra forma se toma como -I.
+     */
+    private function esSegundoSemestre(string $codigoPeriodo): bool
+    {
+        return str_ends_with($codigoPeriodo, '-II');
+    }
+
+    /**
+     * Ordinal corto del ciclo tal como se escribe en el plan:
+     * 1er, 2do, 3er, 4to…
+     */
+    private function etiquetaCiclo(int $ciclo): string
+    {
+        return match ($ciclo) {
+            1 => '1er',
+            2 => '2do',
+            3 => '3er',
+            4 => '4to',
+            5 => '5to',
+            6 => '6to',
+            7 => '7mo',
+            8 => '8vo',
+            9 => '9no',
+            10 => '10mo',
+            default => (string) $ciclo,
+        };
+    }
+
+    /**
      * Registra un sílabo del profesor en estado Pendiente.
      *
      * La subida de archivo está simulada en esta versión de COTECU: no

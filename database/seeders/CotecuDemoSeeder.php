@@ -51,7 +51,9 @@ use Spatie\Permission\Models\Role;
  *   DELETE FROM core.curso_plan WHERE id_plan IN
  *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
  *   DELETE FROM core.curso WHERE codigo IN
- *     ('INF-101','MAT-101','INF-102','INF-201','MAT-201','INF-202','INF-301','INF-302','INF-303');
+ *     ('INF-101','MAT-101','INF-102','INF-103','MAT-102','INF-201','MAT-201',
+ *      'INF-202','INF-203','MAT-202','INF-301','INF-302','INF-303','INF-304',
+ *      'ING-301','INF-401','INF-402');
  *   DELETE FROM core.area_formacion WHERE codigo IN ('CSC','MAT','ING');
  *   DELETE FROM core.departamento_academico WHERE codigo = 'DA-INF';
  *   DELETE FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020';
@@ -143,12 +145,16 @@ class CotecuDemoSeeder extends Seeder
     /**
      * Documentos del plan curricular que COTECU revisa (cotecu.planes_curriculares).
      * Sin id_periodo: es por plan y se versiona, no por semestre.
+     * Los tres estados de la revisión están representados: v1 Validado
+     * (aprobado), v2 Pendiente (alimenta la cola) y v3 Observado
+     * (ya revisado).
      * archivo_url es una ruta simulada: la subida de archivo todavía no
      * está implementada (ver el aviso en el formulario de planes).
      */
     private const PLANES_CURRICULARES = [
         ['version' => 1, 'estado' => 'Validado', 'archivo_url' => 'demo/planes/plan-inf-2020-v1.pdf'],
         ['version' => 2, 'estado' => 'Pendiente', 'archivo_url' => 'demo/planes/plan-inf-2020-v2.pdf'],
+        ['version' => 3, 'estado' => 'Observado', 'archivo_url' => 'demo/planes/plan-inf-2020-v3.pdf'],
     ];
 
     /**
@@ -174,17 +180,29 @@ class CotecuDemoSeeder extends Seeder
      * Cursos del PLAN-INF-2020 en core.curso (créditos) y su fila en
      * core.curso_plan (ciclo, tipo y área). La tabla de cursos no tiene
      * código propio: se deriva de core.curso.codigo, único por diseño.
+     *
+     * Hay al menos dos cursos por ciclo del 1 al 4: es lo que permite
+     * probar el filtro de ciclo de la pantalla Sílabos en los dos
+     * semestres (en -I corren los impares y en -II los pares).
      */
     private const CURSOS = [
         ['ciclo' => 1, 'codigo' => 'INF-101', 'nombre' => 'Fundamentos de Programación', 'creditos' => 3, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
         ['ciclo' => 1, 'codigo' => 'MAT-101', 'nombre' => 'Cálculo I', 'creditos' => 4, 'area' => 'MAT', 'tipo' => 'Obligatorio'],
         ['ciclo' => 1, 'codigo' => 'INF-102', 'nombre' => 'Introducción a la Ingeniería Informática', 'creditos' => 2, 'area' => 'ING', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 1, 'codigo' => 'INF-103', 'nombre' => 'Introducción a la Lógica', 'creditos' => 2, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 1, 'codigo' => 'MAT-102', 'nombre' => 'Geometría Analítica', 'creditos' => 4, 'area' => 'MAT', 'tipo' => 'Obligatorio'],
         ['ciclo' => 2, 'codigo' => 'INF-201', 'nombre' => 'Estructuras de Datos', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
         ['ciclo' => 2, 'codigo' => 'MAT-201', 'nombre' => 'Matemática Discreta', 'creditos' => 3, 'area' => 'MAT', 'tipo' => 'Obligatorio'],
         ['ciclo' => 2, 'codigo' => 'INF-202', 'nombre' => 'Programación Orientada a Objetos', 'creditos' => 3, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 2, 'codigo' => 'INF-203', 'nombre' => 'Fundamentos de Hardware', 'creditos' => 2, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 2, 'codigo' => 'MAT-202', 'nombre' => 'Estadística I', 'creditos' => 3, 'area' => 'MAT', 'tipo' => 'Obligatorio'],
         ['ciclo' => 3, 'codigo' => 'INF-301', 'nombre' => 'Bases de Datos', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
         ['ciclo' => 3, 'codigo' => 'INF-302', 'nombre' => 'Sistemas Operativos', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
         ['ciclo' => 3, 'codigo' => 'INF-303', 'nombre' => 'Electiva: Gestión de Proyectos', 'creditos' => 2, 'area' => 'ING', 'tipo' => 'Electivo'],
+        ['ciclo' => 3, 'codigo' => 'INF-304', 'nombre' => 'Lenguajes de Programación', 'creditos' => 3, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 3, 'codigo' => 'ING-301', 'nombre' => 'Ingeniería Económica', 'creditos' => 2, 'area' => 'ING', 'tipo' => 'Electivo'],
+        ['ciclo' => 4, 'codigo' => 'INF-401', 'nombre' => 'Ingeniería de Software', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
+        ['ciclo' => 4, 'codigo' => 'INF-402', 'nombre' => 'Redes de Computadoras', 'creditos' => 4, 'area' => 'CSC', 'tipo' => 'Obligatorio'],
     ];
 
     /**
@@ -206,34 +224,54 @@ class CotecuDemoSeeder extends Seeder
      * intermedia que decide qué cursos carga cada profesor en su
      * selector. Un mismo curso con varios profesores son varias
      * secciones (una por responsable).
+     *
+     * En -II (semestre par) se asignan ciclos pares y en -I (impar)
+     * ciclos impares, con un caso de curso de ciclo "equivocado" por
+     * semestre para alimentar la opción Especial del filtro de ciclo.
      */
     private const SECCIONES = [
-        // Periodo activo: el Profesor Demo tiene 3 cursos asignados...
+        // Periodo activo: el Profesor Demo tiene 6 cursos asignados...
         ['periodo' => '2026-II', 'curso' => 'INF-101', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-II', 'curso' => 'INF-102', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
         ['periodo' => '2026-II', 'curso' => 'INF-201', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
         ['periodo' => '2026-II', 'curso' => 'INF-301', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-II', 'curso' => 'INF-203', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-II', 'curso' => 'INF-401', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
         // ...y el Docente Ajeno otros 2 (la prueba del filtro).
         ['periodo' => '2026-II', 'curso' => 'MAT-101', 'codigo' => 'A', 'docente' => 'DOC-AJENO'],
         ['periodo' => '2026-II', 'curso' => 'INF-302', 'codigo' => 'A', 'docente' => 'DOC-AJENO'],
         // Semestre cerrado: histórico del Profesor Demo para el
         // selector de semestre de Mis sílabos.
         ['periodo' => '2026-I', 'curso' => 'INF-101', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-I', 'curso' => 'INF-301', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
+        ['periodo' => '2026-I', 'curso' => 'INF-201', 'codigo' => 'A', 'docente' => 'DOC-DEMO'],
     ];
 
     /**
-     * Sílabos de prueba del Profesor Demo (cotecu.silabos): 3 en el
-     * periodo activo y 1 histórico en el cerrado, para que las pantallas
-     * Mis sílabos y Revisar sílabos no arranquen vacías en ningún
-     * semestre. Los 2 Pendiente del periodo activo son los que alimentan
-     * la cola de revisión (el backfill les crea su registro al abrir
-     * la pantalla).
+     * Sílabos de prueba del Profesor Demo (cotecu.silabos): 6 en el
+     * periodo activo y 3 históricos en el cerrado, para que las
+     * pantallas Mis sílabos y Revisar sílabos no arranquen vacías en
+     * ningún semestre y el filtro de ciclo de Sílabos tenga filas que
+     * mostrar. En el activo los 3 estados están representados: 3
+     * Validado, 2 Pendiente y 1 Observado. Los 2 Pendiente del periodo
+     * activo son los que alimentan la cola de revisión (el backfill les
+     * crea su registro al abrir la pantalla); el Observado ya fue
+     * revisado y por eso no entra a la cola.
+     *
+     * Los Validados cubren los dos semestres con su paridad de ciclo
+     * (INF-101 es ciclo 1 en -II, o sea un curso "Especial").
      * archivo_url usa la ruta simulada que genera el formulario.
      */
     private const SILABOS = [
         ['periodo' => '2026-II', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-102', 'version' => 1, 'estado' => 'Observado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-102-2026-ii-v1.pdf'],
         ['periodo' => '2026-II', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-ii-v1.pdf'],
         ['periodo' => '2026-II', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-203', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-203-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-401', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-401-2026-ii-v1.pdf'],
         ['periodo' => '2026-I', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-i-v1.pdf'],
+        ['periodo' => '2026-I', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-i-v1.pdf'],
+        ['periodo' => '2026-I', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-i-v1.pdf'],
     ];
 
     /**
@@ -534,4 +572,5 @@ class CotecuDemoSeeder extends Seeder
             );
         }
     }
+
 }

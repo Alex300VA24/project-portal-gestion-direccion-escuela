@@ -23,7 +23,15 @@ final class CotecuController extends ModuleController
 
     /**
      * Listado general de sílabos (director y secretaría), con selector
-     * de semestre.
+     * de semestre y de ciclo. Solo muestra los sílabos ya Validados.
+     *
+     * Las opciones de ciclo dependen del semestre elegido (impares en
+     * -I, pares en -II y siempre Especial); un valor heredado de otro
+     * semestre se ignora y la lista se muestra sin filtrar.
+     *
+     * Para quien tiene permiso de revisión, la cola se carga con el
+     * mismo método de la pantalla Revisar sílabos: el aviso de la
+     * cabecera cuenta exactamente lo que esa opción mostraría.
      */
     public function silabos(Request $request): View
     {
@@ -31,11 +39,23 @@ final class CotecuController extends ModuleController
         $actual = $this->service->periodoActual();
         $seleccion = $periodos->firstWhere('codigo', $request->query('periodo')) ?? $actual;
 
+        $ciclos = $this->service->ciclosDePeriodo($seleccion?->codigo);
+        $ciclo = $request->query('ciclo');
+        $ciclo = is_string($ciclo) && array_key_exists($ciclo, $ciclos) ? $ciclo : '';
+
+        $porRevisar = auth()->user()?->can('cotecu.silabo.review')
+            ? $this->service->colaRevisionSilabos()->count()
+            : null;
+
         return view('modules.cotecu.silabos', [
             'module' => static::MODULE,
             'schema' => static::SCHEMA,
             'periodos' => $periodos,
             'periodoSeleccionado' => $seleccion,
+            'ciclos' => $ciclos,
+            'cicloSeleccionado' => $ciclo,
+            'silabos' => $this->service->silabosValidados($seleccion, $ciclo),
+            'porRevisar' => $porRevisar,
         ]);
     }
 
