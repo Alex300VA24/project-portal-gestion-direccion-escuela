@@ -32,4 +32,13 @@ Route::prefix('cotecu')
 
         Route::post('/planes', [CotecuController::class, 'store'])
             ->middleware('permission:cotecu.plan.upload')->name('planes.store');
+
+        Route::get('/planes/revisiones', [CotecuController::class, 'revisionesPlanes'])
+            ->middleware('permission:cotecu.plan.review')->name('planes.revisiones');
+
+        Route::get('/planes/revisiones/{revision}', [CotecuController::class, 'revisarPlan'])
+            ->middleware('permission:cotecu.plan.review')->name('planes.revisiones.show');
+
+        Route::post('/planes/revisiones/{revision}', [CotecuController::class, 'storeRevisionPlan'])
+            ->middleware('permission:cotecu.plan.review')->name('planes.revisiones.store');
     });

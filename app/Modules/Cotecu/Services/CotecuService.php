@@ -4,6 +4,7 @@ namespace App\Modules\Cotecu\Services;
 
 use App\Modules\Cotecu\Models\Registro;
 use App\Modules\Cotecu\Models\Revision;
+use App\Modules\Cotecu\Models\RevisionPlan;
 use App\Modules\Cotecu\Models\Silabo;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Core\PlanEstudios;
@@ -556,6 +557,183 @@ final class CotecuService extends ModuleService
 
             $revision->update(['estado_final' => $estadoFinal]);
             Silabo::query()->whereKey($revision->silabo_id)->update(['estado' => $estadoFinal]);
+        });
+
+        return $estadoFinal;
+    }
+
+    /**
+     * Cola de revisión de planes: los registros de revisión de los
+     * planes curriculares en estado Pendiente, con los datos del
+     * documento y del plan de estudios que muestra la pantalla
+     * Revisar planes.
+     *
+     * Backfill idempotente ("si es que no hay"): cada plan Pendiente
+     * sin fila en cotecu.revisiones_plan_curricular recibe una con la
+     * lista de cotejo activa, el revisor = cuenta en sesión y
+     * estado_final 'Pendiente'. Reabrir la pantalla no duplica
+     * registros: solo se inserta si el plan todavía no tiene.
+     *
+     * Los planes Validado/Observado ya fueron revisados: no aparecen.
+     *
+     * @return Collection<int, RevisionPlan>
+     */
+    public function colaRevisionPlanes(): Collection
+    {
+        $idRevisor = $this->idUsuarioActual();
+        $idLista = DB::table('cotecu.listas_cotejo')
+            ->where('estado', 'Activo')
+            ->orderByDesc('id')
+            ->value('id');
+
+        if ($idRevisor !== null && $idLista !== null) {
+            $pendientes = DB::table('cotecu.planes_curriculares')
+                ->where('estado', 'Pendiente')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('cotecu.revisiones_plan_curricular')
+                        ->whereColumn('cotecu.revisiones_plan_curricular.plan_curricular_id', 'cotecu.planes_curriculares.id');
+                })
+                ->pluck('id');
+
+            foreach ($pendientes as $idPlan) {
+                DB::table('cotecu.revisiones_plan_curricular')->insert([
+                    'plan_curricular_id' => $idPlan,
+                    'lista_cotejo_id' => $idLista,
+                    'id_revisor' => $idRevisor,
+                    'estado_final' => 'Pendiente',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        return $this->revisionesPlanesQuery()
+            ->where('d.estado', 'Pendiente')
+            ->orderByDesc('d.version')
+            ->get();
+    }
+
+    /**
+     * Detalle de una revisión de plan para su pantalla de marcado: la
+     * misma cruzada de la cola, renglón único. A diferencia de la cola
+     * no filtra por estado, para que una revisión ya cerrada pueda
+     * reabrirse en solo lectura.
+     */
+    public function detalleRevisionPlan(int $idRevision): ?RevisionPlan
+    {
+        return $this->revisionesPlanesQuery()
+            ->where('cotecu.revisiones_plan_curricular.id', $idRevision)
+            ->first();
+    }
+
+    /**
+     * Cruzada de la cola de planes: registro ⋈ documento del plan ⋈
+     * plan de estudios con los datos que muestran las pantallas de
+     * revisión.
+     *
+     * @return Builder<RevisionPlan>
+     */
+    private function revisionesPlanesQuery(): Builder
+    {
+        return RevisionPlan::query()
+            ->join('cotecu.planes_curriculares as d', 'd.id', '=', 'cotecu.revisiones_plan_curricular.plan_curricular_id')
+            ->join('core.plan_estudios as pe', 'pe.id_plan', '=', 'd.id_plan')
+            ->select(
+                'cotecu.revisiones_plan_curricular.id',
+                'cotecu.revisiones_plan_curricular.estado_final',
+                'cotecu.revisiones_plan_curricular.lista_cotejo_id',
+                'd.nombre',
+                'd.version',
+                'd.archivo_url',
+                'pe.nombre as plan_nombre',
+                'pe.codigo as plan_codigo',
+                'pe.anio_aprobacion as plan_anio',
+            );
+    }
+
+    /**
+     * Ítems de la lista de cotejo de una revisión de plan, en orden de
+     * marcado.
+     *
+     * @return SupportCollection<int, object>
+     */
+    public function itemsDeRevisionPlan(RevisionPlan $revision): SupportCollection
+    {
+        return DB::table('cotecu.lista_cotejo_items')
+            ->where('lista_cotejo_id', $revision->lista_cotejo_id)
+            ->orderBy('orden')
+            ->get();
+    }
+
+    /**
+     * Marcado ya guardado de una revisión de plan, indexado por ítem:
+     * es lo que se pinta al reabrir una revisión cerrada (solo
+     * lectura).
+     *
+     * @return SupportCollection<int, object>
+     */
+    public function resultadosDeRevisionPlan(int $idRevision): SupportCollection
+    {
+        return DB::table('cotecu.resultados_items')
+            ->where('revision_id', $idRevision)
+            ->get()
+            ->keyBy('item_id');
+    }
+
+    /**
+     * Cierra la revisión de un plan: guarda el marcado de cada ítem en
+     * cotecu.resultados_items y decide el estado final — todos cumplen
+     * → Validado; al menos uno sin marcar → Observado — aplicándolo
+     * también al plan curricular para que salga de la cola.
+     *
+     * Regla del cierre: un ítem marcado (cumple) nunca guarda
+     * observación (se limpia); un ítem sin marcar conserva la suya.
+     *
+     * @param  SupportCollection<int, object>  $items
+     * @param  array<int, array{cumple: bool, observacion: string|null}>  $marcas
+     */
+    public function cerrarRevisionPlan(RevisionPlan $revision, SupportCollection $items, array $marcas): string
+    {
+        $todosCumplen = true;
+
+        foreach ($items as $item) {
+            if (! ($marcas[(int) $item->id]['cumple'] ?? false)) {
+                $todosCumplen = false;
+            }
+        }
+
+        $estadoFinal = $todosCumplen ? 'Validado' : 'Observado';
+
+        DB::transaction(function () use ($revision, $items, $marcas, $estadoFinal) {
+            foreach ($items as $item) {
+                $marca = $marcas[(int) $item->id] ?? ['cumple' => false, 'observacion' => null];
+                $cumple = $marca['cumple'];
+                $observacion = $cumple ? null : $marca['observacion'];
+
+                $actualizado = DB::table('cotecu.resultados_items')
+                    ->where('revision_id', $revision->id)
+                    ->where('item_id', $item->id)
+                    ->update([
+                        'cumple' => $cumple,
+                        'observacion_item' => $observacion,
+                        'updated_at' => now(),
+                    ]);
+
+                if ($actualizado === 0) {
+                    DB::table('cotecu.resultados_items')->insert([
+                        'revision_id' => $revision->id,
+                        'item_id' => $item->id,
+                        'cumple' => $cumple,
+                        'observacion_item' => $observacion,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            $revision->update(['estado_final' => $estadoFinal]);
+            Registro::query()->whereKey($revision->plan_curricular_id)->update(['estado' => $estadoFinal]);
         });
 
         return $estadoFinal;

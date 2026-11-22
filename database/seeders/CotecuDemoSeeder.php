@@ -28,8 +28,8 @@ use Spatie\Permission\Models\Role;
  * producción los carga quien administre core/seguridad; COTECU solo lee.
  *
  * El catálogo del plan, el catálogo académico (áreas, departamento,
- * cursos), las secciones con sus sílabos y la lista de cotejo también
- * son demo. Limpieza (hijos primero, por las FK):
+ * cursos), las secciones con sus sílabos y las listas de cotejo
+ * también son demo. Limpieza (hijos primero, por las FK):
  *   DELETE FROM cotecu.resultados_silabos_items WHERE revision_silabo_id IN
  *     (SELECT id FROM cotecu.revisiones_silabo WHERE silabo_id IN
  *       (SELECT id FROM cotecu.silabos WHERE id_profesor IN
@@ -42,6 +42,12 @@ use Spatie\Permission\Models\Role;
  *   DELETE FROM cotecu.lista_cotejo_silabos_items WHERE lista_cotejo_silabo_id IN
  *     (SELECT id FROM cotecu.listas_cotejo_silabos WHERE nombre = 'Lista de cotejo de sílabos 2026');
  *   DELETE FROM cotecu.listas_cotejo_silabos WHERE nombre = 'Lista de cotejo de sílabos 2026';
+ *   DELETE FROM cotecu.resultados_items WHERE revision_id IN
+ *     (SELECT id FROM cotecu.revisiones_plan_curricular);
+ *   DELETE FROM cotecu.revisiones_plan_curricular;
+ *   DELETE FROM cotecu.lista_cotejo_items WHERE lista_cotejo_id IN
+ *     (SELECT id FROM cotecu.listas_cotejo WHERE nombre = 'Lista de cotejo de planes 2026');
+ *   DELETE FROM cotecu.listas_cotejo WHERE nombre = 'Lista de cotejo de planes 2026';
  *   DELETE FROM core.seccion WHERE id_curso_plan IN
  *     (SELECT id_curso_plan FROM core.curso_plan WHERE id_plan IN
  *       (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020'));
@@ -302,6 +308,60 @@ class CotecuDemoSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Lista de cotejo de planes (cotecu.listas_cotejo): es la fila que
+     * exige la FK NOT NULL de revisiones_plan_curricular.lista_cotejo_id,
+     * sin la cual no se puede registrar ninguna revisión de plan.
+     *
+     * Piloto con las primeras secciones del currículo: la lista se
+     * agrupa en secciones (campo seccion de lista_cotejo_items) y cada
+     * una aporta sus ítems marcables, en el orden en que aparecen en el
+     * documento. El título de la sección es la ruta completa cuando hay
+     * niveles anidados («1. BASES GENERALES › 1.1. BASES NORMATIVAS»);
+     * «Contiene» y la nota del MOEDUNT-2 son prosa del documento y no
+     * son ítems. Solo metadatos + ítems; el marcado de cada revisión
+     * queda en cotecu.resultados_items. El contenido definitivo lo
+     * carga quien corresponda.
+     */
+    private const LISTA_COTEJO_PLAN = [
+        'nombre' => 'Lista de cotejo de planes 2026',
+        'version' => 'v1',
+        'estado' => 'Activo',
+        'secciones' => [
+            ['titulo' => 'CARÁTULA', 'items' => [
+                'Universidad Nacional de Trujillo',
+                'Vicerrectorado Académico',
+                'Facultad',
+                'Currículo del Programa de Estudios de …',
+                'Lugar y fecha (consigna año de aprobación)',
+            ]],
+            ['titulo' => 'PRESENTACIÓN', 'items' => [
+                'Texto breve de exposición acerca de cómo se ha elaborado el currículo de manera general. Debe incluirse los nombres de los que han participado en la elaboración del currículo.',
+            ]],
+            ['titulo' => 'INTRODUCCIÓN', 'items' => [
+                'Texto donde se presenta una visión general de la estructura y el contenido del documento curricular, de su enfoque pedagógico, organización, coherencia interna y externa de sus elementos, funcionamiento del plan de estudio, pertinencia e importancia social.',
+            ]],
+            ['titulo' => '1. BASES GENERALES › 1.1. BASES NORMATIVAS', 'items' => [
+                '1.1.1 Nacional',
+                '1.1.2 Institucional',
+                'Profesional, si se diese el caso',
+            ]],
+            ['titulo' => '1. BASES GENERALES › 1.2. BASES INSTITUCIONALES › 1.2.1. Misión y visión', 'items' => [
+                '1.2.1.1. De la UNT',
+                '1.2.1.2. De la Facultad',
+            ]],
+            ['titulo' => '1. BASES GENERALES › 1.2. BASES INSTITUCIONALES › 1.2.2. Principios institucionales', 'items' => [
+                '1.2.2.1. De la UNT',
+                '1.2.2.2. De la Facultad',
+            ]],
+            ['titulo' => '1. BASES GENERALES › 1.3. BASES TEÓRICO-CONCEPTUALES', 'items' => [
+                '1.3.1. Concepción del ser humano, sociedad y cultura',
+                '1.3.2. Concepción epistemológica',
+                '1.3.3. Concepción curricular',
+            ]],
+        ],
+    ];
+
     public function run(): void
     {
         foreach (self::PERIODOS as $periodo) {
@@ -349,6 +409,7 @@ class CotecuDemoSeeder extends Seeder
         $this->sembrarCatalogoAcademico();
         $this->sembrarSeccionesYSilabos();
         $this->sembrarListaCotejoSilabos();
+        $this->sembrarListaCotejoPlanes();
 
         $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones, 4 sílabos y lista de cotejo con 10 ítems.');
     }
@@ -573,4 +634,55 @@ class CotecuDemoSeeder extends Seeder
         }
     }
 
+    /**
+     * Lista de cotejo de planes y sus 17 ítems agrupados en 7 secciones:
+     * es lo que permite crear registros en cotecu.revisiones_plan_
+     * curricular (la FK lista_cotejo_id es NOT NULL) y lo que el
+     * director de escuela marca al revisar un plan curricular.
+     *
+     * Reescribe los ítems de la lista (borra los previos y vuelve a
+     * insertarlos con su sección y su orden), de modo que cambiar el
+     * contenido del piloto no deje órdenes huérfanos. Ojo: la FK
+     * resultados_items.item_id es restrict, así que antes de borrar los
+     * ítems se borran sus marcados; re-ejecutar el seeder deja las
+     * revisiones de prueba sin marcar.
+     */
+    private function sembrarListaCotejoPlanes(): void
+    {
+        DB::table('cotecu.listas_cotejo')->updateOrInsert(
+            ['nombre' => self::LISTA_COTEJO_PLAN['nombre']],
+            [
+                'version' => self::LISTA_COTEJO_PLAN['version'],
+                'estado' => self::LISTA_COTEJO_PLAN['estado'],
+            ],
+        );
+
+        $idLista = DB::table('cotecu.listas_cotejo')
+            ->where('nombre', self::LISTA_COTEJO_PLAN['nombre'])
+            ->value('id');
+
+        $itemsPrevios = DB::table('cotecu.lista_cotejo_items')
+            ->where('lista_cotejo_id', $idLista)
+            ->pluck('id');
+
+        if ($itemsPrevios->isNotEmpty()) {
+            DB::table('cotecu.resultados_items')->whereIn('item_id', $itemsPrevios)->delete();
+            DB::table('cotecu.lista_cotejo_items')->where('lista_cotejo_id', $idLista)->delete();
+        }
+
+        $orden = 0;
+
+        foreach (self::LISTA_COTEJO_PLAN['secciones'] as $seccion) {
+            foreach ($seccion['items'] as $descripcion) {
+                DB::table('cotecu.lista_cotejo_items')->insert([
+                    'lista_cotejo_id' => $idLista,
+                    'seccion' => $seccion['titulo'],
+                    'descripcion' => $descripcion,
+                    'orden' => ++$orden,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
 }

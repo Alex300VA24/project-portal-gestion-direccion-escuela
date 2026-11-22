@@ -3,6 +3,7 @@
 namespace App\Modules\Cotecu\Controllers;
 
 use App\Modules\Cotecu\Models\Revision;
+use App\Modules\Cotecu\Models\RevisionPlan;
 use App\Modules\Cotecu\Services\CotecuService;
 use App\Shared\Controllers\ModuleController;
 use App\Shared\Models\Core\PlanEstudios;
@@ -294,5 +295,108 @@ final class CotecuController extends ModuleController
         return redirect()
             ->route('cotecu.planes.index')
             ->with('exito', 'Plan curricular registrado en estado Pendiente.');
+    }
+
+    /**
+     * Cola de revisión de planes para el director de escuela: al
+     * abrirla se crean (si hace falta) los registros de revisión de
+     * los planes Pendiente y se listan con su plan, año y versión.
+     */
+    public function revisionesPlanes(): View
+    {
+        $cola = $this->service->colaRevisionPlanes();
+
+        return view('modules.cotecu.revisar-planes', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'cola' => $cola,
+            'anioPlan' => $cola->first()?->plan_anio,
+        ]);
+    }
+
+    /**
+     * Pantalla de marcado de una revisión de plan: el documento a la
+     * izquierda (lector de PDF por integrar) y la lista de cotejo a la
+     * derecha, con checkbox y observación por ítem.
+     *
+     * Una revisión ya cerrada se reabre en solo lectura: mismos ítems
+     * con su marcado guardado y sin botón de guardado.
+     */
+    public function revisarPlan(RevisionPlan $revision): View
+    {
+        $detalle = $this->service->detalleRevisionPlan((int) $revision->id);
+
+        return view('modules.cotecu.revisar-plan', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'revision' => $detalle ?? $revision,
+            'items' => $this->service->itemsDeRevisionPlan($revision),
+            'resultados' => $this->service->resultadosDeRevisionPlan((int) $revision->id),
+            'cerrada' => $revision->estado_final !== 'Pendiente',
+        ]);
+    }
+
+    /**
+     * Guarda el marcado y cierra la revisión del plan: todos los ítems
+     * cumplen → Validado; al menos uno sin marcar → Observado. El
+     * estado final se aplica también al plan curricular, que así sale
+     * de la cola.
+     *
+     * Un ítem sin marcar exige su observación; un ítem marcado nunca
+     * la guarda (se limpia en el servicio).
+     */
+    public function storeRevisionPlan(Request $request, RevisionPlan $revision): RedirectResponse
+    {
+        if ($revision->estado_final !== 'Pendiente') {
+            return redirect()
+                ->route('cotecu.planes.revisiones')
+                ->withErrors(['general' => 'Esta revisión ya fue cerrada.']);
+        }
+
+        $items = $this->service->itemsDeRevisionPlan($revision);
+
+        if ($items->isEmpty()) {
+            return redirect()
+                ->route('cotecu.planes.revisiones')
+                ->withErrors(['general' => 'Esta revisión no tiene ítems en su lista de cotejo.']);
+        }
+
+        $reglas = [];
+        $mensajes = [];
+
+        foreach ($items as $item) {
+            $incumple = ! $request->boolean("items.{$item->id}.cumple");
+
+            $reglas["items.{$item->id}.cumple"] = ['nullable', 'boolean'];
+            $reglas["items.{$item->id}.observacion"] = [
+                'nullable',
+                'string',
+                'max:1500',
+                Rule::requiredIf($incumple),
+            ];
+            $mensajes["items.{$item->id}.observacion.required"] = 'Indica la observación del ítem que incumple.';
+            $mensajes["items.{$item->id}.observacion.max"] = 'La observación no puede superar los 1500 caracteres.';
+        }
+
+        $request->validate($reglas, $mensajes);
+
+        $marcas = [];
+
+        foreach ($items as $item) {
+            $observacion = $request->input("items.{$item->id}.observacion");
+
+            $marcas[(int) $item->id] = [
+                'cumple' => $request->boolean("items.{$item->id}.cumple"),
+                'observacion' => is_string($observacion) ? trim($observacion) : null,
+            ];
+        }
+
+        $estadoFinal = $this->service->cerrarRevisionPlan($revision, $items, $marcas);
+
+        return redirect()
+            ->route('cotecu.planes.revisiones')
+            ->with('exito', $estadoFinal === 'Validado'
+                ? 'Revisión cerrada: el plan fue Validado.'
+                : 'Revisión cerrada: el plan fue Observado.');
     }
 }
