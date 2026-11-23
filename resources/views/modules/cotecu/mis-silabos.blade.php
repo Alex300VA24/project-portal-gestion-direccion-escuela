@@ -4,7 +4,7 @@
 @section('page-label', 'Mis sílabos')
 
 @section('content')
-    <div class="quality-page" x-data="{ subirOpen: {{ $errors->any() ? 'true' : 'false' }} }">
+    <div class="quality-page" x-data="{ subirOpen: {{ $errors->any() ? 'true' : 'false' }}, avisoArchivo: false }">
         <header class="quality-page-heading">
             <div>
                 <h1>Mis sílabos</h1>
@@ -49,34 +49,55 @@
             </div>
         @endif
 
+        @php
+            // Los tres estados del sílabo, en el orden de la revisión.
+            // Los subtítulos son siempre en plural: el profesor envía
+            // varios sílabos por semestre.
+            $aprobados = $silabos->where('estado', 'Validado');
+            $pendientes = $silabos->where('estado', 'Pendiente');
+            $observados = $silabos->where('estado', 'Observado');
+
+            $gruposSilabos = [
+                ['titulo' => 'Sílabos aprobados', 'filas' => $aprobados],
+                ['titulo' => 'Sílabos pendientes', 'filas' => $pendientes],
+                ['titulo' => 'Sílabos observados', 'filas' => $observados],
+            ];
+        @endphp
+
         @if ($silabos->isNotEmpty())
-            <ul class="quality-document-list">
-                @foreach ($silabos as $silabo)
-                    <li>
-                        <span class="quality-document-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/></svg>
-                        </span>
-                        <div>
-                            <h2>{{ $silabo->curso_nombre }}</h2>
-                            <p>
-                                <span class="quality-period">{{ $silabo->curso_codigo }}</span>
-                                Ciclo {{ $silabo->ciclo }} · Versión {{ $silabo->version }}
-                            </p>
-                        </div>
-                        <div class="quality-file-meta">
-                            @if ($silabo->estado === 'Validado')
-                                <span class="quality-status is-success">{{ $silabo->estado }}</span>
-                            @elseif ($silabo->estado === 'Observado')
-                                <span class="quality-status is-danger">{{ $silabo->estado }}</span>
-                            @else
-                                <span class="quality-status is-warning">{{ $silabo->estado }}</span>
-                            @endif
-                            <strong>{{ $silabo->archivo_url }}</strong>
-                            <small>Semestre {{ $periodoSeleccionado?->codigo }}</small>
-                        </div>
-                    </li>
+            <div class="quality-map-sections">
+                @foreach ($gruposSilabos as $grupo)
+                    @if ($grupo['filas']->isNotEmpty())
+                        <section class="quality-process-group">
+                            <header>
+                                <div><h2>{{ $grupo['titulo'] }}</h2></div>
+                            </header>
+                            <ul class="quality-document-list">
+                                @foreach ($grupo['filas'] as $silabo)
+                                    <li>
+                                        <span class="quality-document-icon">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/></svg>
+                                        </span>
+                                        <div>
+                                            <h2>{{ $silabo->curso_nombre }}</h2>
+                                            <p>
+                                                <span class="quality-period">{{ $silabo->curso_codigo }}</span>
+                                                Ciclo {{ $silabo->ciclo }}
+                                            </p>
+                                        </div>
+                                        <div class="quality-file-meta">
+                                            <span class="quality-a11y-actions">
+                                                <button class="institutional-primary" type="button" @click="avisoArchivo = true">Ver</button>
+                                                <button class="institutional-secondary" type="button" @click="avisoArchivo = true">Descargar</button>
+                                            </span>
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    @endif
                 @endforeach
-            </ul>
+            </div>
         @elseif ($hayPeriodoActivo)
             <section class="quality-empty">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M9 10h6M9 14h6M9 18h4"/></svg>
@@ -141,7 +162,7 @@
                         </div>
                         <div class="quality-a11y-row">
                             <div>
-                                <small id="aviso-archivo">Aún no se puede subir archivos en esta versión de COTECU. Ubicación por defecto: <code>storage/app/private/</code></small>
+                                <small id="aviso-archivo">Aún no se puede subir archivos en esta versión de COTECU.</small>
                             </div>
                         </div>
                         <div class="quality-a11y-actions">
@@ -150,6 +171,29 @@
                         </div>
                     </div>
                 </form>
+            </section>
+        </div>
+
+        <div class="quality-modal" x-cloak x-show="avisoArchivo" x-transition.opacity @keydown.escape.window="avisoArchivo = false">
+            <div class="quality-modal-backdrop" @click="avisoArchivo = false"></div>
+            <section class="quality-dialog" role="dialog" aria-modal="true" aria-labelledby="aviso-archivo-title">
+                <header>
+                    <div><span class="quality-eyebrow">COTECU</span><h2 id="aviso-archivo-title">Archivo no disponible</h2></div>
+                    <button class="quality-icon-button" type="button" @click="avisoArchivo = false" aria-label="Cerrar">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </header>
+                <div class="quality-a11y-body">
+                    <div class="quality-a11y-row">
+                        <div>
+                            <strong>Por ahora no se puede ver ni descargar el archivo</strong>
+                            <small>La subida de archivos está simulada en esta versión de COTECU: los PDF aún no están cargados en el servidor. La función se habilitará en una siguiente entrega.</small>
+                        </div>
+                    </div>
+                    <div class="quality-a11y-actions">
+                        <button class="institutional-primary" type="button" @click="avisoArchivo = false">Entendido</button>
+                    </div>
+                </div>
             </section>
         </div>
     </div>

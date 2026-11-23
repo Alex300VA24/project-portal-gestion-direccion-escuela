@@ -52,16 +52,7 @@
                             <small>Profesor: {{ $revision->profesor_nombre }} · Versión {{ $revision->version }}</small>
                         </div>
                         <div class="quality-file-meta">
-                            @if ($revision->estado_final === 'Validado')
-                                <span class="quality-status is-success">{{ $revision->estado_final }}</span>
-                            @elseif ($revision->estado_final === 'Observado')
-                                <span class="quality-status is-danger">{{ $revision->estado_final }}</span>
-                            @else
-                                <span class="quality-status is-warning">{{ $revision->estado_final }}</span>
-                            @endif
-                            <strong>{{ $revision->archivo_url }}</strong>
-                            <small>Revisión {{ $revision->id }}</small>
-                            <a class="quality-open-link" href="{{ route('cotecu.silabos.revisiones.show', $revision->id) }}">Revisar</a>
+                            <a class="institutional-primary" href="{{ route('cotecu.silabos.revisiones.show', $revision->id) }}">Revisar</a>
                         </div>
                     </li>
                 @endforeach

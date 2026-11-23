@@ -46,8 +46,7 @@
                     <section class="quality-empty">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/></svg>
                         <h2>acá irá el lector de pdf</h2>
-                        <p>El visor del sílabo se integrará en una siguiente entrega de COTECU. La ruta simulada del archivo es:</p>
-                        <p><code>{{ $revision->archivo_url ?? '—' }}</code></p>
+                        <p>El visor del sílabo se integrará en una siguiente entrega de COTECU.</p>
                     </section>
                 </article>
 
