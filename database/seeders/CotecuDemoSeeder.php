@@ -313,17 +313,25 @@ class CotecuDemoSeeder extends Seeder
      * Los Validados cubren los dos semestres con su paridad de ciclo
      * (INF-101 es ciclo 1 en -II, o sea un curso "Especial").
      * archivo_url usa la ruta simulada que genera el formulario.
+     *
+     * 'fecha' alimenta el indicador de la portada (aprobados antes
+     * del inicio del semestre): en cada semestre 2 de 3 Validados se
+     * aprueban antes de la fecha de inicio (2026-II: 24/08/2026;
+     * 2026-I: 13/04/2026) y el tercero después. updated_at se setea
+     * con esa fecha y created_at con la de subida; los no Validados
+     * usan la misma fecha para ambos. Re-ejecutar el seed restaura
+     * las fechas demo.
      */
     private const SILABOS = [
-        ['periodo' => '2026-II', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-ii-v1.pdf'],
-        ['periodo' => '2026-II', 'curso' => 'INF-102', 'version' => 1, 'estado' => 'Observado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-102-2026-ii-v1.pdf'],
-        ['periodo' => '2026-II', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-ii-v1.pdf'],
-        ['periodo' => '2026-II', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Pendiente', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-ii-v1.pdf'],
-        ['periodo' => '2026-II', 'curso' => 'INF-203', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-203-2026-ii-v1.pdf'],
-        ['periodo' => '2026-II', 'curso' => 'INF-401', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-401-2026-ii-v1.pdf'],
-        ['periodo' => '2026-I', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-i-v1.pdf'],
-        ['periodo' => '2026-I', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-i-v1.pdf'],
-        ['periodo' => '2026-I', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Validado', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-i-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'fecha' => '2026-08-19 16:00:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-102', 'version' => 1, 'estado' => 'Observado', 'fecha' => '2026-08-25 10:30:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-102-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Pendiente', 'fecha' => '2026-08-26 09:00:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Pendiente', 'fecha' => '2026-08-26 09:15:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-203', 'version' => 1, 'estado' => 'Validado', 'fecha' => '2026-08-22 11:30:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-203-2026-ii-v1.pdf'],
+        ['periodo' => '2026-II', 'curso' => 'INF-401', 'version' => 1, 'estado' => 'Validado', 'fecha' => '2026-09-03 09:15:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-401-2026-ii-v1.pdf'],
+        ['periodo' => '2026-I', 'curso' => 'INF-101', 'version' => 1, 'estado' => 'Validado', 'fecha' => '2026-04-09 15:00:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-101-2026-i-v1.pdf'],
+        ['periodo' => '2026-I', 'curso' => 'INF-301', 'version' => 1, 'estado' => 'Validado', 'fecha' => '2026-04-10 12:00:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-301-2026-i-v1.pdf'],
+        ['periodo' => '2026-I', 'curso' => 'INF-201', 'version' => 1, 'estado' => 'Validado', 'fecha' => '2026-04-16 10:00:00', 'archivo_url' => 'storage/app/private/cotecu/silabos/inf-201-2026-i-v1.pdf'],
     ];
 
     /**
@@ -674,7 +682,16 @@ class CotecuDemoSeeder extends Seeder
 
             DB::table('cotecu.silabos')->updateOrInsert(
                 ['id_periodo' => $idPeriodo, 'id_curso_plan' => $idCursoPlan, 'id_profesor' => $idProfesor, 'version' => $silabo['version']],
-                ['archivo_url' => $silabo['archivo_url'], 'estado' => $silabo['estado']],
+                [
+                    'archivo_url' => $silabo['archivo_url'],
+                    'estado' => $silabo['estado'],
+                    // 'fecha' = aprobación (Validado) o último cambio de
+                    // estado; para los no Validados la subida comparte
+                    // fecha. created_at/updated_at alimentan el
+                    // indicador de la portada y el detalle de fechas.
+                    'created_at' => $silabo['fecha'],
+                    'updated_at' => $silabo['fecha'],
+                ],
             );
         }
     }
