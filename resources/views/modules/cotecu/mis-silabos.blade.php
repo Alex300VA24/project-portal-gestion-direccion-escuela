@@ -21,7 +21,7 @@
                         </select>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                     </span>
-                    <button class="institutional-primary" type="button" @disabled(! $hayPeriodoActivo || $secciones->isEmpty()) @click="subirOpen = true">
+                    <button class="institutional-primary" type="button" @disabled(! $hayPeriodoActivo || $secciones->isEmpty() || $periodoSeleccionado?->codigo !== $periodoActivo?->codigo) @click="subirOpen = true">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
                         Subir sílabo
                     </button>
