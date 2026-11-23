@@ -406,3 +406,6 @@ html[data-contrast="alto"] .quality-body :is(.quality-panel, .quality-repository
 
 /* Documentos oficiales (COTECU): el modal con el lector de solo lectura necesita más ancho que un diálogo de avisos */
 .quality-dialog:has(iframe) { width: min(100%, 1100px); }
+
+/* Revisión de planes y sílabos sin cuadro de observación: el ítem ocupa todo el ancho de la fila */
+.quality-a11y-row:has(> label) > label { flex: 1 1 auto; }

@@ -157,7 +157,7 @@ final class CotecuController extends ModuleController
     /**
      * Pantalla de marcado de una revisión de sílabo: el sílabo a la
      * izquierda (lector de PDF por integrar) y la lista de cotejo a la
-     * derecha, con checkbox y observación por ítem.
+     * derecha, con un checkbox por ítem.
      *
      * Una revisión ya cerrada se reabre en solo lectura: mismos ítems
      * con su marcado guardado y sin botón de guardado.
@@ -181,8 +181,12 @@ final class CotecuController extends ModuleController
      * Validado; al menos uno sin marcar → Observado. El estado final se
      * aplica también al sílabo, que así sale de la cola.
      *
-     * Un ítem sin marcar exige su observación; un ítem marcado nunca
-     * la guarda (se limpia en el servicio).
+     * Ya no se captura observación por ítem (decisión del director de
+     * escuela: los ítems son suficientemente claros), por eso la regla
+     * requiredIf desapareció junto con el cuadro de la vista. El campo
+     * sigue aceptando texto por si se restaura el template comentado en
+     * revisar-silabo; un ítem marcado nunca guarda observación (se
+     * limpia en el servicio).
      */
     public function storeRevision(Request $request, Revision $revision): RedirectResponse
     {
@@ -204,16 +208,13 @@ final class CotecuController extends ModuleController
         $mensajes = [];
 
         foreach ($items as $item) {
-            $incumple = ! $request->boolean("items.{$item->id}.cumple");
-
             $reglas["items.{$item->id}.cumple"] = ['nullable', 'boolean'];
-            $reglas["items.{$item->id}.observacion"] = [
-                'nullable',
-                'string',
-                'max:1500',
-                Rule::requiredIf($incumple),
-            ];
-            $mensajes["items.{$item->id}.observacion.required"] = 'Indica la observación del ítem que incumple.';
+            // El cuadro de observación por ítem se quitó de la vista
+            // (template comentado en la pantalla de revisión): sin
+            // campo no hay requiredIf. Si se restaura el cuadro, volver
+            // a poner Rule::requiredIf(! $request->boolean("items.{$item->id}.cumple"))
+            // y el mensaje .required.
+            $reglas["items.{$item->id}.observacion"] = ['nullable', 'string', 'max:1500'];
             $mensajes["items.{$item->id}.observacion.max"] = 'La observación no puede superar los 1500 caracteres.';
         }
 
@@ -366,7 +367,7 @@ final class CotecuController extends ModuleController
     /**
      * Pantalla de marcado de una revisión de plan: el documento a la
      * izquierda (lector de PDF por integrar) y la lista de cotejo a la
-     * derecha, con checkbox y observación por ítem.
+     * derecha, con un checkbox por ítem.
      *
      * Una revisión ya cerrada se reabre en solo lectura: mismos ítems
      * con su marcado guardado y sin botón de guardado.
@@ -391,8 +392,12 @@ final class CotecuController extends ModuleController
      * estado final se aplica también al plan curricular, que así sale
      * de la cola.
      *
-     * Un ítem sin marcar exige su observación; un ítem marcado nunca
-     * la guarda (se limpia en el servicio).
+     * Ya no se captura observación por ítem (decisión del director de
+     * escuela: los ítems son suficientemente claros), por eso la regla
+     * requiredIf desapareció junto con el cuadro de la vista. El campo
+     * sigue aceptando texto por si se restaura el template comentado en
+     * revisar-plan; un ítem marcado nunca guarda observación (se limpia
+     * en el servicio).
      */
     public function storeRevisionPlan(Request $request, RevisionPlan $revision): RedirectResponse
     {
@@ -414,16 +419,13 @@ final class CotecuController extends ModuleController
         $mensajes = [];
 
         foreach ($items as $item) {
-            $incumple = ! $request->boolean("items.{$item->id}.cumple");
-
             $reglas["items.{$item->id}.cumple"] = ['nullable', 'boolean'];
-            $reglas["items.{$item->id}.observacion"] = [
-                'nullable',
-                'string',
-                'max:1500',
-                Rule::requiredIf($incumple),
-            ];
-            $mensajes["items.{$item->id}.observacion.required"] = 'Indica la observación del ítem que incumple.';
+            // El cuadro de observación por ítem se quitó de la vista
+            // (template comentado en la pantalla de revisión): sin
+            // campo no hay requiredIf. Si se restaura el cuadro, volver
+            // a poner Rule::requiredIf(! $request->boolean("items.{$item->id}.cumple"))
+            // y el mensaje .required.
+            $reglas["items.{$item->id}.observacion"] = ['nullable', 'string', 'max:1500'];
             $mensajes["items.{$item->id}.observacion.max"] = 'La observación no puede superar los 1500 caracteres.';
         }
 

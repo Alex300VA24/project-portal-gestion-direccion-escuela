@@ -51,7 +51,7 @@
 
                 <article>
                     <h2 class="quality-eyebrow">Lista de cotejo</h2>
-                    <p>Marca lo que sí se cumple. Lo que no, déjalo sin marcar y obsérvalo: un solo ítem sin marcar deja el plan Observado.</p>
+                    <p>Marca lo que sí se cumple. Lo que no, déjalo sin marcar: un solo ítem sin marcar deja el plan Observado.</p>
 
                     @if ($items->isNotEmpty())
                         <form method="POST" action="{{ route('cotecu.planes.revisiones.store', $revision->id) }}">
@@ -64,23 +64,28 @@
                                 @endif
                                 @php($resultado = $resultados->get($item->id))
                                 @php($cumpleInicial = old("items.{$item->id}.cumple", $resultado?->cumple ?? false))
-                                <div class="quality-a11y-row"
-                                     x-data="{ cumple: {{ $cumpleInicial ? 'true' : 'false' }}, cerrada: {{ $cerrada ? 'true' : 'false' }} }">
+                                <div class="quality-a11y-row">
                                     <label>
                                         <input type="hidden" name="items[{{ $item->id }}][cumple]" value="0">
                                         <input type="checkbox"
                                                name="items[{{ $item->id }}][cumple]"
                                                value="1"
-                                               x-model="cumple"
                                                @checked($cumpleInicial)
                                                @disabled($cerrada)>
                                         <span>{{ $item->descripcion }}</span>
                                     </label>
-                                    <textarea name="items[{{ $item->id }}][observacion]"
-                                              rows="2"
-                                              placeholder="Observación si no se cumple…"
-                                              :disabled="cumple || cerrada"
-                                              @disabled($cerrada)>{{ old("items.{$item->id}.observacion", $resultado?->observacion_item ?? '') }}</textarea>
+                                    {{-- El director de escuela quitó las observaciones por ítem:
+                                         los ítems son suficientemente claros y nunca hizo falta
+                                         una observación textual. Para restaurar el cuadro hay
+                                         que descomentar el template de abajo y volver a poner
+                                         Rule::requiredIf($incumple) con su mensaje .required en
+                                         CotecuController::storeRevisionPlan. --}}
+                                    {{-- TEMPLATE — cuadro de observación por ítem:
+                                        <textarea name="items[{{ $item->id }}][observacion]"
+                                                  rows="2"
+                                                  placeholder="Observación si no se cumple…"
+                                                  @disabled($cerrada)>{{ old("items.{$item->id}.observacion", $resultado?->observacion_item ?? '') }}</textarea>
+                                    --}}
                                 </div>
                             @endforeach
 
