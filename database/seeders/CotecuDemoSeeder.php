@@ -73,8 +73,10 @@ use Spatie\Permission\Models\Role;
 class CotecuDemoSeeder extends Seeder
 {
     /**
-     * Periodos de prueba. El último queda Activo: es el que usan las
-     * pantallas por defecto y el único en el que se puede subir un sílabo.
+     * Periodos de prueba. El 2026-II es el único Activo: es el que usan
+     * las pantallas por defecto y el único en el que se puede subir un
+     * sílabo. El 2027-I es futuro (estado Próximo) y alimenta el aviso
+     * de inicio de semestre en Sílabos.
      */
     private const PERIODOS = [
         [
@@ -94,6 +96,20 @@ class CotecuDemoSeeder extends Seeder
             'fecha_fin' => '2026-12-19',
             'numero_semanas' => 17,
             'estado' => 'Activo',
+        ],
+        // Periodo futuro: alimenta la rama «comenzará / En x días» del
+        // aviso de inicio de semestre en Sílabos. Estado libre (no hay
+        // CHECK en la tabla) y distinto de 'Activo', así no desplaza al
+        // 2026-II como periodo activo ni cambia el valor por defecto del
+        // selector. Se elimina con un DELETE simple si ya no se quiere.
+        [
+            'codigo' => '2027-I',
+            'anio' => 2027,
+            'tipo' => 'I',
+            'fecha_inicio' => '2027-03-15',
+            'fecha_fin' => '2027-07-10',
+            'numero_semanas' => 17,
+            'estado' => 'Próximo',
         ],
     ];
 
@@ -458,7 +474,7 @@ class CotecuDemoSeeder extends Seeder
         $this->sembrarListaCotejoPlanes();
         $this->sembrarDocumentosOficiales();
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, 2 planes curriculares (2020 y 2010), catálogo académico con 17 cursos, 11 secciones, 9 sílabos, lista de cotejo de sílabos con 10 ítems, lista de cotejo de planes con 17 ítems en 7 secciones y 1 documento oficial.');
+        $this->command?->info('Datos demo de COTECU listos: 3 periodos, 6 cuentas institucionales, director de COTECU, 2 planes curriculares (2020 y 2010), catálogo académico con 17 cursos, 11 secciones, 9 sílabos, lista de cotejo de sílabos con 10 ítems, lista de cotejo de planes con 17 ítems en 7 secciones y 1 documento oficial.');
     }
 
     /**
