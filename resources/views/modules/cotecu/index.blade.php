@@ -26,7 +26,7 @@
                 <dl class="quality-summary-facts">
                     <div><dt>Semestre</dt><dd>{{ $indicador['periodo']->codigo }}</dd></div>
                     <div><dt>Inicio</dt><dd>{{ $indicador['periodo']->fecha_inicio->format('d/m/Y') }}</dd></div>
-                    <div><dt>Aprobados</dt><dd>{{ $indicador['aprobados'] }}</dd></div>
+                    <div><dt>Antes del inicio</dt><dd>{{ $indicador['aTiempo'] }}</dd></div>
                 </dl>
             </section>
         @else
