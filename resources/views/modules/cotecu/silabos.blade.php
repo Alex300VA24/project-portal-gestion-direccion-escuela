@@ -37,6 +37,34 @@
             @endif
         </header>
 
+        @if ($periodoSeleccionado?->fecha_inicio)
+            @php
+                // Aviso de inicio del semestre seleccionado. Se compara
+                // contra hoy a las 00:00 para que la diferencia salga en
+                // días enteros (fecha_inicio ya viene sin hora por el
+                // cast 'date' del modelo). diffInDays devuelve un float
+                // con signo en Carbon 3: se toma el valor absoluto.
+                $inicioSemestre = $periodoSeleccionado->fecha_inicio;
+                $hoy = \Carbon\Carbon::today();
+                $dias = (int) abs($hoy->diffInDays($inicioSemestre));
+                $diasTexto = $dias === 1 ? 'día' : 'días';
+            @endphp
+            <div class="quality-alert" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                <div>
+                    <strong>
+                        @if ($inicioSemestre->isToday())
+                            El semestre {{ $periodoSeleccionado->codigo }} comienza hoy, {{ $inicioSemestre->format('d/m/Y') }}
+                        @elseif ($inicioSemestre->gt($hoy))
+                            El semestre {{ $periodoSeleccionado->codigo }} comenzará el {{ $inicioSemestre->format('d/m/Y') }} (En {{ $dias }} {{ $diasTexto }})
+                        @else
+                            El semestre {{ $periodoSeleccionado->codigo }} comenzó el {{ $inicioSemestre->format('d/m/Y') }} (Hace {{ $dias }} {{ $diasTexto }})
+                        @endif
+                    </strong>
+                </div>
+            </div>
+        @endif
+
         @if ($porRevisar)
             <div class="quality-alert" role="status">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>
