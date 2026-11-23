@@ -145,6 +145,16 @@
                         @endif
                         <div class="quality-a11y-row">
                             <div>
+                                <strong>Semestre</strong>
+                                <small>El sílabo se registra en el semestre activo</small>
+                            </div>
+                            <span class="quality-search">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                                <input type="text" disabled aria-label="Semestre del sílabo" value="{{ $periodoActivo?->codigo }}">
+                            </span>
+                        </div>
+                        <div class="quality-a11y-row">
+                            <div>
                                 <strong>Versión</strong>
                                 <small>Número correlativo del documento</small>
                             </div>
