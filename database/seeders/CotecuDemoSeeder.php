@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Cotecu\Models\DocumentoOficial;
 use App\Modules\Cotecu\Models\Registro;
 use App\Shared\Models\Core\PeriodoAcademico;
 use App\Shared\Models\Core\Persona;
@@ -28,8 +29,10 @@ use Spatie\Permission\Models\Role;
  * producción los carga quien administre core/seguridad; COTECU solo lee.
  *
  * El catálogo del plan, el catálogo académico (áreas, departamento,
- * cursos), las secciones con sus sílabos y las listas de cotejo
- * también son demo. Limpieza (hijos primero, por las FK):
+ * cursos), las secciones con sus sílabos, la lista de cotejo y los
+ * documentos oficiales también son demo. Limpieza (hijos primero, por
+ * las FK):
+ *   DELETE FROM cotecu.documentos_oficiales;
  *   DELETE FROM cotecu.resultados_silabos_items WHERE revision_silabo_id IN
  *     (SELECT id FROM cotecu.revisiones_silabo WHERE silabo_id IN
  *       (SELECT id FROM cotecu.silabos WHERE id_profesor IN
@@ -389,6 +392,22 @@ class CotecuDemoSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Documentos oficiales: el respaldo en papel de los flujos del
+     * módulo, enlazado a la fuente oficial en Google Docs/Sheets. Cada
+     * fila lleva su permiso propio (1 a 1, único): hoy lo recibe solo
+     * el director de escuela en CotecuPermissionsSeeder; habilitar
+     * otro perfil para un documento es asignar ese permiso a su rol.
+     */
+    private const DOCUMENTOS_OFICIALES = [
+        [
+            'titulo' => 'F-M01.01-DPA-009 Lista de cotejo para evaluar curriculo',
+            'url' => 'https://docs.google.com/document/d/13qJov3hlY_MVPyefoXyfxL1WJHLSNPVs/edit',
+            'permiso' => 'cotecu.documento.lista-cotejo-curriculo',
+            'orden' => 1,
+        ],
+    ];
+
     public function run(): void
     {
         foreach (self::PERIODOS as $periodo) {
@@ -437,8 +456,9 @@ class CotecuDemoSeeder extends Seeder
         $this->sembrarSeccionesYSilabos();
         $this->sembrarListaCotejoSilabos();
         $this->sembrarListaCotejoPlanes();
+        $this->sembrarDocumentosOficiales();
 
-        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, plan curricular, catálogo académico, 6 secciones, 4 sílabos y lista de cotejo con 10 ítems.');
+        $this->command?->info('Datos demo de COTECU listos: 2 periodos, 6 cuentas institucionales, director de COTECU, 2 planes curriculares (2020 y 2010), catálogo académico con 17 cursos, 11 secciones, 9 sílabos, lista de cotejo de sílabos con 10 ítems, lista de cotejo de planes con 17 ítems en 7 secciones y 1 documento oficial.');
     }
 
     /**
@@ -722,6 +742,18 @@ class CotecuDemoSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
             }
+        }
+    }
+
+    /**
+     * Documentos oficiales con su enlace a la fuente oficial. Idempotente
+     * por permiso (único por documento): re-ejecutar actualiza título,
+     * URL y orden sin duplicar filas.
+     */
+    private function sembrarDocumentosOficiales(): void
+    {
+        foreach (self::DOCUMENTOS_OFICIALES as $documento) {
+            DocumentoOficial::updateOrCreate(['permiso' => $documento['permiso']], $documento);
         }
     }
 }

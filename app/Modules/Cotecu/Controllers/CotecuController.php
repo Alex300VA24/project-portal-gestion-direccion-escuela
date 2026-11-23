@@ -276,6 +276,22 @@ final class CotecuController extends ModuleController
     }
 
     /**
+     * Documentos oficiales: el respaldo en papel de los flujos del
+     * módulo. Entra todo el que ve COTECU (cotecu.view) y el servicio
+     * filtra los documentos cuyo permiso owna cada perfil: hoy solo el
+     * director de escuela ve los enlaces, el resto encuentra el
+     * placeholder «Aún no hay documentos oficiales».
+     */
+    public function documentosOficiales(): View
+    {
+        return view('modules.cotecu.documentos-oficiales', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'documentos' => $this->service->documentosOficiales(),
+        ]);
+    }
+
+    /**
      * Aviso de la cola de Revisar planes para las pantallas de listado:
      * solo para quien puede revisar; el resto no tiene esa opción en
      * el menú lateral y el aviso no le serviría de nada.

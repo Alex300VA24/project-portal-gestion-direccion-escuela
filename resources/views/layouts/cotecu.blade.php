@@ -31,6 +31,7 @@
                 @include('modules.cotecu.sidebar.mis-planes')
                 @include('modules.cotecu.sidebar.planes-curriculares')
                 @include('modules.cotecu.sidebar.revisar-planes')
+                @include('modules.cotecu.sidebar.documentos-oficiales')
             </nav>
             <a class="quality-module-switch" href="{{ route('dashboard') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><span>Cambiar de módulo</span>

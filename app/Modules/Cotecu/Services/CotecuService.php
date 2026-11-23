@@ -2,6 +2,7 @@
 
 namespace App\Modules\Cotecu\Services;
 
+use App\Modules\Cotecu\Models\DocumentoOficial;
 use App\Modules\Cotecu\Models\Registro;
 use App\Modules\Cotecu\Models\Revision;
 use App\Modules\Cotecu\Models\RevisionPlan;
@@ -129,6 +130,28 @@ final class CotecuService extends ModuleService
             )
             ->orderByDesc('core.plan_estudios.anio_aprobacion')
             ->orderByDesc('cotecu.planes_curriculares.version');
+    }
+
+    /**
+     * Documentos oficiales visibles con la sesión iniciada: la lista
+     * completa ordenada por `orden`, filtrada por el permiso propio de
+     * cada documento. La pantalla la ve todo el que entra al módulo
+     * (cotecu.view), pero cada fila se muestra solo a quien tiene su
+     * permiso: hoy el director de escuela; habilitar otro perfil para
+     * un documento es asignarle ese permiso en CotecuPermissionsSeeder.
+     * Un permiso sin crear también da false, así que una fila no
+     * sembrada jamás se escapa.
+     *
+     * @return Collection<int, DocumentoOficial>
+     */
+    public function documentosOficiales(): Collection
+    {
+        return DocumentoOficial::query()
+            ->orderBy('orden')
+            ->orderBy('titulo')
+            ->get()
+            ->filter(fn (DocumentoOficial $documento): bool => auth()->user()?->can($documento->permiso) ?? false)
+            ->values();
     }
 
     /**

@@ -31,6 +31,10 @@ class CotecuPermissionsSeeder extends Seeder
         'cotecu.plan.list',
         'cotecu.plan.upload',
         'cotecu.plan.review',
+        // Un permiso por documento oficial (1 a 1 con la fila de
+        // cotecu.documentos_oficiales). Habilitar un perfil para un
+        // documento es sumar esta línea a ROLE_PERMISSIONS, abajo.
+        'cotecu.documento.lista-cotejo-curriculo',
     ];
 
     /**
@@ -40,6 +44,11 @@ class CotecuPermissionsSeeder extends Seeder
      * cotecu.plan.upload no aparece aquí: lo recibe a nivel de usuario el
      * director de COTECU (el profesor convocado para una nueva currícula),
      * sin crear un rol nuevo (ver CotecuDemoSeeder).
+     *
+     * Los permisos cotecu.documento.* controlan fila por fila la
+     * pantalla Documentos oficiales: hoy el documento sembrado lo ve
+     * solo el director de escuela; cuando se decida que otro perfil
+     * también lo vea, se agrega su permiso a la fila de ese rol.
      */
     private const ROLE_PERMISSIONS = [
         'director_escuela' => [
@@ -48,6 +57,7 @@ class CotecuPermissionsSeeder extends Seeder
             'cotecu.silabo.review',
             'cotecu.plan.list',
             'cotecu.plan.review',
+            'cotecu.documento.lista-cotejo-curriculo',
         ],
         'secretaria' => [
             'cotecu.view',

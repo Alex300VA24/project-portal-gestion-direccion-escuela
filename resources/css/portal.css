@@ -403,3 +403,6 @@ html[data-contrast="alto"] .quality-body :is(.quality-panel, .quality-repository
     .quality-a11y-row > label { flex: none; }
     .quality-a11y-row > textarea { width: 100%; }
 }
+
+/* Documentos oficiales (COTECU): el modal con el lector de solo lectura necesita más ancho que un diálogo de avisos */
+.quality-dialog:has(iframe) { width: min(100%, 1100px); }

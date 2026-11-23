@@ -44,4 +44,9 @@ Route::prefix('cotecu')
 
         Route::post('/planes/revisiones/{revision}', [CotecuController::class, 'storeRevisionPlan'])
             ->middleware('permission:cotecu.plan.review')->name('planes.revisiones.store');
+
+        // Sin permiso propio: la lista la ve todo el que entra al módulo
+        // (cotecu.view) y el servicio filtra cada documento por su permiso.
+        Route::get('/documentos-oficiales', [CotecuController::class, 'documentosOficiales'])
+            ->name('documentos-oficiales');
     });
