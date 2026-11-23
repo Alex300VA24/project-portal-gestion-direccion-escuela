@@ -53,7 +53,8 @@ use Spatie\Permission\Models\Role;
  *       (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020'));
  *   DELETE FROM core.docente WHERE codigo_docente IN ('DOC-DEMO','DOC-AJENO');
  *   DELETE FROM cotecu.planes_curriculares WHERE id_plan IN
- *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
+ *     (SELECT id_plan FROM core.plan_estudios
+ *       WHERE codigo IN ('PLAN-INF-2010', 'PLAN-INF-2020'));
  *   DELETE FROM core.curso_plan WHERE id_plan IN
  *     (SELECT id_plan FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020');
  *   DELETE FROM core.curso WHERE codigo IN
@@ -62,7 +63,7 @@ use Spatie\Permission\Models\Role;
  *      'ING-301','INF-401','INF-402');
  *   DELETE FROM core.area_formacion WHERE codigo IN ('CSC','MAT','ING');
  *   DELETE FROM core.departamento_academico WHERE codigo = 'DA-INF';
- *   DELETE FROM core.plan_estudios WHERE codigo = 'PLAN-INF-2020';
+ *   DELETE FROM core.plan_estudios WHERE codigo IN ('PLAN-INF-2010', 'PLAN-INF-2020');
  *   DELETE FROM core.escuela_profesional WHERE codigo = 'EP-INF';
  *   DELETE FROM core.facultad WHERE codigo = 'FAC-CFM';
  */
@@ -149,7 +150,24 @@ class CotecuDemoSeeder extends Seeder
     ];
 
     /**
-     * Documentos del plan curricular que COTECU revisa (cotecu.planes_curriculares).
+     * Plan anterior de la misma escuela: es lo que hace de la pantalla
+     * Planes curriculares un registro de años anteriores. Solo el
+     * documento aprobado, sin cursos ni secciones (aquellos ya no se
+     * dictan) y sin ser el predeterminado del catálogo.
+     */
+    private const PLAN_ANTERIOR = [
+        'codigo' => 'PLAN-INF-2010',
+        'nombre' => 'Plan de estudios 2010 - Ingeniería Informática',
+        'version' => '2010',
+        'anio_aprobacion' => 2010,
+        'resolucion_aprobacion' => 'R.D. N° 88-2010-UNT',
+        'fecha_vigencia_inicio' => '2011-03-01',
+        'es_predeterminado' => false,
+        'estado' => 'Anterior',
+    ];
+
+    /**
+     * Documentos del plan vigente que COTECU revisa (cotecu.planes_curriculares).
      * Sin id_periodo: es por plan y se versiona, no por semestre.
      * Los tres estados de la revisión están representados: v1 Validado
      * (aprobado), v2 Pendiente (alimenta la cola) y v3 Observado
@@ -161,6 +179,15 @@ class CotecuDemoSeeder extends Seeder
         ['version' => 1, 'estado' => 'Validado', 'archivo_url' => 'demo/planes/plan-inf-2020-v1.pdf'],
         ['version' => 2, 'estado' => 'Pendiente', 'archivo_url' => 'demo/planes/plan-inf-2020-v2.pdf'],
         ['version' => 3, 'estado' => 'Observado', 'archivo_url' => 'demo/planes/plan-inf-2020-v3.pdf'],
+    ];
+
+    /**
+     * Documentos del plan anterior: solo el aprobado, que es el que
+     * aparece en Planes curriculares y el que deja probar una subida
+     * sin bloqueo (no tiene versiones en revisión).
+     */
+    private const PLANES_CURRICULARES_ANTERIOR = [
+        ['version' => 1, 'estado' => 'Validado', 'archivo_url' => 'demo/planes/plan-inf-2010-v1.pdf'],
     ];
 
     /**
@@ -417,6 +444,11 @@ class CotecuDemoSeeder extends Seeder
     /**
      * Cadena mínima para que la pantalla de planes tenga filas:
      * facultad → escuela → plan de estudios → documentos del plan.
+     *
+     * Siembra el plan vigente (del que cuelgan los cursos) y el
+     * anterior, que es el que convierte Planes curriculares en un
+     * registro de años. Idempotente por código de plan y por versión
+     * del documento: re-ejecutar no duplica filas.
      */
     private function sembrarPlanCurricular(): void
     {
@@ -438,16 +470,23 @@ class CotecuDemoSeeder extends Seeder
             ->where('codigo', self::ESCUELA['codigo'])
             ->value('id_escuela');
 
-        $plan = PlanEstudios::firstOrCreate(
-            ['codigo' => self::PLAN['codigo']],
-            array_merge(self::PLAN, ['id_escuela' => $idEscuela]),
-        );
+        $planes = [
+            ['definicion' => self::PLAN_ANTERIOR, 'documentos' => self::PLANES_CURRICULARES_ANTERIOR],
+            ['definicion' => self::PLAN, 'documentos' => self::PLANES_CURRICULARES],
+        ];
 
-        foreach (self::PLANES_CURRICULARES as $documento) {
-            Registro::firstOrCreate(
-                ['id_plan' => $plan->id_plan, 'version' => $documento['version']],
-                array_merge($documento, ['nombre' => self::PLAN['nombre']]),
+        foreach ($planes as $entrada) {
+            $plan = PlanEstudios::firstOrCreate(
+                ['codigo' => $entrada['definicion']['codigo']],
+                array_merge($entrada['definicion'], ['id_escuela' => $idEscuela]),
             );
+
+            foreach ($entrada['documentos'] as $documento) {
+                Registro::firstOrCreate(
+                    ['id_plan' => $plan->id_plan, 'version' => $documento['version']],
+                    array_merge($documento, ['nombre' => $entrada['definicion']['nombre']]),
+                );
+            }
         }
     }
 

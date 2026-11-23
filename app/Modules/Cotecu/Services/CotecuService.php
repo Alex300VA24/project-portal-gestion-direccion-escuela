@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class CotecuService extends ModuleService
 {
@@ -82,42 +83,52 @@ final class CotecuService extends ModuleService
     }
 
     /**
-     * Documentos del plan curricular visibles para la cuenta en sesión.
-     *
-     * Regla de visibilidad de COTECU: quien sube o revisa (plan.upload /
-     * plan.review) ve todos los estados; quien solo lista ve únicamente
-     * los Validado.
+     * Documentos del plan curricular aprobados: es el listado de la
+     * pantalla Planes curriculares, igual para todos los perfiles y
+     * ordenado por el año en que el plan entró en vigencia (el más
+     * reciente primero). Los pendientes y los observados del revisor
+     * viven en la cola de Revisar planes; los del director de COTECU,
+     * en Mis planes.
      *
      * @return Collection<int, Registro>
      */
     public function planes(): Collection
     {
-        $query = Registro::query()
+        return $this->queryPlanes()
+            ->where('cotecu.planes_curriculares.estado', 'Validado')
+            ->get();
+    }
+
+    /**
+     * Documentos del plan curricular en cualquier estado: es el
+     * listado de la pantalla Mis planes, a la que solo entra quien
+     * sube planes (plan.upload). La vista los agrupa en aprobado,
+     * pendiente y observado y de ahí sale también el
+     * registro de lo que se subió año tras año.
+     *
+     * @return Collection<int, Registro>
+     */
+    public function misPlanes(): Collection
+    {
+        return $this->queryPlanes()->get();
+    }
+
+    /**
+     * Cruzada de los documentos con su plan de estudios: código y
+     * nombre del plan para la fila, ordenada por el año de aprobación
+     * (el más reciente primero) y después por versión.
+     */
+    private function queryPlanes(): Builder
+    {
+        return Registro::query()
             ->join('core.plan_estudios', 'core.plan_estudios.id_plan', '=', 'cotecu.planes_curriculares.id_plan')
             ->select(
                 'cotecu.planes_curriculares.*',
                 'core.plan_estudios.nombre as plan_nombre',
                 'core.plan_estudios.codigo as plan_codigo',
             )
+            ->orderByDesc('core.plan_estudios.anio_aprobacion')
             ->orderByDesc('cotecu.planes_curriculares.version');
-
-        if (! $this->vePlanesEnProceso()) {
-            $query->where('cotecu.planes_curriculares.estado', 'Validado');
-        }
-
-        return $query->get();
-    }
-
-    /**
-     * La cuenta participa del proceso de planes (sube o revisa): por eso
-     * ve los planes en cualquier estado.
-     */
-    public function vePlanesEnProceso(): bool
-    {
-        $user = auth()->user();
-
-        return $user !== null
-            && ($user->can('cotecu.plan.upload') || $user->can('cotecu.plan.review'));
     }
 
     /**
@@ -139,10 +150,26 @@ final class CotecuService extends ModuleService
      * recibe binario, solo se guarda una ruta por defecto en
      * storage/app/private/ como archivo_url.
      *
+     * Regla de una revisión a la vez por plan: mientras exista otra
+     * versión del mismo plan en estado Pendiente no se acepta una nueva,
+     * para que la cola y la lista de cotejo no se amontonen. La excepción
+     * vuelve al formulario con el aviso en el alert de errores.
+     *
      * @param  array{codigo: string, nombre: string}  $plan
      */
     public function registrarPlanCurricular(int $idPlan, string $codigo, string $nombre, int $version): Registro
     {
+        $hayVersionEnRevision = Registro::query()
+            ->where('id_plan', $idPlan)
+            ->where('estado', 'Pendiente')
+            ->exists();
+
+        if ($hayVersionEnRevision) {
+            throw ValidationException::withMessages([
+                'id_plan' => 'Ya hay una versión de este plan en revisión; espera a que se cierre antes de subir otra.',
+            ]);
+        }
+
         $archivo = 'storage/app/private/cotecu/planes/'
             . Str::lower($codigo) . '-v' . $version . '.pdf';
 

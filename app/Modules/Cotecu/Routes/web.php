@@ -27,11 +27,14 @@ Route::prefix('cotecu')
         Route::post('/silabos/revisiones/{revision}', [CotecuController::class, 'storeRevision'])
             ->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones.store');
 
+        Route::get('/mis-planes', [CotecuController::class, 'misPlanes'])
+            ->middleware('permission:cotecu.plan.upload')->name('mis-planes');
+
+        Route::post('/mis-planes', [CotecuController::class, 'store'])
+            ->middleware('permission:cotecu.plan.upload')->name('mis-planes.store');
+
         Route::get('/planes', [CotecuController::class, 'planes'])
             ->middleware('permission:cotecu.plan.list')->name('planes.index');
-
-        Route::post('/planes', [CotecuController::class, 'store'])
-            ->middleware('permission:cotecu.plan.upload')->name('planes.store');
 
         Route::get('/planes/revisiones', [CotecuController::class, 'revisionesPlanes'])
             ->middleware('permission:cotecu.plan.review')->name('planes.revisiones');

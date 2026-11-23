@@ -240,9 +240,13 @@ final class CotecuController extends ModuleController
     }
 
     /**
-     * Planes curriculares: sin selector de semestre (no tienen
-     * id_periodo) y con el filtro de visibilidad aplicado por el
-     * servicio según los permisos de la cuenta.
+     * Planes curriculares aprobados: el listado que ven todos los
+     * perfiles con permiso de lista, sin selector de semestre (los
+     * planes no tienen id_periodo).
+     *
+     * Para quien tiene permiso de revisión, la cola se carga con el
+     * mismo método de la pantalla Revisar planes: el aviso de la
+     * cabecera cuenta exactamente lo que esa opción mostraría.
      */
     public function planes(): View
     {
@@ -250,9 +254,37 @@ final class CotecuController extends ModuleController
             'module' => static::MODULE,
             'schema' => static::SCHEMA,
             'planes' => $this->service->planes(),
-            'planesEstudio' => $this->service->planesEstudio(),
-            'puedeSubir' => auth()->user()?->can('cotecu.plan.upload') ?? false,
+            'porRevisar' => $this->planesPorRevisar(),
         ]);
+    }
+
+    /**
+     * Mis planes: los documentos del plan curricular en cualquier
+     * estado, que la vista agrupa en aprobado, pendiente y observado.
+     * Es la pantalla de quien sube planes (plan.upload) y la única
+     * desde la que se puede subir uno nuevo.
+     */
+    public function misPlanes(): View
+    {
+        return view('modules.cotecu.mis-planes', [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'planes' => $this->service->misPlanes(),
+            'planesEstudio' => $this->service->planesEstudio(),
+            'porRevisar' => $this->planesPorRevisar(),
+        ]);
+    }
+
+    /**
+     * Aviso de la cola de Revisar planes para las pantallas de listado:
+     * solo para quien puede revisar; el resto no tiene esa opción en
+     * el menú lateral y el aviso no le serviría de nada.
+     */
+    private function planesPorRevisar(): ?int
+    {
+        return auth()->user()?->can('cotecu.plan.review')
+            ? $this->service->colaRevisionPlanes()->count()
+            : null;
     }
 
     /**
@@ -260,7 +292,8 @@ final class CotecuController extends ModuleController
      *
      * La subida del archivo está simulada: la vista envía solo los campos
      * del formulario y el servicio guarda una ruta por defecto en
-     * storage/app/private/.
+     * storage/app/private/. Vuelve a Mis planes, que es donde vive el
+     * formulario y donde se ven los tres estados.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -293,7 +326,7 @@ final class CotecuController extends ModuleController
         );
 
         return redirect()
-            ->route('cotecu.planes.index')
+            ->route('cotecu.mis-planes')
             ->with('exito', 'Plan curricular registrado en estado Pendiente.');
     }
 

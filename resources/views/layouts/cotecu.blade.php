@@ -28,6 +28,7 @@
                 @include('modules.cotecu.sidebar.mis-silabos')
                 @include('modules.cotecu.sidebar.silabos')
                 @include('modules.cotecu.sidebar.revisar-silabos')
+                @include('modules.cotecu.sidebar.mis-planes')
                 @include('modules.cotecu.sidebar.planes-curriculares')
                 @include('modules.cotecu.sidebar.revisar-planes')
             </nav>
