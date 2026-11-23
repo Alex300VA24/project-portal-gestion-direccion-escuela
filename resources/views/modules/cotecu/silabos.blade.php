@@ -48,6 +48,9 @@
                 $hoy = \Carbon\Carbon::today();
                 $dias = (int) abs($hoy->diffInDays($inicioSemestre));
                 $diasTexto = $dias === 1 ? 'día' : 'días';
+                // Desde 120 días (unos 4 meses) el número deja de ser
+                // útil: el aviso se queda solo con la fecha.
+                $muestraDias = $dias < 120;
             @endphp
             <div class="quality-alert" role="status">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
@@ -56,9 +59,9 @@
                         @if ($inicioSemestre->isToday())
                             El semestre {{ $periodoSeleccionado->codigo }} comienza hoy, {{ $inicioSemestre->format('d/m/Y') }}
                         @elseif ($inicioSemestre->gt($hoy))
-                            El semestre {{ $periodoSeleccionado->codigo }} comenzará el {{ $inicioSemestre->format('d/m/Y') }} (En {{ $dias }} {{ $diasTexto }})
+                            El semestre {{ $periodoSeleccionado->codigo }} comenzará el {{ $inicioSemestre->format('d/m/Y') }}@if ($muestraDias) (En {{ $dias }} {{ $diasTexto }})@endif
                         @else
-                            El semestre {{ $periodoSeleccionado->codigo }} comenzó el {{ $inicioSemestre->format('d/m/Y') }} (Hace {{ $dias }} {{ $diasTexto }})
+                            El semestre {{ $periodoSeleccionado->codigo }} comenzó el {{ $inicioSemestre->format('d/m/Y') }}@if ($muestraDias) (Hace {{ $dias }} {{ $diasTexto }})@endif
                         @endif
                     </strong>
                 </div>
