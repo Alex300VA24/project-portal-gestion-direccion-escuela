@@ -56,6 +56,46 @@ final class CotecuService extends ModuleService
     }
 
     /**
+     * Indicador principal de COTECU: sílabos del periodo activo cuya
+     * fecha de aprobación es anterior a la fecha de inicio de ese
+     * periodo.
+     *
+     * La fecha de aprobación es cotecu.silabos.updated_at: la escribe
+     * el cierre de la revisión al poner estado Validado y no se mueve
+     * después (cada versión es una fila nueva). updated_at nulo —filas
+     * antiguas sin timestamps— no cuenta como aprobada a tiempo.
+     *
+     * @return array{periodo: PeriodoAcademico, aprobados: int, aTiempo: int, porcentaje: float}|null null sin periodo activo
+     */
+    public function indicadorSilabosAprobados(): ?array
+    {
+        $periodo = $this->periodoActivo();
+
+        if ($periodo === null) {
+            return null;
+        }
+
+        $aprobados = Silabo::query()
+            ->where('id_periodo', $periodo->id_periodo)
+            ->where('estado', 'Validado')
+            ->get(['id', 'updated_at']);
+
+        $aTiempo = $aprobados->filter(
+            fn (Silabo $silabo): bool => $silabo->updated_at !== null
+                && $silabo->updated_at->lt($periodo->fecha_inicio)
+        )->count();
+
+        $total = $aprobados->count();
+
+        return [
+            'periodo' => $periodo,
+            'aprobados' => $total,
+            'aTiempo' => $aTiempo,
+            'porcentaje' => $total > 0 ? round($aTiempo * 100 / $total, 1) : 0.0,
+        ];
+    }
+
+    /**
      * Solo un periodo Activo habilita la subida de sílabos.
      */
     public function hayPeriodoActivo(): bool

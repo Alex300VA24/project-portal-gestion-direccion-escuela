@@ -23,6 +23,25 @@ final class CotecuController extends ModuleController
     public function __construct(private readonly CotecuService $service) {}
 
     /**
+     * Portada del módulo: el indicador de sílabos aprobados antes del
+     * inicio del semestre se calcula solo para quien puede ver la
+     * lista de sílabos (director de escuela y secretaría); el resto
+     * ve el estado vacío de siempre.
+     */
+    public function index(): View
+    {
+        $indicador = auth()->user()?->can('cotecu.silabo.list')
+            ? $this->service->indicadorSilabosAprobados()
+            : null;
+
+        return view(static::VIEW, [
+            'module' => static::MODULE,
+            'schema' => static::SCHEMA,
+            'indicador' => $indicador,
+        ]);
+    }
+
+    /**
      * Listado general de sílabos (director y secretaría), con selector
      * de semestre y de ciclo. Solo muestra los sílabos ya Validados.
      *
