@@ -5,6 +5,7 @@ namespace App\Modules\PreMatricula\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\PreMatricula\Requests\AgregarCursoRequest;
 use App\Modules\PreMatricula\Requests\AlumnoRequest;
+use App\Modules\PreMatricula\Requests\CambiarTurnoRequest;
 use App\Modules\PreMatricula\Services\IdentidadAcademica;
 use App\Modules\PreMatricula\Services\PrematriculaAlumno;
 use App\Modules\PreMatricula\Services\PrematriculaException;
@@ -39,7 +40,17 @@ final class AlumnoController extends Controller
 
     public function agregar(AgregarCursoRequest $request): RedirectResponse
     {
-        return $this->accion(fn () => $this->prematricula->agregar($this->estudiante($request), (int) $request->validated('id_curso_plan')), 'Curso agregado a tu selección.');
+        return $this->accion(fn () => $this->prematricula->agregar(
+            $this->estudiante($request),
+            (int) $request->validated('id_curso_plan'),
+            $request->validated('preferencia_turno') ?? 'SIN_PREFERENCIA',
+        ), 'Curso agregado a tu selección.');
+    }
+
+    /** La preferencia de turno existe como en master, aunque su pantalla está oculta allí. */
+    public function cambiarTurno(CambiarTurnoRequest $request, int $detalle): RedirectResponse
+    {
+        return $this->accion(fn () => $this->prematricula->cambiarTurno($this->estudiante($request), $detalle, $request->validated('preferencia_turno')), 'Preferencia de turno actualizada.');
     }
 
     public function retirar(AlumnoRequest $request, int $detalle): RedirectResponse

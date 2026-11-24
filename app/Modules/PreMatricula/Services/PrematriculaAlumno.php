@@ -78,9 +78,9 @@ final class PrematriculaAlumno
         });
     }
 
-    public function agregar(Estudiante $estudiante, int $idCursoPlan): DetalleSolicitud
+    public function agregar(Estudiante $estudiante, int $idCursoPlan, string $turno = 'SIN_PREFERENCIA'): DetalleSolicitud
     {
-        return $this->bloqueo->transaccion(function () use ($estudiante, $idCursoPlan): DetalleSolicitud {
+        return $this->bloqueo->transaccion(function () use ($estudiante, $idCursoPlan, $turno): DetalleSolicitud {
             [$solicitud, $periodo] = $this->solicitudEditable($estudiante);
 
             if ($solicitud->detalles()->where('id_curso_plan', $idCursoPlan)->exists()) {
@@ -99,11 +99,24 @@ final class PrematriculaAlumno
             $detalle = $solicitud->detalles()->create([
                 'id_curso_plan' => $idCursoPlan,
                 'estado' => 'SELECCIONADO',
-                'preferencia_turno' => 'SIN_PREFERENCIA',
+                'preferencia_turno' => $turno,
             ]);
             $this->revalidacion->evaluar($solicitud);
 
             return $detalle;
+        });
+    }
+
+    /** Cambia la preferencia de turno de un curso del borrador, como UpdateSchedulePreference de master. */
+    public function cambiarTurno(Estudiante $estudiante, int $idDetalle, string $turno): DetalleSolicitud
+    {
+        return $this->bloqueo->transaccion(function () use ($estudiante, $idDetalle, $turno): DetalleSolicitud {
+            [$solicitud] = $this->solicitudEditable($estudiante);
+            $detalle = $solicitud->detalles()->whereKey($idDetalle)->first()
+                ?? throw new PrematriculaException('El curso no pertenece a tu selección.');
+            $detalle->update(['preferencia_turno' => $turno]);
+
+            return $detalle->refresh();
         });
     }
 

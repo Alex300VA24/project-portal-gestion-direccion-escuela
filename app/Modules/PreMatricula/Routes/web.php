@@ -6,6 +6,7 @@ use App\Modules\PreMatricula\Controllers\CoordinacionController;
 use App\Modules\PreMatricula\Controllers\CuentaController;
 use App\Modules\PreMatricula\Controllers\DemandaController;
 use App\Modules\PreMatricula\Controllers\EstudianteController;
+use App\Modules\PreMatricula\Controllers\HistorialAcademicoController;
 use App\Modules\PreMatricula\Controllers\PeriodoController;
 use App\Modules\PreMatricula\Controllers\PlanEstudiosController;
 use App\Modules\PreMatricula\Controllers\PreMatriculaController;
@@ -28,6 +29,7 @@ Route::prefix('pre-matricula')
         Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/constancias/{revision}', ConstanciaController::class)->whereNumber('revision')->name('constancia');
 
+            Route::get('/alumno/historial-academico', [HistorialAcademicoController::class, 'alumno'])->middleware('role:alumno')->name('alumno.historial-academico');
             Route::middleware('role:alumno')->prefix('alumno')->name('alumno.')->controller(AlumnoController::class)->group(function () {
                 Route::get('/', 'index')->name('index');
                 Route::post('/cursos', 'agregar')->name('agregar');
@@ -35,6 +37,7 @@ Route::prefix('pre-matricula')
                 Route::post('/registrar', 'registrar')->name('registrar');
                 Route::post('/correccion', 'corregir')->name('corregir');
                 Route::get('/historial', 'historial')->name('historial');
+                Route::patch('/cursos/{detalle}/turno', 'cambiarTurno')->whereNumber('detalle')->name('turno');
             });
 
             Route::middleware('role:director_escuela|secretaria')->prefix('coordinacion')->name('coordinacion.')->group(function () {
@@ -64,6 +67,8 @@ Route::prefix('pre-matricula')
                 Route::post('/resultados/validar', [ResultadoOficialController::class, 'validar'])->name('resultados.validar');
                 Route::post('/resultados/confirmar', [ResultadoOficialController::class, 'confirmar'])->name('resultados.confirmar');
 
+                Route::get('/historial', [HistorialAcademicoController::class, 'index'])->name('historial');
+                Route::get('/resultados/importaciones/{importacion}', [HistorialAcademicoController::class, 'importacion'])->whereNumber('importacion')->name('resultados.importacion');
                 Route::get('/registros', [RegistroController::class, 'index'])->name('registros');
                 Route::get('/registros/{solicitud}', [RegistroController::class, 'show'])->whereNumber('solicitud')->name('registros.show');
 

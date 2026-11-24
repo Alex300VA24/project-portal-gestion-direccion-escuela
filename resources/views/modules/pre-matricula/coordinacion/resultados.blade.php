@@ -74,7 +74,7 @@
             <ol class="pm-timeline">
                 @forelse ($importaciones as $i)
                     <li>
-                        <span class="pm-code">#{{ $i->id_importacion }}</span>
+                        <a class="pm-code" href="{{ route('pre-matricula.coordinacion.resultados.importacion', $i->id_importacion) }}" aria-label="Ver los cambios de la importación {{ $i->id_importacion }}">#{{ $i->id_importacion }}</a>
                         <div><strong>{{ $i->motivo }}</strong><small>{{ $i->creado_en?->timezone('America/Lima')->translatedFormat('d M Y, H:i') }} · {{ $i->autor?->correo_institucional ?? 'usuario '.$i->creado_por }}</small><small>{{ $i->resumen['crear'] ?? 0 }} nuevos · {{ $i->resumen['actualizar'] ?? 0 }} actualizados · {{ $i->resumen['sin_cambios'] ?? 0 }} sin cambios</small></div>
                         <span></span>
                     </li>

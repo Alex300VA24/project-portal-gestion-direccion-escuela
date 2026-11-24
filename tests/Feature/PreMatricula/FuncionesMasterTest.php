@@ -3,8 +3,11 @@
 namespace Tests\Feature\PreMatricula;
 
 use App\Models\User;
+use App\Modules\PreMatricula\Models\CambioHistorial;
 use App\Modules\PreMatricula\Models\CronogramaPrematricula;
+use App\Modules\PreMatricula\Models\DetalleSolicitud;
 use App\Modules\PreMatricula\Models\HistorialAcademico;
+use App\Modules\PreMatricula\Models\ImportacionHistorial;
 use App\Modules\PreMatricula\Models\LimiteCreditosEstudiante;
 use App\Modules\PreMatricula\Models\SolicitudPrematricula;
 use App\Modules\PreMatricula\Services\PlanEstudios;
@@ -301,6 +304,61 @@ final class FuncionesMasterTest extends TestCase
         ]);
 
         $this->actingAs($this->director)->get(route('pre-matricula.registro'))->assertRedirect();
+    }
+
+    // ---- Historial académico y preferencia de turno ----
+
+    public function test_la_coordinacion_consulta_el_historial_y_el_detalle_de_una_importacion(): void
+    {
+        $historial = HistorialAcademico::query()->create(['id_estudiante' => 1001, 'id_curso_plan' => 501, 'id_periodo' => 202602, 'nota_final' => 16, 'estado' => HistorialAcademico::APROBADO]);
+        $importacion = ImportacionHistorial::query()->create(['creado_por' => 801, 'sha256' => str_repeat('a', 64), 'motivo' => 'Actas 2026-II', 'resumen' => ['crear' => 1, 'actualizar' => 0, 'sin_cambios' => 0]]);
+        CambioHistorial::query()->create(['id_importacion' => $importacion->id_importacion, 'id_historial' => $historial->id_historial, 'antes' => null, 'despues' => ['estado' => 'APROBADO', 'nota_final' => 16]]);
+
+        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.historial', ['buscar' => 'E2026001', 'periodo' => 202602]))
+            ->assertOk()->assertSee('CP-501')->assertSee('Aprobado');
+        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.historial', ['buscar' => 'NADIE']))
+            ->assertOk()->assertSee('No hay resultados para estos filtros.');
+        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados'))
+            ->assertOk()->assertSee(route('pre-matricula.coordinacion.resultados.importacion', $importacion->id_importacion));
+        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados.importacion', $importacion->id_importacion))
+            ->assertOk()->assertSee('Actas 2026-II')->assertSee('APROBADO · 16');
+    }
+
+    public function test_el_alumno_ve_su_historial_academico(): void
+    {
+        HistorialAcademico::query()->create(['id_estudiante' => 1001, 'id_curso_plan' => 501, 'id_periodo' => 202602, 'nota_final' => 13, 'estado' => HistorialAcademico::APROBADO]);
+
+        $this->actingAs($this->alumno())->get(route('pre-matricula.alumno.historial-academico'))
+            ->assertOk()->assertSee('Fundamentos de Programación')->assertSee('13');
+    }
+
+    public function test_el_alumno_elige_y_cambia_su_preferencia_de_turno(): void
+    {
+        DB::table('core.periodo_academico')->where('id_periodo', 202602)->update(['estado' => 'PREMATRICULA']);
+        CronogramaPrematricula::query()->create(['id_periodo' => 202602, 'tipo' => 'ORDINARIA', 'fecha_inicio' => now()->subHour(), 'fecha_fin' => now()->addDay(), 'estado' => 'PROGRAMADA', 'motivo' => 'Prueba', 'creado_por' => 801]);
+        $alumno = $this->alumno();
+
+        $this->actingAs($alumno)->post(route('pre-matricula.alumno.agregar'), ['id_curso_plan' => 501, 'preferencia_turno' => 'MANANA'])->assertSessionHas('status');
+        $detalle = DetalleSolicitud::query()->sole();
+        $this->assertSame('MANANA', $detalle->preferencia_turno);
+
+        $this->actingAs($alumno)->patch(route('pre-matricula.alumno.turno', $detalle->id_detalle), ['preferencia_turno' => 'TARDE'])->assertSessionHas('status');
+        $this->assertSame('TARDE', $detalle->fresh()->preferencia_turno);
+        $this->actingAs($alumno)->patch(route('pre-matricula.alumno.turno', $detalle->id_detalle), ['preferencia_turno' => 'NOCHE'])->assertSessionHasErrors('preferencia_turno');
+
+        $this->actingAs($alumno)->post(route('pre-matricula.alumno.registrar'))->assertSessionHas('status');
+        $this->actingAs($alumno)->patch(route('pre-matricula.alumno.turno', $detalle->id_detalle), ['preferencia_turno' => 'MANANA'])->assertSessionHas('error');
+        $this->assertSame('TARDE', $detalle->fresh()->preferencia_turno);
+    }
+
+    private function alumno(): User
+    {
+        DB::table('seguridad.usuario')->insert([
+            'id_usuario' => 802, 'id_persona' => 1001, 'correo_institucional' => 'e2026001@unitru.edu.pe',
+            'contrasena_hash' => '$2y$12$prueba.funcional.sin.uso.real', 'debe_cambiar_contrasena' => false, 'estado' => 'Activo',
+        ]);
+
+        return $this->usuario('e2026001@unitru.edu.pe', 'alumno');
     }
 
     /** @param  list<list<mixed>>  $filas */
