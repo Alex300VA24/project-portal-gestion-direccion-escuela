@@ -41,6 +41,8 @@ final class FlujoPrematriculaTest extends TestCase
 
         $this->createPrematriculaAcademicData();
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        // Como en master, solo un período en PREMATRICULA tiene ventanas activas.
+        DB::table('core.periodo_academico')->where('id_periodo', 202602)->update(['estado' => 'PREMATRICULA']);
 
         DB::table('core.periodo_academico')->insert([
             'id_periodo' => 202601,

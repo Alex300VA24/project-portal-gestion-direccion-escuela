@@ -5,6 +5,7 @@ use App\Modules\PreMatricula\Controllers\ConstanciaController;
 use App\Modules\PreMatricula\Controllers\CoordinacionController;
 use App\Modules\PreMatricula\Controllers\DemandaController;
 use App\Modules\PreMatricula\Controllers\EstudianteController;
+use App\Modules\PreMatricula\Controllers\PeriodoController;
 use App\Modules\PreMatricula\Controllers\PreMatriculaController;
 use App\Modules\PreMatricula\Controllers\RegistroController;
 use App\Modules\PreMatricula\Controllers\ResultadoOficialController;
@@ -31,6 +32,11 @@ Route::prefix('pre-matricula')
             Route::middleware('role:director_escuela|secretaria')->prefix('coordinacion')->name('coordinacion.')->group(function () {
                 Route::get('/', CoordinacionController::class)->name('index');
 
+                Route::get('/periodos', [PeriodoController::class, 'index'])->name('periodos');
+                Route::post('/periodos', [PeriodoController::class, 'store'])->name('periodos.store');
+                Route::get('/periodos/{periodo}/editar', [PeriodoController::class, 'edit'])->whereNumber('periodo')->name('periodos.edit');
+                Route::put('/periodos/{periodo}', [PeriodoController::class, 'update'])->whereNumber('periodo')->name('periodos.update');
+                Route::delete('/periodos/{periodo}', [PeriodoController::class, 'destroy'])->whereNumber('periodo')->name('periodos.destroy');
                 Route::get('/ventanas', [VentanaController::class, 'index'])->name('ventanas');
                 Route::post('/ventanas', [VentanaController::class, 'store'])->name('ventanas.store');
 

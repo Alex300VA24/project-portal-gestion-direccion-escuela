@@ -23,6 +23,11 @@ final class VentanaPrematricula
     {
         $momento ??= now();
 
+        // Como en master (ActivePreEnrollmentWindow): solo un período en PREMATRICULA tiene ventana activa.
+        if (! PeriodoAcademico::query()->whereKey($idPeriodo)->where('estado', PeriodosAcademicos::PREMATRICULA)->exists()) {
+            return null;
+        }
+
         return CronogramaPrematricula::query()
             ->where('id_periodo', $idPeriodo)
             ->where('fecha_inicio', '<=', $momento)
@@ -31,10 +36,11 @@ final class VentanaPrematricula
             ->first();
     }
 
-    /** Período con una ventana abierta ahora; null si no hay ninguno. */
+    /** Período en PREMATRICULA con una ventana abierta ahora; null si no hay ninguno. */
     public function periodoHabilitado(): ?PeriodoAcademico
     {
         $ids = CronogramaPrematricula::query()
+            ->whereIn('id_periodo', PeriodoAcademico::query()->where('estado', PeriodosAcademicos::PREMATRICULA)->select('id_periodo'))
             ->where('fecha_inicio', '<=', now())
             ->where('fecha_fin', '>', now())
             ->distinct()
@@ -63,6 +69,10 @@ final class VentanaPrematricula
     public function crear(PeriodoAcademico $periodo, array $datos, ?int $idUsuario): CronogramaPrematricula
     {
         return $this->bloqueo->transaccion(function () use ($periodo, $datos, $idUsuario): CronogramaPrematricula {
+            if (! in_array($periodo->refresh()->estado, [PeriodosAcademicos::PLANIFICACION, PeriodosAcademicos::PREMATRICULA], true)) {
+                throw ValidationException::withMessages(['id_periodo' => 'El período no admite nuevas ventanas de prematrícula.']);
+            }
+
             $inicio = CarbonImmutable::createFromFormat('Y-m-d H:i', $datos['fecha_inicio'], self::ZONA_HORARIA);
             $fin = CarbonImmutable::createFromFormat('Y-m-d H:i', $datos['fecha_fin'], self::ZONA_HORARIA);
 
