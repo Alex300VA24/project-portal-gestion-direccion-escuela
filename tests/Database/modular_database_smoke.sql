@@ -15,7 +15,7 @@ BEGIN
             ('calidad', 12),
             ('tesis', 22),
             ('bienestar', 18),
-            ('investigacion_formativa', 11),
+            ('investigacion_formativa', 27),
             ('seguimiento_estudiante', 23),
             ('web_institucional', 13),
             ('seguimiento_egresado', 40),

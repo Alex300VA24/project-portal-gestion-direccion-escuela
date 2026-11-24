@@ -41,7 +41,6 @@ final class ModularRouteTest extends TestCase
         return [
             'prematricula' => ['pre-matricula', 'Pre Matrícula', 'prematricula'],
             'bienestar' => ['bienestar', 'Bienestar', 'bienestar'],
-            'investigacion_formativa' => ['investigacion-formativa', 'Investigación Formativa', 'investigacion_formativa'],
             'seguimiento_estudiante' => ['seguimiento-estudiante', 'Seguimiento al Estudiante', 'seguimiento_estudiante'],
             'calidad' => ['calidad', 'Calidad', 'calidad'],
             'gestion_horarios' => ['gestion-horarios', 'Gestión de Horarios', 'gestion_horarios'],

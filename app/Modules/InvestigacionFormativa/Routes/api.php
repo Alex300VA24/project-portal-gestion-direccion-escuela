@@ -6,5 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('investigacion-formativa')
     ->name('api.investigacion-formativa.')
     ->group(function () {
-        Route::get('/', [InvestigacionFormativaController::class, 'apiIndex'])->name('index');
+        Route::middleware(['web', 'auth:web', 'permission:investigacion-formativa.view'])
+            ->get('/', [InvestigacionFormativaController::class, 'apiIndex'])
+            ->name('index');
     });
