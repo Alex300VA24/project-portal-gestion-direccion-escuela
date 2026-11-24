@@ -40,14 +40,8 @@
             <section class="quality-panel">
                 <div class="quality-empty">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
-                    @if ($ventana)
-                        <h2>Aún no empiezas tu prematrícula</h2>
-                        <p>Revisaremos tu historial para mostrarte solo los cursos que puedes llevar.</p>
-                        <form method="POST" action="{{ route('pre-matricula.alumno.iniciar') }}" class="pm-mt">@csrf<button class="pm-button" type="submit">Empezar prematrícula</button></form>
-                    @else
-                        <h2>La ventana de prematrícula está cerrada</h2>
-                        <p>La escuela publicará las fechas de la ventana ordinaria del período {{ $periodo->codigo }}.</p>
-                    @endif
+                    <h2>La ventana de prematrícula está cerrada</h2>
+                    <p>La escuela publicará las fechas de la ventana ordinaria del período {{ $periodo->codigo }}.</p>
                 </div>
             </section>
         @elseif ($solicitud->estado === 'ENVIADA')

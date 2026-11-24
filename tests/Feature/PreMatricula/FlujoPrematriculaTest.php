@@ -94,18 +94,29 @@ final class FlujoPrematriculaTest extends TestCase
             ->assertSee('Tu cuenta no está vinculada a un estudiante');
     }
 
-    public function test_sin_ventana_abierta_no_se_puede_iniciar(): void
+    public function test_sin_ventana_abierta_no_se_crea_el_borrador(): void
     {
         $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))->assertOk()->assertSee('No hay un período habilitado');
-        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.iniciar'))->assertSessionHas('error');
+        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.agregar'), ['id_curso_plan' => 501])->assertSessionHas('error');
         $this->assertSame(0, SolicitudPrematricula::query()->count());
+    }
+
+    public function test_el_borrador_se_crea_al_ingresar_con_ventana_activa(): void
+    {
+        $this->abrirVentana();
+
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))->assertOk()->assertSee('Cursos disponibles');
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))->assertOk();
+
+        $this->assertSame(1, SolicitudPrematricula::query()->count());
+        $this->assertSame(SolicitudPrematricula::ESTADO_BORRADOR, SolicitudPrematricula::query()->sole()->estado);
     }
 
     public function test_el_alumno_registra_su_prematricula_y_descarga_la_constancia(): void
     {
         $this->abrirVentana();
 
-        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.iniciar'))->assertSessionHas('status');
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))->assertOk();
         $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))
             ->assertOk()->assertSee('Fundamentos de Programación')->assertDontSee('Programación Avanzada');
 
@@ -153,7 +164,7 @@ final class FlujoPrematriculaTest extends TestCase
     {
         HistorialAcademico::query()->create(['id_estudiante' => 1001, 'id_curso_plan' => 501, 'id_periodo' => 202601, 'nota_final' => 15, 'estado' => HistorialAcademico::APROBADO]);
         $this->abrirVentana();
-        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.iniciar'));
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'));
 
         $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))
             ->assertOk()->assertSee('Programación Avanzada')->assertDontSee('Fundamentos de Programación');
@@ -163,7 +174,7 @@ final class FlujoPrematriculaTest extends TestCase
     {
         LimiteCreditosEstudiante::query()->create(['id_estudiante' => 1001, 'creditos_maximos' => 2]);
         $this->abrirVentana();
-        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.iniciar'));
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'));
 
         $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.agregar'), ['id_curso_plan' => 501])->assertSessionHas('error');
         $this->assertSame(0, DB::table('prematricula.detalle_solicitud')->count());
@@ -210,7 +221,7 @@ final class FlujoPrematriculaTest extends TestCase
     {
         Storage::fake('local');
         $this->abrirVentana();
-        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.iniciar'));
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'));
 
         $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados.plantilla'))->assertOk();
 
@@ -263,7 +274,7 @@ final class FlujoPrematriculaTest extends TestCase
 
     private function registrarCurso(int $idCursoPlan): void
     {
-        $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.iniciar'));
+        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'));
         $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.agregar'), ['id_curso_plan' => $idCursoPlan]);
         $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.registrar'))->assertSessionHas('status');
     }

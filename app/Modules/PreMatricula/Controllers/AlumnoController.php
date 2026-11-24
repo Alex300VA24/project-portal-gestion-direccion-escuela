@@ -37,11 +37,6 @@ final class AlumnoController extends Controller
         return view('modules.pre-matricula.alumno.index', $datos);
     }
 
-    public function iniciar(AlumnoRequest $request): RedirectResponse
-    {
-        return $this->accion(fn () => $this->prematricula->iniciar($this->estudiante($request)), 'Tu prematrícula está lista. Elige tus cursos.');
-    }
-
     public function agregar(AgregarCursoRequest $request): RedirectResponse
     {
         return $this->accion(fn () => $this->prematricula->agregar($this->estudiante($request), (int) $request->validated('id_curso_plan')), 'Curso agregado a tu selección.');

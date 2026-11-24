@@ -21,7 +21,6 @@ Route::prefix('pre-matricula')
 
             Route::middleware('role:alumno')->prefix('alumno')->name('alumno.')->controller(AlumnoController::class)->group(function () {
                 Route::get('/', 'index')->name('index');
-                Route::post('/iniciar', 'iniciar')->name('iniciar');
                 Route::post('/cursos', 'agregar')->name('agregar');
                 Route::delete('/cursos/{detalle}', 'retirar')->whereNumber('detalle')->name('retirar');
                 Route::post('/registrar', 'registrar')->name('registrar');

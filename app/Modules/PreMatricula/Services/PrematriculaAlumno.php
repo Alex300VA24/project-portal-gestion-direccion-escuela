@@ -32,6 +32,10 @@ final class PrematriculaAlumno
         $periodo = $this->ventanas->periodoHabilitado();
         $ventana = $periodo === null ? null : $this->ventanas->activa($periodo->id_periodo);
         $solicitud = $periodo === null ? null : $this->solicitud($estudiante, $periodo);
+        if ($solicitud === null && $ventana !== null) {
+            // Como en master (GetOrCreateDraft): el borrador se crea al ingresar con una ventana activa.
+            $solicitud = $this->borrador($estudiante)->load(['revisionVigente', 'validacion']);
+        }
         $seleccion = $solicitud === null ? collect() : $this->seleccion($solicitud);
         $editable = $solicitud !== null && $this->puedeEditar($solicitud, $ventana);
         $disponibles = $editable
@@ -55,10 +59,14 @@ final class PrematriculaAlumno
         ];
     }
 
-    public function iniciar(Estudiante $estudiante): SolicitudPrematricula
+    /** Obtiene o crea el borrador del período habilitado; exige una ventana activa. */
+    private function borrador(Estudiante $estudiante): SolicitudPrematricula
     {
         return $this->bloqueo->transaccion(function () use ($estudiante): SolicitudPrematricula {
             $periodo = $this->periodoAbierto();
+            if ($this->ventanas->activa($periodo->id_periodo) === null) {
+                throw new PrematriculaException('La prematrícula no tiene una ventana activa.');
+            }
             $solicitud = $this->solicitud($estudiante, $periodo) ?? SolicitudPrematricula::query()->create([
                 'id_estudiante' => $estudiante->id_estudiante,
                 'id_periodo' => $periodo->id_periodo,
@@ -231,7 +239,7 @@ final class PrematriculaAlumno
         $periodo = $this->periodoAbierto();
         $ventana = $this->ventanas->activa($periodo->id_periodo);
         $solicitud = $this->solicitud($estudiante, $periodo)
-            ?? throw new PrematriculaException('Primero empieza tu prematrícula.');
+            ?? $this->borrador($estudiante);
 
         if (! $this->puedeEditar($solicitud, $ventana)) {
             throw new PrematriculaException('Tu prematrícula ya fue registrada y no se puede modificar ahora.');
