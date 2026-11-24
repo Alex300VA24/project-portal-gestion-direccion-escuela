@@ -17,7 +17,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | Módulo | `web_institucional` | 13 | Web Institucional |
 | Módulo | `calidad` | 12 | Calidad |
 | Módulo | `gestion_horarios` | 15 | Gestión de Horarios |
-| Módulo | `cotecu` | 10 | COTECU |
+| Módulo | `cotecu` | 11 | COTECU |
 | Módulo | `gestion_practicas` | 11 | Gestión de Prácticas |
 | Módulo | `tesis` | 22 | Tesis y Proyecto de Tesis |
 | Módulo | `gestion_matriculas` | 9 | Gestión de Matrículas (más la vista `v_historial_academico`) |
@@ -55,7 +55,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | `web_institucional` | campana_admision, campana_modalidad, categoria_publicacion, consulta_contacto, cronograma_admision, docente_especialidad, documento_oficial, especialidad, perfil_docente_web, plan_estudios_publicacion, publicacion, publicacion_archivo, registro_visita |
 | `calidad` | accion_mejora, comite_calidad_miembro, dimension_acreditacion, estandar, evidencia, indicador, indicador_estandar, medicion_indicador, meta_indicador, modelo_acreditacion, plan_mejora, proceso |
 | `gestion_horarios` | actividad_academica, ambiente_bloqueo, apertura_repeticion, asignacion_docente, bloque_horario, conflicto_horario, declaracion_disponibilidad, detalle_horario, detalle_restriccion, disponibilidad_docente, horario, horario_revision, oferta_curso, restriccion, validacion_horario |
-| `cotecu` | lista_cotejo_items, lista_cotejo_silabos_items, listas_cotejo, listas_cotejo_silabos, planes_curriculares, resultados_items, resultados_silabos_items, revisiones_plan_curricular, revisiones_silabo, silabos |
+| `cotecu` | documentos_oficiales, lista_cotejo_items, lista_cotejo_silabos_items, listas_cotejo, listas_cotejo_silabos, planes_curriculares, resultados_items, resultados_silabos_items, revisiones_plan_curricular, revisiones_silabo, silabos |
 | `gestion_practicas` | convocatoria, criterio_evaluacion, documento_practica, empresa_usuario, evaluacion, evaluacion_criterio, observacion_convocatoria, observacion_practica, postulacion, practica, seguimiento |
 | `tesis` | acta, actividad_cronograma, asesor_proyecto, colaborador, criterio_rubrica, detalle_evaluacion, entrega, historial_estado, jurado_proyecto, observacion, partida_presupuesto, proyecto_estudiante, proyecto_tesis, recurso, reporte_similitud, resolucion, resultado_jurado, revision, rubrica, solicitud, sustentacion, tipo_solicitud |
 | `gestion_matriculas` | acta_notas, asistencia, componente_evaluacion, cronograma_matricula, limite_creditos, matricula, matricula_detalle, nota, reserva_matricula |
