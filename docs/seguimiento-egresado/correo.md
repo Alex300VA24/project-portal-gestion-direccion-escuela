@@ -1,8 +1,26 @@
-# Correo de las invitaciones · S3-17 a S3-22
+# Correo de las invitaciones
 
-**Responsable:** Álvaro. **Para:** el grupo que despliega el módulo. **Referencias:** `docs/seguimiento-egresado/permisos-middleware.md`, `docs/seguimiento-egresado/flujo.md` y `docs/seguimiento-egresado/arquitectura.md`.
+**Para:** el grupo que despliega el módulo. **Referencias:** [permisos-middleware.md](permisos-middleware.md), [flujo.md](flujo.md) y [arquitectura.md](arquitectura.md).
 
 El módulo envía por correo el **enlace personal** de cada invitación. Este documento dice qué se envía, cómo se configura y qué falta decidir para producción. No hay ningún servicio de pago incorporado: se usa el correo estándar de Laravel (`MAIL_*`), así que cambiar de proveedor es cambiar el `.env`.
+
+## Resumen por entorno
+
+| Entorno | Qué poner en el `.env` | Qué pasa |
+|---|---|---|
+| **Desarrollo** | `MAIL_MAILER=log` (es el valor por defecto) | No sale ningún correo. El enlace se muestra en pantalla y el mensaje queda en `storage/logs/laravel.log`. |
+| **Pruebas con datos de demostración** | `MAIL_MAILER=smtp` con un servidor de pruebas (Mailpit) o una cuenta real (por ejemplo Gmail, ver más abajo), y **una** de estas dos líneas: `SG_CORREO_REDIRIGIR_A=<tu correo>` (todo el correo llega a esa dirección) o `SG_CORREO_PERMITIDOS=<correos separados por comas>` (solo se envía a esas direcciones; a las demás no sale nada y su enlace queda para entregarlo a mano) | Los datos de demostración usan direcciones `.test` que no existen: sin una de esas dos líneas, un envío real iría a direcciones ajenas o fallaría. |
+| **Producción** | `MAIL_MAILER=smtp` con el servidor de la Escuela o de un proveedor, remitente del dominio oficial (`MAIL_FROM_ADDRESS`), `APP_URL=https://…`, y `SG_CORREO_REDIRIGIR_A` y `SG_CORREO_PERMITIDOS` **vacíos** | El correo llega a los egresados reales. Hay que configurar SPF, DKIM y DMARC del dominio (ver «Producción»). |
+
+## Quién configura y dónde
+
+Lo configura **quien despliega el sistema**, una sola vez por entorno. Los datos de acceso al correo (usuario y contraseña) los pone en el `.env` del servidor, o como variables de entorno del contenedor si se usa Docker. Reglas:
+
+- El `.env` **no está en el repositorio** y no debe subirse nunca. El `.env.example` solo trae valores vacíos o de ejemplo.
+- La contraseña es la de la **cuenta que envía**: en Gmail, una «contraseña de aplicación»; en un servidor de la Escuela o un proveedor, las credenciales SMTP que ellos entreguen. Nunca la contraseña personal de nadie.
+- Después de cambiar el `.env`: `php artisan config:clear`.
+- Una cuenta usada para una demostración o una prueba se revoca o se cambia al terminar.
+- Para comprobar que quedó bien: Padrón → una promoción → paso 4 → «Generar enlace» en un alumno. Debe decir «Enviado por correo a …» y llegar el mensaje.
 
 ## Qué se envía y cuándo
 
@@ -71,7 +89,11 @@ MAIL_PASSWORD=<contraseña de aplicación, sin espacios>
 MAIL_FROM_ADDRESS=<la misma cuenta>
 MAIL_FROM_NAME="Seguimiento al Egresado"
 SG_CORREO_REDIRIGIR_A=<tu correo, para recibir las pruebas>
+# o, en lugar de la línea anterior, enviar solo a unas direcciones concretas:
+# SG_CORREO_PERMITIDOS=<correo1>,<correo2>
 ```
+
+Con `SG_CORREO_PERMITIDOS` el correo sale a la dirección real de cada destinatario, pero solo si está en la lista; a los demás no se les envía y su enlace queda para entregarlo a mano.
 
 3. Comprobar: Padrón → una promoción → paso 4 → «Generar enlace» en un alumno. Debe decir «Enviado por correo a … (redirigido)» y llegar el mensaje.
 
