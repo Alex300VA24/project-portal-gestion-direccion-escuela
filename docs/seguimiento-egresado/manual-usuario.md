@@ -86,6 +86,8 @@ Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede conf
 
 La pantalla muestra todas las campañas (nombre, periodo, fechas, promociones, estado y cuántos respondieron). **Ver detalle** abre una ventana encima de la lista, sin bajar la página.
 
+En la columna **Respondieron**, «7 de 8» cuenta a quienes ya recibieron su invitación. Si todavía hay egresados confirmados de las promociones de la campaña que no la recibieron, debajo aparece «10 sin invitar» (y en una campaña nueva, «Aún sin invitaciones · 12 por convocar»): se convocan con **Enviar invitaciones** en el detalle. Lo mismo se ve en las tarjetas «Por cerrar» del Inicio.
+
 ![Lista de campañas](capturas/20-campanias.jpg)
 
 **Crear una campaña.** Pulsa **+ Nueva campaña** y llena: nombre, para quién es (egresados o empleadores), periodo académico (lista), años desde el egreso (opcional: 1, 3, 5 o 10), la fecha en que se abre y la fecha en que se cierra, y las promociones que participan (se muestra cuántos egresados confirmados tiene cada una; las que no tienen ninguno no se pueden elegir).
@@ -98,6 +100,7 @@ La pantalla muestra todas las campañas (nombre, periodo, fechas, promociones, e
 1. Pulsa **Enviar invitaciones** y confirma. Cada **egresado confirmado** de las promociones de la campaña recibe un enlace personal **en su correo personal**, el que dejó en el contacto inicial.
 2. Quien aún no dejó su contacto **no se convoca**: el aviso dice cuántos son y que deben completarlo desde su promoción en el Padrón. Quien ya tiene invitación se omite. Los alumnos que siguen como «Apto para egresar» tampoco se convocan.
 3. Los enlaces recién generados aparecen en el mismo detalle, una sola vez, con el estado del correo (**Copiar** para entregarlos a mano). Una campaña cerrada no permite enviar.
+4. **Espera a que termine.** Enviar los correos puede tardar unos segundos. Mientras tanto el botón cambia a «Enviando invitaciones…» y no se puede pulsar otra vez; lo mismo pasa con «Enviar enlaces», «Cargar alumnos» y los recordatorios. Al terminar, la pantalla se actualiza con el resultado.
 
 **Ver una respuesta.** En la tabla del detalle, cada fila respondida tiene **Ver respuesta**: abre, encima de la misma ventana, la respuesta completa del egresado (situación laboral, residencia e idiomas, satisfacción, habilidades y formación posterior; solo lo que respondió). Se cierra con **Cerrar** y vuelves a la lista sin recargar nada. Solo la Secretaría ve las respuestas individuales de los egresados; la Dirección ve las cifras agregadas.
 
