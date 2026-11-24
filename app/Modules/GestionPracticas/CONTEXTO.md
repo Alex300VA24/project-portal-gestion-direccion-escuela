@@ -51,6 +51,13 @@ Estudiante postula ─► seleccionado ─► registra práctica + carta ─► 
 - Para cerrar una práctica hacen falta la evaluación registrada y el **informe final aprobado**.
 - La nota final la calcula la función de base de datos `gestion_practicas.calcular_nota_final()` (promedio
   ponderado por `criterio_evaluacion`). Se aprueba con nota ≥ `Acceso::NOTA_MINIMA` (11, escala 0–20).
+- Un estudiante lleva **una práctica a la vez**: con una práctica activa (`registrada`, `en_revision`, `observada`, `validada` o
+  `en_curso`) no puede postular, marcarse como seleccionado ni registrar otra. Se valida en el servicio
+  (`PracticaService::exigirSinPracticaActiva`) y en la interfaz se desactivan los botones y se explica el motivo. Cuando la
+  práctica pasa a `finalizada`, el estudiante puede volver a postular.
+- Solo se registran RUC de empresa: 11 dígitos que comienzan con 20.
+- La empresa puede cambiar la contraseña de su cuenta en «Perfil de la empresa»; se actualizan `public.users` y
+  `seguridad.usuario`.
 - La base de datos refuerza el proceso con restricciones `CHECK` (por ejemplo, una práctica `en_curso` exige
   `validado_por`), de modo que no se puede saltar un paso ni desde código.
 
@@ -88,6 +95,11 @@ tests/Feature/GestionPracticas/              Pruebas del módulo
 - **Capas respetadas.** Los servicios no devuelven respuestas HTTP (`DocumentoService::ubicacion()` devuelve la
   ruta del archivo y el controlador arma la descarga). Las comprobaciones de pertenencia lanzan
   `AuthorizationException`, que Laravel responde como 403.
+- **Mensajes de error.** El portal usa el idioma `es` sin traducciones de validación, por lo que los formularios del módulo
+  incluyen el trait `Requests/Concerns/MensajesEnEspanol` (mensajes generales, nombres de campo y textos propios por
+  formulario). Los mensajes de los servicios dicen qué pasó y qué hacer; sin nombres de tablas.
+- **Entrada al módulo.** `GET /gestion-practicas` envía directo al panel a quien ya tiene permiso; la portada se conserva para
+  invitados (la exige una prueba existente).
 - **Datos compartidos.** Se reutilizan los modelos de `App\Shared\Models` (`Usuario`, `Persona`, `Estudiante`,
   `PeriodoAcademico`). `core.docente`, `comun.empresa` y `comun.archivo` no tienen modelo compartido, por lo que se
   leen con consultas directas en vez de modificar `Shared`.
@@ -158,6 +170,8 @@ Cuentas de demostración (contraseña `Portal2026!`; solo para desarrollo local)
 - El seeder de roles y permisos no se ejecuta solo: hay que correrlo en cada entorno nuevo (o engancharlo al
   arranque por acuerdo del equipo).
 - Faltan modelos compartidos para `core.docente`, `comun.empresa` y `comun.archivo`; proponerlos al equipo sería un PR aparte.
+- Los avisos de permiso denegado (403) que genera Spatie (`User does not have the right permissions.`) y las páginas de error
+  de Laravel están en inglés; traducirlos requiere archivos globales (`lang/es`) y queda para un PR del equipo.
 - Las pruebas de servicios están como pruebas Feature; la guía sugiere además `tests/Unit/GestionPracticas/`.
 - Para entregar al repositorio del curso, esta rama debe dividirse en ramas `feature/...` desde `develop` con commits
   `<tipo>(<modulo>): <resumen>` y PR con las secciones *Objetivo, Cambios clave, Cómo probar, Impacto/Riesgos*
