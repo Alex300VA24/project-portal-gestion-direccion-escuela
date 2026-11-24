@@ -18,7 +18,7 @@ BEGIN
             ('investigacion_formativa', 11),
             ('seguimiento_estudiante', 23),
             ('web_institucional', 13),
-            ('seguimiento_egresado', 40),
+            ('seguimiento_egresado', 45),
             ('core', 22),
             ('seguridad', 10),
             ('comun', 7)
