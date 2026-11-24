@@ -10,7 +10,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | General | `core` | 22 | Datos académicos compartidos: persona, estudiante, docente, facultad, escuela, plan de estudios, curso, período, sección, ubigeo |
 | General | `seguridad` | 10 | Identidad y acceso: usuario, rol, permiso, tokens, registro de acceso, auditoría inalterable, `modulo_sistema` |
 | General | `comun` | 7 | Utilidades: archivo, empresa, contacto de empresa, notificación, parámetro del sistema, día no laborable, sector económico |
-| Módulo | `prematricula` | 3 | Pre Matrícula |
+| Módulo | `prematricula` | 10 | Pre Matrícula |
 | Módulo | `bienestar` | 18 | Bienestar |
 | Módulo | `investigacion_formativa` | 11 | Investigación Formativa |
 | Módulo | `seguimiento_estudiante` | 23 | Seguimiento al Estudiante |
@@ -48,7 +48,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | `core` | ambiente, area_formacion, curso, curso_plan, curso_prerequisito, departamento_academico, docente, docente_linea, equivalencia_curso, escuela_profesional, estudiante, facultad, linea_investigacion, modalidad_ingreso, pais, periodo_academico, persona, plan_estudios, seccion, ubigeo_departamento, ubigeo_distrito, ubigeo_provincia |
 | `seguridad` | auditoria, modulo_sistema, permiso, registro_acceso, rol, rol_permiso, solicitud_acceso, token_usuario, usuario, usuario_rol |
 | `comun` | archivo, contacto_empresa, dia_no_laborable, empresa, notificacion, parametro_sistema, sector_economico |
-| `prematricula` | cronograma_prematricula, detalle_solicitud, solicitud_prematricula |
+| `prematricula` | cambio_historial, cronograma_prematricula, detalle_solicitud, historial_academico, importacion_historial, limite_creditos_estudiante, revision_curso, revision_solicitud, solicitud_prematricula, validacion_solicitud |
 | `bienestar` | beneficio, caso_bienestar, cita, deporte, derivacion, especialidad, especialista, estudiante_condicion, estudiante_deporte, historial_estado_caso, horario_disponible, perfil_socioeconomico, reporte, seguimiento_derivacion, solicitud_apoyo, solicitud_documento, tipo_caso, tipo_condicion |
 | `investigacion_formativa` | criterio, entrega, entregable, evaluacion, evaluacion_criterio, grupo, grupo_estudiante, observacion, proyecto, rubrica, tipo_producto |
 | `seguimiento_estudiante` | alerta_sat, atencion, atencion_compromiso, atencion_derivacion, atencion_evidencia, atencion_motivo, brecha_ingreso, dimension_brecha, motivo_atencion, nivelacion_asistencia, nivelacion_calificacion, nivelacion_criterio_evaluacion, nivelacion_grupo, nivelacion_material, nivelacion_participante, nivelacion_sesion, parametro_sat, perfil_ingreso, programa_nivelacion, situacion_academica, solicitud_estudiante, tipo_atencion, tutor_asignacion |

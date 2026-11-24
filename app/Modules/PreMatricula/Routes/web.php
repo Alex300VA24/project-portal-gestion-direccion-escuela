@@ -1,12 +1,54 @@
 <?php
 
+use App\Modules\PreMatricula\Controllers\AlumnoController;
+use App\Modules\PreMatricula\Controllers\ConstanciaController;
+use App\Modules\PreMatricula\Controllers\CoordinacionController;
+use App\Modules\PreMatricula\Controllers\DemandaController;
+use App\Modules\PreMatricula\Controllers\EstudianteController;
 use App\Modules\PreMatricula\Controllers\PreMatriculaController;
+use App\Modules\PreMatricula\Controllers\RegistroController;
+use App\Modules\PreMatricula\Controllers\ResultadoOficialController;
+use App\Modules\PreMatricula\Controllers\VentanaController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('pre-matricula')
     ->name('pre-matricula.')
     ->group(function () {
-        Route::get('/', [PreMatriculaController::class, 'index'])->name('index');
-        Route::get('/crear', [PreMatriculaController::class, 'create'])->name('create');
-        Route::post('/', [PreMatriculaController::class, 'store'])->name('store');
+        Route::get('/', [PreMatriculaController::class, 'entrada'])->name('index');
+
+        Route::middleware(['auth', 'verified'])->group(function () {
+            Route::get('/constancias/{revision}', ConstanciaController::class)->whereNumber('revision')->name('constancia');
+
+            Route::middleware('role:alumno')->prefix('alumno')->name('alumno.')->controller(AlumnoController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/iniciar', 'iniciar')->name('iniciar');
+                Route::post('/cursos', 'agregar')->name('agregar');
+                Route::delete('/cursos/{detalle}', 'retirar')->whereNumber('detalle')->name('retirar');
+                Route::post('/registrar', 'registrar')->name('registrar');
+                Route::post('/correccion', 'corregir')->name('corregir');
+                Route::get('/historial', 'historial')->name('historial');
+            });
+
+            Route::middleware('role:director_escuela|secretaria')->prefix('coordinacion')->name('coordinacion.')->group(function () {
+                Route::get('/', CoordinacionController::class)->name('index');
+
+                Route::get('/ventanas', [VentanaController::class, 'index'])->name('ventanas');
+                Route::post('/ventanas', [VentanaController::class, 'store'])->name('ventanas.store');
+
+                Route::get('/resultados', [ResultadoOficialController::class, 'index'])->name('resultados');
+                Route::get('/resultados/plantilla', [ResultadoOficialController::class, 'plantilla'])->name('resultados.plantilla');
+                Route::post('/resultados/validar', [ResultadoOficialController::class, 'validar'])->name('resultados.validar');
+                Route::post('/resultados/confirmar', [ResultadoOficialController::class, 'confirmar'])->name('resultados.confirmar');
+
+                Route::get('/registros', [RegistroController::class, 'index'])->name('registros');
+                Route::get('/registros/{solicitud}', [RegistroController::class, 'show'])->whereNumber('solicitud')->name('registros.show');
+
+                Route::get('/demanda', [DemandaController::class, 'index'])->name('demanda');
+                Route::get('/demanda/{periodo}/cursos/{cursoPlan}', [DemandaController::class, 'interesados'])->whereNumber(['periodo', 'cursoPlan'])->name('demanda.interesados');
+                Route::get('/demanda/{periodo}/exportar', [DemandaController::class, 'exportar'])->whereNumber('periodo')->name('demanda.exportar');
+
+                Route::get('/estudiantes', [EstudianteController::class, 'index'])->name('estudiantes');
+                Route::get('/estudiantes/{codigo}', [EstudianteController::class, 'show'])->name('estudiantes.show');
+            });
+        });
     });

@@ -2,11 +2,13 @@
 
 namespace App\Modules\PreMatricula\Controllers;
 
-use App\Modules\PreMatricula\Requests\PreMatriculaRequest;
-use App\Modules\PreMatricula\Services\PreMatriculaService;
+use App\Modules\PreMatricula\Policies\PrematriculaPolicy;
 use App\Shared\Controllers\ModuleController;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
+/** Entrada pública del módulo: presenta el módulo o lleva a cada rol a su espacio. */
 final class PreMatriculaController extends ModuleController
 {
     protected const MODULE = 'Pre Matrícula';
@@ -15,12 +17,18 @@ final class PreMatriculaController extends ModuleController
 
     protected const VIEW = 'modules.pre-matricula.index';
 
-    public function store(PreMatriculaRequest $request, PreMatriculaService $service): RedirectResponse
+    public function entrada(Request $request, PrematriculaPolicy $policy): View|RedirectResponse
     {
-        $service->handle($request->validated());
+        $user = $request->user();
 
-        return redirect()
-            ->route('pre-matricula.index')
-            ->with('status', 'Registro procesado.');
+        if ($user !== null && $policy->usarComoAlumno($user)) {
+            return redirect()->route('pre-matricula.alumno.index');
+        }
+
+        if ($user !== null && $policy->coordinar($user)) {
+            return redirect()->route('pre-matricula.coordinacion.index');
+        }
+
+        return $this->index();
     }
 }
