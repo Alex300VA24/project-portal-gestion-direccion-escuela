@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Lectura del catálogo compartido (core.curso_plan, core.curso, core.curso_prerequisito).
- * El módulo solo lee: el catálogo se administra fuera de Pre Matrícula.
+ * Consultas de solo lectura; la malla se administra con PlanEstudios, como en master.
  */
 final class CatalogoAcademico
 {

@@ -35,6 +35,8 @@
     .pm-form { display: grid; gap: 14px; }
     .pm-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
     .pm-field { display: grid; gap: 6px; }
+    .pm-check { display: flex; gap: 10px; align-items: flex-start; color: var(--quality-ink); font-size: 14px; }
+    .pm-check input { width: 18px; height: 18px; margin-top: 2px; }
     .pm-field > span { color: var(--quality-muted); font-size: 13px; font-weight: 700; }
     .pm-field input, .pm-field select, .pm-field textarea { width: 100%; min-height: 44px; padding: 9px 12px; color: var(--quality-ink); background: var(--quality-surface); border: 1px solid var(--quality-border); border-radius: 9px; }
     .pm-field textarea { min-height: 80px; resize: vertical; }

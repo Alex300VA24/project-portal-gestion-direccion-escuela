@@ -6,6 +6,7 @@ use App\Modules\PreMatricula\Controllers\CoordinacionController;
 use App\Modules\PreMatricula\Controllers\DemandaController;
 use App\Modules\PreMatricula\Controllers\EstudianteController;
 use App\Modules\PreMatricula\Controllers\PeriodoController;
+use App\Modules\PreMatricula\Controllers\PlanEstudiosController;
 use App\Modules\PreMatricula\Controllers\PreMatriculaController;
 use App\Modules\PreMatricula\Controllers\RegistroController;
 use App\Modules\PreMatricula\Controllers\ResultadoOficialController;
@@ -37,6 +38,13 @@ Route::prefix('pre-matricula')
                 Route::get('/periodos/{periodo}/editar', [PeriodoController::class, 'edit'])->whereNumber('periodo')->name('periodos.edit');
                 Route::put('/periodos/{periodo}', [PeriodoController::class, 'update'])->whereNumber('periodo')->name('periodos.update');
                 Route::delete('/periodos/{periodo}', [PeriodoController::class, 'destroy'])->whereNumber('periodo')->name('periodos.destroy');
+                Route::get('/plan', [PlanEstudiosController::class, 'index'])->name('plan');
+                Route::get('/plan/plantilla', [PlanEstudiosController::class, 'plantilla'])->name('plan.plantilla');
+                Route::get('/plan/exportar', [PlanEstudiosController::class, 'exportar'])->name('plan.exportar');
+                Route::post('/plan/validar', [PlanEstudiosController::class, 'validar'])->name('plan.validar');
+                Route::post('/plan/confirmar', [PlanEstudiosController::class, 'confirmar'])->name('plan.confirmar');
+                Route::get('/plan/cursos/{codigo}/editar', [PlanEstudiosController::class, 'edit'])->name('plan.cursos.edit');
+                Route::put('/plan/cursos/{codigo}', [PlanEstudiosController::class, 'update'])->name('plan.cursos.update');
                 Route::get('/ventanas', [VentanaController::class, 'index'])->name('ventanas');
                 Route::post('/ventanas', [VentanaController::class, 'store'])->name('ventanas.store');
 

@@ -6,6 +6,7 @@
         $esAlumno ? ['pre-matricula.alumno.historial', 'Mis constancias', '<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 13h6M9 17h6"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.index', 'Inicio', '<path d="m3 11 9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.periodos', 'Períodos', '<path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 14h3"/>'] : null,
+        $esCoordinacion ? ['pre-matricula.coordinacion.plan', 'Plan de estudios', '<path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M8 7h8M8 11h6"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.ventanas', 'Ventanas', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.resultados', 'Resultados oficiales', '<path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.registros', 'Registros', '<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5"/>'] : null,
