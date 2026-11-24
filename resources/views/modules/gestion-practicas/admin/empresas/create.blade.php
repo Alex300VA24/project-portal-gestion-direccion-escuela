@@ -30,7 +30,7 @@
                 @include('modules.gestion-practicas.partials.campo', ['name' => 'contacto_nombres', 'label' => 'Nombres'])
                 @include('modules.gestion-practicas.partials.campo', ['name' => 'contacto_apellido_paterno', 'label' => 'Apellido paterno'])
                 @include('modules.gestion-practicas.partials.campo', ['name' => 'correo_acceso', 'label' => 'Correo de acceso', 'tipo' => 'email'])
-                @include('modules.gestion-practicas.partials.campo', ['name' => 'password', 'label' => 'Contraseña inicial', 'tipo' => 'password', 'span' => true, 'ayuda' => 'Mínimo 8 caracteres. El representante deberá cambiarla al ingresar.', 'extra' => ['autocomplete' => 'new-password']])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'password', 'label' => 'Contraseña inicial', 'tipo' => 'password', 'span' => true, 'ayuda' => 'Mínimo 8 caracteres. El representante podrá cambiarla en «Perfil de la empresa → Cambiar contraseña».', 'extra' => ['autocomplete' => 'new-password']])
             </div>
         </section>
 

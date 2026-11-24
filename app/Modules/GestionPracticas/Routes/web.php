@@ -59,6 +59,7 @@ Route::prefix('gestion-practicas')
                 Route::middleware('permission:'.Acceso::CONVOCATORIAS_GESTIONAR)->prefix('empresa')->name('empresa.')->group(function () {
                     Route::get('perfil', [PerfilEmpresaController::class, 'edit'])->name('perfil.edit');
                     Route::put('perfil', [PerfilEmpresaController::class, 'update'])->name('perfil.update');
+                    Route::put('perfil/password', [PerfilEmpresaController::class, 'password'])->name('perfil.password');
 
                     Route::prefix('convocatorias')->name('convocatorias.')->group(function () {
                         Route::get('/', [ConvocatoriaEmpresaController::class, 'index'])->name('index');

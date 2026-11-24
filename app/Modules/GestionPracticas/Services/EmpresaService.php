@@ -110,6 +110,29 @@ final class EmpresaService
         );
     }
 
+    /**
+     * La cuenta de la empresa cambia su contraseña de acceso. Se actualizan el inicio de sesión (public.users)
+     * y el usuario institucional vinculado por correo (seguridad.usuario), que deja de pedir el cambio.
+     */
+    public function cambiarPassword(User $user, string $nueva): void
+    {
+        DB::transaction(function () use ($user, $nueva): void {
+            $user->forceFill(['password' => $nueva])->save();
+
+            Usuario::query()
+                ->whereRaw('lower(correo_institucional) = ?', [mb_strtolower($user->email)])
+                ->update(['contrasena_hash' => Hash::make($nueva), 'debe_cambiar_contrasena' => false]);
+        });
+    }
+
+    /** ¿La cuenta aún usa la contraseña inicial que le asignó el administrador? */
+    public function debeCambiarPassword(User $user): bool
+    {
+        return (bool) Usuario::query()
+            ->whereRaw('lower(correo_institucional) = ?', [mb_strtolower($user->email)])
+            ->value('debe_cambiar_contrasena');
+    }
+
     public function cambiarEstado(int $idEmpresa, bool $activa): void
     {
         DB::transaction(function () use ($idEmpresa, $activa): void {
