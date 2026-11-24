@@ -35,6 +35,9 @@ La página de cada promoción tiene los cuatro pasos uno debajo de otro, sin cam
    - Columnas obligatorias: `matricula`, `tipo_doc`, `numero_documento`, `nombres`, `apellido_paterno` y **`correo_institucional`** (válido). Opcionales: `apellido_materno`, `fecha_ingreso`, `fecha_egreso` (no puede ser futura) y, si ya se conocen, `correo_personal` y `celular`. Si el archivo trae una columna `cohorte` (año), debe coincidir con la promoción.
    - La carga es **todo o nada**: si una fila tiene un problema (matrícula repetida, correo faltante o inválido, fecha futura, otra promoción), no se guarda ninguna. Un cuadro dice qué filas corregir; también queda en **Consultar alumnos y grados → Historial de cargas**. Si todo sale bien, el cuadro dice cuántos alumnos se cargaron.
    - Los alumnos quedan como **Apto para egresar**, sin fecha de egreso, sin créditos y sin contacto. **Cargar más alumnos** vuelve a abrir el paso 3 para los nuevos.
+   - **Otra forma, sin archivo:** **Elegir de los estudiantes del portal** abre una ventana con los estudiantes que ingresaron ese año y todavía no están en el padrón. Se busca por matrícula, documento o nombre, se marcan los que correspondan (o **todos** a la vez) y se pulsa **Agregar a la promoción**. Quedan igual que si vinieran de un archivo y la carga aparece en el historial como «Estudiantes del portal». Quien no tiene un correo registrado se indica y no se puede agregar; a los demás el enlace de contacto les llega a su correo personal.
+
+   ![Elegir estudiantes del portal](capturas/17-elegir-estudiantes.jpg)
 3. **Enviar el enlace de contacto.** Elige la **fecha límite** (se sugiere 30 días desde hoy; máximo un año) y pulsa **Enviar enlaces**; confirma en el cuadro. Cada alumno sin contacto recibe en su **correo institucional** un enlace personal que funciona hasta el final de ese día. **Completar el contacto es obligatorio para poder egresar**: el correo y el formulario se lo dicen. Los que ya dejaron su contacto o ya tienen un enlace pendiente se omiten y el aviso dice cuántos.
 4. **Quién completó su contacto.** Una tabla (matrícula, alumno, fecha de envío, estado del enlace, fecha de respuesta y acción) muestra a cada alumno de la promoción:
 
@@ -67,7 +70,9 @@ Cuando el alumno egresó de verdad:
 2. Escribe la **fecha real de egreso** (no puede ser futura ni anterior a su ingreso, si se conoce) y confirma.
 3. El alumno pasa a **Egresado**; el periodo (por ejemplo `2025-I`) se calcula con esa fecha. Su historial conserva la etapa anterior y sus contactos no se pierden.
 
-Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede confirmar a quien está como «Apto para egresar». Si el alumno aún no completó su contacto inicial (obligatorio para egresar), el sistema lo **avisa** pero deja continuar.
+Solo la Secretaría confirma egresos; la Dirección consulta. Solo se puede confirmar a quien está como «Apto para egresar».
+
+**El contacto se ve antes de confirmar.** Junto a «Apto para egresar», la lista y la ficha muestran si el alumno completó su contacto inicial (**Contacto completo** o **Falta su contacto**). Como ese contacto es obligatorio para egresar, si falta, la ventana de confirmación lo avisa **antes** de pedir la fecha; se puede confirmar de todos modos. Al confirmar, la lista se actualiza sin recargar la página: la búsqueda y los filtros se conservan, y se puede seguir con el siguiente alumno.
 
 ### Estado del correo de los enlaces
 

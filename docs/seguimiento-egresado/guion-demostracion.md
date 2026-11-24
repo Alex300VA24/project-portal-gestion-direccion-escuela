@@ -104,7 +104,7 @@ Iniciar sesión como Secretaría y abrir **Seguimiento al Egresado** (`/seguimie
 | Síntoma | Causa y solución |
 |---|---|
 | «La promoción … no está registrada» | Falta el paso 0 (registrar el plan de estudios y la promoción). |
-| Aviso «todavía no completó su contacto inicial» al confirmar el egreso | El egreso se confirma igual, pero conviene que el alumno complete su contacto (paso 4 de su promoción). |
+| Aviso «todavía no completó su contacto inicial» al confirmar el egreso | Se muestra antes de pedir la fecha, y la lista y la ficha indican «Falta su contacto». El egreso se confirma igual, pero conviene que el alumno complete su contacto (paso 4 de su promoción). |
 | «No hay egresados confirmados» al emitir | Falta el paso 4 (confirmar egresos). |
 | «El egresado no ha autorizado el contacto» | El egresado no respondió la encuesta o respondió que no autoriza. |
 | Importación con `.xlsx` en Docker: «No se pudo leer el archivo» | Falta `zip` en la imagen; usar CSV. |
