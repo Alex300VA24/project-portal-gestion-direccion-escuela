@@ -32,7 +32,9 @@
       <div class="sg-aviso-avance">
         @if ($aviso['total'] > 0)
           <div class="sg-aviso-barra" role="img" aria-label="{{ $aviso['respondieron'] }} de {{ $aviso['total'] }}"><span style="width: {{ $aviso['porcentaje'] }}%"></span></div>
-          <p><strong>{{ $aviso['respondieron'] }} de {{ $aviso['total'] }}</strong> · {{ $aviso['faltan'] === 1 ? 'falta 1' : 'faltan '.$aviso['faltan'] }}</p>
+          <p><strong>{{ $aviso['respondieron'] }} de {{ $aviso['total'] }}</strong> · {{ $aviso['faltan'] === 1 ? 'falta 1' : 'faltan '.$aviso['faltan'] }}{{ ($aviso['por_convocar'] ?? 0) > 0 ? ' · '.$aviso['por_convocar'].' sin invitar' : '' }}</p>
+        @elseif(($aviso['por_convocar'] ?? 0) > 0)
+          <p>Aún sin invitaciones · <strong>{{ $aviso['por_convocar'] }}</strong> por convocar.</p>
         @else
           <p>Aún no se generan {{ $aviso['unidad'] }}.</p>
         @endif

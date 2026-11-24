@@ -38,7 +38,7 @@ final class AvisosDeInicio
     private function campaniasAbiertas(): array
     {
         $hoy = $this->hoy();
-        $campanias = CampaniaSeguimiento::with('invitaciones.medicion')
+        $campanias = CampaniaSeguimiento::with(['invitaciones.medicion', 'cohortes'])
             ->whereDate('fecha_inicio', '<=', $hoy->toDateString())->whereDate('fecha_fin', '>=', $hoy->toDateString())
             ->get();
 
@@ -57,10 +57,11 @@ final class AvisosDeInicio
                 $total = $c->invitaciones->count();
                 $respondieron = $c->invitaciones->filter(fn ($i) => $i->estado === 'COMPLETADA' || $i->medicion !== null)->count();
                 $subtitulo = 'Para egresados · '.$c->periodo;
+                $porConvocar = app(PorConvocar::class)->de($c);
                 $enlace = route('seguimiento-egresado.campanias', ['ver' => $c->id]);
             }
 
-            return $this->aviso($c->nombre, $subtitulo, CarbonImmutable::parse($c->fecha_fin, FiltroIndicadores::ZONA), $hoy, $respondieron, $total, $enlace, 'Ver detalle', $c->tipo === 'EMPRESAS' ? 'enlaces' : 'invitaciones');
+            return $this->aviso($c->nombre, $subtitulo, CarbonImmutable::parse($c->fecha_fin, FiltroIndicadores::ZONA), $hoy, $respondieron, $total, $enlace, 'Ver detalle', $c->tipo === 'EMPRESAS' ? 'enlaces' : 'invitaciones', $porConvocar ?? null);
         })->all();
     }
 
@@ -79,7 +80,7 @@ final class AvisosDeInicio
     }
 
     /** @return array<string, mixed> */
-    private function aviso(string $titulo, string $subtitulo, CarbonImmutable $cierra, CarbonImmutable $hoy, int $respondieron, int $total, string $enlace, string $boton, string $unidad): array
+    private function aviso(string $titulo, string $subtitulo, CarbonImmutable $cierra, CarbonImmutable $hoy, int $respondieron, int $total, string $enlace, string $boton, string $unidad, ?int $porConvocar = null): array
     {
         $dias = max(0, (int) round($hoy->diffInDays($cierra->startOfDay())));
 
@@ -87,7 +88,7 @@ final class AvisosDeInicio
             'titulo' => $titulo, 'subtitulo' => $subtitulo, 'cierra' => $cierra->toDateString(), 'dias' => $dias,
             'urgente' => $dias <= 7, 'respondieron' => $respondieron, 'total' => $total, 'faltan' => max(0, $total - $respondieron),
             'porcentaje' => $total > 0 ? (int) round(100 * $respondieron / $total) : 0, 'unidad' => $unidad,
-            'enlace' => $enlace, 'boton' => $boton,
+            'enlace' => $enlace, 'boton' => $boton, 'por_convocar' => $porConvocar,
         ];
     }
 

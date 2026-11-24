@@ -31,11 +31,20 @@
 
 @if($esEgresados)
   <div class="sg-cobertura">
-    <div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px;">
-      <strong>{{ $resumen['respondieron'] }} de {{ $resumen['convocados'] }} respondieron ({{ number_format($resumen['cobertura'], 1) }}%)</strong>
-      <span class="sg-help">{{ $resumen['pendientes'] }} {{ $resumen['pendientes'] === 1 ? 'pendiente' : 'pendientes' }}</span>
-    </div>
-    <div class="sg-barra-cob" role="img" aria-label="{{ $resumen['cobertura'] }}% respondió"><div style="width: {{ min(100, $resumen['cobertura']) }}%;"></div></div>
+    @if($resumen['convocados'] === 0)
+      <strong style="font-size: 14px;">Aún no se enviaron invitaciones</strong>
+    @else
+      <div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px;">
+        <strong>{{ $resumen['respondieron'] }} de {{ $resumen['convocados'] }} respondieron ({{ number_format($resumen['cobertura'], 1) }}%)</strong>
+        <span class="sg-help">{{ $resumen['pendientes'] }} {{ $resumen['pendientes'] === 1 ? 'pendiente' : 'pendientes' }}</span>
+      </div>
+      <div class="sg-barra-cob" role="img" aria-label="{{ $resumen['cobertura'] }}% respondió"><div style="width: {{ min(100, $resumen['cobertura']) }}%;"></div></div>
+    @endif
+    @if(($resumen['por_convocar'] ?? 0) > 0)
+      <p class="sg-help" style="margin: 6px 0 0; color: var(--sg-warning);">
+        {{ $resumen['por_convocar'] === 1 ? 'Hay 1 egresado confirmado' : 'Hay '.$resumen['por_convocar'].' egresados confirmados' }} de estas promociones que todavía no {{ $resumen['por_convocar'] === 1 ? 'recibió' : 'recibieron' }} su invitación. Pulsa «Enviar invitaciones» para convocarlos.
+      </p>
+    @endif
   </div>
 @else
   <div class="sg-cobertura">
@@ -47,12 +56,12 @@
 
 <div class="sg-acciones-detalle">
   @if($esEgresados)
-    <form method="POST" action="{{ route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id) }}"
+    <form method="POST" data-sg-cargando="Enviando invitaciones…" data-sg-nota="Se envía un correo a cada egresado: puede tardar unos segundos." action="{{ route('seguimiento-egresado.campanias.emitir-invitaciones', $campania->id) }}"
           data-sg-confirmar="Se enviará la invitación al correo personal de cada egresado confirmado de las promociones de esta campaña que aún no la tenga. ¿Continuar?">
       @csrf
       <button class="sg-button" type="submit" @disabled($cerrada)>@include('modules.seguimiento-egresado.partials.icon', ['name' => 'mail'])<span>Enviar invitaciones</span></button>
     </form>
-    <form method="POST" action="{{ route('seguimiento-egresado.campanias.recordar-pendientes', $campania->id) }}"
+    <form method="POST" data-sg-cargando="Enviando recordatorios…" data-sg-nota="Se envía un correo a cada pendiente: puede tardar unos segundos." action="{{ route('seguimiento-egresado.campanias.recordar-pendientes', $campania->id) }}"
           data-sg-confirmar="Cada egresado pendiente recibirá un enlace nuevo y el anterior dejará de funcionar. ¿Continuar?">
       @csrf
       <button class="sg-button sg-button-secondary" type="submit" @disabled($cerrada || $pendientesConvocables === 0)>
@@ -132,7 +141,7 @@
                 @elseif($respondida)
                   <span class="sg-badge sg-badge-success">✓ Respondió</span>
                 @elseif($inv->estado === 'PENDIENTE' && ! $cerrada)
-                  <form method="POST" action="{{ route('seguimiento-egresado.campanias.recordatorio', $inv->id) }}">
+                  <form method="POST" data-sg-cargando="Enviando…" action="{{ route('seguimiento-egresado.campanias.recordatorio', $inv->id) }}">
                     @csrf
                     <button type="submit" class="sg-button sg-button-secondary">Recordar</button>
                   </form>

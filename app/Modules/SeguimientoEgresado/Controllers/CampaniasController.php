@@ -14,6 +14,7 @@ use App\Modules\SeguimientoEgresado\Services\Accesos\SesionAcceso;
 use App\Modules\SeguimientoEgresado\Services\CatalogosDeCampania;
 use App\Modules\SeguimientoEgresado\Services\EstadoDeCampanias;
 use App\Modules\SeguimientoEgresado\Services\Invitaciones\EnvioDeEnlaces;
+use App\Modules\SeguimientoEgresado\Services\PorConvocar;
 use App\Modules\SeguimientoEgresado\Support\Esquema;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -357,6 +358,7 @@ class CampaniasController extends Controller
             'convocados' => $convocados, 'respondieron' => $respondieron,
             'pendientes' => $invitaciones->where('estado', 'PENDIENTE')->count(),
             'cobertura' => $convocados > 0 ? round($respondieron * 100 / $convocados, 1) : 0.0,
+            'por_convocar' => app(PorConvocar::class)->de($c),
         ];
     }
 

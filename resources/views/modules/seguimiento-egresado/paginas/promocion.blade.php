@@ -101,7 +101,7 @@
   @unless($puedeGestionar)
     <p class="sg-help">Solo la Secretaría carga a los alumnos. Aquí puedes consultar cuántos hay.</p>
   @else
-  <form method="POST" action="{{ route('seguimiento-egresado.padron.importar') }}" enctype="multipart/form-data" class="sg-fila-form">
+  <form method="POST" data-sg-cargando="Cargando alumnos…" data-sg-nota="Puede tardar unos segundos." action="{{ route('seguimiento-egresado.padron.importar') }}" enctype="multipart/form-data" class="sg-fila-form">
     @csrf
     <input type="hidden" name="promocion" value="{{ $promocion->id }}">
     <div class="sg-field">
@@ -131,7 +131,7 @@
     <p class="sg-help">Solo la Secretaría envía los enlaces. Abajo ves quién ya completó su contacto.</p>
   @endif
   @unless($bloqueado[3] || ! $puedeGestionar)
-    <form method="POST" action="{{ route('seguimiento-egresado.padron.contacto-inicial.cohorte') }}" class="sg-fila-form"
+    <form method="POST" data-sg-cargando="Enviando enlaces…" data-sg-nota="Se envía un correo a cada alumno: puede tardar unos segundos." action="{{ route('seguimiento-egresado.padron.contacto-inicial.cohorte') }}" class="sg-fila-form"
           data-sg-confirmar="Se enviará un enlace a cada alumno de la promoción que aún no dejó su contacto. ¿Continuar?">
       @csrf
       <input type="hidden" name="cohorte" value="{{ $promocion->id }}">
@@ -238,7 +238,7 @@
                     <span class="sg-badge sg-badge-success">✓ Contacto completado</span>
                   @else
                     @if($puedeGestionar)
-                    <form method="POST" action="{{ route('seguimiento-egresado.padron.contacto-inicial.egresado', $alumno->id) }}">
+                    <form method="POST" data-sg-cargando="Enviando…" action="{{ route('seguimiento-egresado.padron.contacto-inicial.egresado', $alumno->id) }}">
                       @csrf
                       <input type="hidden" name="q" value="{{ $filtros['q'] }}">
                       <input type="hidden" name="estado" value="{{ $filtros['estado'] }}">

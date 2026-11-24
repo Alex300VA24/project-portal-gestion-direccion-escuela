@@ -115,10 +115,17 @@
                 @if($c['tipo'] === 'EMPRESAS')
                   <span class="sg-help">En Encuesta empresarial</span>
                 @else
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="sg-barra-mini" role="img" aria-label="{{ $c['cobertura'] }}% respondió"><div style="width: {{ min(100, $c['cobertura']) }}%; height: 100%; background: var(--sg-success);"></div></div>
-                    <span style="font-size: 12px; font-variant-numeric: tabular-nums;">{{ $c['respondieron'] }} de {{ $c['convocados'] }}</span>
-                  </div>
+                  @if($c['convocados'] === 0)
+                    <span class="sg-help">Aún sin invitaciones{{ ($c['por_convocar'] ?? 0) > 0 ? ' · '.$c['por_convocar'].' por convocar' : '' }}</span>
+                  @else
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="sg-barra-mini" role="img" aria-label="{{ $c['cobertura'] }}% respondió"><div style="width: {{ min(100, $c['cobertura']) }}%; height: 100%; background: var(--sg-success);"></div></div>
+                      <span style="font-size: 12px; font-variant-numeric: tabular-nums;">{{ $c['respondieron'] }} de {{ $c['convocados'] }}</span>
+                    </div>
+                    @if(($c['por_convocar'] ?? 0) > 0)
+                      <span class="sg-help" style="display: block; margin-top: 2px; color: var(--sg-warning);">{{ $c['por_convocar'] }} sin invitar</span>
+                    @endif
+                  @endif
                 @endif
               </td>
               <td><button type="button" class="sg-button sg-button-secondary" onclick="verDetalleCampania({{ $c['id'] }})">Ver detalle</button></td>

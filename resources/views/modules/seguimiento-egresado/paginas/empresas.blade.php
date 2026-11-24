@@ -93,7 +93,7 @@
       <div class="sg-emp-cab">
         <h2 class="sg-section-title" id="sg-emp-desempeno" style="margin: 0;">Opinión de la empresa sobre cada egresado</h2>
         @if ($puedeGenerar && $abierta)
-          <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}"
+          <form method="POST" data-sg-cargando="Generando…" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}"
                 data-sg-confirmar="Se generará un enlace para cada egresado que aún no lo tiene o cuyo enlace venció. ¿Continuar?">
             @csrf
             <input type="hidden" name="id_campania" value="{{ $campaniaId }}">
@@ -136,7 +136,7 @@
                       <button type="button" class="sg-button sg-button-secondary" data-respuesta="{{ route('seguimiento-egresado.empresas.respuesta', $fila->invitacion->id) }}">Ver respuesta</button>
                     @elseif ($puedeGenerar && $abierta)
                       @if ($fila->estado === 'sin_enlace')
-                        <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces') }}">
+                        <form method="POST" data-sg-cargando="Generando…" action="{{ route('seguimiento-egresado.empresas.enlaces') }}">
                           @csrf
                           <input type="hidden" name="id_campania" value="{{ $campaniaId }}">
                           <input type="hidden" name="contexto" value="DESEMPENO">
@@ -144,7 +144,7 @@
                           <button type="submit" class="sg-button sg-button-secondary">Generar enlace</button>
                         </form>
                       @else
-                        <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $inv->id) }}"
+                        <form method="POST" data-sg-cargando="Generando…" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $inv->id) }}"
                               @if ($fila->estado === 'pendiente') data-sg-confirmar="{{ $inv->enviado_en ? 'Ya entregaste este enlace a la empresa. Si generas uno nuevo, el anterior dejará de funcionar.' : 'Si generas un enlace nuevo, el anterior dejará de funcionar.' }} ¿Continuar?" @endif>
                           @csrf
                           <input type="hidden" name="confirmar_reemplazo" value="1">
@@ -168,7 +168,7 @@
       <h2 class="sg-section-title" id="sg-emp-mercado">Demanda de habilidades (encuesta general)</h2>
       <p class="sg-help">No es sobre un egresado: pregunta a cualquier empresa qué habilidades busca. Cada enlace admite una sola respuesta, así que genera uno por empresa.</p>
       @if ($puedeGenerar && $abierta)
-        <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}" class="sg-emp-lote">
+        <form method="POST" data-sg-cargando="Generando…" action="{{ route('seguimiento-egresado.empresas.enlaces.lote') }}" class="sg-emp-lote">
           @csrf
           <input type="hidden" name="id_campania" value="{{ $campaniaId }}">
           <input type="hidden" name="contexto" value="MERCADO">
@@ -200,7 +200,7 @@
                     @if ($m->estado_fila === 'respondida')
                       <button type="button" class="sg-button sg-button-secondary" data-respuesta="{{ route('seguimiento-egresado.empresas.respuesta', $m->id) }}">Ver respuesta</button>
                     @elseif ($puedeGenerar && $abierta)
-                      <form method="POST" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $m->id) }}"
+                      <form method="POST" data-sg-cargando="Generando…" action="{{ route('seguimiento-egresado.empresas.enlaces.renovar', $m->id) }}"
                             @if ($m->estado_fila === 'pendiente') data-sg-confirmar="{{ $m->enviado_en ? 'Ya entregaste este enlace. Si generas uno nuevo, el anterior dejará de funcionar.' : 'Si generas un enlace nuevo, el anterior dejará de funcionar.' }} ¿Continuar?" @endif>
                         @csrf
                         <input type="hidden" name="confirmar_reemplazo" value="1">

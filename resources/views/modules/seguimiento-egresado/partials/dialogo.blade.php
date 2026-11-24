@@ -121,4 +121,53 @@
       });
     });
   })();
+
+  // Acciones que tardan (enviar correos, cargar un archivo): al enviar el formulario, el botón queda ocupado con el mismo
+  // giro del acceso, para que no parezca que no pasó nada y no se pulse dos veces. Cada formulario puede indicar el texto
+  // (data-sg-cargando="Enviando invitaciones…") y una nota (data-sg-nota="Puede tardar unos segundos."). Va después de la
+  // confirmación: si la persona cancela, el botón no se toca.
+  (() => {
+    const ocupados = [];
+    const restaurar = () => {
+      ocupados.splice(0).forEach(({ boton, html }) => {
+        boton.disabled = false;
+        boton.removeAttribute('aria-busy');
+        boton.classList.remove('sg-ocupado');
+        boton.innerHTML = html;
+      });
+      document.querySelectorAll('.sg-ocupado-nota').forEach((nota) => nota.remove());
+    };
+    // Al volver con «Atrás» el navegador puede mostrar la página tal como quedó: se deja lista otra vez.
+    window.addEventListener('pageshow', (evento) => { if (evento.persisted) restaurar(); });
+    document.addEventListener('submit', (evento) => {
+      const formulario = evento.target;
+      if (evento.defaultPrevented || !(formulario instanceof HTMLFormElement) || formulario.method.toLowerCase() !== 'post') return;
+      const boton = evento.submitter || formulario.querySelector('button[type="submit"]');
+      if (!boton || boton.classList.contains('sg-ocupado')) return;
+      const html = boton.innerHTML;
+      // Se espera a que el navegador reúna los datos del formulario antes de desactivar el botón.
+      setTimeout(() => {
+        ocupados.push({ boton, html });
+        boton.disabled = true;
+        boton.setAttribute('aria-busy', 'true');
+        boton.classList.add('sg-ocupado');
+        boton.replaceChildren();
+        const giro = document.createElement('i');
+        giro.className = 'sg-giro';
+        giro.setAttribute('aria-hidden', 'true');
+        const texto = document.createElement('span');
+        texto.textContent = formulario.dataset.sgCargando || 'Procesando…';
+        boton.append(giro, texto);
+        if (formulario.dataset.sgNota) {
+          const nota = document.createElement('span');
+          nota.className = 'sg-help sg-ocupado-nota';
+          nota.setAttribute('role', 'status');
+          nota.textContent = formulario.dataset.sgNota;
+          boton.insertAdjacentElement('afterend', nota);
+        }
+        // Red de seguridad: si la página no cambia (por ejemplo, una descarga), el botón vuelve a estar disponible.
+        setTimeout(restaurar, 120000);
+      }, 0);
+    });
+  })();
 </script>

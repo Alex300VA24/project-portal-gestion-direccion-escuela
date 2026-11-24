@@ -14,10 +14,10 @@
   #dlg-estudiantes .sg-table td.sg-est-sin { color: var(--sg-warning); }
   #dlg-estudiantes .sg-est-estado { margin: 10px 0 0; color: var(--sg-muted); font-size: 13px; min-height: 18px; }
   #dlg-estudiantes .sg-est-contador { margin-right: auto; color: var(--sg-muted); font-size: 13px; }
-  #dlg-estudiantes .sg-dialogo-pie button:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+  #dlg-estudiantes .sg-dialogo-pie button:disabled:not(.sg-ocupado) { opacity: .5; cursor: not-allowed; filter: none; }
 </style>
 <dialog class="sg-dialogo sg-form-dialogo" id="dlg-estudiantes" aria-labelledby="dlg-est-titulo">
-  <form method="POST" action="{{ route('seguimiento-egresado.padron.importar-estudiantes') }}" id="form-estudiantes">
+  <form method="POST" data-sg-cargando="Agregando alumnos…" action="{{ route('seguimiento-egresado.padron.importar-estudiantes') }}" id="form-estudiantes">
     @csrf
     <input type="hidden" name="promocion" value="{{ $promocion->id }}">
     <div class="sg-dialogo-cuerpo">

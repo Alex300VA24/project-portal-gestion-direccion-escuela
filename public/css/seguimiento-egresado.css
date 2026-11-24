@@ -294,3 +294,12 @@
 @media (max-width: 520px) { .sg-resp-dl { grid-template-columns: minmax(0, 1fr); } }
 .sg-table .sg-button[data-respuesta] { min-height: 36px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
 .sg-tabla-detalle :is(th, td) { padding: 10px 8px; font-size: 13px; }
+
+/* Botón ocupado mientras se envía un formulario que tarda (mismo giro que el botón de acceso del portal). */
+.sg-button.sg-ocupado, .sg-dialogo-pie button.sg-ocupado { display: inline-flex; align-items: center; gap: 8px; cursor: progress; }
+.sg-ocupado > span { white-space: nowrap; }
+.sg-button.sg-ocupado:disabled, .sg-dialogo-pie button.sg-ocupado:disabled { opacity: .85; }
+.sg-giro { flex: none; width: 15px; height: 15px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sg-giro .7s linear infinite; }
+@keyframes sg-giro { to { transform: rotate(360deg); } }
+.sg-ocupado-nota { display: block; margin-top: 6px; }
+@media (prefers-reduced-motion: reduce) { .sg-giro { animation-duration: 2.4s; } }
