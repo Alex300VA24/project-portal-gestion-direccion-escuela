@@ -13,6 +13,7 @@ use App\Modules\GestionPracticas\Support\Actor;
 use App\Modules\GestionPracticas\Support\Catalogos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /** El estudiante seleccionado registra su práctica, adjunta documentos y la envía a validación. */
@@ -31,9 +32,15 @@ final class PracticaEstudianteController extends Controller
         ]);
     }
 
-    public function create(Postulacion $postulacion): View
+    public function create(Postulacion $postulacion): View|RedirectResponse
     {
         Gate::authorize('gestionar', $postulacion);
+
+        try {
+            $this->servicio->exigirSinPracticaActiva(Actor::actual()->requiereEstudiante(), 'postulacion', 'registrar otra práctica');
+        } catch (ValidationException $e) {
+            return redirect()->route('gestion-practicas.estudiante.postulaciones.index')->withErrors($e->errors());
+        }
 
         return view('modules.gestion-practicas.estudiante.practicas.form', [
             'practica' => new Practica,

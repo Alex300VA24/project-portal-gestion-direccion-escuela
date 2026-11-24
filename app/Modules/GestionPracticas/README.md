@@ -31,14 +31,17 @@ Una cuenta sin `seguridad.usuario` ve el panel con un aviso y no puede operar (4
 - **Práctica:** `registrada → en_revision → (observada ↔ en_revision) → en_curso → finalizada`.
 - **Documento:** `pendiente → aprobado | observado | reemplazado`.
 
-Reglas clave: el administrador valida y asigna supervisor en un solo paso (la práctica pasa a `en_curso`);
+Reglas clave: un estudiante lleva **una práctica a la vez** (mientras tenga una registrada, en revisión, observada o en curso
+no puede postular, marcarse como seleccionado ni registrar otra; los botones aparecen desactivados con el motivo);
+el RUC de la empresa debe tener 11 dígitos y comenzar con 20; la empresa cambia su contraseña desde «Perfil de la empresa»;
+el administrador valida y asigna supervisor en un solo paso (la práctica pasa a `en_curso`);
 los informes solo se suben con la práctica `en_curso`; para cerrar hace falta la evaluación registrada y el
 **informe final aprobado**; la nota final la calcula `gestion_practicas.calcular_nota_final()` (promedio ponderado
 por los pesos de `criterio_evaluacion`) y se aprueba con nota ≥ `Acceso::NOTA_MINIMA` (11).
 
 ## Rutas
 
-La portada `/gestion-practicas` es pública. El trabajo está bajo `/gestion-practicas/panel/...` (requiere sesión,
+La portada `/gestion-practicas` es pública para quien no ha iniciado sesión; quien ya tiene acceso al módulo entra directo al panel. El trabajo está bajo `/gestion-practicas/panel/...` (requiere sesión,
 correo verificado y permiso). Ver `Routes/web.php`.
 
 ## Datos y pruebas

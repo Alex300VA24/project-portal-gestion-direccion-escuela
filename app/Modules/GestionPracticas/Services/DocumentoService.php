@@ -54,7 +54,7 @@ final class DocumentoService
     public function revisar(DocumentoPractica $documento, Actor $actor, string $estado): DocumentoPractica
     {
         if (! in_array($estado, [DocumentoPractica::APROBADO, DocumentoPractica::OBSERVADO], true)) {
-            throw ValidationException::withMessages(['estado' => 'Estado de revisión no válido.']);
+            throw ValidationException::withMessages(['estado' => 'La revisión del documento debe ser «aprobado» u «observado».']);
         }
 
         if ($documento->estado === DocumentoPractica::REEMPLAZADO) {

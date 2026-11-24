@@ -12,7 +12,10 @@
 @section('content')
     <header class="quality-page-heading">
         <div><h1>{{ $convocatoria->titulo }}</h1><p>{{ $postulantes }} {{ $postulantes === 1 ? 'postulante registrado' : 'postulantes registrados' }}</p></div>
-        @include('modules.gestion-practicas.partials.estado', ['estado' => $convocatoria->estado])
+        <div class="gp-actions">
+            @include('modules.gestion-practicas.partials.volver', ['ruta' => route('gestion-practicas.empresa.convocatorias.index'), 'texto' => 'mis convocatorias'])
+            @include('modules.gestion-practicas.partials.estado', ['estado' => $convocatoria->estado])
+        </div>
     </header>
 
     <div class="gp-stack">

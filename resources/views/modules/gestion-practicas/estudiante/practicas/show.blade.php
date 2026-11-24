@@ -16,6 +16,7 @@
     <header class="quality-page-heading">
         <div><h1>Mi práctica en {{ $empresa }}</h1><p>{{ $practica->area }}</p></div>
         <div class="gp-actions">
+            @include('modules.gestion-practicas.partials.volver', ['ruta' => route('gestion-practicas.estudiante.practicas.index'), 'texto' => 'mis prácticas'])
             @if ($practica->estado === Practica::FINALIZADA)
                 <dl class="quality-inline-stats" aria-label="Resultado"><div><dt>Nota final · {{ $practica->resultado }}</dt><dd>{{ $practica->nota_final }}</dd></div></dl>
             @endif

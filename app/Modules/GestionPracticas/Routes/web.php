@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('gestion-practicas')
     ->name('gestion-practicas.')
     ->group(function () {
-        // Portada pública del módulo.
-        Route::get('/', [PracticaController::class, 'index'])->name('index');
+        // Portada pública del módulo; quien ya tiene acceso pasa directo al panel.
+        Route::get('/', [PracticaController::class, 'portada'])->name('index');
 
         Route::middleware(['auth', 'verified', 'permission:'.Acceso::VER])
             ->prefix('panel')
@@ -59,6 +59,7 @@ Route::prefix('gestion-practicas')
                 Route::middleware('permission:'.Acceso::CONVOCATORIAS_GESTIONAR)->prefix('empresa')->name('empresa.')->group(function () {
                     Route::get('perfil', [PerfilEmpresaController::class, 'edit'])->name('perfil.edit');
                     Route::put('perfil', [PerfilEmpresaController::class, 'update'])->name('perfil.update');
+                    Route::put('perfil/password', [PerfilEmpresaController::class, 'password'])->name('perfil.password');
 
                     Route::prefix('convocatorias')->name('convocatorias.')->group(function () {
                         Route::get('/', [ConvocatoriaEmpresaController::class, 'index'])->name('index');

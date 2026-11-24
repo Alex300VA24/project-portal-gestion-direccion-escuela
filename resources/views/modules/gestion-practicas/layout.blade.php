@@ -71,6 +71,18 @@
         .gp-timeline > li.is-pending { border-left: 4px solid var(--portal-danger); padding-left: 18px; }
         .gp-timeline small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 6px; color: var(--quality-muted); font-size: 12px; }
         .gp-timeline p { margin: 0; white-space: pre-line; }
+        .gp-steps { margin: 0; padding: 0; list-style: none; }
+        .gp-steps > li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 0 16px; padding: 20px 22px; border-bottom: 1px solid var(--quality-border); }
+        .gp-steps > li:last-child { border: 0; }
+        .gp-steps .gp-paso { display: grid; width: 36px; height: 36px; place-items: center; color: #fff; background: var(--portal-green); border-radius: 999px; font: 600 14px 'Fira Code', monospace; }
+        .gp-steps > li.is-pendiente .gp-paso { color: var(--quality-muted); background: var(--quality-surface-alt); border: 1px solid var(--quality-border); }
+        .gp-steps h3 { margin: 6px 0 4px; font-size: 16px; }
+        .gp-steps p { margin: 0 0 14px; color: var(--quality-muted); font-size: 14px; }
+        .gp-check { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; color: var(--quality-ink); font-weight: 600; cursor: pointer; }
+        .gp-check input { width: 20px; height: 20px; flex: none; margin-top: 1px; accent-color: var(--portal-green); }
+        .institutional-primary:disabled, .institutional-secondary:disabled, button.quality-open-link:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+        .institutional-secondary { gap: 8px; }
+        .institutional-secondary svg { width: 18px; height: 18px; flex: none; }
         button.institutional-primary, button.institutional-secondary { cursor: pointer; font: inherit; font-weight: 700; }
         button.institutional-primary { border: 0; }
         .institutional-primary, .institutional-secondary { min-height: 46px; }

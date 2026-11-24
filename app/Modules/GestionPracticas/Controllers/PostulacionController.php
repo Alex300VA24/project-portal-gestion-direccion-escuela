@@ -5,6 +5,7 @@ namespace App\Modules\GestionPracticas\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\GestionPracticas\Models\Convocatoria;
 use App\Modules\GestionPracticas\Models\Postulacion;
+use App\Modules\GestionPracticas\Models\Practica;
 use App\Modules\GestionPracticas\Requests\PostulacionResultadoRequest;
 use App\Modules\GestionPracticas\Services\PostulacionService;
 use App\Modules\GestionPracticas\Support\Actor;
@@ -24,7 +25,11 @@ final class PostulacionController extends Controller
         $convocatorias = Convocatoria::whereIn('id_convocatoria', $postulaciones->pluck('id_convocatoria'))
             ->get()->keyBy('id_convocatoria');
 
+        $activa = Practica::activaDe(Actor::actual()->estudianteId);
+
         return view('modules.gestion-practicas.estudiante.postulaciones.index', [
+            'practicaActiva' => $activa,
+            'empresaActiva' => $activa === null ? null : (Catalogos::empresas([$activa->id_empresa])[$activa->id_empresa] ?? null),
             'postulaciones' => $postulaciones,
             'convocatorias' => $convocatorias,
             'empresas' => Catalogos::empresas($convocatorias->pluck('id_empresa')),

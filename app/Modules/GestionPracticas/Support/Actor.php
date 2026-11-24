@@ -80,24 +80,24 @@ final class Actor
     public function requiereUsuario(): int
     {
         return $this->usuarioId
-            ?? abort(403, 'Su cuenta no está vinculada a un usuario institucional (seguridad.usuario).');
+            ?? abort(403, 'Su cuenta de acceso no está vinculada a un usuario institucional. Pida al administrador que registre el mismo correo con el que inicia sesión.');
     }
 
     public function requiereEstudiante(): int
     {
         return $this->estudianteId
-            ?? abort(403, 'Su cuenta no está vinculada a un registro de estudiante.');
+            ?? abort(403, 'Su cuenta no está registrada como estudiante. Contacte al administrador.');
     }
 
     public function requiereDocente(): int
     {
         return $this->docenteId
-            ?? abort(403, 'Su cuenta no está vinculada a un registro de docente.');
+            ?? abort(403, 'Su cuenta no está registrada como docente. Contacte al administrador.');
     }
 
     public function requiereEmpresa(): int
     {
         return $this->empresaId
-            ?? abort(403, 'Su cuenta no está vinculada a una empresa activa.');
+            ?? abort(403, 'Su cuenta no está asociada a una empresa activa. Contacte al administrador.');
     }
 }

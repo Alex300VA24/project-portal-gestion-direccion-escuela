@@ -14,7 +14,7 @@ final class SeguimientoService
     public function registrar(Practica $practica, Actor $supervisor, array $datos): Seguimiento
     {
         if ((int) $practica->id_docente_supervisor !== $supervisor->requiereDocente()) {
-            throw new AuthorizationException;
+            throw new AuthorizationException('Solo el docente supervisor asignado a esta práctica puede registrar su seguimiento.');
         }
 
         if ($practica->estado !== Practica::EN_CURSO) {
