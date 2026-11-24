@@ -16,7 +16,7 @@ final class PostulacionService
         $idEstudiante = $actor->requiereEstudiante();
 
         if (! $this->convocatorias->estaVigente($convocatoria)) {
-            throw ValidationException::withMessages(['convocatoria' => 'La convocatoria no está disponible para postular.']);
+            throw ValidationException::withMessages(['convocatoria' => 'Esta convocatoria ya no admite postulaciones: está cerrada o venció su fecha de cierre.']);
         }
 
         $yaPostulo = Postulacion::where('id_convocatoria', $convocatoria->id_convocatoria)
@@ -37,7 +37,7 @@ final class PostulacionService
     public function registrarResultado(Postulacion $postulacion, Actor $actor, string $resultado): Postulacion
     {
         if (! in_array($resultado, [Postulacion::SELECCIONADO, Postulacion::NO_SELECCIONADO, Postulacion::DESISTIDO], true)) {
-            throw ValidationException::withMessages(['resultado' => 'Resultado no válido.']);
+            throw ValidationException::withMessages(['resultado' => 'Elija una de las opciones: fui seleccionado, no fui seleccionado o desistí.']);
         }
 
         if ($postulacion->estado !== Postulacion::POSTULADO) {

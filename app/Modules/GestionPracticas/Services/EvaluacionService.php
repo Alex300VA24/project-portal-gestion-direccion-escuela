@@ -105,7 +105,7 @@ final class EvaluacionService
         $nota = $this->notaFinal($practica);
 
         if ($nota === null) {
-            throw ValidationException::withMessages(['estado' => 'No se pudo calcular la nota final.']);
+            throw ValidationException::withMessages(['estado' => 'No se pudo calcular la nota final. Verifique que todas las notas estén registradas.']);
         }
 
         $practica->update([
@@ -122,14 +122,14 @@ final class EvaluacionService
     private function exigirSupervisor(Practica $practica, Actor $supervisor): void
     {
         if ((int) $practica->id_docente_supervisor !== $supervisor->requiereDocente()) {
-            throw new AuthorizationException;
+            throw new AuthorizationException('Solo el docente supervisor asignado a esta práctica puede realizar esta acción.');
         }
     }
 
     private function exigirEnCurso(Practica $practica): void
     {
         if ($practica->estado !== Practica::EN_CURSO) {
-            throw ValidationException::withMessages(['estado' => 'La práctica debe estar en curso.']);
+            throw ValidationException::withMessages(['estado' => 'Solo se puede registrar la evaluación mientras la práctica está en curso.']);
         }
     }
 }

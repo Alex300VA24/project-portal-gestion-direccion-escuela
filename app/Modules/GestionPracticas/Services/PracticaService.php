@@ -29,7 +29,7 @@ final class PracticaService extends ModuleService
     public function registrar(Actor $actor, Postulacion $postulacion, array $datos, UploadedFile $carta): Practica
     {
         if ((int) $postulacion->id_estudiante !== $actor->requiereEstudiante()) {
-            throw new AuthorizationException;
+            throw new AuthorizationException('Esta postulación pertenece a otro estudiante.');
         }
 
         if ($postulacion->estado !== Postulacion::SELECCIONADO) {
@@ -101,7 +101,7 @@ final class PracticaService extends ModuleService
         $existe = DB::table('core.docente')->where('id_docente', $idDocente)->exists();
 
         if (! $existe) {
-            throw ValidationException::withMessages(['id_docente' => 'El docente seleccionado no existe.']);
+            throw ValidationException::withMessages(['id_docente' => 'El docente seleccionado no existe o no está activo. Elija uno de la lista.']);
         }
 
         DB::transaction(function () use ($practica, $admin, $idDocente): void {
@@ -160,7 +160,7 @@ final class PracticaService extends ModuleService
     {
         if (! in_array($practica->estado, $permitidos, true)) {
             throw ValidationException::withMessages([
-                'estado' => "No se puede {$accion} una práctica en estado «{$practica->estado}».",
+                'estado' => "No se puede {$accion} una práctica en estado «".str_replace('_', ' ', $practica->estado).'».',
             ]);
         }
     }

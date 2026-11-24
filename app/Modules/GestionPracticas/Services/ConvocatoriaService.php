@@ -135,7 +135,7 @@ final class ConvocatoriaService
     {
         if (! in_array($convocatoria->estado, $permitidos, true)) {
             throw ValidationException::withMessages([
-                'estado' => "No se puede {$accion} una convocatoria en estado «{$convocatoria->estado}».",
+                'estado' => "No se puede {$accion} una convocatoria en estado «".str_replace('_', ' ', $convocatoria->estado).'».',
             ]);
         }
     }
