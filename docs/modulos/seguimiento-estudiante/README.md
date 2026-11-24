@@ -6,6 +6,8 @@ La entrega solicitada comprende el código de SSE-EPI adaptado al portal, las de
 
 ## Documentación esencial
 
+- [Informe previo al PR](INFORME_PREVIO_PR.md) resume los recorridos implementados, los pendientes por perfil y las pruebas de aceptación.
+
 - [Datos y accesos](DATOS_Y_ACCESOS.md) recoge las diferencias de estructura, identidades y permisos que debe resolver el código.
 - [Compatibilidad y configuración](COMPATIBILIDAD_Y_CONFIGURACION.md) identifica las versiones de destino, parámetros propios y puntos compartidos que requieren coordinación.
 
@@ -15,10 +17,10 @@ La documentación técnica del módulo se mantiene en esta carpeta. Se incorpora
 
 | Proyecto | Referencia revisada | Uso |
 | --- | --- | --- |
-| SSE-EPI | `main`, commit `0fe2fbe` | Origen del código |
-| Portal | `feature/seguimiento-estudiante`, commit `eebebd8`, creada desde `develop` | Destino de integración |
+| SSE-EPI | `main`, commit `67381dd` | Referencia funcional de los siete perfiles |
+| Portal | `feature/seguimiento-estudiante-integracion`, commit revisado `8b68b50` | Rama del PR #12 hacia `develop` |
 
-La fase 1 fijó `0fe2fbe463ad2231eab6f0b8f80326f2c96fcb60` como origen local y `eebebd81261cffca976cdbb5048413826aaca82b` como base del portal. `git diff main HEAD` dio cero diferencias en SSE-EPI. GitHub confirmó que el `develop` del portal coincide con esa base. La consulta de `main` remoto de SSE-EPI devolvió 404, por lo que la referencia de origen se verificó con la copia local.
+La revisión inicial usó `0fe2fbe`. Para la integración completa se verificó el HEAD remoto de SSE-EPI, `67381dd43887686b40dce6ec248132f5dc68e479`. Los cambios posteriores a la referencia inicial incluyen navegación, presentación del panel de Tutoría y estilos de gestión. El inventario técnico histórico conserva el commit donde se hizo cada comprobación.
 
 ## Organización del código
 
@@ -156,4 +158,4 @@ El arranque actual de la aplicación ejecuta `module:migrate all --force`. Por e
 - [Base de datos compartida](../../base_de_datos.md).
 - [Diseño del portal](../../DESIGN.md).
 - [Convenciones Git](../../PC-Convenciones-Git.md).
-- [Origen SSE-EPI fijado para esta revisión](https://github.com/zoldrix05/SSE_EPI/tree/0fe2fbe).
+- [Origen SSE-EPI fijado para esta revisión](https://github.com/zoldrix05/SSE_EPI/tree/67381dd43887686b40dce6ec248132f5dc68e479).

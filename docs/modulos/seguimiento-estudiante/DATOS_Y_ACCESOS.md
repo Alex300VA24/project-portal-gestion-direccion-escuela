@@ -104,9 +104,8 @@ Las tablas sin esquema indicadas en la columna del portal pertenecen a `seguimie
 | `COORDINADOR` | Rol o conjunto de permisos específico a acordar | Escuela, período y operaciones de coordinación |
 | `ADMIN` | Correspondencia con Dirección a verificar | Acciones de gestión autorizadas para la escuela |
 | `SECRETARIA` | Rol institucional `secretaria` con permisos del módulo | Recepción y registro dentro de su alcance |
-| `SUPERADMIN` | Correspondencia con administración técnica a acordar | Atribuciones técnicas y combinaciones de roles permitidas |
 
-Esta matriz es una propuesta. La equivalencia final se contrastará con las reglas de SSE-EPI y la administración del portal. Los nombres de permisos propios usarán el prefijo `seguimiento-estudiante.`. Las políticas comprobarán el registro concreto y la vigencia del alcance además del permiso general.
+El módulo contempla los siete perfiles anteriores. La administración técnica global del portal conserva sus propios controles. Superadministrador queda excluido del módulo SSE-EPI. Las referencias históricas a sus tablas en el inventario identifican datos del origen. Esta matriz propone la correspondencia de los siete perfiles. La equivalencia final se contrastará con las reglas de SSE-EPI y la administración del portal. Los nombres de permisos propios usarán el prefijo `seguimiento-estudiante.`. Las políticas comprobarán el registro concreto y la vigencia del alcance además del permiso general.
 
 La definición técnica de roles y permisos se preparará para revisión. Su alta en una base compartida corresponde al aprovisionamiento del portal y requiere coordinación con su responsable. Las cuentas sintéticas pertenecen al entorno aislado de pruebas.
 
