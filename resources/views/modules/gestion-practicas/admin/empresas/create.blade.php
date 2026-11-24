@@ -14,7 +14,7 @@
         <section class="quality-panel" aria-labelledby="datos-empresa">
             <header class="quality-panel-heading"><div><h2 id="datos-empresa">Datos de la empresa</h2></div></header>
             <div class="gp-form is-two">
-                @include('modules.gestion-practicas.partials.campo', ['name' => 'ruc', 'label' => 'RUC', 'extra' => ['inputmode' => 'numeric', 'maxlength' => 11]])
+                @include('modules.gestion-practicas.partials.campo', ['name' => 'ruc', 'label' => 'RUC', 'ayuda' => 'Debe tener 11 dígitos y comenzar con 20 (RUC de empresa).', 'extra' => ['inputmode' => 'numeric', 'maxlength' => 11, 'pattern' => '20[0-9]{9}', 'title' => 'RUC de empresa: 11 dígitos que comienzan con 20']])
                 @include('modules.gestion-practicas.partials.campo', ['name' => 'razon_social', 'label' => 'Razón social'])
                 @include('modules.gestion-practicas.partials.campo', ['name' => 'nombre_comercial', 'label' => 'Nombre comercial', 'requerido' => false])
                 @include('modules.gestion-practicas.partials.campo', ['name' => 'telefono', 'label' => 'Teléfono', 'requerido' => false])

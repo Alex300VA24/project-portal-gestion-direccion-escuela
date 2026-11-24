@@ -10,7 +10,8 @@ final class EmpresaNuevaRequest extends ModuleRequest
     public function rules(): array
     {
         return [
-            'ruc' => ['required', 'digits:11'],
+            // Solo RUC de empresa: 11 dígitos y comienzan con 20 (los que comienzan con 10 son de personas naturales).
+            'ruc' => ['bail', 'required', 'digits:11', 'starts_with:20'],
             'razon_social' => ['required', 'string', 'max:200'],
             'nombre_comercial' => ['nullable', 'string', 'max:200'],
             'direccion' => ['nullable', 'string', 'max:500'],
