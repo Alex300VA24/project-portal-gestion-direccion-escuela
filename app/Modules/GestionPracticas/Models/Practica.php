@@ -25,6 +25,9 @@ final class Practica extends ModuleModel
 
     public const ANULADA = 'anulada';
 
+    /** Estados en los que la práctica sigue «activa»: el estudiante no puede postular ni registrar otra. */
+    public const ACTIVAS = [self::REGISTRADA, self::EN_REVISION, self::OBSERVADA, self::VALIDADA, self::EN_CURSO];
+
     protected $table = 'gestion_practicas.practica';
 
     protected $primaryKey = 'id_practica';
@@ -44,6 +47,13 @@ final class Practica extends ModuleModel
             'supervisor_asignado_en' => 'datetime',
             'cerrada_en' => 'datetime',
         ];
+    }
+
+    /** La práctica que el estudiante tiene en trámite o en curso, si la hay (un estudiante lleva una a la vez). */
+    public static function activaDe(?int $idEstudiante): ?self
+    {
+        return $idEstudiante === null ? null : self::where('id_estudiante', $idEstudiante)
+            ->whereIn('estado', self::ACTIVAS)->orderByDesc('registrada_en')->first();
     }
 
     public function estudiante(): BelongsTo

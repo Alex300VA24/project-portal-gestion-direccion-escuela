@@ -5,6 +5,7 @@ namespace App\Modules\GestionPracticas\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\GestionPracticas\Models\Convocatoria;
 use App\Modules\GestionPracticas\Models\Postulacion;
+use App\Modules\GestionPracticas\Models\Practica;
 use App\Modules\GestionPracticas\Services\ConvocatoriaService;
 use App\Modules\GestionPracticas\Services\PostulacionService;
 use App\Modules\GestionPracticas\Support\Actor;
@@ -25,8 +26,11 @@ final class ConvocatoriaEstudianteController extends Controller
     {
         $convocatorias = $this->convocatorias->vigentes()->orderBy('fecha_cierre')->get();
         $idEstudiante = Actor::actual()->estudianteId;
+        $activa = Practica::activaDe($idEstudiante);
 
         return view('modules.gestion-practicas.estudiante.convocatorias.index', [
+            'practicaActiva' => $activa,
+            'empresaActiva' => $activa === null ? null : (Catalogos::empresas([$activa->id_empresa])[$activa->id_empresa] ?? null),
             'convocatorias' => $convocatorias,
             'empresas' => Catalogos::empresas($convocatorias->pluck('id_empresa')),
             'yaPostulo' => $idEstudiante === null ? [] : Postulacion::where('id_estudiante', $idEstudiante)
@@ -39,8 +43,11 @@ final class ConvocatoriaEstudianteController extends Controller
         Gate::authorize('view', $convocatoria);
 
         $idEstudiante = Actor::actual()->estudianteId;
+        $activa = Practica::activaDe($idEstudiante);
 
         return view('modules.gestion-practicas.estudiante.convocatorias.show', [
+            'practicaActiva' => $activa,
+            'empresaActiva' => $activa === null ? null : (Catalogos::empresas([$activa->id_empresa])[$activa->id_empresa] ?? null),
             'convocatoria' => $convocatoria,
             'empresa' => Catalogos::empresas([$convocatoria->id_empresa])[$convocatoria->id_empresa] ?? '—',
             'vigente' => $this->convocatorias->estaVigente($convocatoria),

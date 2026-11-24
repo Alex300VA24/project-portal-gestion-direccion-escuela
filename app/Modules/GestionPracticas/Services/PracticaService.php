@@ -7,6 +7,7 @@ use App\Modules\GestionPracticas\Models\ObservacionPractica;
 use App\Modules\GestionPracticas\Models\Postulacion;
 use App\Modules\GestionPracticas\Models\Practica;
 use App\Modules\GestionPracticas\Support\Actor;
+use App\Modules\GestionPracticas\Support\Catalogos;
 use App\Shared\Services\ModuleService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
@@ -20,6 +21,25 @@ use Illuminate\Validation\ValidationException;
 final class PracticaService extends ModuleService
 {
     public function __construct(private readonly DocumentoService $documentos) {}
+
+    /**
+     * Un estudiante lleva una práctica a la vez: mientras tenga una en trámite o en curso no puede postular,
+     * marcarse como seleccionado ni registrar otra.
+     */
+    public function exigirSinPracticaActiva(int $idEstudiante, string $campo, string $accion): void
+    {
+        $activa = Practica::activaDe($idEstudiante);
+
+        if ($activa === null) {
+            return;
+        }
+
+        $empresa = Catalogos::empresas([$activa->id_empresa])[$activa->id_empresa] ?? 'una empresa';
+
+        throw ValidationException::withMessages([
+            $campo => "No puede {$accion} porque ya tiene una práctica activa en {$empresa} (estado «".str_replace('_', ' ', $activa->estado).'»). Podrá hacerlo cuando la finalice.',
+        ]);
+    }
 
     /**
      * El estudiante seleccionado registra los datos de su práctica y adjunta la carta de aceptación.
@@ -39,6 +59,8 @@ final class PracticaService extends ModuleService
         if ($postulacion->id_practica !== null) {
             throw ValidationException::withMessages(['postulacion' => 'Esta postulación ya tiene una práctica registrada.']);
         }
+
+        $this->exigirSinPracticaActiva($actor->requiereEstudiante(), 'postulacion', 'registrar otra práctica');
 
         $convocatoria = $postulacion->convocatoria;
 
