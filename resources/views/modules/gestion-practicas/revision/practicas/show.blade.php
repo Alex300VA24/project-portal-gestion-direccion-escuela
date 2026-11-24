@@ -7,7 +7,10 @@
 @section('content')
     <header class="quality-page-heading">
         <div><h1>Práctica de {{ $estudiante }}</h1><p>{{ $empresa }}</p></div>
-        @include('modules.gestion-practicas.partials.estado', ['estado' => $practica->estado])
+        <div class="gp-actions">
+            @include('modules.gestion-practicas.partials.volver', ['ruta' => route('gestion-practicas.revision.practicas.index'), 'texto' => 'validar prácticas'])
+            @include('modules.gestion-practicas.partials.estado', ['estado' => $practica->estado])
+        </div>
     </header>
 
     <div class="gp-stack">

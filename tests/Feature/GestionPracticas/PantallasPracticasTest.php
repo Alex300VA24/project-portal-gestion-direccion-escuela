@@ -46,12 +46,16 @@ final class PantallasPracticasTest extends PracticasTestCase
             route('gestion-practicas.estudiante.convocatorias.show', $convocatoria),
             route('gestion-practicas.estudiante.postulaciones.index'),
             route('gestion-practicas.estudiante.practicas.index'),
-            route('gestion-practicas.estudiante.practicas.create', $pendiente),
             route('gestion-practicas.estudiante.practicas.show', $practica),
             route('gestion-practicas.estudiante.practicas.edit', $practica),
         ] as $url) {
             $this->get($url)->assertOk();
         }
+
+        // Con una práctica activa no se abre el registro de otra: vuelve a Mis postulaciones con el motivo.
+        $this->get(route('gestion-practicas.estudiante.practicas.create', $pendiente))
+            ->assertRedirect(route('gestion-practicas.estudiante.postulaciones.index'))
+            ->assertSessionHasErrors('postulacion');
 
         $this->como('supervisor');
         $practica->update([
@@ -77,6 +81,45 @@ final class PantallasPracticasTest extends PracticasTestCase
         $this->assertSame('Av. Larco 500', $empresa->direccion);
         $this->assertSame('nuevo@technova.test', $empresa->correo);
         $this->assertSame('20123456789', $empresa->ruc);
+    }
+
+    public function test_el_formulario_de_registro_se_muestra_si_no_hay_practica_activa(): void
+    {
+        $pendiente = $this->postulacionSeleccionadaSinPractica(Convocatoria::firstOrFail());
+
+        $this->como('estudiante')->get(route('gestion-practicas.estudiante.practicas.create', $pendiente))
+            ->assertOk()->assertSee('Registrar mi práctica')->assertSee('Carta de aceptación');
+    }
+
+    public function test_las_pantallas_de_detalle_ofrecen_volver_al_listado(): void
+    {
+        $convocatoria = Convocatoria::firstOrFail();
+        $practica = $this->practica($convocatoria);
+        $practica->update([
+            'estado' => Practica::EN_CURSO, 'validada_en' => now(),
+            'validado_por' => DB::table('seguridad.usuario')->where('correo_institucional', 'practicas.admin@portal.local')->value('id_usuario'),
+        ]);
+
+        $this->como('admin')->get(route('gestion-practicas.revision.convocatorias.show', $convocatoria))->assertSee('Volver a revisar convocatorias');
+        $this->get(route('gestion-practicas.revision.practicas.show', $practica))->assertSee('Volver a validar prácticas');
+
+        $this->como('empresa')->get(route('gestion-practicas.empresa.convocatorias.show', $convocatoria))->assertSee('Volver a mis convocatorias');
+
+        $this->como('estudiante')->get(route('gestion-practicas.estudiante.convocatorias.show', $convocatoria))->assertSee('Volver a convocatorias');
+        $this->get(route('gestion-practicas.estudiante.practicas.show', $practica))
+            ->assertSee('Volver a mis prácticas')
+            ->assertSee(route('gestion-practicas.estudiante.practicas.index'), false);
+
+        $this->como('supervisor')->get(route('gestion-practicas.supervisor.practicas.show', $practica))->assertSee('Volver a prácticas asignadas');
+    }
+
+    public function test_los_nombres_de_los_docentes_se_muestran_sin_espacios_de_mas(): void
+    {
+        $practica = $this->practica(Convocatoria::firstOrFail());
+        $practica->update(['estado' => Practica::EN_REVISION, 'id_docente_supervisor' => null, 'supervisor_asignado_por' => null, 'supervisor_asignado_en' => null]);
+
+        $this->como('admin')->get(route('gestion-practicas.revision.practicas.show', $practica))
+            ->assertOk()->assertDontSee(' , ', false);
     }
 
     private function practica(Convocatoria $convocatoria): Practica

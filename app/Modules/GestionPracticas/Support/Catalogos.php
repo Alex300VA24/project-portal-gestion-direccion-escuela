@@ -47,7 +47,7 @@ final class Catalogos
         return $ids === [] ? [] : DB::table('core.estudiante as e')
             ->join('core.persona as p', 'p.id_persona', '=', 'e.id_persona')
             ->whereIn('e.id_estudiante', $ids)
-            ->selectRaw("e.id_estudiante, p.apellido_paterno || ' ' || coalesce(p.apellido_materno, '') || ', ' || p.nombres as nombre")
+            ->selectRaw("e.id_estudiante, trim(p.apellido_paterno || ' ' || coalesce(p.apellido_materno, '')) || ', ' || p.nombres as nombre")
             ->pluck('nombre', 'id_estudiante')->map(fn ($n) => trim(preg_replace('/\s+/', ' ', $n)))->all();
     }
 
@@ -59,7 +59,7 @@ final class Catalogos
         return $ids === [] ? [] : DB::table('core.docente as d')
             ->join('core.persona as p', 'p.id_persona', '=', 'd.id_persona')
             ->whereIn('d.id_docente', $ids)
-            ->selectRaw("d.id_docente, p.apellido_paterno || ' ' || coalesce(p.apellido_materno, '') || ', ' || p.nombres as nombre")
+            ->selectRaw("d.id_docente, trim(p.apellido_paterno || ' ' || coalesce(p.apellido_materno, '')) || ', ' || p.nombres as nombre")
             ->pluck('nombre', 'id_docente')->map(fn ($n) => trim(preg_replace('/\s+/', ' ', $n)))->all();
     }
 
@@ -70,7 +70,7 @@ final class Catalogos
             ->join('core.persona as p', 'p.id_persona', '=', 'd.id_persona')
             ->whereRaw("lower(d.estado) = 'activo'")
             ->orderBy('p.apellido_paterno')->orderBy('p.nombres')
-            ->selectRaw("d.id_docente, p.apellido_paterno || ' ' || coalesce(p.apellido_materno, '') || ', ' || p.nombres as nombre")
+            ->selectRaw("d.id_docente, trim(p.apellido_paterno || ' ' || coalesce(p.apellido_materno, '')) || ', ' || p.nombres as nombre")
             ->pluck('nombre', 'id_docente')->map(fn ($n) => trim(preg_replace('/\s+/', ' ', $n)))->all();
     }
 

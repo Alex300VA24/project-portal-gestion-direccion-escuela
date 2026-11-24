@@ -128,4 +128,47 @@ final class UnaPracticaActivaTest extends PracticasTestCase
         $this->assertNotNull(Practica::activaDe($this->idEstudiante()));
         $this->assertNull(Practica::activaDe($this->idEstudiante() + 999));
     }
+
+    public function test_la_convocatoria_explica_los_dos_pasos_en_orden(): void
+    {
+        $this->como('estudiante')->get(route('gestion-practicas.estudiante.convocatorias.show', Convocatoria::firstOrFail()))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Cómo postular', 'Postule en la web de la empresa', 'Ir a la web de la empresa',
+                'Registre su postulación aquí', 'Ya postulé en la web de la empresa', 'Registrar mi postulación',
+            ]);
+    }
+
+    public function test_con_una_practica_activa_la_postulacion_aparece_desactivada_y_explicada(): void
+    {
+        $this->crearPractica(Practica::EN_CURSO);
+        $convocatoria = Convocatoria::firstOrFail();
+
+        $this->como('estudiante')->get(route('gestion-practicas.estudiante.convocatorias.show', $convocatoria))
+            ->assertOk()
+            ->assertSee('No puede postular: ya tiene una práctica activa')
+            ->assertSee('Ver mi práctica')
+            ->assertSee('type="button" disabled', false)
+            ->assertDontSee('Cómo postular');
+
+        $this->get(route('gestion-practicas.estudiante.convocatorias.index'))
+            ->assertOk()->assertSee('Tiene una práctica activa en')->assertSee('Postulación no disponible');
+    }
+
+    public function test_sin_practica_activa_no_se_muestra_el_aviso_de_bloqueo(): void
+    {
+        $this->como('estudiante')->get(route('gestion-practicas.estudiante.convocatorias.index'))
+            ->assertOk()->assertDontSee('Tiene una práctica activa')->assertDontSee('Postulación no disponible');
+    }
+
+    public function test_en_mis_postulaciones_se_desactiva_lo_que_la_regla_bloquea(): void
+    {
+        $this->crearPostulacion(Postulacion::POSTULADO);
+        $this->crearPractica(Practica::EN_CURSO);
+
+        $this->como('estudiante')->get(route('gestion-practicas.estudiante.postulaciones.index'))
+            ->assertOk()
+            ->assertSee('Tiene una práctica activa en')
+            ->assertSee('title="No disponible: tiene una práctica activa"', false);
+    }
 }

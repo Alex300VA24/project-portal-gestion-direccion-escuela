@@ -10,7 +10,10 @@
 @section('content')
     <header class="quality-page-heading">
         <div><h1>{{ $convocatoria->titulo }}</h1><p>{{ $empresa }}</p></div>
-        @include('modules.gestion-practicas.partials.estado', ['estado' => $convocatoria->estado])
+        <div class="gp-actions">
+            @include('modules.gestion-practicas.partials.volver', ['ruta' => route('gestion-practicas.revision.convocatorias.index'), 'texto' => 'revisar convocatorias'])
+            @include('modules.gestion-practicas.partials.estado', ['estado' => $convocatoria->estado])
+        </div>
     </header>
 
     <div class="gp-stack">

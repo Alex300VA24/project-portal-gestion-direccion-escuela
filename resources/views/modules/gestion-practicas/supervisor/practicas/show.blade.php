@@ -12,6 +12,7 @@
     <header class="quality-page-heading">
         <div><h1>Práctica de {{ $estudiante }}</h1><p>{{ $empresa }}</p></div>
         <div class="gp-actions">
+            @include('modules.gestion-practicas.partials.volver', ['ruta' => route('gestion-practicas.supervisor.practicas.index'), 'texto' => 'prácticas asignadas'])
             @if ($notaFinal !== null)
                 <dl class="quality-inline-stats" aria-label="Nota calculada"><div><dt>Nota final calculada</dt><dd>{{ number_format($notaFinal, 2) }}</dd></div></dl>
             @endif
