@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('gestion-practicas')
     ->name('gestion-practicas.')
     ->group(function () {
-        // Portada pública del módulo.
-        Route::get('/', [PracticaController::class, 'index'])->name('index');
+        // Portada pública del módulo; quien ya tiene acceso pasa directo al panel.
+        Route::get('/', [PracticaController::class, 'portada'])->name('index');
 
         Route::middleware(['auth', 'verified', 'permission:'.Acceso::VER])
             ->prefix('panel')
