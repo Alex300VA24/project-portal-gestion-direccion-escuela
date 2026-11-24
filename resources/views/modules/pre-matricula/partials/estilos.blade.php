@@ -33,7 +33,7 @@
     .quality-body .pm-button svg { width: 18px; }
     .pm-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .pm-form { display: grid; gap: 14px; }
-    .pm-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+    .pm-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; align-items: start; }
     .pm-field { display: grid; gap: 6px; }
     .pm-check { display: flex; gap: 10px; align-items: flex-start; color: var(--quality-ink); font-size: 14px; }
     .pm-check input { width: 18px; height: 18px; margin-top: 2px; }

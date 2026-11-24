@@ -1,35 +1,41 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Registro de estudiantes · Pre Matrícula</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @include('modules.pre-matricula.partials.estilos')
-</head>
-<body class="quality-gateway-body">
-    <main class="quality-gateway">
-        <a class="quality-gateway-brand" href="{{ route('web-institucional.index') }}"><img class="quality-gateway-logo" src="{{ asset('img/logo-informatica.png') }}" alt=""> Portal Gestión Dirección</a>
-        <div>
-            <p class="quality-route">/pre-matricula/registro</p>
-            <h1>Registro de estudiantes</h1>
-            <p>Crea tu cuenta para la prematrícula. Tu contraseña inicial será tu código universitario.</p>
+<x-guest-layout>
+    <div class="auth-heading">
+        <h1>Registro de estudiantes.</h1>
+        <p>Crea tu cuenta para la prematrícula. Tu contraseña inicial será tu código universitario.</p>
+    </div>
 
-            @if (session('error'))<div class="pm-flash is-danger" role="alert"><span>{{ session('error') }}</span></div>@endif
-            @if ($errors->any())
-                <div class="pm-flash is-danger" role="alert"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
-            @endif
-
-            <form class="pm-form" method="POST" action="{{ route('pre-matricula.registro.store') }}">
-                @csrf
-                <label class="pm-field"><span>Código universitario (10 dígitos)</span><input name="codigo_universitario" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" value="{{ old('codigo_universitario') }}" required></label>
-                <label class="pm-field"><span>Nombres</span><input name="nombres" maxlength="100" value="{{ old('nombres') }}" required></label>
-                <label class="pm-field"><span>Apellidos</span><input name="apellidos" maxlength="150" value="{{ old('apellidos') }}" required></label>
-                <label class="pm-field"><span>Correo institucional</span><input type="email" name="correo_institucional" maxlength="255" value="{{ old('correo_institucional') }}" placeholder="usuario@unitru.edu.pe" required></label>
-                <button class="pm-button" type="submit">Registrarme</button>
-            </form>
-            <a href="{{ route('login') }}">Ya tengo cuenta: iniciar sesión <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    @if (session('error') || $errors->any())
+        <div class="auth-error-summary" role="alert" tabindex="-1" x-data x-init="$nextTick(() => $el.focus())">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5m0 3h.01M10.3 3.7 2.7 17a2 2 0 0 0 1.8 3h15a2 2 0 0 0 1.8-3L13.7 3.7a2 2 0 0 0-3.4 0Z"/></svg>
+            <div><strong>No pudimos completar el registro.</strong><p>{{ session('error') ?? 'Revisa los datos marcados e inténtalo otra vez.' }}</p></div>
         </div>
-    </main>
-</body>
-</html>
+    @endif
+
+    <form class="auth-form" method="POST" action="{{ route('pre-matricula.registro.store') }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
+        @csrf
+
+        @foreach ([
+            ['codigo_universitario', 'Código universitario (10 dígitos)', 'text', 'Ej.: 1023456789', 'inputmode="numeric" maxlength="10" pattern="[0-9]{10}"', '<path d="M4 5h16v14H4z"/><path d="M8 9h3M8 13h8"/>'],
+            ['nombres', 'Nombres', 'text', 'Tus nombres', 'maxlength="100" autocomplete="given-name"', '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'],
+            ['apellidos', 'Apellidos', 'text', 'Tus apellidos', 'maxlength="150" autocomplete="family-name"', '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'],
+            ['correo_institucional', 'Correo institucional', 'email', 'usuario@unitru.edu.pe', 'maxlength="255" inputmode="email" autocomplete="email"', '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>'],
+        ] as [$campo, $etiqueta, $tipo, $ejemplo, $atributos, $icono])
+            <div class="auth-field">
+                <label for="{{ $campo }}">{{ $etiqueta }}</label>
+                <div class="auth-input-wrap">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">{!! $icono !!}</svg>
+                    <input id="{{ $campo }}" type="{{ $tipo }}" name="{{ $campo }}" value="{{ old($campo) }}" required placeholder="{{ $ejemplo }}" {!! $atributos !!} @error($campo) aria-invalid="true" aria-describedby="{{ $campo }}-error" @enderror>
+                </div>
+                @error($campo)<p id="{{ $campo }}-error" class="auth-field-error">{{ $message }}</p>@enderror
+            </div>
+        @endforeach
+
+        <button class="auth-submit" type="submit" x-bind:disabled="submitting">
+            <span x-show="!submitting">Registrarme</span>
+            <span x-cloak x-show="submitting" class="auth-submit-loading"><i aria-hidden="true"></i>Creando tu cuenta…</span>
+            <svg x-show="!submitting" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+        </button>
+    </form>
+
+    <p class="auth-help">¿Ya tienes cuenta? <a href="{{ route('login') }}">Inicia sesión</a>.</p>
+</x-guest-layout>

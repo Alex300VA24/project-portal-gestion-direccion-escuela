@@ -8,13 +8,14 @@
         <div><h1>Historial académico</h1><p>Resultados oficiales registrados por estudiante, curso y período. Se cargan desde <a href="{{ route('pre-matricula.coordinacion.resultados') }}">Resultados oficiales</a>.</p></div>
     </header>
 
+    <form class="pm-filters" method="GET" action="{{ route('pre-matricula.coordinacion.historial') }}" role="search">
+        <label class="pm-field"><span>Estudiante</span><input type="search" name="buscar" value="{{ $buscar }}" maxlength="100" placeholder="Código o nombre"></label>
+        <label class="pm-field"><span>Período</span><select name="periodo"><option value="">Todos</option>@foreach ($periodos as $p)<option value="{{ $p->id_periodo }}" @selected($idPeriodo === $p->id_periodo)>{{ $p->codigo }}</option>@endforeach</select></label>
+        <button class="pm-button" type="submit">Filtrar</button>
+    </form>
+
     <section class="quality-panel" aria-labelledby="historial-titulo">
         <header class="quality-panel-heading"><div><h2 id="historial-titulo">Resultados</h2><p>{{ $historial->total() }} {{ Str::plural('resultado', $historial->total()) }}</p></div></header>
-        <form class="pm-filters pm-body" method="GET" action="{{ route('pre-matricula.coordinacion.historial') }}" role="search">
-            <label class="pm-field"><span>Estudiante</span><input type="search" name="buscar" value="{{ $buscar }}" maxlength="100" placeholder="Código o nombre"></label>
-            <label class="pm-field"><span>Período</span><select name="periodo"><option value="">Todos</option>@foreach ($periodos as $p)<option value="{{ $p->id_periodo }}" @selected($idPeriodo === $p->id_periodo)>{{ $p->codigo }}</option>@endforeach</select></label>
-            <button class="pm-button" type="submit">Filtrar</button>
-        </form>
         <div class="pm-table-wrap">
             <table class="pm-table">
                 <thead><tr><th>Estudiante</th><th>Curso</th><th>Período</th><th class="pm-num">Nota</th><th>Estado</th></tr></thead>

@@ -17,14 +17,15 @@
     </header>
 
     @if ($plan)
-        <div class="pm-grid">
+        <form class="pm-filters" method="GET" action="{{ route('pre-matricula.coordinacion.plan') }}" role="search">
+            <label class="pm-field"><span>Ciclo</span><select name="ciclo"><option value="">Todos</option>@foreach ($ciclos as $c)<option value="{{ $c }}" @selected((int) $ciclo === $c)>Ciclo {{ $c }}</option>@endforeach</select></label>
+            <label class="pm-field"><span>Buscar</span><input type="search" name="buscar" value="{{ $buscar }}" maxlength="100" placeholder="Código o nombre"></label>
+            <button class="pm-button is-secondary" type="submit">Filtrar</button>
+        </form>
+
+        <div class="pm-stack">
             <section class="quality-panel" aria-labelledby="malla-titulo">
                 <header class="quality-panel-heading"><div><h2 id="malla-titulo">Cursos</h2><p>{{ $cursos->count() }} {{ Str::plural('curso', $cursos->count()) }}</p></div></header>
-                <form class="pm-filters pm-body" method="GET" action="{{ route('pre-matricula.coordinacion.plan') }}" role="search">
-                    <label class="pm-field"><span>Ciclo</span><select name="ciclo"><option value="">Todos</option>@foreach ($ciclos as $c)<option value="{{ $c }}" @selected((int) $ciclo === $c)>Ciclo {{ $c }}</option>@endforeach</select></label>
-                    <label class="pm-field"><span>Buscar</span><input type="search" name="buscar" value="{{ $buscar }}" maxlength="100" placeholder="Código o nombre"></label>
-                    <button class="pm-button is-secondary" type="submit">Filtrar</button>
-                </form>
                 <div class="pm-table-wrap">
                     <table class="pm-table">
                         <thead><tr><th>Curso</th><th>Ciclo</th><th class="pm-num">Créditos</th><th class="pm-num">T / P / L</th><th>Prerrequisitos</th><th>Estado</th><th></th></tr></thead>
@@ -47,7 +48,7 @@
                 </div>
             </section>
 
-            <div class="pm-stack">
+            <div class="pm-grid">
                 <section class="quality-panel" aria-labelledby="importar-titulo">
                     <header class="quality-panel-heading"><div><h2 id="importar-titulo">Importar malla</h2><p>Columnas: {{ implode(', ', \App\Modules\PreMatricula\Services\PlanEstudios::COLUMNAS) }}. Prerrequisitos separados por punto y coma.</p></div></header>
                     <form class="pm-form pm-body" method="POST" action="{{ route('pre-matricula.coordinacion.plan.validar') }}" enctype="multipart/form-data" x-data="{ enviando: false }" @submit="enviando = true">
