@@ -11,6 +11,7 @@
         $esCoordinacion ? ['pre-matricula.coordinacion.resultados', 'Resultados oficiales', '<path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.registros', 'Registros', '<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.demanda', 'Demanda', '<path d="M4 19V9m5 10V5m5 14v-8m5 8V7"/>'] : null,
+        $esCoordinacion ? ['pre-matricula.coordinacion.cuentas', 'Cuentas', '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11h6M20 8v6"/>'] : null,
         $esCoordinacion ? ['pre-matricula.coordinacion.estudiantes', 'Estudiantes', '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'] : null,
     ]));
     $inicio = $esAlumno ? route('pre-matricula.alumno.index') : ($esCoordinacion ? route('pre-matricula.coordinacion.index') : route('pre-matricula.index'));

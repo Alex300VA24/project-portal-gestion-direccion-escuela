@@ -4,6 +4,7 @@ namespace App\Modules\PreMatricula\Policies;
 
 use App\Models\User;
 use App\Modules\PreMatricula\Models\SolicitudPrematricula;
+use App\Modules\PreMatricula\Services\CuentasEstudiantes;
 use App\Shared\Models\Core\Estudiante;
 
 /**
@@ -18,7 +19,8 @@ final class PrematriculaPolicy
 
     public function usarComoAlumno(User $user): bool
     {
-        return $user->hasRole(self::ROL_ALUMNO);
+        // Como el middleware user.active de master: una cuenta inactiva no usa la prematrícula.
+        return $user->hasRole(self::ROL_ALUMNO) && app(CuentasEstudiantes::class)->activa($user->email);
     }
 
     public function coordinar(User $user): bool

@@ -3,12 +3,14 @@
 use App\Modules\PreMatricula\Controllers\AlumnoController;
 use App\Modules\PreMatricula\Controllers\ConstanciaController;
 use App\Modules\PreMatricula\Controllers\CoordinacionController;
+use App\Modules\PreMatricula\Controllers\CuentaController;
 use App\Modules\PreMatricula\Controllers\DemandaController;
 use App\Modules\PreMatricula\Controllers\EstudianteController;
 use App\Modules\PreMatricula\Controllers\PeriodoController;
 use App\Modules\PreMatricula\Controllers\PlanEstudiosController;
 use App\Modules\PreMatricula\Controllers\PreMatriculaController;
 use App\Modules\PreMatricula\Controllers\RegistroController;
+use App\Modules\PreMatricula\Controllers\RegistroEstudianteController;
 use App\Modules\PreMatricula\Controllers\ResultadoOficialController;
 use App\Modules\PreMatricula\Controllers\VentanaController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +19,11 @@ Route::prefix('pre-matricula')
     ->name('pre-matricula.')
     ->group(function () {
         Route::get('/', [PreMatriculaController::class, 'entrada'])->name('index');
+
+        Route::middleware('guest')->group(function () {
+            Route::get('/registro', [RegistroEstudianteController::class, 'create'])->name('registro');
+            Route::post('/registro', [RegistroEstudianteController::class, 'store'])->middleware('throttle:10,1')->name('registro.store');
+        });
 
         Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/constancias/{revision}', ConstanciaController::class)->whereNumber('revision')->name('constancia');
@@ -33,6 +40,10 @@ Route::prefix('pre-matricula')
             Route::middleware('role:director_escuela|secretaria')->prefix('coordinacion')->name('coordinacion.')->group(function () {
                 Route::get('/', CoordinacionController::class)->name('index');
 
+                Route::get('/cuentas', [CuentaController::class, 'index'])->name('cuentas');
+                Route::post('/cuentas', [CuentaController::class, 'store'])->name('cuentas.store');
+                Route::get('/cuentas/{estudiante}/editar', [CuentaController::class, 'edit'])->whereNumber('estudiante')->name('cuentas.edit');
+                Route::put('/cuentas/{estudiante}', [CuentaController::class, 'update'])->whereNumber('estudiante')->name('cuentas.update');
                 Route::get('/periodos', [PeriodoController::class, 'index'])->name('periodos');
                 Route::post('/periodos', [PeriodoController::class, 'store'])->name('periodos.store');
                 Route::get('/periodos/{periodo}/editar', [PeriodoController::class, 'edit'])->whereNumber('periodo')->name('periodos.edit');

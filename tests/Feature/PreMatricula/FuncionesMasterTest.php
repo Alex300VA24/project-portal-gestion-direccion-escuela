@@ -5,11 +5,13 @@ namespace Tests\Feature\PreMatricula;
 use App\Models\User;
 use App\Modules\PreMatricula\Models\CronogramaPrematricula;
 use App\Modules\PreMatricula\Models\HistorialAcademico;
+use App\Modules\PreMatricula\Models\LimiteCreditosEstudiante;
 use App\Modules\PreMatricula\Models\SolicitudPrematricula;
 use App\Modules\PreMatricula\Services\PlanEstudios;
 use App\Shared\Models\Core\PeriodoAcademico;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Shuchkin\SimpleXLSX;
@@ -215,6 +217,90 @@ final class FuncionesMasterTest extends TestCase
 
         $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.plan.validar'), ['archivo' => $this->malla([['CP-501', 'Otro nombre', 3, 1, 0, 0, 0, '']])])
             ->assertSessionHas('reporte_malla', fn (array $r): bool => $r['valido'] === false);
+    }
+
+    // ---- Cuentas de estudiantes y registro ----
+
+    public function test_la_coordinacion_crea_una_cuenta_de_estudiante_completa(): void
+    {
+        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.cuentas.store'), [
+            'codigo_universitario' => '1023456789', 'nombres' => 'Ana María', 'apellidos' => 'Torres Vega',
+            'correo_institucional' => 'atorres@unitru.edu.pe', 'password' => 'Secreta2026', 'creditos_maximos' => 18,
+        ])->assertSessionHas('status');
+
+        $estudiante = DB::table('core.estudiante')->where('codigo_universitario', '1023456789')->first();
+        $this->assertSame(50, (int) $estudiante->id_plan);
+        $this->assertSame(20, (int) $estudiante->id_escuela);
+        $persona = DB::table('core.persona')->where('id_persona', $estudiante->id_persona)->first();
+        $this->assertSame(['Ana María', 'Torres', 'Vega'], [$persona->nombres, $persona->apellido_paterno, $persona->apellido_materno]);
+        $this->assertSame((int) $estudiante->id_persona, (int) DB::table('seguridad.usuario')->where('correo_institucional', 'atorres@unitru.edu.pe')->value('id_persona'));
+        $this->assertSame(18, LimiteCreditosEstudiante::creditosPara((int) $estudiante->id_estudiante));
+
+        $user = User::query()->where('email', 'atorres@unitru.edu.pe')->sole();
+        $this->assertTrue($user->hasRole('alumno'));
+        $this->assertTrue(Auth::validate(['email' => 'atorres@unitru.edu.pe', 'password' => 'Secreta2026']));
+        $this->actingAs($user)->get(route('pre-matricula.alumno.index'))->assertOk()->assertSee('Mi prematrícula');
+
+        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.cuentas', ['buscar' => 'torres']))->assertOk()->assertSee('1023456789')->assertSee('atorres@unitru.edu.pe');
+    }
+
+    public function test_no_se_repiten_correo_ni_codigo(): void
+    {
+        $datos = ['codigo_universitario' => '1023456789', 'nombres' => 'Ana', 'apellidos' => 'Torres', 'correo_institucional' => 'atorres@unitru.edu.pe', 'password' => 'Secreta2026'];
+        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.cuentas.store'), $datos);
+
+        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.cuentas.store'), [...$datos, 'codigo_universitario' => '1099999999'])
+            ->assertSessionHasErrors('correo_institucional');
+        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.cuentas.store'), [...$datos, 'correo_institucional' => 'otro@unitru.edu.pe'])
+            ->assertSessionHasErrors('codigo_universitario');
+        $this->assertSame(1, DB::table('core.estudiante')->where('codigo_universitario', '1023456789')->count());
+    }
+
+    public function test_se_cambia_correo_contrasena_y_estado_de_una_cuenta(): void
+    {
+        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.cuentas.store'), [
+            'codigo_universitario' => '1023456789', 'nombres' => 'Ana', 'apellidos' => 'Torres', 'correo_institucional' => 'atorres@unitru.edu.pe', 'password' => 'Secreta2026',
+        ]);
+        $id = (int) DB::table('core.estudiante')->where('codigo_universitario', '1023456789')->value('id_estudiante');
+        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.cuentas.edit', $id))->assertOk()->assertSee('atorres@unitru.edu.pe');
+
+        $this->actingAs($this->director)->put(route('pre-matricula.coordinacion.cuentas.update', $id), [
+            'correo_institucional' => 'ana.torres@unitru.edu.pe', 'password' => 'NuevaClave2026', 'estado' => 'Activo',
+        ])->assertSessionHas('status');
+
+        $this->assertTrue(Auth::validate(['email' => 'ana.torres@unitru.edu.pe', 'password' => 'NuevaClave2026']));
+        $this->assertTrue(DB::table('seguridad.usuario')->where('correo_institucional', 'ana.torres@unitru.edu.pe')->exists());
+
+        $this->actingAs($this->director)->put(route('pre-matricula.coordinacion.cuentas.update', $id), ['estado' => 'Inactivo', 'password' => ''])->assertSessionHas('status');
+        $this->assertTrue(Auth::validate(['email' => 'ana.torres@unitru.edu.pe', 'password' => 'NuevaClave2026']), 'Una contraseña vacía no se cambia.');
+
+        $alumno = User::query()->where('email', 'ana.torres@unitru.edu.pe')->sole();
+        $this->actingAs($alumno)->get(route('pre-matricula.alumno.index'))->assertForbidden();
+    }
+
+    public function test_un_estudiante_se_registra_y_su_contrasena_es_su_codigo(): void
+    {
+        $this->get(route('pre-matricula.registro'))->assertOk()->assertSee('Registro de estudiantes');
+
+        $this->post(route('pre-matricula.registro.store'), [
+            'codigo_universitario' => '1023456789', 'nombres' => 'Luis', 'apellidos' => 'Pérez Ruiz', 'correo_institucional' => 'lperez@unitru.edu.pe',
+        ])->assertRedirect(route('login'))->assertSessionHas('status');
+
+        $this->assertTrue(Auth::validate(['email' => 'lperez@unitru.edu.pe', 'password' => '1023456789']));
+        $this->assertTrue(User::query()->where('email', 'lperez@unitru.edu.pe')->sole()->hasRole('alumno'));
+        $this->assertSame(22, LimiteCreditosEstudiante::creditosPara((int) DB::table('core.estudiante')->where('codigo_universitario', '1023456789')->value('id_estudiante')));
+    }
+
+    public function test_el_registro_exige_codigo_de_10_digitos_y_correo_unitru(): void
+    {
+        $this->post(route('pre-matricula.registro.store'), [
+            'codigo_universitario' => '12345', 'nombres' => 'Luis', 'apellidos' => 'Pérez', 'correo_institucional' => 'lperez@gmail.com',
+        ])->assertSessionHasErrors([
+            'codigo_universitario' => 'El código universitario debe tener exactamente 10 dígitos.',
+            'correo_institucional' => 'Debes utilizar un correo con dominio @unitru.edu.pe.',
+        ]);
+
+        $this->actingAs($this->director)->get(route('pre-matricula.registro'))->assertRedirect();
     }
 
     /** @param  list<list<mixed>>  $filas */
