@@ -2,11 +2,9 @@
 
 namespace App\Modules\GestionPracticas\Controllers;
 
-use App\Modules\GestionPracticas\Requests\PracticaRequest;
-use App\Modules\GestionPracticas\Services\PracticaService;
 use App\Shared\Controllers\ModuleController;
-use Illuminate\Http\RedirectResponse;
 
+/** Portada pública del módulo (index y API los resuelve ModuleController). El trabajo real está en /gestion-practicas/panel. */
 final class PracticaController extends ModuleController
 {
     protected const MODULE = 'Gestión de Prácticas';
@@ -14,13 +12,4 @@ final class PracticaController extends ModuleController
     protected const SCHEMA = 'gestion_practicas';
 
     protected const VIEW = 'modules.gestion-practicas.index';
-
-    public function store(PracticaRequest $request, PracticaService $service): RedirectResponse
-    {
-        $service->handle($request->validated());
-
-        return redirect()
-            ->route('gestion-practicas.index')
-            ->with('status', 'Registro procesado.');
-    }
 }
