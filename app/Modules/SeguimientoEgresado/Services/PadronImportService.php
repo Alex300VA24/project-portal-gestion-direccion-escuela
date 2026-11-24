@@ -165,6 +165,38 @@ class PadronImportService
     }
 
     /**
+     * Agrega alumnos que no vienen de un archivo sino de una lista ya armada (por ejemplo, estudiantes del portal
+     * elegidos en pantalla). Usa las mismas reglas, el mismo «todo o nada» y el mismo historial de cargas que el
+     * archivo: queda registrado como una carga más, de origen MANUAL.
+     *
+     * @param  list<array<string, mixed>>  $filas  mismas columnas que el archivo
+     * @return array resumen de la importación (igual que importarArchivo)
+     */
+    public function importarDesdeFilas(array $filas, int $promocionId, ?int $usuarioId = null, string $nombre = 'Lista de alumnos'): array
+    {
+        $this->promocionElegida = Cohorte::findOrFail($promocionId);
+        $usuarioId = $usuarioId ?? UsuarioInterno::idActual();
+
+        $importacion = ImportacionPadron::create([
+            'id_usuario' => $usuarioId,
+            'nombre_archivo' => $nombre,
+            'hash_archivo' => hash('sha256', json_encode($filas).microtime(true)),
+            'origen' => 'MANUAL',
+            'fecha_importacion' => now(),
+            'estado' => 'EN_PROCESO',
+        ]);
+
+        return $this->procesarImportacionAtomica(
+            $filas,
+            $importacion,
+            $usuarioId,
+            (int) CatEstadoAcademico::where('codigo', 'EGRESADO')->value('id'),
+            (int) CatEstadoAcademico::where('codigo', 'BACHILLER')->value('id'),
+            (int) CatEstadoAcademico::where('codigo', 'TITULADO')->value('id'),
+        );
+    }
+
+    /**
      * Procesa la importación en modo estrictamente atómico (Todo o Nada).
      * Si alguna fila presenta inconsistencias, se cancela la inserción de todos los egresados.
      */

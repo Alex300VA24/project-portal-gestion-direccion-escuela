@@ -97,7 +97,7 @@
     <h2 class="sg-paso-titulo" id="t-paso-2">Cargar a los alumnos</h2>
     <span class="sg-paso-estado sg-badge {{ $hecho[2] ? 'sg-badge-success' : 'sg-badge-warning' }}">{{ $hecho[2] ? $avance['total'].' cargados' : 'Te toca' }}</span>
   </div>
-  <p class="sg-help" style="margin-bottom: var(--sg-space-3);">Sube el archivo (CSV o Excel) con los alumnos que ya cumplen para egresar. <strong>Todos quedan unidos a la Promoción {{ $promocion->anio_ingreso }}.</strong> Si una fila tiene un problema no se guarda ninguna, y se te dice cuál corregir.</p>
+  <p class="sg-help" style="margin-bottom: var(--sg-space-3);">Sube el archivo (CSV o Excel) con los alumnos que ya cumplen para egresar, o elígelos de los estudiantes del portal. <strong>Todos quedan unidos a la Promoción {{ $promocion->anio_ingreso }}.</strong> Si una fila tiene un problema no se guarda ninguna, y se te dice cuál corregir.</p>
   @unless($puedeGestionar)
     <p class="sg-help">Solo la Secretaría carga a los alumnos. Aquí puedes consultar cuántos hay.</p>
   @else
@@ -110,6 +110,7 @@
     </div>
     <button type="submit" class="sg-button">{{ $hecho[2] ? 'Cargar más alumnos' : 'Cargar alumnos' }}</button>
     <a class="sg-button sg-button-secondary" href="{{ route('seguimiento-egresado.padron.plantilla') }}">Descargar el formato modelo</a>
+    <button type="button" class="sg-button sg-button-secondary" id="btn-elegir-estudiantes">Elegir de los estudiantes del portal</button>
   </form>
   @endunless
   <p class="sg-help" style="margin-top: var(--sg-space-2);">Cada alumno necesita matrícula, documento, nombres, apellido paterno y correo institucional.</p>
@@ -257,4 +258,7 @@
 </section>
 
 @include('modules.seguimiento-egresado.partials.promocion-formularios', ['planes' => $planes])
+@if($puedeGestionar)
+  @include('modules.seguimiento-egresado.partials.estudiantes-portal-dialogo')
+@endif
 @endsection

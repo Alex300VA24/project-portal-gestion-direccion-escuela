@@ -49,6 +49,8 @@ Route::prefix('seguimiento-egresado')
         Route::get('/padron/egresado/{id}', [PadronController::class, 'fichaEgresado'])->middleware($interna('padron.consultar'))->name('padron.ficha');
         Route::get('/padron/plantilla', [PadronController::class, 'descargarPlantilla'])->middleware($interna('padron.consultar'))->name('padron.plantilla');
         Route::post('/padron/importar', [PadronController::class, 'importar'])->middleware($interna('padron.gestionar'))->name('padron.importar');
+        Route::get('/padron/estudiantes-del-portal', [PadronController::class, 'estudiantesDelPortal'])->middleware($interna('padron.gestionar'))->name('padron.estudiantes-del-portal');
+        Route::post('/padron/importar-estudiantes', [PadronController::class, 'importarEstudiantes'])->middleware($interna('padron.gestionar'))->name('padron.importar-estudiantes');
         Route::post('/padron/egresado', [PadronController::class, 'guardarEgresado'])->middleware($interna('padron.gestionar'))->name('padron.guardar-egresado');
         Route::post('/padron/cohorte', [PadronController::class, 'guardarCohorte'])->middleware($interna('padron.gestionar'))->name('padron.guardar-cohorte');
         Route::post('/padron/plan-curricular', [PadronController::class, 'guardarPlanCurricular'])->middleware($interna('padron.gestionar'))->name('padron.guardar-plan');

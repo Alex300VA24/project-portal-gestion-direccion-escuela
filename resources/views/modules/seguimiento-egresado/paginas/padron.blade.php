@@ -103,121 +103,17 @@
     box-shadow: inset 0 -3px 0 var(--sg-gold);
   }
 
-  /* Tarjetas de Selección Rápida de Cohorte (Fila Única Limpia y Escalable) */
-  .sg-cohort-strip-wrapper {
-    margin-bottom: var(--sg-space-5);
-  }
-  .sg-cohort-strip-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-  .sg-cohort-grid {
-    display: flex;
-    gap: var(--sg-space-4);
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 8px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-  }
-  .sg-cohort-grid::-webkit-scrollbar {
-    height: 5px;
-  }
-  .sg-cohort-grid::-webkit-scrollbar-thumb {
-    background: var(--sg-border);
-    border-radius: 3px;
-  }
-  .sg-cohort-card {
-    flex: 0 0 255px;
-    min-width: 255px;
-    scroll-snap-align: start;
-    background: var(--sg-surface);
-    border: var(--sg-stroke);
-    border-left: 4px solid var(--sg-control-border);
-    border-radius: var(--sg-radius);
-    padding: var(--sg-space-4);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 8px;
-    cursor: pointer;
-    transition: border-color .15s, background-color .15s, box-shadow .15s;
-  }
-  .sg-cohort-card:hover {
-    border-color: var(--sg-accent);
-    border-left-color: var(--sg-accent);
-    background: var(--sg-hover);
-  }
-  .sg-cohort-card.is-active {
-    border-color: var(--sg-accent);
-    border-left-color: var(--sg-accent);
-    background: var(--sg-soft);
-    outline: 2px solid var(--sg-accent);
-    outline-offset: -2px;
-  }
-  .sg-cohort-card-more {
-    border-style: dashed;
-    border-left-style: dashed;
-    background: transparent;
-  }
-  .sg-cohort-card-more:hover {
-    background: var(--sg-soft);
-  }
-  .sg-cohort-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .sg-cohort-code {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: var(--sg-accent);
-  }
-  .sg-cohort-name {
-    font-size: 14px;
-    font-weight: 650;
-    color: var(--sg-navy);
-    margin: 2px 0 0;
-    line-height: 1.3;
-  }
-  .sg-cohort-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding-top: 8px;
-    border-top: var(--sg-stroke);
-  }
-  .sg-cohort-stat-val {
-    font-size: 16px;
-    font-weight: 700;
+
+  /* Aviso previo a una acción (por ejemplo, confirmar un egreso sin contacto inicial) */
+  .sg-aviso-previo {
+    margin: 0 0 var(--sg-space-4);
+    padding: 10px 14px;
+    background: var(--sg-warning-soft);
+    border-left: 3px solid var(--sg-warning);
+    border-radius: 8px;
     color: var(--sg-text);
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
-  }
-  .sg-cohort-stat-lbl {
-    font-size: 11px;
-    color: var(--sg-muted);
-  }
-  .sg-progress-bar {
-    width: 100%;
-    height: 5px;
-    background: var(--sg-hover);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 4px;
-  }
-  .sg-progress-fill {
-    height: 100%;
-    background: var(--sg-success);
-    border-radius: 3px;
-    transition: width .3s ease;
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   /* Franja Dinámica de Métricas de la Cohorte Seleccionada */
@@ -748,36 +644,6 @@
 <!-- PESTAÑA 1: PADRÓN GENERAL DE EGRESADOS (egresado) -->
 <!-- ========================================================================= -->
 <section id="panel-egresados" role="tabpanel" aria-labelledby="btn-tab-egresados">
-  <!-- Selector Rápido de Cohortes (Fila Única / Últimas Cohortes) -->
-  <div class="sg-cohort-strip-wrapper" id="bloque-tarjetas-cohortes">
-    <div class="sg-cohort-strip-header">
-      <span style="font-weight: 600; color: var(--sg-navy);">Promociones en seguimiento</span>
-      <button type="button" class="sg-button sg-button-secondary" id="btn-toggle-cohort-cards" onclick="toggleTarjetasCohortes()" style="min-height: 28px; padding: 2px 10px; font-size: 12px;">
-        Ocultar tarjetas
-      </button>
-    </div>
-    <div class="sg-cohort-grid" id="contenedor-cards-cohortes" role="region" aria-label="Filtro rápido por promoción">
-      <div class="sg-cohort-card is-active" id="card-cohorte-todas" onclick="filtrarCohorteRapido('TODAS')" tabindex="0" role="button" aria-pressed="true">
-        <div class="sg-cohort-header">
-          <span class="sg-cohort-code">Vista Global</span>
-          <span class="sg-status-pill sg-pill-neutral">Todas</span>
-        </div>
-        <h3 class="sg-cohort-name">Padrón Consolidado</h3>
-        <p class="sg-stat-sub">Todas las promociones registradas</p>
-        <div class="sg-cohort-stats">
-          <div>
-            <div class="sg-cohort-stat-val" id="card-val-ingresantes-todas">--</div>
-            <div class="sg-cohort-stat-lbl">Ingresantes Totales</div>
-          </div>
-          <div>
-            <div class="sg-cohort-stat-val" style="color: var(--sg-success);" id="card-val-egresados-todas">{{ $totalEgresados ?? 0 }}</div>
-            <div class="sg-cohort-stat-lbl">Con grado</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Barra de Filtros Multifactorial -->
   <section class="sg-toolbar" aria-label="Búsqueda y filtros del padrón">
     <form id="form-filtros" class="sg-toolbar-form" onsubmit="event.preventDefault(); aplicarFiltros();">
@@ -1024,6 +890,10 @@
               <span class="sg-info-label">Condición de Apto</span>
               <span class="sg-info-val" id="exp-apto-f1">—</span>
             </div>
+            <div class="sg-info-block">
+              <span class="sg-info-label">Contacto inicial</span>
+              <span class="sg-info-val" id="exp-contacto-inicial">—</span>
+            </div>
           </div>
         </div>
 
@@ -1102,6 +972,9 @@
       <button type="button" class="sg-modal-close-btn" aria-label="Cerrar ventana" onclick="cerrarConfirmarEgreso()">✕</button>
     </div>
     <div class="sg-modal-body">
+      <p class="sg-aviso-previo" id="egreso-aviso-contacto" role="alert" style="display: none;">
+        <strong>Todavía no completó su contacto inicial</strong>, que es obligatorio para egresar. Puedes confirmar el egreso de todos modos, pero conviene pedirle antes que lo complete desde su promoción.
+      </p>
       <div class="sg-field">
         <label class="sg-label" for="egreso-fecha">Fecha real de egreso *</label>
         <input class="sg-input" id="egreso-fecha" type="date" required>
@@ -1397,6 +1270,7 @@
               'correoPers' => $eg->contactoVigente->correo_personal ?? '',
               'telefono' => $eg->contactoVigente->celular_whatsapp ?? '',
               'ciudad' => $eg->contactoVigente->direccion ?? '',
+              'tieneContacto' => $eg->contactoVigente !== null,
               'responsable' => $eg->estadoVigente->usuarioRegistro->nombre_completo ?? '—',
               'historial' => [],
           ];
@@ -1582,21 +1456,6 @@
   // =========================================================================
   // RENDERIZADO Y FILTRADO DEL PADRÓN DE EGRESADOS
   // =========================================================================
-  function toggleTarjetasCohortes() {
-    const cont = document.getElementById('contenedor-cards-cohortes');
-    const btn = document.getElementById('btn-toggle-cohort-cards');
-    if (!cont || !btn) return;
-    if (cont.style.display === 'none') {
-      cont.style.display = 'flex';
-      btn.textContent = 'Ocultar tarjetas';
-      btn.setAttribute('aria-expanded', 'true');
-    } else {
-      cont.style.display = 'none';
-      btn.textContent = 'Mostrar tarjetas';
-      btn.setAttribute('aria-expanded', 'false');
-    }
-  }
-
   function actualizarFranjaMetricaCohorte(cohorte = '') {
     const banner = document.getElementById('franja-metrica-cohorte');
     if (!banner) return;
@@ -1676,94 +1535,6 @@
     }
   }
 
-  function renderizarCardsCohortes() {
-    const container = document.getElementById('contenedor-cards-cohortes');
-    if (!container) return;
-
-    let totalIngresantesGlobal = 0;
-    let totalEgresadosGlobal = Object.keys(padronData).length;
-
-    // Ordenar cohortes por año descendente (las más recientes primero para monitoreo)
-    const cohortesLista = Object.values(cohortesData).sort((a, b) => parseInt(b.anio, 10) - parseInt(a.anio, 10));
-    // Máximo las 4 más recientes en seguimiento activo en una sola fila
-    const cohortesRecientes = cohortesLista.slice(0, 4);
-
-    cohortesLista.forEach(c => {
-      totalIngresantesGlobal += parseInt(c.ingresantes, 10) || 0;
-    });
-
-    let html = `
-      <div class="sg-cohort-card is-active" id="card-cohorte-todas" onclick="filtrarCohorteRapido('TODAS')" tabindex="0" role="button" aria-pressed="true">
-        <div class="sg-cohort-header">
-          <span class="sg-cohort-code">Vista Global</span>
-          <span class="sg-status-pill sg-pill-neutral">Todas</span>
-        </div>
-        <h3 class="sg-cohort-name">Padrón Consolidado</h3>
-        <p class="sg-stat-sub">Todas las promociones registradas</p>
-        <div class="sg-cohort-stats">
-          <div>
-            <div class="sg-cohort-stat-val">${totalIngresantesGlobal}</div>
-            <div class="sg-cohort-stat-lbl">Ingresantes</div>
-          </div>
-          <div>
-            <div class="sg-cohort-stat-val" style="color: var(--sg-success);">${totalEgresadosGlobal}</div>
-            <div class="sg-cohort-stat-lbl">Con grado</div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    cohortesRecientes.forEach(c => {
-      const tasa = c.ingresantes > 0 ? Math.round((c.egresados / c.ingresantes) * 100) : 0;
-      
-      let pillClass = 'sg-pill-primary';
-      if (c.estado.includes('5to')) pillClass = 'sg-pill-success';
-      else if (c.estado.includes('1er')) pillClass = 'sg-pill-warning';
-
-      html += `
-        <div class="sg-cohort-card" id="card-cohorte-${c.anio}" onclick="filtrarCohorteRapido('${c.anio}')" tabindex="0" role="button" aria-pressed="false">
-          <div class="sg-cohort-header">
-            <span class="sg-cohort-code">Promoción ${c.anio}</span>
-          </div>
-          <h3 class="sg-cohort-name">${c.nombre}</h3>
-          <p class="sg-stat-sub">${c.plan}</p>
-          <div class="sg-cohort-stats">
-            <div>
-              <div class="sg-cohort-stat-val">${c.ingresantes}</div>
-              <div class="sg-cohort-stat-lbl">Ingresantes</div>
-            </div>
-            <div>
-              <div class="sg-cohort-stat-val" style="color: var(--sg-success);">${c.egresados}</div>
-              <div class="sg-cohort-stat-lbl">Con grado</div>
-            </div>
-          </div>
-          <div class="sg-progress-bar" title="Tasa de graduación: ${tasa}%">
-            <div class="sg-progress-fill" style="width: ${Math.min(tasa, 100)}%;"></div>
-          </div>
-        </div>
-      `;
-    });
-
-    if (cohortesLista.length > 4) {
-      const restantes = cohortesLista.length - 4;
-      html += `
-        <div class="sg-cohort-card sg-cohort-card-more" onclick="window.location.href='{{ route('seguimiento-egresado.padron') }}'" role="button" tabindex="0" title="Ver todas las promociones">
-          <div class="sg-cohort-header">
-            <span class="sg-cohort-code">Histórico</span>
-            <span class="sg-status-pill sg-pill-neutral">+${restantes} más</span>
-          </div>
-          <h3 class="sg-cohort-name">Todas las promociones</h3>
-          <p class="sg-stat-sub">Mira todas las promociones registradas.</p>
-          <div style="font-size: 12px; font-weight: 600; color: var(--sg-accent); margin-top: auto; padding-top: 6px;">
-            Ver promociones →
-          </div>
-        </div>
-      `;
-    }
-
-    container.innerHTML = html;
-  }
-
   function renderizarTablaPadron(filas = null) {
     const tbody = document.getElementById('tbody-padron');
     if (!tbody) return;
@@ -1831,7 +1602,7 @@
           <div style="font-weight: 500;">Promoción ${item.cohorte}</div>
           <small style="color: var(--sg-muted); font-size: 12px;">Plan: ${item.plan} · Egreso: ${item.egreso}</small>
         </td>
-        <td>${gradoPill}</td>
+        <td>${gradoPill}${item.grado === 'PROXIMO' ? '<div style="margin-top: 4px;">' + pillContacto(item) + '</div>' : ''}</td>
         <td>${aptoBadge}</td>
         <td>
           <div>${item.correoInst}</div>
@@ -1875,36 +1646,24 @@
     });
   }
 
+  /** Estado del contacto inicial de un alumno apto: obligatorio para egresar, así que se ve desde la lista. */
+  function pillContacto(item) {
+    return item.tieneContacto
+      ? '<span class="sg-status-pill sg-pill-success">Contacto completo</span>'
+      : '<span class="sg-status-pill sg-pill-warning">Falta su contacto</span>';
+  }
+
   function cambiarFilasPorPaginaPadron(n) {
     padronFilasPorPagina = parseInt(n, 10) || 10;
     padronPaginaActual = 1;
     renderizarTablaPadron(padronFilasFiltradas);
   }
 
-  function aplicarFiltros() {
+  function aplicarFiltros(conservarPagina = false) {
     const q = document.getElementById('busqueda-criterio')?.value.toLowerCase().trim() || '';
     const cohorte = document.getElementById('filtro-cohorte')?.value || '';
     const grado = document.getElementById('filtro-estado-academico')?.value || '';
     const aptitud = document.getElementById('filtro-aptitud')?.value || '';
-
-    // Sincronizar selección visual en las tarjetas de cohorte
-    document.querySelectorAll('.sg-cohort-card').forEach(c => {
-      c.classList.remove('is-active');
-      c.setAttribute('aria-pressed', 'false');
-    });
-    if (!cohorte) {
-      const cardTodas = document.getElementById('card-cohorte-todas');
-      if (cardTodas) {
-        cardTodas.classList.add('is-active');
-        cardTodas.setAttribute('aria-pressed', 'true');
-      }
-    } else {
-      const card = document.getElementById('card-cohorte-' + cohorte);
-      if (card) {
-        card.classList.add('is-active');
-        card.setAttribute('aria-pressed', 'true');
-      }
-    }
 
     // Actualizar franja dinámica de métricas con cantidades oficiales
     actualizarFranjaMetricaCohorte(cohorte);
@@ -1917,19 +1676,8 @@
       return matchQ && matchCohorte && matchGrado && matchAptitud;
     });
 
-    padronPaginaActual = 1;
+    if (!conservarPagina) padronPaginaActual = 1;
     renderizarTablaPadron(filtrados);
-  }
-
-  function filtrarCohorteRapido(anio) {
-    const filtroSelect = document.getElementById('filtro-cohorte');
-    if (anio === 'TODAS') {
-      if (filtroSelect) filtroSelect.value = '';
-    } else {
-      if (filtroSelect) filtroSelect.value = anio;
-    }
-    padronPaginaActual = 1;
-    aplicarFiltros();
   }
 
   function restablecerFiltros() {
@@ -2182,6 +1930,7 @@
     document.getElementById('egreso-fecha').value = '';
     document.getElementById('egreso-fecha').max = new Date().toISOString().slice(0, 10);
     document.getElementById('egreso-error').style.display = 'none';
+    document.getElementById('egreso-aviso-contacto').style.display = item.tieneContacto ? 'none' : '';
     document.getElementById('modal-confirmar-egreso').classList.add('is-open');
   }
 
@@ -2210,8 +1959,15 @@
         const detalle = data.errors ? Object.values(data.errors).flat().join(' ') : '';
         throw new Error(detalle || data.message || 'No se pudo confirmar el egreso.');
       }
-      try { sessionStorage.setItem('sgAviso', data.message || 'Se confirmó el egreso.'); } catch (_) {}
-      window.location.reload();
+      // Sin recargar la página: se actualiza el alumno en la lista y se conservan la búsqueda, los filtros y la página.
+      const item = padronData[id];
+      item.grado = 'EGRESADO';
+      item.egreso = data.egresado?.periodo_egreso || item.egreso;
+      item.fechaEgreso = fecha.split('-').reverse().join('/');
+      cerrarConfirmarEgreso();
+      cerrarModalExpediente();
+      aplicarFiltros(true);
+      mostrarToast(data.message || 'Se confirmó el egreso.');
     } catch (e) {
       error.textContent = e.message;
       error.style.display = 'block';
@@ -2246,6 +2002,9 @@
       ? '<span class="sg-status-pill sg-pill-success">Apto</span>'
       : '<span class="sg-status-pill sg-pill-warning">Trámite Pendiente</span>';
     document.getElementById('exp-apto-f1').innerHTML = aptoBadge;
+    document.getElementById('exp-contacto-inicial').innerHTML = egresado.grado === 'PROXIMO'
+      ? pillContacto(egresado)
+      : (egresado.tieneContacto ? '<span class="sg-status-pill sg-pill-success">Completado</span>' : '<span class="sg-status-pill sg-pill-neutral">Sin registrar</span>');
 
     document.getElementById('exp-res-bachiller').textContent = egresado.resBachiller || 'No registrada';
     document.getElementById('exp-res-titulo').textContent = egresado.resTitulo || 'No registrada';
@@ -2464,7 +2223,6 @@
     }
 
     cerrarModalNuevoExpediente();
-    renderizarCardsCohortes();
     renderizarTablaPadron();
     mostrarToast(`El alumno con matrícula ${cod} quedó registrado.`);
   }
@@ -2491,7 +2249,6 @@
 
   // Inicialización al cargar la página
   document.addEventListener('DOMContentLoaded', function() {
-    renderizarCardsCohortes();
     actualizarFranjaMetricaCohorte('');
     actualizarSelectorCohortesForm();
     renderizarTablaPadron();
@@ -2503,11 +2260,5 @@
       activarModuloTab(tab);
     }
   });
-
-  // Aviso pendiente de una acción que recargó la página (por ejemplo, confirmar un egreso).
-  try {
-    const avisoPendiente = sessionStorage.getItem('sgAviso');
-    if (avisoPendiente) { sessionStorage.removeItem('sgAviso'); mostrarToast(avisoPendiente); }
-  } catch (_) {}
 </script>
 @endpush

@@ -129,15 +129,27 @@ class PadronIntegrationTest extends TestCase
         $this->assertSame('p@correo.test', $alumno->contactoVigente->correo_personal);
     }
 
-    public function test_sin_contacto_inicial_el_egreso_se_confirma_pero_se_avisa(): void
+    public function test_sin_contacto_inicial_el_egreso_se_confirma_y_la_respuesta_lo_indica(): void
     {
         $alumno = $this->alumnoApto();
 
         $respuesta = $this->postJson(route('seguimiento-egresado.padron.confirmar-egreso', $alumno->id), ['fecha_egreso' => '2025-07-18'])
             ->assertOk()->assertJsonPath('success', true)->assertJsonPath('aviso', true);
-        $this->assertStringContainsString('Aviso: todavía no completó su contacto inicial', $respuesta->json('message'));
+        // El aviso se muestra antes de confirmar; el mensaje solo informa el hecho.
+        $this->assertStringNotContainsString('Aviso', $respuesta->json('message'));
 
         $this->assertSame('EGRESADO', $alumno->refresh()->estadoVigente->estadoAcademico->codigo);
+    }
+
+    public function test_la_pantalla_avisa_antes_de_confirmar_que_falta_el_contacto(): void
+    {
+        $this->alumnoApto();
+
+        $html = $this->get(route('seguimiento-egresado.padron.consulta'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Todavía no completó su contacto inicial', $html);
+        $this->assertStringContainsString('"tieneContacto":false', str_replace(' ', '', $html));
+        $this->assertStringNotContainsString('window.location.reload()', $html, 'confirmar el egreso no recarga la página: se conservan los filtros');
     }
 
     public function test_con_contacto_inicial_el_egreso_se_confirma_sin_aviso(): void

@@ -12,6 +12,7 @@ use App\Modules\SeguimientoEgresado\Models\ImportacionPadron;
 use App\Modules\SeguimientoEgresado\Models\PlanCurricular;
 use App\Modules\SeguimientoEgresado\Models\UsuarioInterno;
 use App\Modules\SeguimientoEgresado\Services\Accesos\SesionAcceso;
+use App\Modules\SeguimientoEgresado\Services\EstudiantesDelPortal;
 use App\Modules\SeguimientoEgresado\Services\IndicadoresService;
 use App\Modules\SeguimientoEgresado\Services\PadronImportService;
 use App\Modules\SeguimientoEgresado\Support\Esquema;
@@ -127,12 +128,72 @@ class PadronController extends Controller
         // Siempre «todo o nada»: si una fila falla, no se guarda ninguna.
         $resultado = $importService->importarArchivo($archivo, null, true, $promocion->id);
 
+        return $this->respuestaDeCarga($resultado, $promocion);
+    }
+
+    /**
+     * Lista de estudiantes del portal que se pueden agregar a una promoción (JSON para la ventana «Elegir estudiantes»).
+     */
+    public function estudiantesDelPortal(Request $request, EstudiantesDelPortal $estudiantes)
+    {
+        $request->validate([
+            'promocion' => ['required', 'integer', 'exists:'.Esquema::validar('cohorte').',id'],
+            'q' => ['nullable', 'string', 'max:80'],
+        ]);
+        $promocion = Cohorte::findOrFail($request->integer('promocion'));
+        $lista = $estudiantes->candidatos($promocion, $request->query('q'));
+
+        return response()->json([
+            'promocion' => (int) $promocion->anio_ingreso,
+            'disponible' => $estudiantes->disponible(),
+            'total' => $lista['total'],
+            'limite' => EstudiantesDelPortal::LIMITE,
+            'estudiantes' => $lista['filas']->map(fn (object $f) => [
+                'id' => (int) $f->id,
+                'matricula' => $f->codigo_universitario,
+                'documento' => trim(($f->tipo_documento ?? '').' '.($f->numero_documento ?? '')),
+                'nombre' => trim($f->apellido_paterno.' '.($f->apellido_materno ?? '').', '.$f->nombres),
+                'correo' => $f->correo,
+                'puede_agregarse' => $f->puede_agregarse,
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Agrega a la promoción los estudiantes del portal elegidos en pantalla.
+     */
+    public function importarEstudiantes(Request $request, EstudiantesDelPortal $estudiantes, PadronImportService $importService)
+    {
+        $request->validate([
+            'promocion' => ['required', 'integer', 'exists:'.Esquema::validar('cohorte').',id'],
+            'estudiantes' => ['required', 'array', 'min:1', 'max:500'],
+            'estudiantes.*' => ['integer'],
+        ], [
+            'promocion.required' => 'Elige la promoción a la que se agregarán los estudiantes.',
+            'estudiantes.required' => 'Marca al menos un estudiante.',
+            'estudiantes.min' => 'Marca al menos un estudiante.',
+        ]);
+        $promocion = Cohorte::findOrFail($request->integer('promocion'));
+
+        $agregado = $estudiantes->agregar($promocion, $request->input('estudiantes'), $importService);
+
+        if ($agregado['resultado'] === null) {
+            return redirect()->to(route('seguimiento-egresado.padron.promocion', $promocion->id).'#paso-2')
+                ->with('error', 'No se agregó ningún estudiante: ya están en el padrón o no tienen un correo registrado.');
+        }
+
+        return $this->respuestaDeCarga($agregado['resultado'], $promocion, $agregado['omitidos'], false);
+    }
+
+    /** Mensaje y destino después de una carga (por archivo o por estudiantes elegidos). */
+    private function respuestaDeCarga(array $resultado, Cohorte $promocion, int $omitidos = 0, bool $desdeArchivo = true)
+    {
         if ($resultado['rechazadas'] > 0 && $resultado['aceptadas'] === 0) {
             $problemas = collect($resultado['detalles'] ?? [])
                 ->filter(fn (array $d) => ($d['error'] ?? '') !== PadronImportService::MENSAJE_FILA_SIN_ERROR)
-                ->map(fn (array $d) => 'Fila '.$d['numero_fila'].': '.$d['error'])
+                ->map(fn (array $d) => ($desdeArchivo ? 'Fila ' : 'Estudiante ').$d['numero_fila'].': '.$d['error'])
                 ->values();
-            $mensaje = 'No se cargó ningún alumno. Corrige esto en el archivo y vuelve a cargarlo:'
+            $mensaje = 'No se cargó ningún alumno. Corrige esto '.($desdeArchivo ? 'en el archivo y vuelve a cargarlo' : 'y vuelve a intentarlo').':'
                 ."\n".$problemas->take(5)->implode("\n")
                 .($problemas->count() > 5 ? "\ny ".($problemas->count() - 5).' más (míralas en el historial de cargas).' : '');
 
@@ -143,7 +204,8 @@ class PadronController extends Controller
 
         $n = $resultado['aceptadas'];
         $mensaje = ($n === 1 ? 'Se cargó 1 alumno' : "Se cargaron {$n} alumnos")." en la Promoción {$promocion->anio_ingreso}. "
-            .'Siguiente paso: enviarles el enlace de contacto.';
+            .'Siguiente paso: enviarles el enlace de contacto.'
+            .($omitidos > 0 ? ' '.($omitidos === 1 ? 'Se omitió 1 estudiante' : "Se omitieron {$omitidos} estudiantes").' por no tener un correo registrado o por estar ya en el padrón.' : '');
 
         return redirect()->to(route('seguimiento-egresado.padron.promocion', $promocion->id).'#paso-3')
             ->with('import_resumen', $resultado)
@@ -477,7 +539,7 @@ class PadronController extends Controller
             return response()->json(['success' => false, 'message' => 'Solo se puede confirmar el egreso de un alumno apto para egresar.'], 422);
         }
 
-        // El contacto inicial es obligatorio para egresar, pero no se bloquea: se avisa a la Secretaría.
+        // El contacto inicial es obligatorio para egresar, pero no se bloquea: la pantalla avisa antes de confirmar.
         $sinContacto = ! $egresado->contactoVigente()->exists();
 
         $fecha = Carbon::parse($request->fecha_egreso);
@@ -503,8 +565,8 @@ class PadronController extends Controller
             return response()->json([
                 'success' => true,
                 'aviso' => $sinContacto,
-                'message' => "Se confirmó el egreso de {$egresado->nombre_completo}."
-                    .($sinContacto ? ' Aviso: todavía no completó su contacto inicial, que es obligatorio para egresar. Pídele que lo complete desde su promoción.' : ''),
+                // El aviso de contacto pendiente se muestra antes de confirmar (en la lista, la ficha y el diálogo): aquí solo se informa el hecho.
+                'message' => "Se confirmó el egreso de {$egresado->nombre_completo}.",
                 'egresado' => $egresado->fresh(['cohorte', 'contactoVigente', 'estadoVigente.estadoAcademico']),
             ]);
         });
