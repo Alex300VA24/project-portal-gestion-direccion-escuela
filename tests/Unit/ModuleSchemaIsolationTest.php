@@ -11,7 +11,7 @@ use App\Modules\GestionPracticas\Models\Registro as GestionPracticasRegistro;
 use App\Modules\InvestigacionFormativa\Models\Registro as InvestigacionFormativaRegistro;
 use App\Modules\PreMatricula\Models\Registro as PreMatriculaRegistro;
 use App\Modules\SeguimientoEgresado\Models\Registro as SeguimientoEgresadoRegistro;
-use App\Modules\SeguimientoEstudiante\Models\Registro as SeguimientoEstudianteRegistro;
+use App\Modules\SeguimientoEstudiante\Models\SolicitudEstudiante;
 use App\Modules\TesisProyectoTesis\Models\Registro as TesisProyectoTesisRegistro;
 use App\Modules\WebInstitucional\Models\Registro as WebInstitucionalRegistro;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -39,6 +39,11 @@ final class ModuleSchemaIsolationTest extends TestCase
         $this->assertNotContains('public', $schemas);
     }
 
+    public function test_student_request_uses_its_actual_primary_key(): void
+    {
+        $this->assertSame('id_solicitud', (new SolicitudEstudiante)->getKeyName());
+    }
+
     /** @return array<string, array{class-string, string}> */
     public static function moduleTables(): array
     {
@@ -46,7 +51,7 @@ final class ModuleSchemaIsolationTest extends TestCase
             'prematricula' => [PreMatriculaRegistro::class, 'prematricula.solicitud_prematricula'],
             'bienestar' => [BienestarRegistro::class, 'bienestar.registros'],
             'investigacion_formativa' => [InvestigacionFormativaRegistro::class, 'investigacion_formativa.registros'],
-            'seguimiento_estudiante' => [SeguimientoEstudianteRegistro::class, 'seguimiento_estudiante.registros'],
+            'seguimiento_estudiante' => [SolicitudEstudiante::class, 'seguimiento_estudiante.solicitud_estudiante'],
             'web_institucional' => [WebInstitucionalRegistro::class, 'web_institucional.registros'],
             'calidad' => [CalidadRegistro::class, 'calidad.indicador'],
             'gestion_horarios' => [GestionHorariosRegistro::class, 'gestion_horarios.horario'],
