@@ -47,7 +47,7 @@ final class PlanificarSeccionesPorDemanda
     {
         (new AutorizacionGestionAcademica)->exigir($usuario);
         abort_unless($this->db->getDriverName() === 'pgsql', 422);
-        if (DistribucionAutomaticaLocal::esBaseIntegracion($this->db)) self::rechazar('Utilice la planificación automática con vacantes consolidadas.');
+        if (DistribucionAutomaticaLocal::flujoHabilitado()) self::rechazar('Utilice la planificación automática con vacantes consolidadas.');
         $repo = new RepositorioDemandaPostgres($this->db);
 
         return $repo->conBloqueo($periodo, function () use ($usuario, $periodo, $plan, $curso, $capacidad, $huella) {

@@ -16,7 +16,7 @@ final class PlanificarSeccion
     {
         $permiso = new AutorizacionGestionAcademica;
         $permiso->exigir($usuario);
-        if (DistribucionAutomaticaLocal::esBaseIntegracion($this->db) && ! $this->automatico?->autorizaEscritura($periodo, $plan)) {
+        if (DistribucionAutomaticaLocal::flujoHabilitado() && ! $this->automatico?->autorizaEscritura($periodo, $plan)) {
             throw ValidationException::withMessages(['seccion' => 'Utilice la planificación automática con vacantes consolidadas.']);
         }
         if ($periodo <= 0 || $plan <= 0 || $curso <= 0) {

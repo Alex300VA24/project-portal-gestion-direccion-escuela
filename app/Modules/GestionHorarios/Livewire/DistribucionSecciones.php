@@ -289,10 +289,10 @@ final class DistribucionSecciones extends Component
                 }
             }
             $automatico = new DistribucionAutomaticaLocal(DB::connection());
-            $datos['automaticoLocal'] = $automatico->disponible();
+            $datos['automaticoLocal'] = DistribucionAutomaticaLocal::flujoHabilitado();
             $datos['planAutomatico'] = null;
-            if ($datos['automaticoLocal'] && $contexto['planValido'] && $id && $datos['periodos']->contains(fn ($p) => (int) $p->id_periodo === $id && $p->codigo === '2026-II')
-                && $contexto['planes']->contains(fn ($p) => (int) $p->id_plan === $contexto['planId'] && $p->codigo === 'PLAN-2018-INF')) {
+            if ($datos['automaticoLocal'] && $contexto['planValido'] && $id && $datos['periodos']->contains(fn ($p) => (int) $p->id_periodo === $id)
+                && $automatico->alcanceDisponible(auth()->user(), $id, $contexto['planId'])) {
                 $datos['planAutomatico'] = $automatico->previsualizar(auth()->user(), $id, $contexto['planId']);
             }
             $datos['errorConsulta'] = false;

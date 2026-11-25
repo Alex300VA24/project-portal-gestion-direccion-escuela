@@ -23,7 +23,7 @@ final class GestionOfertaSeccion
         $this->db->transaction(function () use ($usuario, $periodo, $seccion, $oferta, $asociacionEsperada) {
             $cursoPlan = $this->db->table('core.seccion')->where('id_seccion', $seccion)->value('id_curso_plan');
             (new AmbitoEscrituraAcademica($this->db, $this->escuelas))->autorizarCurso($usuario, (int) $cursoPlan);
-            if (DistribucionAutomaticaLocal::esBaseIntegracion($this->db)) {
+            if (DistribucionAutomaticaLocal::flujoHabilitado()) {
                 $plan = (int) $this->db->table('core.curso_plan')->where('id_curso_plan', $cursoPlan)->value('id_plan');
                 if (! $this->automatico?->autorizaEscritura($periodo, $plan)) {
                     throw ValidationException::withMessages(['asociacion' => 'Utilice la planificación automática con vacantes consolidadas.']);

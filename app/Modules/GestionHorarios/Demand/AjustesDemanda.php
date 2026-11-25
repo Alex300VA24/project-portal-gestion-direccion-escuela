@@ -8,21 +8,19 @@ use App\Modules\GestionHorarios\Services\AutorizacionGestionAcademica;
 use App\Shared\Contracts\CierreDemandaPrematricula;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
-/** Ajustes locales de planificación. Nunca modifica las solicitudes ni su instantánea. */
+/** Ajustes de planificación. Nunca modifica las solicitudes ni su instantánea. */
 final class AjustesDemanda
 {
     public function __construct(private readonly ConnectionInterface $db) {}
 
     private function fuente(): ?CierreDemandaPrematricula
     {
-        if (! app()->environment('local', 'testing') || $this->db->getDriverName() !== 'pgsql'
-            || ! in_array($this->db->getConfig('host'), ['127.0.0.1', 'localhost', '::1'], true)
-            || (string) $this->db->getConfig('port') !== '5433'
-            || $this->db->getDatabaseName() !== 'portal_integracion_pm_gh'
-            || $this->db->selectOne('select current_database() as nombre')->nombre !== 'portal_integracion_pm_gh'
+        if (config('gestion_horarios_integracion.habilitada') !== true || $this->db->getDriverName() !== 'pgsql'
+            || $this->db !== DB::connection()
             || ! $this->db->getSchemaBuilder()->hasTable('gestion_horarios.ajuste_demanda')
             || ! app()->bound(CierreDemandaPrematricula::class)) {
             return null;

@@ -12,9 +12,12 @@ final class FuenteDemandaAgregada implements FuenteDemandaPrematricula
 
     public function cursos(int $periodo): array
     {
-        // El contrato receptor actual versiona por periodo, no por escuela.
-        if (DB::table('core.escuela_profesional')->count() !== 1) {
-            throw new RuntimeException('Falta acordar el alcance institucional multiescuela.');
+        // La instantánea tiene alcance institucional completo por periodo. Nunca
+        // enviar una sola escuela a un repositorio que versiona por periodo.
+        if (config('gestion_horarios_integracion.habilitada') !== true
+            || DB::connection()->getDriverName() !== 'pgsql'
+            || ! DB::table('core.periodo_academico')->where('id_periodo', $periodo)->exists()) {
+            throw new RuntimeException('Fuente institucional de demanda no habilitada o periodo inválido.');
         }
         $ids = DB::table('core.curso_plan')->orderBy('id_curso_plan')->pluck('id_curso_plan');
         return self::completar($ids, $this->demanda->porCurso($periodo));

@@ -11,7 +11,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        if ($this->app->environment('local', 'testing')) {
+        if (config('gestion_horarios_integracion.habilitada') === true) {
+            $this->app->bind(\App\Shared\Contracts\FuenteDemandaPrematricula::class, \App\Modules\PreMatricula\Services\FuenteDemandaAgregada::class);
             $this->app->bind(\App\Shared\Contracts\CierreDemandaPrematricula::class, \App\Modules\PreMatricula\Services\CierreDemandaParaHorarios::class);
         }
     }

@@ -8,17 +8,18 @@ use App\Modules\GestionHorarios\Demand\InstantaneaDemanda;
 use App\Modules\GestionHorarios\Demand\RepositorioDemandaPostgres;
 use App\Shared\Contracts\CierreDemandaPrematricula;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
-/** Ensayo local: propuesta completa por plan, sin asignar estudiantes ni horarios. */
+/** Propuesta por plan autorizado, sin asignar estudiantes ni horarios. */
 final class DistribucionAutomaticaLocal
 {
     private ?array $escritura = null;
 
-    public static function esBaseIntegracion(ConnectionInterface $db): bool
+    public static function flujoHabilitado(): bool
     {
-        return $db->getDriverName() === 'pgsql' && $db->getDatabaseName() === 'portal_integracion_pm_gh';
+        return config('gestion_horarios_integracion.habilitada') === true;
     }
 
     public function autorizaEscritura(int $periodo, int $plan): bool
@@ -26,17 +27,18 @@ final class DistribucionAutomaticaLocal
         return $this->escritura === [$periodo, $plan] && $this->db->transactionLevel() > 0;
     }
 
-    private const AMBIENTES = ['R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08'];
-
     public function __construct(private readonly ConnectionInterface $db) {}
 
     public function disponible(): bool
     {
-        return app()->environment('local', 'testing') && $this->db->getDriverName() === 'pgsql'
-            && in_array($this->db->getConfig('host'), ['127.0.0.1', 'localhost', '::1'], true)
-            && (string) $this->db->getConfig('port') === '5433'
-            && $this->db->getDatabaseName() === 'portal_integracion_pm_gh'
-            && $this->db->selectOne('select current_database() as nombre')->nombre === 'portal_integracion_pm_gh';
+        return self::flujoHabilitado() && $this->db->getDriverName() === 'pgsql'
+            && $this->db === DB::connection()
+            && app()->bound(CierreDemandaPrematricula::class);
+    }
+
+    public function alcanceDisponible(User $usuario, int $periodo, int $plan): bool
+    {
+        return $this->disponible() && (new AmbitoPlanificacionDemanda($this->db))->ambientes($usuario, $periodo, $plan) !== null;
     }
 
     /** Solo cálculos. Conserva códigos e identidades existentes, no elimina filas. */
@@ -94,7 +96,7 @@ final class DistribucionAutomaticaLocal
         abort_unless($this->disponible(), 403);
         (new AutorizacionGestionAcademica)->exigir($usuario);
         abort_unless(app(AmbitoPlanes::class)->contiene($usuario, $plan), 403);
-        if (! app()->bound(CierreDemandaPrematricula::class)) self::rechazar('Falta el proveedor local de Prematrícula.');
+        if (! app()->bound(CierreDemandaPrematricula::class)) self::rechazar('Falta el proveedor de Prematrícula.');
         $fuente = app(CierreDemandaPrematricula::class);
         $repo = new RepositorioDemandaPostgres($this->db);
         return $repo->conBloqueo($periodo, function () use ($usuario, $periodo, $plan, $huella, $fuente, $repo, $operacion) {
@@ -149,10 +151,9 @@ final class DistribucionAutomaticaLocal
     private function capturar(User $usuario, int $periodo, int $plan): array
     {
         abort_unless($this->disponible() && $periodo > 0 && app(AmbitoPlanes::class)->contiene($usuario, $plan), 403);
-        abort_unless($this->db->table('core.escuela_profesional')->count() === 1
-            && $this->db->table('core.plan_estudios')->count() === 1
-            && $this->db->table('core.plan_estudios')->where('id_plan', $plan)->where('codigo', 'PLAN-2018-INF')->exists()
-            && $this->db->table('core.periodo_academico')->where('id_periodo', $periodo)->where('codigo', '2026-II')->exists(), 403);
+        abort_unless($this->db->table('core.periodo_academico')->where('id_periodo', $periodo)->exists(), 404);
+        $idsAmbientes = (new AmbitoPlanificacionDemanda($this->db))->ambientes($usuario, $periodo, $plan);
+        abort_unless($idsAmbientes !== null, 403);
         $demanda = (new RepositorioDemandaPostgres($this->db))->vigente($periodo);
         $bloqueo = null;
         if (! $demanda) $bloqueo = 'Todavía no hay demanda sincronizada.';
@@ -160,11 +161,11 @@ final class DistribucionAutomaticaLocal
         elseif ($this->db->table('gestion_horarios.horario')->where('id_periodo', $periodo)->exists()) $bloqueo = 'Ya existe un horario del periodo. Revise su impacto antes de cambiar secciones.';
         $asociacion = $this->db->getSchemaBuilder()->hasTable('gestion_horarios.oferta_seccion');
         if (! $asociacion) $bloqueo = 'Falta la vinculación entre ofertas y secciones.';
-        $bloqueados = $this->db->table('gestion_horarios.ambiente_bloqueo')->where('id_periodo', $periodo)->pluck('id_ambiente');
-        $ambientes = $this->db->table('core.ambiente')->whereIn('codigo', self::AMBIENTES)->whereNotIn('id_ambiente', $bloqueados)->orderBy('codigo')->get(['id_ambiente', 'codigo', 'tipo', 'capacidad', 'estado'])->map(fn ($r) => (array) $r)->all();
+        $bloqueados = $this->db->table('gestion_horarios.ambiente_bloqueo')->where('id_periodo', $periodo)->whereIn('id_ambiente', $idsAmbientes)->pluck('id_ambiente');
+        $ambientes = $this->db->table('core.ambiente')->whereIn('id_ambiente', $idsAmbientes)->whereNotIn('id_ambiente', $bloqueados)->orderBy('codigo')->get(['id_ambiente', 'codigo', 'tipo', 'capacidad', 'estado'])->map(fn ($r) => (array) $r)->all();
         $catalogo = $this->db->table('core.curso_plan as cp')->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')->where('cp.id_plan', $plan)->orderBy('cp.ciclo')->orderBy('c.nombre')->orderBy('cp.id_curso_plan')->get(['cp.id_curso_plan', 'cp.ciclo', 'c.codigo', 'c.nombre', 'c.horas_teoria', 'c.horas_practica', 'c.horas_laboratorio']);
-        $totales = $demanda ? $this->db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->get(['id_curso_plan', 'total', 'manana', 'tarde']) : collect();
-        if ($demanda && ($totales->count() !== $catalogo->count() || $totales->pluck('id_curso_plan')->diff($catalogo->pluck('id_curso_plan'))->isNotEmpty())) $bloqueo = 'La instantánea no cubre exactamente el plan de prueba.';
+        $totales = $demanda ? $this->db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->whereIn('id_curso_plan', $catalogo->pluck('id_curso_plan'))->get(['id_curso_plan', 'total', 'manana', 'tarde']) : collect();
+        if ($demanda && ($totales->count() !== $catalogo->count() || $totales->pluck('id_curso_plan')->diff($catalogo->pluck('id_curso_plan'))->isNotEmpty())) $bloqueo = 'La instantánea no cubre exactamente los cursos del plan autorizado.';
         (new AjustesDemanda($this->db))->filas($periodo, $demanda ? (int) $demanda->id_demanda : null, $totales);
         $totales = $totales->keyBy('id_curso_plan');
         $cursos = [];
@@ -206,7 +207,7 @@ final class DistribucionAutomaticaLocal
         }
         $tabla = $this->db->getSchemaBuilder()->hasTable('gestion_horarios.consolidacion_vacantes');
         $ajustes = $demanda && $this->db->getSchemaBuilder()->hasTable('gestion_horarios.ajuste_demanda')
-            ? $this->db->table('gestion_horarios.ajuste_demanda')->where('id_demanda', $demanda->id_demanda)->orderByDesc('id_ajuste')->get(['id_ajuste', 'id_curso_plan'])->unique('id_curso_plan')->sortBy('id_curso_plan')->values()->toArray() : [];
+            ? $this->db->table('gestion_horarios.ajuste_demanda')->where('id_demanda', $demanda->id_demanda)->whereIn('id_curso_plan', $catalogo->pluck('id_curso_plan'))->orderByDesc('id_ajuste')->get(['id_ajuste', 'id_curso_plan'])->unique('id_curso_plan')->sortBy('id_curso_plan')->values()->toArray() : [];
         $guardada = $tabla ? $this->db->table('gestion_horarios.consolidacion_vacantes')->where('id_periodo', $periodo)->where('id_plan', $plan)->orderByDesc('id_consolidacion')->value('huella') : null;
         $revision = $bloqueo !== null || ! $tabla || collect($cursos)->contains(fn ($c) => $c['estado'] === 'revision');
         $pendientes = collect($cursos)->contains(fn ($c) => $c['estado'] === 'pendiente');

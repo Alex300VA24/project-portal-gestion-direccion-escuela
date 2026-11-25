@@ -12,7 +12,7 @@
         @error($campo)<p class="quality-alert" role="alert">{{ $message }}</p>@enderror
     @endforeach
     @if (!$planAutomatico)
-        <div class="quality-empty"><h2>Seleccione el plan y periodo de integración</h2><p>La planificación automática de prueba está habilitada para PLAN-2018-INF y 2026-II.</p></div>
+        <div class="quality-empty"><h2>Planificación no disponible</h2><p>Seleccione un plan y periodo autorizados. Si ya los seleccionó, falta verificar el contrato de Prematrícula o el alcance de los ambientes.</p></div>
     @else
         @php
             $todas = collect($planAutomatico['cursos']);
@@ -31,7 +31,7 @@
             </div>
             <p>Demanda {{ $planAutomatico['version'] !== null ? 'v'.$planAutomatico['version'] : 'no recibida' }} @if ($planAutomatico['recibida_en']) · Última recepción: {{ $planAutomatico['recibida_en'] }} @endif</p>
             <p>Aforo máximo de referencia: aula <strong>{{ $aforoAula ?? 'No disponible' }}</strong> · laboratorio <strong>{{ $aforoLab ?? 'No disponible' }}</strong>.</p>
-            <small>Recursos históricos de QA; los totales no son matrícula definitiva. La propuesta de población y grupos LAB no asigna alumnos.</small>
+            <small>Aforos de los ambientes autorizados; los totales no son matrícula definitiva. La propuesta de población y grupos LAB no asigna alumnos.</small>
             <p role="status"><strong>Etapa:</strong> {{ match($planAutomatico['estadoConsolidacion']) { 'prematricula_abierta' => 'Prematrícula sin cierre confirmado · solo consulta', 'sin_consolidar' => 'Cierre confirmado · falta consolidar vacantes', 'consolidada' => 'Vacantes consolidadas · secciones pendientes', 'secciones_verificadas' => 'Secciones verificadas para la demanda consolidada', default => 'Revisión requerida' } }}</p>
             @if ($planAutomatico['bloqueo'])<p class="quality-alert" role="alert">{{ $planAutomatico['bloqueo'] }}</p>@endif
             @if ($revision->isNotEmpty())<p role="status">{{ $revision->count() }} cursos requieren revisión. No se modificarán automáticamente.</p>@endif
