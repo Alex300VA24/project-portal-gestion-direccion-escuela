@@ -49,7 +49,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | `seguridad` | auditoria, modulo_sistema, permiso, registro_acceso, rol, rol_permiso, solicitud_acceso, token_usuario, usuario, usuario_rol |
 | `comun` | archivo, contacto_empresa, dia_no_laborable, empresa, notificacion, parametro_sistema, sector_economico |
 | `prematricula` | cronograma_prematricula, detalle_solicitud, solicitud_prematricula |
-| `bienestar` | beneficio, caso_bienestar, cita, deporte, derivacion, especialidad, especialista, estudiante_condicion, estudiante_deporte, historial_estado_caso, horario_disponible, perfil_socioeconomico, reporte, seguimiento_derivacion, solicitud_apoyo, solicitud_documento, tipo_caso, tipo_condicion |
+| `bienestar` | alerta_bitacora, alerta_riesgo, beneficio, caso_bienestar, cita, deporte, derivacion, especialidad, especialista, estudiante_condicion, estudiante_deporte, historial_estado_caso, horario_disponible, perfil_socioeconomico, reporte, seguimiento_derivacion, solicitud_apoyo, solicitud_documento, solicitud_historial, solicitud_requisito_documento, tipo_caso, tipo_condicion, tipo_solicitud, tipo_solicitud_requisito |
 | `investigacion_formativa` | criterio, entrega, entregable, evaluacion, evaluacion_criterio, grupo, grupo_estudiante, observacion, proyecto, rubrica, tipo_producto |
 | `seguimiento_estudiante` | alerta_sat, atencion, atencion_compromiso, atencion_derivacion, atencion_evidencia, atencion_motivo, brecha_ingreso, dimension_brecha, motivo_atencion, nivelacion_asistencia, nivelacion_calificacion, nivelacion_criterio_evaluacion, nivelacion_grupo, nivelacion_material, nivelacion_participante, nivelacion_sesion, parametro_sat, perfil_ingreso, programa_nivelacion, situacion_academica, solicitud_estudiante, tipo_atencion, tutor_asignacion |
 | `web_institucional` | campana_admision, campana_modalidad, categoria_publicacion, consulta_contacto, cronograma_admision, docente_especialidad, documento_oficial, especialidad, perfil_docente_web, plan_estudios_publicacion, publicacion, publicacion_archivo, registro_visita |
@@ -74,6 +74,28 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | `tesis.calcular_nota_sustentacion` | Nota de sustentación |
 | `gestion_horarios.fn_*` | Huella, validación, conflictos y transiciones de horarios |
 | `web_institucional.sp_responder_consulta_contacto` | Procedimiento para responder una consulta de contacto |
+
+### 4.1. Esquema `bienestar` (Actualización de Trámites UNT y Alertas)
+
+- **`bienestar.tipo_solicitud`**: Catálogo administrable de procedimientos (TUPA/Convocatorias UNT).
+  * Columnas: `id_tipo_solicitud` (PK), `nombre`, `descripcion`, `unidad_responsable`, `plazo_dias_habiles`, `base_normativa_fuente`, `estado_verificacion` (`pendiente_verificar`, `verificado`), `activo`, `created_at`, `updated_at`.
+- **`bienestar.tipo_solicitud_requisito`**: Requisitos documentales específicos por tipo de trámite.
+  * Columnas: `id_requisito` (PK), `id_tipo_solicitud` (FK), `nombre`, `descripcion`, `es_obligatorio`, `formatos_permitidos` (ej. `pdf,jpg,png`), `tamano_maximo_mb`, `id_archivo_plantilla` (FK nullable hacia `comun.archivo`), `orden`, `activo`, `created_at`, `updated_at`.
+- **`bienestar.solicitud_requisito_documento`**: Documentos subidos por el estudiante para cada requisito individual.
+  * Columnas: `id_solicitud_doc` (PK), `id_solicitud` (FK), `id_requisito` (FK), `id_archivo` (FK hacia `comun.archivo`), `estado_revision` (`pendiente`, `conforme`, `observado`), `comentario_revision`, `revisado_por` (FK nullable hacia `seguridad.usuario`), `revisado_en`, `subido_en`, `actualizado_en`.
+- **`bienestar.alerta_bitacora`**: Auditoría inmutable de decisiones tomadas sobre alertas de riesgo.
+  * Columnas: `id_bitacora` (PK), `id_alerta` (FK), `id_usuario` (FK hacia `seguridad.usuario`), `accion` (`pasado_a_bienestar`, `descartado`, `reabierto`), `motivo` (obligatorio al descartar o reabrir), `creado_en`.
+- **`bienestar.alerta_riesgo.categoria_motivo`** (varchar 30): categoría que ve Secretaría en lugar del texto libre.
+- **`bienestar.solicitud_apoyo.observacion_dictamen`** (text): dictamen visible para el estudiante; obligatorio al rechazar.
+- **`bienestar.solicitud_historial`**: cada cambio de estado de una solicitud (anterior, nuevo, quién y cuándo).
+- **`comun.notificacion`**: avisos sin datos sensibles para Secretaría, Bienestar, estudiantes y docentes.
+- **`bienestar.solicitud_apoyo` (ampliada)**:
+  * Estados del trámite: `enviada` (estudiante), `recibida` (secretaría), `observada` (vuelve a estudiante para subsanar), `remitida` (a Bienestar tras foliado externo verificado), `aprobada`, `rechazada` (dictamen Bienestar).
+  * Nuevas columnas: `id_tipo_solicitud` (FK), `folio_externo_confirmado` (bool), `revisado_por_secretaria` (FK), `fecha_revision_secretaria`, `fecha_remision_bienestar`, `observacion_general_secretaria`.
+- **`bienestar.alerta_riesgo` (ampliada)**:
+  * Estados: `en_revision` (bandeja Secretaría), `remitida_bienestar` (derivada a Bienestar), `descartada` (con motivo auditado), `en_atencion`, `atendida`, `resuelta_automaticamente`.
+  * Salvaguarda: Alertas automáticas de riesgo alto (ej. tercera matrícula o prioridad alta) tienen bloqueo institucional que impide su descarte.
+  * Nuevas columnas: `fecha_filtro_secretaria`, `filtrado_por` (FK).
 
 ## 5. Migraciones
 
