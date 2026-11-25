@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $module }}</title>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ $module }} · Portal Gestión Dirección</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo-informatica.png') }}">
+    <link rel="preconnect" href="https://fonts.bunny.net"><link href="https://fonts.bunny.net/css?family=fira-code:500,600|fira-sans:400,500,600,700&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
-    <main>
-        <h1>{{ $module }}</h1>
-        <p>Esquema PostgreSQL: <code>{{ $schema }}</code></p>
-        @isset($creating)
-            <p>Formulario base de creación.</p>
-        @endisset
+<body class="quality-gateway-body">
+    <main class="quality-gateway">
+        <a class="quality-gateway-brand" href="{{ route('web-institucional.index') }}"><img class="quality-gateway-logo" src="{{ asset('img/logo-informatica.png') }}" alt=""> Portal Gestión Dirección</a>
+        <div>
+            <p class="quality-route">/pre-matricula</p>
+            <h1>{{ $module }}</h1>
+            <p>Registro de la intención de matrícula de los estudiantes, con validación de prerrequisitos, constancia en PDF y estimación de demanda por curso. Usa el esquema <code>{{ $schema }}</code> del portal.</p>
+            @guest<a href="{{ route('pre-matricula.registro') }}">Registrarme como estudiante <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>@endguest
+            <a href="{{ auth()->check() ? route('dashboard') : route('login') }}">{{ auth()->check() ? 'Volver al portal' : 'Iniciar sesión' }} <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
     </main>
 </body>
 </html>

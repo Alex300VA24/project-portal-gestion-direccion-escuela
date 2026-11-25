@@ -31,7 +31,7 @@ final class ModuleStructureTest extends TestCase
             foreach ($this->moduleSlugs() as $module) {
                 $outside = array_filter(
                     $this->phpFiles($this->path("app/Http/{$layer}")),
-                    static fn (string $file): bool => stripos($file, $module) !== false,
+                    fn (string $file): bool => stripos($this->relative($file), $module) !== false,
                 );
 
                 $this->assertSame([], array_values($outside), "Código de {$module} fuera de su módulo.");

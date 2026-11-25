@@ -1,0 +1,14 @@
+﻿# Integración de Prematrícula
+
+## Actualización local (PR 15 + PR 16)
+
+El flujo experimental ya produjo una solución OPTIMAL de 9 sesiones y 20 horas desde demanda agregada en PostgreSQL. Los scripts de prueba no persistieron el horario. El parche de sincronización prepara una tarea Laravel por minuto; su ejecución automática aún debe verificarse. La nueva pantalla calcula secciones y permite aplicarlas con confirmación en el ensayo anterior. Como requisito institucional, el cierre oficial y la consolidación de la demanda efectiva y vacantes deben preceder a la creación de secciones, y estas a la asignación docente. Falta implementar y verificar dichas compuertas; véase [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md). Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md). El contrato institucional sigue pendiente.
+
+
+El proveedor institucional todavía no está conectado. El módulo recibe una instantánea agregada mediante `ProveedorDemandaAcademica` y comprueba identidades de escuela, plan, curso y curso-plan a través de `IdentidadCursoPlan`. `PrepararDemandaProveedor` rechaza ámbito incorrecto, captura incompleta, fecha sin zona horaria, versión inválida, duplicados y preferencias inconsistentes; devuelve `VALIDADA_SIN_PERSISTIR`, junto con la procedencia y una `InstantaneaDemanda`. El proveedor debe acreditar que la captura es completa: un booleano no demuestra consistencia de paginación.
+
+`ProcesarDemanda` y `RepositorioDemandaPostgres` ya implementan recepción versionada e idempotencia por periodo, pero el almacenamiento actual no conserva la procedencia y el alcance de este contrato ampliado. Por ello no se conectó automáticamente la validación nueva a las escrituras existentes, ni hay listener o endpoint productivo. Acordar versión, paginación consistente, autenticación entre servicios, mapeo de identidades, fechas, política de inclusión por estado y persistencia de procedencia antes de activar el consumo. Ningún dato de interés equivale a matrícula definitiva, sección, población o subgrupo.
+
+El contrato público consultado de Prematrícula presenta demanda paginada de solicitudes enviadas, separa estados de validación y preferencias, y advierte que no es matrícula. No se identificó en la documentación consultada un contrato de instantánea completa con versión monotónica por periodo y correspondencia institucional de curso-plan. Referencia de lectura: https://github.com/jckba/prematricula/blob/master/OpenAPI/API.md
+
+Pruebas unitarias: `php vendor/bin/phpunit tests/Unit/GestionHorarios/PrepararDemandaProveedorTest.php tests/Unit/GestionHorarios/DemandaTest.php`. Las pruebas de PostgreSQL requieren una base aislada y no deben dirigirse a `portal_gestion_direccion`.

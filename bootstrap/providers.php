@@ -5,5 +5,5 @@ use App\Providers\ModulesServiceProvider;
 
 return [
     AppServiceProvider::class,
-    ModulesServiceProvider::class
+    ModulesServiceProvider::class,
 ];

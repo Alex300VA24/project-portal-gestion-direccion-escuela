@@ -7,8 +7,13 @@ use App\Shared\Models\Core\Seccion;
 use App\Shared\Models\ModuleModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Curso elegido dentro del borrador de una solicitud. Equivale a pre_enrollment_details.
+ */
 final class DetalleSolicitud extends ModuleModel
 {
+    public const TURNOS = ['MANANA', 'TARDE', 'SIN_PREFERENCIA'];
+
     protected $table = 'prematricula.detalle_solicitud';
 
     protected $primaryKey = 'id_detalle';
@@ -19,6 +24,7 @@ final class DetalleSolicitud extends ModuleModel
         'id_solicitud',
         'id_curso_plan',
         'id_seccion_preferida',
+        'preferencia_turno',
         'estado',
         'motivo_rechazo',
     ];

@@ -1,4 +1,10 @@
-FROM composer:2 AS dependencies
+FROM php:8.4-cli AS dependencies
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git unzip libonig-dev libpng-dev libzip-dev \
+    && docker-php-ext-install -j"$(nproc)" bcmath gd mbstring zip \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -32,14 +38,18 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libonig-dev \
+        libpng-dev \
         libpq-dev \
+        libzip-dev \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
+        gd \
         mbstring \
         opcache \
         pcntl \
         pdo_pgsql \
         pgsql \
+        zip \
     && a2enmod rewrite \
     && sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" \
         /etc/apache2/sites-available/*.conf \
