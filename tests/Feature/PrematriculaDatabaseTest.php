@@ -36,7 +36,7 @@ final class PrematriculaDatabaseTest extends TestCase
         $this->createPrematriculaAcademicData();
     }
 
-    public function test_module_contains_the_three_expected_tables(): void
+    public function test_module_contains_the_ten_expected_tables(): void
     {
         $tables = DB::table('information_schema.tables')
             ->where('table_schema', 'prematricula')
@@ -46,9 +46,16 @@ final class PrematriculaDatabaseTest extends TestCase
             ->all();
 
         $this->assertSame([
+            'cambio_historial',
             'cronograma_prematricula',
             'detalle_solicitud',
+            'historial_academico',
+            'importacion_historial',
+            'limite_creditos_estudiante',
+            'revision_curso',
+            'revision_solicitud',
             'solicitud_prematricula',
+            'validacion_solicitud',
         ], $tables);
     }
 
@@ -71,7 +78,7 @@ final class PrematriculaDatabaseTest extends TestCase
         $this->assertSame('CP-501', $solicitud->detalles->first()->cursoPlan->curso->codigo);
     }
 
-    public function test_all_seven_module_foreign_keys_are_installed(): void
+    public function test_all_module_foreign_keys_are_installed(): void
     {
         $foreignKeys = collect(DB::select(<<<'SQL'
             SELECT c.conname
@@ -85,13 +92,29 @@ final class PrematriculaDatabaseTest extends TestCase
             ->all();
 
         $this->assertSame([
+            'pre_camb_hist_hist_fk',
+            'pre_camb_hist_imp_fk',
             'pre_cr_per_fk',
+            'pre_crono_autor_fk',
             'pre_de_cur_fk',
             'pre_de_sec_fk',
             'pre_de_sol_fk',
+            'pre_hist_cp_fk',
+            'pre_hist_est_fk',
+            'pre_hist_per_fk',
+            'pre_imp_autor_fk',
+            'pre_lim_est_fk',
+            'pre_rev_crono_fk',
+            'pre_rev_curso_cp_fk',
+            'pre_rev_curso_rev_fk',
+            'pre_rev_sol_fk',
             'pre_so_est_fk',
             'pre_so_per_fk',
             'pre_so_rev_fk',
+            'pre_sol_crono_corr_fk',
+            'pre_sol_rev_vigente_fk',
+            'pre_val_rev_fk',
+            'pre_val_sol_fk',
         ], $foreignKeys);
     }
 
