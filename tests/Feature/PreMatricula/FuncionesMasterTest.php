@@ -3,11 +3,9 @@
 namespace Tests\Feature\PreMatricula;
 
 use App\Models\User;
-use App\Modules\PreMatricula\Models\CambioHistorial;
 use App\Modules\PreMatricula\Models\CronogramaPrematricula;
 use App\Modules\PreMatricula\Models\DetalleSolicitud;
 use App\Modules\PreMatricula\Models\HistorialAcademico;
-use App\Modules\PreMatricula\Models\ImportacionHistorial;
 use App\Modules\PreMatricula\Models\LimiteCreditosEstudiante;
 use App\Modules\PreMatricula\Models\SolicitudPrematricula;
 use App\Modules\PreMatricula\Services\PlanEstudios;
@@ -308,20 +306,14 @@ final class FuncionesMasterTest extends TestCase
 
     // ---- Historial académico y preferencia de turno ----
 
-    public function test_la_coordinacion_consulta_el_historial_y_el_detalle_de_una_importacion(): void
+    public function test_la_coordinacion_consulta_el_historial_academico(): void
     {
-        $historial = HistorialAcademico::query()->create(['id_estudiante' => 1001, 'id_curso_plan' => 501, 'id_periodo' => 202602, 'nota_final' => 16, 'estado' => HistorialAcademico::APROBADO]);
-        $importacion = ImportacionHistorial::query()->create(['creado_por' => 801, 'sha256' => str_repeat('a', 64), 'motivo' => 'Actas 2026-II', 'resumen' => ['crear' => 1, 'actualizar' => 0, 'sin_cambios' => 0]]);
-        CambioHistorial::query()->create(['id_importacion' => $importacion->id_importacion, 'id_historial' => $historial->id_historial, 'antes' => null, 'despues' => ['estado' => 'APROBADO', 'nota_final' => 16]]);
+        HistorialAcademico::query()->create(['id_estudiante' => 1001, 'id_curso_plan' => 501, 'id_periodo' => 202602, 'nota_final' => 16, 'estado' => HistorialAcademico::APROBADO]);
 
         $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.historial', ['buscar' => 'E2026001', 'periodo' => 202602]))
             ->assertOk()->assertSee('CP-501')->assertSee('Aprobado');
         $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.historial', ['buscar' => 'NADIE']))
             ->assertOk()->assertSee('No hay resultados para estos filtros.');
-        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados'))
-            ->assertOk()->assertSee(route('pre-matricula.coordinacion.resultados.importacion', $importacion->id_importacion));
-        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados.importacion', $importacion->id_importacion))
-            ->assertOk()->assertSee('Actas 2026-II')->assertSee('APROBADO · 16');
     }
 
     public function test_el_alumno_ve_su_historial_academico(): void

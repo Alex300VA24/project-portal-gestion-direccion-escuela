@@ -5,15 +5,12 @@ namespace Tests\Feature\PreMatricula;
 use App\Models\User;
 use App\Modules\PreMatricula\Models\CronogramaPrematricula;
 use App\Modules\PreMatricula\Models\HistorialAcademico;
-use App\Modules\PreMatricula\Models\ImportacionHistorial;
 use App\Modules\PreMatricula\Models\LimiteCreditosEstudiante;
 use App\Modules\PreMatricula\Models\RevisionSolicitud;
 use App\Modules\PreMatricula\Models\SolicitudPrematricula;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Shuchkin\SimpleXLSXGen;
+use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\CreatesPrematriculaAcademicData;
@@ -219,33 +216,10 @@ final class FlujoPrematriculaTest extends TestCase
         $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.estudiantes.show', 'E2026001'))->assertOk()->assertSee('Historial académico');
     }
 
-    public function test_la_importacion_de_resultados_valida_antes_de_guardar(): void
+    public function test_la_pantalla_de_resultados_oficiales_ya_no_existe(): void
     {
-        Storage::fake('local');
-        $this->abrirVentana();
-        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'));
-
-        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados.plantilla'))->assertOk();
-
-        $conError = $this->xlsx([['E2026001', 'CP-501', '2026-I', 25, 'APROBADO']]);
-        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.resultados.validar'), ['archivo' => $conError, 'motivo' => 'Actas 2026-I'])
-            ->assertSessionHas('reporte', fn (array $r): bool => $r['valido'] === false && $r['total_errores'] === 1);
-
-        $valido = $this->xlsx([['E2026001', 'CP-501', '2026-I', 16, 'APROBADO']]);
-        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.resultados.validar'), ['archivo' => $valido, 'motivo' => 'Actas 2026-I']);
-        $reporte = session('reporte');
-        $this->assertTrue($reporte['valido']);
-        $this->assertSame(0, HistorialAcademico::query()->count(), 'Validar no guarda nada.');
-
-        $this->actingAs($this->director)->post(route('pre-matricula.coordinacion.resultados.confirmar'), [
-            'sha256' => $reporte['sha256'], 'huella' => $reporte['huella'], 'motivo' => 'Actas 2026-I',
-        ])->assertSessionHas('status');
-
-        $this->assertSame(HistorialAcademico::APROBADO, HistorialAcademico::query()->sole()->estado);
-        $this->assertSame(801, (int) ImportacionHistorial::query()->sole()->creado_por);
-        $this->actingAs($this->director)->get(route('pre-matricula.coordinacion.resultados'))->assertOk()->assertSee('Actas 2026-I');
-
-        $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'))->assertSee('Programación Avanzada');
+        $this->assertFalse(Route::has('pre-matricula.coordinacion.resultados'));
+        $this->actingAs($this->director)->get('/pre-matricula/coordinacion/resultados')->assertNotFound();
     }
 
     public function test_la_api_del_modulo_se_mantiene(): void
@@ -279,14 +253,5 @@ final class FlujoPrematriculaTest extends TestCase
         $this->actingAs($this->alumno)->get(route('pre-matricula.alumno.index'));
         $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.agregar'), ['id_curso_plan' => $idCursoPlan]);
         $this->actingAs($this->alumno)->post(route('pre-matricula.alumno.registrar'))->assertSessionHas('status');
-    }
-
-    /** @param  list<list<mixed>>  $filas */
-    private function xlsx(array $filas): UploadedFile
-    {
-        $ruta = tempnam(sys_get_temp_dir(), 'res').'.xlsx';
-        SimpleXLSXGen::fromArray([['codigo_universitario', 'codigo_curso', 'codigo_periodo', 'nota_final', 'estado'], ...$filas])->saveAs($ruta);
-
-        return new UploadedFile($ruta, 'resultados.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
     }
 }

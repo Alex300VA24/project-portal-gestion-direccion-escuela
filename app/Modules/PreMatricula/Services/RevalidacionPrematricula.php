@@ -8,7 +8,7 @@ use App\Modules\PreMatricula\Models\ValidacionSolicitud;
 
 /**
  * Validación académica de una solicitud. No bloquea el registro: informa a la
- * Dirección si la selección sigue siendo válida tras importar nuevos resultados.
+ * Dirección si la selección sigue siendo válida según los resultados registrados.
  */
 final class RevalidacionPrematricula
 {

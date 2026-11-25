@@ -5,7 +5,7 @@
 
 @section('content')
     <header class="quality-page-heading">
-        <div><h1>Historial académico</h1><p>Resultados oficiales registrados por estudiante, curso y período. Se cargan desde <a href="{{ route('pre-matricula.coordinacion.resultados') }}">Resultados oficiales</a>.</p></div>
+        <div><h1>Historial académico</h1><p>Resultados registrados por estudiante, curso y período. Con ellos se validan los prerrequisitos de la prematrícula.</p></div>
     </header>
 
     <form class="pm-filters" method="GET" action="{{ route('pre-matricula.coordinacion.historial') }}" role="search">

@@ -3,7 +3,6 @@
 namespace App\Modules\PreMatricula\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\PreMatricula\Models\ImportacionHistorial;
 use App\Modules\PreMatricula\Requests\AlumnoRequest;
 use App\Modules\PreMatricula\Requests\CoordinacionRequest;
 use App\Modules\PreMatricula\Services\ConsultaPrematricula;
@@ -25,14 +24,6 @@ final class HistorialAcademicoController extends Controller
             'periodos' => $consulta->periodos(),
             'idPeriodo' => $idPeriodo,
             'historial' => $this->historial->listar($request->validated('buscar'), $idPeriodo),
-        ]);
-    }
-
-    public function importacion(CoordinacionRequest $request, ImportacionHistorial $importacion): View
-    {
-        return view('modules.pre-matricula.coordinacion.importacion', [
-            'importacion' => $importacion->load('autor'),
-            'cambios' => $this->historial->cambios($importacion),
         ]);
     }
 

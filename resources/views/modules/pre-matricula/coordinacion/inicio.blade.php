@@ -63,7 +63,7 @@
                 <section class="quality-panel" aria-labelledby="accesos-titulo">
                     <header class="quality-panel-heading"><div><h2 id="accesos-titulo">Accesos rápidos</h2></div></header>
                     <div class="pm-body pm-actions">
-                        <a class="pm-button is-secondary is-small" href="{{ route('pre-matricula.coordinacion.resultados') }}">Importar resultados</a>
+                        <a class="pm-button is-secondary is-small" href="{{ route('pre-matricula.coordinacion.plan') }}">Importar malla curricular</a>
                         <a class="pm-button is-secondary is-small" href="{{ route('pre-matricula.coordinacion.estudiantes') }}">Buscar estudiante</a>
                         <a class="pm-button is-secondary is-small" href="{{ route('pre-matricula.coordinacion.demanda.exportar', $periodo->id_periodo) }}">Exportar demanda (CSV)</a>
                     </div>

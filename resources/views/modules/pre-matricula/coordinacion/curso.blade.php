@@ -1,7 +1,7 @@
 @extends('modules.pre-matricula.layout')
 
 @section('title', 'Curso '.$curso->codigo)
-@section('page-label', 'Plan de estudios')
+@section('page-label', 'Cursos y malla curricular')
 
 @section('content')
     <header class="quality-page-heading">

@@ -12,7 +12,6 @@ use App\Modules\PreMatricula\Controllers\PlanEstudiosController;
 use App\Modules\PreMatricula\Controllers\PreMatriculaController;
 use App\Modules\PreMatricula\Controllers\RegistroController;
 use App\Modules\PreMatricula\Controllers\RegistroEstudianteController;
-use App\Modules\PreMatricula\Controllers\ResultadoOficialController;
 use App\Modules\PreMatricula\Controllers\VentanaController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,13 +61,7 @@ Route::prefix('pre-matricula')
                 Route::get('/ventanas', [VentanaController::class, 'index'])->name('ventanas');
                 Route::post('/ventanas', [VentanaController::class, 'store'])->name('ventanas.store');
 
-                Route::get('/resultados', [ResultadoOficialController::class, 'index'])->name('resultados');
-                Route::get('/resultados/plantilla', [ResultadoOficialController::class, 'plantilla'])->name('resultados.plantilla');
-                Route::post('/resultados/validar', [ResultadoOficialController::class, 'validar'])->name('resultados.validar');
-                Route::post('/resultados/confirmar', [ResultadoOficialController::class, 'confirmar'])->name('resultados.confirmar');
-
                 Route::get('/historial', [HistorialAcademicoController::class, 'index'])->name('historial');
-                Route::get('/resultados/importaciones/{importacion}', [HistorialAcademicoController::class, 'importacion'])->whereNumber('importacion')->name('resultados.importacion');
                 Route::get('/registros', [RegistroController::class, 'index'])->name('registros');
                 Route::get('/registros/{solicitud}', [RegistroController::class, 'show'])->whereNumber('solicitud')->name('registros.show');
 

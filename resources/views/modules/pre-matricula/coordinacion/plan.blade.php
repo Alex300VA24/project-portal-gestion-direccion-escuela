@@ -1,13 +1,13 @@
 @extends('modules.pre-matricula.layout')
 
-@section('title', 'Plan de estudios')
-@section('page-label', 'Plan de estudios')
+@section('title', 'Cursos y malla curricular')
+@section('page-label', 'Cursos y malla curricular')
 
 @php $reporte = session('reporte_malla'); @endphp
 
 @section('content')
     <header class="quality-page-heading">
-        <div><h1>Plan de estudios</h1><p>@if ($plan) Malla del plan {{ $plan->codigo }}. Un curso usado en historial o prematrícula conserva sus datos académicos, salvo una corrección confirmada. @else {{ $aviso }} @endif</p></div>
+        <div><h1>Cursos y malla curricular</h1><p>@if ($plan) Malla del plan {{ $plan->codigo }}. Puedes importarla o exportarla en Excel y corregir cada curso. Un curso usado en historial o prematrícula conserva sus datos académicos, salvo una corrección confirmada. @else {{ $aviso }} @endif</p></div>
         @if ($plan)
             <div class="pm-actions">
                 <a class="pm-button is-secondary" href="{{ route('pre-matricula.coordinacion.plan.plantilla') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Plantilla</a>
@@ -50,7 +50,7 @@
 
             <div class="pm-grid">
                 <section class="quality-panel" aria-labelledby="importar-titulo">
-                    <header class="quality-panel-heading"><div><h2 id="importar-titulo">Importar malla</h2><p>Columnas: {{ implode(', ', \App\Modules\PreMatricula\Services\PlanEstudios::COLUMNAS) }}. Prerrequisitos separados por punto y coma.</p></div></header>
+                    <header class="quality-panel-heading"><div><h2 id="importar-titulo">Importar malla curricular (Excel)</h2><p>Columnas: {{ implode(', ', \App\Modules\PreMatricula\Services\PlanEstudios::COLUMNAS) }}. Prerrequisitos separados por punto y coma.</p></div></header>
                     <form class="pm-form pm-body" method="POST" action="{{ route('pre-matricula.coordinacion.plan.validar') }}" enctype="multipart/form-data" x-data="{ enviando: false }" @submit="enviando = true">
                         @csrf
                         <label class="pm-field"><span>Archivo .xlsx (máximo 5 MB)</span><input type="file" name="archivo" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></label>
