@@ -1,0 +1,410 @@
+{
+  "contrato": "HORARIOS_MOTOR_V1",
+  "periodo": "FICTICIO",
+  "configuracion": {
+    "calendario": {
+      "dias": [
+        "LUNES",
+        "MARTES",
+        "MIERCOLES",
+        "JUEVES",
+        "VIERNES",
+        "SABADO"
+      ],
+      "hora_inicial": 7,
+      "hora_final": 20,
+      "receso": {
+        "inicio": 13,
+        "fin": 14
+      },
+      "sabados_por_ciclo": {
+        "2": false
+      },
+      "bloques_hora_base": [
+        {
+          "inicio": 7,
+          "fin": 8
+        },
+        {
+          "inicio": 8,
+          "fin": 9
+        },
+        {
+          "inicio": 9,
+          "fin": 10
+        },
+        {
+          "inicio": 10,
+          "fin": 11
+        },
+        {
+          "inicio": 11,
+          "fin": 12
+        },
+        {
+          "inicio": 12,
+          "fin": 13
+        },
+        {
+          "inicio": 14,
+          "fin": 15
+        },
+        {
+          "inicio": 15,
+          "fin": 16
+        },
+        {
+          "inicio": 16,
+          "fin": 17
+        },
+        {
+          "inicio": 17,
+          "fin": 18
+        },
+        {
+          "inicio": 18,
+          "fin": 19
+        },
+        {
+          "inicio": 19,
+          "fin": 20
+        }
+      ]
+    },
+    "capacidad_subgrupo_autorizada": 20
+  },
+  "secciones": [
+    {
+      "id": "S1",
+      "curso_id": "901",
+      "nombre": "Curso 1",
+      "ciclo": 2,
+      "etiqueta": "A",
+      "capacidad": 20,
+      "estado": "AUTORIZADA",
+      "horas": {
+        "T": 2,
+        "P": 0,
+        "LAB": 2
+      },
+      "estudiantes": [
+        {
+          "estudiante_id": "FICTICIO_0",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_1",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_2",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_3",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_4",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_5",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_6",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_7",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_8",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_9",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_10",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_11",
+          "preferencia": "TARDE"
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "curso_id": "902",
+      "nombre": "Curso 2",
+      "ciclo": 2,
+      "etiqueta": "A",
+      "capacidad": 20,
+      "estado": "AUTORIZADA",
+      "horas": {
+        "T": 2,
+        "P": 2,
+        "LAB": 0
+      },
+      "estudiantes": [
+        {
+          "estudiante_id": "FICTICIO_0",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_1",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_2",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_3",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_4",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_5",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_6",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_7",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_8",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_9",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_10",
+          "preferencia": "TARDE"
+        },
+        {
+          "estudiante_id": "FICTICIO_11",
+          "preferencia": "TARDE"
+        }
+      ]
+    }
+  ],
+  "actividades": [
+    {
+      "id": "A1",
+      "seccion_id": "S1",
+      "docente_id": "D1",
+      "tipo": "T",
+      "horas": 2,
+      "duraciones": [
+        2
+      ],
+      "estudiantes": [
+        "FICTICIO_0",
+        "FICTICIO_1",
+        "FICTICIO_2",
+        "FICTICIO_3",
+        "FICTICIO_4",
+        "FICTICIO_5",
+        "FICTICIO_6",
+        "FICTICIO_7",
+        "FICTICIO_8",
+        "FICTICIO_9",
+        "FICTICIO_10",
+        "FICTICIO_11"
+      ],
+      "subgrupo": null,
+      "repeticion": false,
+      "fuente_asignacion": "FICTICIA"
+    },
+    {
+      "id": "A2",
+      "seccion_id": "S1",
+      "docente_id": "D1",
+      "tipo": "LAB",
+      "horas": 2,
+      "duraciones": [
+        2
+      ],
+      "estudiantes": [
+        "FICTICIO_0",
+        "FICTICIO_1",
+        "FICTICIO_2",
+        "FICTICIO_3",
+        "FICTICIO_4",
+        "FICTICIO_5",
+        "FICTICIO_6",
+        "FICTICIO_7",
+        "FICTICIO_8",
+        "FICTICIO_9",
+        "FICTICIO_10",
+        "FICTICIO_11"
+      ],
+      "subgrupo": "G1",
+      "repeticion": false,
+      "fuente_asignacion": "FICTICIA"
+    },
+    {
+      "id": "A3",
+      "seccion_id": "S2",
+      "docente_id": "D2",
+      "tipo": "T",
+      "horas": 2,
+      "duraciones": [
+        2
+      ],
+      "estudiantes": [
+        "FICTICIO_0",
+        "FICTICIO_1",
+        "FICTICIO_2",
+        "FICTICIO_3",
+        "FICTICIO_4",
+        "FICTICIO_5",
+        "FICTICIO_6",
+        "FICTICIO_7",
+        "FICTICIO_8",
+        "FICTICIO_9",
+        "FICTICIO_10",
+        "FICTICIO_11"
+      ],
+      "subgrupo": null,
+      "repeticion": false,
+      "fuente_asignacion": "FICTICIA"
+    },
+    {
+      "id": "A4",
+      "seccion_id": "S2",
+      "docente_id": "D2",
+      "tipo": "P",
+      "horas": 2,
+      "duraciones": [
+        2
+      ],
+      "estudiantes": [
+        "FICTICIO_0",
+        "FICTICIO_1",
+        "FICTICIO_2",
+        "FICTICIO_3",
+        "FICTICIO_4",
+        "FICTICIO_5",
+        "FICTICIO_6",
+        "FICTICIO_7",
+        "FICTICIO_8",
+        "FICTICIO_9",
+        "FICTICIO_10",
+        "FICTICIO_11"
+      ],
+      "subgrupo": null,
+      "repeticion": false,
+      "fuente_asignacion": "FICTICIA"
+    }
+  ],
+  "ambientes": [
+    {
+      "id": "R1",
+      "codigo": "R1",
+      "nombre": "Aula",
+      "tipo": "AULA",
+      "capacidad": 20,
+      "activo": true
+    },
+    {
+      "id": "R2",
+      "codigo": "R2",
+      "nombre": "Aula 2",
+      "tipo": "AULA",
+      "capacidad": 20,
+      "activo": true
+    },
+    {
+      "id": "L1",
+      "codigo": "L1",
+      "nombre": "Laboratorio",
+      "tipo": "LAB",
+      "capacidad": 20,
+      "activo": true
+    }
+  ],
+  "disponibilidades": [
+    {
+      "docente_id": "D1",
+      "estado": "DECLARADA",
+      "franjas": [
+        {
+          "dia": "LUNES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "MARTES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "MIERCOLES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "JUEVES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "VIERNES",
+          "inicio": 7,
+          "fin": 20
+        }
+      ]
+    },
+    {
+      "docente_id": "D2",
+      "estado": "DECLARADA",
+      "franjas": [
+        {
+          "dia": "LUNES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "MARTES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "MIERCOLES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "JUEVES",
+          "inicio": 7,
+          "fin": 20
+        },
+        {
+          "dia": "VIERNES",
+          "inicio": 7,
+          "fin": 20
+        }
+      ]
+    }
+  ],
+  "bloqueos": [],
+  "sesiones": [],
+  "tiempo_limite": 5,
+  "alcance": []
+}
