@@ -5,8 +5,48 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('cotecu')
     ->name('cotecu.')
+    ->middleware(['auth', 'permission:cotecu.view'])
     ->group(function () {
         Route::get('/', [CotecuController::class, 'index'])->name('index');
-        Route::get('/crear', [CotecuController::class, 'create'])->name('create');
-        Route::post('/', [CotecuController::class, 'store'])->name('store');
+
+        Route::get('/mis-silabos', [CotecuController::class, 'misSilabos'])
+            ->middleware('permission:cotecu.silabo.upload')->name('mis-silabos');
+
+        Route::post('/mis-silabos', [CotecuController::class, 'storeSilabo'])
+            ->middleware('permission:cotecu.silabo.upload')->name('mis-silabos.store');
+
+        Route::get('/silabos', [CotecuController::class, 'silabos'])
+            ->middleware('permission:cotecu.silabo.list')->name('silabos.index');
+
+        Route::get('/silabos/revisiones', [CotecuController::class, 'revisionesSilabos'])
+            ->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones');
+
+        Route::get('/silabos/revisiones/{revision}', [CotecuController::class, 'revisarSilabo'])
+            ->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones.show');
+
+        Route::post('/silabos/revisiones/{revision}', [CotecuController::class, 'storeRevision'])
+            ->middleware('permission:cotecu.silabo.review')->name('silabos.revisiones.store');
+
+        Route::get('/mis-planes', [CotecuController::class, 'misPlanes'])
+            ->middleware('permission:cotecu.plan.upload')->name('mis-planes');
+
+        Route::post('/mis-planes', [CotecuController::class, 'store'])
+            ->middleware('permission:cotecu.plan.upload')->name('mis-planes.store');
+
+        Route::get('/planes', [CotecuController::class, 'planes'])
+            ->middleware('permission:cotecu.plan.list')->name('planes.index');
+
+        Route::get('/planes/revisiones', [CotecuController::class, 'revisionesPlanes'])
+            ->middleware('permission:cotecu.plan.review')->name('planes.revisiones');
+
+        Route::get('/planes/revisiones/{revision}', [CotecuController::class, 'revisarPlan'])
+            ->middleware('permission:cotecu.plan.review')->name('planes.revisiones.show');
+
+        Route::post('/planes/revisiones/{revision}', [CotecuController::class, 'storeRevisionPlan'])
+            ->middleware('permission:cotecu.plan.review')->name('planes.revisiones.store');
+
+        // Sin permiso propio: la lista la ve todo el que entra al módulo
+        // (cotecu.view) y el servicio filtra cada documento por su permiso.
+        Route::get('/documentos-oficiales', [CotecuController::class, 'documentosOficiales'])
+            ->name('documentos-oficiales');
     });
