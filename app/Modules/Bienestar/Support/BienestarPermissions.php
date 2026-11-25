@@ -8,6 +8,8 @@ final class BienestarPermissions
 
     public const REPORTAR = 'bienestar.reportar';
 
+    public const SECRETARIA = 'bienestar.secretaria';
+
     public const GESTIONAR = 'bienestar.gestionar';
 
     public const ESTADISTICAS = 'bienestar.estadisticas';
@@ -18,34 +20,39 @@ final class BienestarPermissions
 
     public const ROL_SECRETARIA = 'secretaria';
 
+    public const ROL_BIENESTAR = 'bienestar';
+
     public const ROL_DIRECTOR = 'director_escuela';
 
     public const ALL = [
         self::SOLICITAR,
         self::REPORTAR,
+        self::SECRETARIA,
         self::GESTIONAR,
         self::ESTADISTICAS,
     ];
 
     /**
-     * Mapeo canónico único: Permiso Spatie <-> Rol Spatie equivalente
+     * Mapeo canónico único: Permiso Spatie <-> Rol Spatie principal equivalente
      */
     public const MAP = [
         self::SOLICITAR => self::ROL_ALUMNO,
         self::REPORTAR => self::ROL_PROFESOR,
-        self::GESTIONAR => self::ROL_SECRETARIA,
+        self::SECRETARIA => self::ROL_SECRETARIA,
+        self::GESTIONAR => self::ROL_BIENESTAR,
         self::ESTADISTICAS => self::ROL_DIRECTOR,
     ];
 
     public const ROLE_PERMISSIONS = [
         self::ROL_ALUMNO => [self::SOLICITAR],
         self::ROL_PROFESOR => [self::REPORTAR],
-        self::ROL_SECRETARIA => [self::GESTIONAR],
+        self::ROL_SECRETARIA => [self::SECRETARIA],
+        self::ROL_BIENESTAR => [self::GESTIONAR, self::ESTADISTICAS],
         self::ROL_DIRECTOR => [self::ESTADISTICAS],
     ];
 
     /**
-     * Expresión Spatie para middleware role_or_permission (ej. "role_or_permission:alumno|bienestar.solicitar")
+     * Expresión Spatie para middleware role_or_permission (ej. "role_or_permission:secretaria|bienestar.secretaria")
      */
     public static function roleOrPermission(string $permission): string
     {
@@ -63,11 +70,15 @@ final class BienestarPermissions
             return false;
         }
 
-        // 1. Rol Spatie equivalente
+        // 1. Rol Spatie directo o equivalente
         $role = self::MAP[$permission] ?? null;
-        if ($role && method_exists($user, 'hasRole')) {
+        if (method_exists($user, 'hasRole')) {
             try {
-                if ($user->hasRole($role)) {
+                if ($role && $user->hasRole($role)) {
+                    return true;
+                }
+                // El rol bienestar también tiene acceso a estadísticas
+                if ($permission === self::ESTADISTICAS && $user->hasRole(self::ROL_BIENESTAR)) {
                     return true;
                 }
             } catch (\Throwable) {
@@ -75,7 +86,7 @@ final class BienestarPermissions
             }
         }
 
-        // 2. Permiso Spatie directo o heredado vía Spatie (no usar $user->can() para evitar recursión con Gate::define)
+        // 2. Permiso Spatie directo o heredado vía Spatie
         if (method_exists($user, 'hasPermissionTo')) {
             try {
                 if ($user->hasPermissionTo($permission)) {

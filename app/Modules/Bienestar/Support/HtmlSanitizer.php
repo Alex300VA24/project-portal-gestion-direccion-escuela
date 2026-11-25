@@ -59,7 +59,9 @@ final class HtmlSanitizer
                 $tagName = strtolower($child->tagName);
 
                 if (! in_array($tagName, self::ALLOWED_TAGS, true)) {
-                    // Si el tag no está permitido, reemplazamos por sus nodos hijos o texto
+                    // Si el tag no está permitido, reemplazamos por sus nodos hijos o texto,
+                    // saneándolos antes: al subir de nivel el bucle ya no vuelve a visitarlos
+                    self::sanitizeNode($child);
                     while ($child->hasChildNodes()) {
                         $node->insertBefore($child->firstChild, $child);
                     }

@@ -159,10 +159,10 @@ final class RiesgoAcademicoService
             foreach ($condicionesDetectadas as $key => $cond) {
                 if (isset($alertasMap[$key])) {
                     $alerta = $alertasMap[$key];
-                    // Si estaba resuelta automáticamente y la condición reaparece, se reabre
+                    // Si estaba resuelta automáticamente y la condición reaparece, se reabre para revisión de Secretaría
                     if ($alerta->estado === 'resuelta_automaticamente') {
                         $alerta->update([
-                            'estado' => 'pendiente',
+                            'estado' => 'en_revision',
                             'fecha_resolucion' => null,
                             'detalles' => $cond['detalles'],
                         ]);
@@ -170,7 +170,7 @@ final class RiesgoAcademicoService
                     }
                     // Si está 'atendida' o 'descartada', NUNCA se reabre (regla obligatoria)
                 } else {
-                    // Alerta nueva
+                    // Alerta nueva: pasa a la bandeja de Secretaría en estado 'en_revision'
                     AlertaRiesgo::create([
                         'id_estudiante' => $cond['id_estudiante'],
                         'periodo' => $periodo,
@@ -178,7 +178,7 @@ final class RiesgoAcademicoService
                         'regla' => $cond['regla'],
                         'origen' => 'automatica',
                         'prioridad' => $cond['prioridad'],
-                        'estado' => 'pendiente',
+                        'estado' => 'en_revision',
                         'detalles' => $cond['detalles'],
                         'fecha_deteccion' => now(),
                     ]);
@@ -191,8 +191,8 @@ final class RiesgoAcademicoService
                 $k = "{$alerta->id_estudiante}:{$alerta->curso}:{$alerta->regla}";
                 if (! isset($condicionesDetectadas[$k])) {
                     // Si ya no existe la condición:
-                    // Solo marcar como resuelta_automaticamente si estaba en 'pendiente' o 'en_atencion'
-                    if (in_array($alerta->estado, ['pendiente', 'en_atencion'], true)) {
+                    // Solo marcar como resuelta_automaticamente si estaba en 'en_revision', 'remitida_bienestar' o 'en_atencion'
+                    if (in_array($alerta->estado, ['en_revision', 'remitida_bienestar', 'pendiente', 'en_atencion'], true)) {
                         $alerta->update([
                             'estado' => 'resuelta_automaticamente',
                             'fecha_resolucion' => now(),
