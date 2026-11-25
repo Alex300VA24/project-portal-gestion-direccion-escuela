@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Modules\Bienestar\Contracts\FuenteAcademicaInterface;
 use App\Modules\Bienestar\Models\AlertaRiesgo;
 use App\Modules\Bienestar\Requests\ReporteDocenteRequest;
+use App\Modules\Bienestar\Services\NotificacionService;
 use App\Modules\Bienestar\Support\ActorBienestarResolver;
 use App\Modules\Bienestar\Support\BienestarPermissions;
+use App\Modules\Bienestar\Support\FiltrosConsulta;
 use App\Shared\Models\Core\Estudiante;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -39,32 +41,23 @@ final class ProfesorReporteController extends Controller
 
         return view('modules.bienestar.profesor.index', [
             'reportes' => $reportes,
+            'estudiantesAsignados' => $this->fuenteAcademica->obtenerEstudiantesDocente($actor->codigoDocente ?? 'DOC-PRF-001', FiltrosConsulta::periodoActivo()),
             'actor' => $actor,
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(): RedirectResponse
     {
         Gate::authorize(BienestarPermissions::REPORTAR);
 
-        $actor = ActorBienestarResolver::resolve($request->user());
-        ActorBienestarResolver::ensureDocente($actor);
-
-        $codigoDocente = $actor->codigoDocente ?? 'DOC-PRF-001';
-
-        $estudiantesAsignados = $this->fuenteAcademica->obtenerEstudiantesDocente($codigoDocente, '2026-I');
-
-        return view('modules.bienestar.profesor.create', [
-            'actor' => $actor,
-            'estudiantesAsignados' => $estudiantesAsignados,
-        ]);
+        return redirect()->route('bienestar.profesor.index', ['abrir' => 'm-reporte']);
     }
 
     public function buscarEstudiante(Request $request): JsonResponse
     {
         Gate::authorize(BienestarPermissions::REPORTAR);
 
-        $codigo = trim((string) $request->input('codigo'));
+        $codigo = trim(FiltrosConsulta::texto($request)['codigo'] ?? '');
         $key = 'docente-busqueda-estudiante:'.$request->user()?->id;
 
         if (RateLimiter::tooManyAttempts($key, 10)) {
@@ -88,29 +81,32 @@ final class ProfesorReporteController extends Controller
         return response()->json($estudiante);
     }
 
-    public function store(ReporteDocenteRequest $request): RedirectResponse
+    public function store(ReporteDocenteRequest $request, NotificacionService $notificaciones): RedirectResponse
     {
         $actor = ActorBienestarResolver::resolve($request->user());
         ActorBienestarResolver::ensureDocente($actor);
 
         $estudiante = Estudiante::where('codigo_universitario', $request->codigo_estudiante)->firstOrFail();
 
-        AlertaRiesgo::create([
+        $alerta = AlertaRiesgo::create([
             'id_estudiante' => $estudiante->id_estudiante,
-            'periodo' => '2026-I',
+            'periodo' => FiltrosConsulta::periodoActivo(),
             'curso' => $request->curso,
             'regla' => 'reporte_docente',
             'origen' => 'reporte_docente',
             'prioridad' => $request->prioridad,
-            'estado' => 'pendiente',
+            'estado' => 'en_revision',
             'id_docente' => $actor->idDocente,
             'motivo_reporte' => $request->motivo_reporte,
+            'categoria_motivo' => $request->input('categoria_motivo'),
             'descripcion_reporte' => $request->descripcion_reporte,
             'fecha_deteccion' => now(),
         ]);
 
+        $notificaciones->alertaNueva($alerta->id_alerta);
+
         return redirect()
             ->route('bienestar.profesor.index')
-            ->with('status', 'Reporte de riesgo estudiantil enviado correctamente a la Dirección de Bienestar.');
+            ->with('status', 'Reporte de riesgo estudiantil enviado correctamente a Secretaría para su revisión y filtrado.');
     }
 }

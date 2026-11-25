@@ -20,7 +20,7 @@ final class StoreDerivacionRequest extends FormRequest
         return [
             'id_caso' => ['required', Rule::exists(CasoBienestar::class, 'id_caso')],
             'id_especialista_destino' => ['nullable', Rule::exists(Especialista::class, 'id_especialista')],
-            'entidad_externa' => ['nullable', 'string', 'max:180'],
+            'entidad_externa' => ['required_without:id_especialista_destino', 'nullable', 'string', 'max:180'],
             'motivo' => ['required', 'string', 'min:5'],
             'consentimiento_estudiante' => ['required', 'boolean', 'accepted'],
         ];
@@ -29,6 +29,7 @@ final class StoreDerivacionRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'entidad_externa.required_without' => 'Debe seleccionar un especialista o indicar la entidad externa de destino.',
             'consentimiento_estudiante.accepted' => 'Es obligatorio contar con el consentimiento expreso del estudiante para proceder con la derivación externa.',
         ];
     }

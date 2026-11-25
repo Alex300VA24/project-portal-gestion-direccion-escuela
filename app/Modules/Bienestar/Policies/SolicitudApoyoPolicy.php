@@ -12,12 +12,17 @@ final class SolicitudApoyoPolicy
     public function viewAny(User $user): bool
     {
         return BienestarPermissions::check($user, BienestarPermissions::SOLICITAR)
+            || BienestarPermissions::check($user, BienestarPermissions::SECRETARIA)
             || BienestarPermissions::check($user, BienestarPermissions::GESTIONAR);
     }
 
     public function view(User $user, SolicitudApoyo $solicitud): bool
     {
         if (BienestarPermissions::check($user, BienestarPermissions::GESTIONAR)) {
+            return in_array($solicitud->estado, ['remitida', 'aprobada', 'rechazada'], true);
+        }
+
+        if (BienestarPermissions::check($user, BienestarPermissions::SECRETARIA)) {
             return true;
         }
 
@@ -35,8 +40,27 @@ final class SolicitudApoyoPolicy
         return BienestarPermissions::check($user, BienestarPermissions::SOLICITAR);
     }
 
-    public function dictaminar(User $user): bool
+    public function revisar(User $user, SolicitudApoyo $solicitud): bool
     {
-        return BienestarPermissions::check($user, BienestarPermissions::GESTIONAR);
+        return BienestarPermissions::check($user, BienestarPermissions::SECRETARIA);
+    }
+
+    public function subsanar(User $user, SolicitudApoyo $solicitud): bool
+    {
+        if (! BienestarPermissions::check($user, BienestarPermissions::SOLICITAR)) {
+            return false;
+        }
+
+        $actor = ActorBienestarResolver::resolve($user);
+
+        return $actor->idEstudiante !== null
+            && $solicitud->id_estudiante === $actor->idEstudiante
+            && $solicitud->estado === 'observada';
+    }
+
+    public function dictaminar(User $user, SolicitudApoyo $solicitud): bool
+    {
+        return BienestarPermissions::check($user, BienestarPermissions::GESTIONAR)
+            && $solicitud->puedeDictaminarse();
     }
 }

@@ -3,82 +3,78 @@
 namespace App\Modules\Bienestar\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Bienestar\Models\AlertaRiesgo;
-use App\Modules\Bienestar\Models\CasoBienestar;
-use App\Modules\Bienestar\Models\Derivacion;
+use App\Modules\Bienestar\Services\ReporteEstadisticoService;
+use App\Modules\Bienestar\Support\ActorBienestarResolver;
 use App\Modules\Bienestar\Support\BienestarPermissions;
+use App\Modules\Bienestar\Support\FiltrosConsulta;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class DirectorEstadisticasController extends Controller
 {
+    public function __construct(
+        private readonly ReporteEstadisticoService $reporteService,
+    ) {}
+
     public function index(Request $request): View
     {
         Gate::authorize(BienestarPermissions::ESTADISTICAS);
 
-        $periodo = (string) ($request->input('periodo')
-            ?? DB::table('core.periodo_academico')->where('estado', 'ACTIVO')->value('codigo')
-            ?? '2026-I');
+        $actor = ActorBienestarResolver::resolve($request->user());
 
-        $periodosDisponibles = DB::table('core.periodo_academico')
-            ->orderBy('codigo', 'desc')
-            ->pluck('codigo')
-            ->toArray();
+        $periodo = FiltrosConsulta::periodo($request);
 
-        if (empty($periodosDisponibles)) {
-            $periodosDisponibles = ['2026-I'];
-        }
+        $fechaInicio = FiltrosConsulta::fecha($request, 'fecha_inicio');
+        $fechaFin = FiltrosConsulta::fecha($request, 'fecha_fin');
 
-        // 1. Conteos agregados por origen
-        $porOrigenRaw = AlertaRiesgo::where('periodo', $periodo)
-            ->select('origen', DB::raw('count(*) as total'))
-            ->groupBy('origen')
-            ->pluck('total', 'origen')
-            ->toArray();
+        $datos = $this->reporteService->obtenerReporteCompleto($periodo, $fechaInicio, $fechaFin);
 
-        // 2. Conteos agregados por regla
-        $porReglaRaw = AlertaRiesgo::where('periodo', $periodo)
-            ->select('regla', DB::raw('count(*) as total'))
-            ->groupBy('regla')
-            ->pluck('total', 'regla')
-            ->toArray();
+        return view('modules.bienestar.director.index', array_merge($datos, [
+            'actor' => $actor,
+        ]));
+    }
 
-        // 3. Conteos agregados por estado
-        $porEstadoRaw = AlertaRiesgo::where('periodo', $periodo)
-            ->select('estado', DB::raw('count(*) as total'))
-            ->groupBy('estado')
-            ->pluck('total', 'estado')
-            ->toArray();
+    public function exportarCsv(Request $request): StreamedResponse
+    {
+        Gate::authorize(BienestarPermissions::ESTADISTICAS);
 
-        // 4. Casos y derivaciones agregados
-        $totalCasos = CasoBienestar::count();
-        $totalDerivaciones = Derivacion::count();
+        $periodo = FiltrosConsulta::periodo($request);
 
-        // Aplicación estricta de k-anonimato: Celdas menores a 5 se muestran como "menos de 5"
-        $formatK = static function (int $count): string {
-            if ($count > 0 && $count < 5) {
-                return 'menos de 5';
-            }
+        $fechaInicio = FiltrosConsulta::fecha($request, 'fecha_inicio');
+        $fechaFin = FiltrosConsulta::fecha($request, 'fecha_fin');
 
-            return (string) $count;
-        };
+        $datos = $this->reporteService->obtenerReporteCompleto($periodo, $fechaInicio, $fechaFin);
+        $csvContent = $this->reporteService->exportarCsv($datos);
 
-        $porOrigen = array_map($formatK, $porOrigenRaw);
-        $porRegla = array_map($formatK, $porReglaRaw);
-        $porEstado = array_map($formatK, $porEstadoRaw);
+        $filename = "reporte-bienestar-unt-{$periodo}-".now()->format('Ymd_His').'.csv';
 
-        return view('modules.bienestar.director.index', [
-            'periodo' => $periodo,
-            'periodosDisponibles' => $periodosDisponibles,
-            'porOrigen' => $porOrigen,
-            'porRegla' => $porRegla,
-            'porEstado' => $porEstado,
-            'totalCasos' => $formatK($totalCasos),
-            'totalDerivaciones' => $formatK($totalDerivaciones),
+        return response()->streamDownload(function () use ($csvContent) {
+            echo "\xEF\xBB\xBF"; // UTF-8 BOM
+            echo $csvContent;
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    public function imprimir(Request $request): View
+    {
+        Gate::authorize(BienestarPermissions::ESTADISTICAS);
+
+        $actor = ActorBienestarResolver::resolve($request->user());
+
+        $periodo = FiltrosConsulta::periodo($request);
+
+        $fechaInicio = FiltrosConsulta::fecha($request, 'fecha_inicio');
+        $fechaFin = FiltrosConsulta::fecha($request, 'fecha_fin');
+
+        $datos = $this->reporteService->obtenerReporteCompleto($periodo, $fechaInicio, $fechaFin);
+
+        return view('modules.bienestar.reportes.imprimir', array_merge($datos, [
+            'actor' => $actor,
+        ]));
     }
 
     /**
