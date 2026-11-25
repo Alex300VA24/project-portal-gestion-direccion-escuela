@@ -3,12 +3,14 @@
 namespace Tests\Feature\PreMatricula;
 
 use App\Models\User;
+use App\Modules\PreMatricula\Database\Seeders\PreMatriculaDemoSeeder;
 use App\Modules\PreMatricula\Models\CronogramaPrematricula;
 use App\Modules\PreMatricula\Models\DetalleSolicitud;
 use App\Modules\PreMatricula\Models\HistorialAcademico;
 use App\Modules\PreMatricula\Models\LimiteCreditosEstudiante;
 use App\Modules\PreMatricula\Models\SolicitudPrematricula;
 use App\Modules\PreMatricula\Services\PlanEstudios;
+use App\Modules\PreMatricula\Services\VentanaPrematricula;
 use App\Shared\Models\Core\PeriodoAcademico;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
@@ -351,6 +353,24 @@ final class FuncionesMasterTest extends TestCase
         ]);
 
         return $this->usuario('e2026001@unitru.edu.pe', 'alumno');
+    }
+
+    // ---- Datos de demostración ----
+
+    public function test_el_seeder_de_demostracion_vincula_al_alumno_y_es_idempotente(): void
+    {
+        $alumno = $this->usuario('alumno@portal.local', 'alumno');
+
+        $this->seed(PreMatriculaDemoSeeder::class);
+        $this->seed(PreMatriculaDemoSeeder::class);
+
+        $this->assertSame('PREMATRICULA', PeriodoAcademico::query()->findOrFail(202602)->estado);
+        $this->assertNotNull(app(VentanaPrematricula::class)->activa(202602));
+        $this->assertSame(1, DB::table('seguridad.usuario')->where('correo_institucional', 'alumno@portal.local')->count());
+        $this->assertSame(1, DB::table('core.estudiante')->where('codigo_universitario', '1000000001')->count());
+        $this->assertSame(1, PeriodoAcademico::query()->where('codigo', '2026-I')->count());
+
+        $this->actingAs($alumno)->get(route('pre-matricula.alumno.index'))->assertOk()->assertSee('1000000001')->assertSee('Cursos disponibles');
     }
 
     /** @param  list<list<mixed>>  $filas */
