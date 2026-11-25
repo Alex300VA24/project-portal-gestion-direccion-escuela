@@ -14,25 +14,42 @@ flowchart TD
         C[Personal de Bienestar] -->|Redacta / Sanitiza| B
     end
 
-    subgraph Deteccion["2. Detección de Riesgo"]
+    subgraph Deteccion["2. Detección y Reporte de Alertas"]
         D[(Módulo Matrícula)] -->|FuenteAcademicaInterface| E[Comando Nocturno 02:00]
-        E -->|Reglas automáticas| F[(bienestar.alerta_riesgo)]
-        G[Docente] -->|Reporte con búsqueda exacta| F
+        E -->|Reglas automáticas| F[(bienestar.alerta_riesgo: en_revision)]
+        G[Docente con Login] -->|Reporta riesgo| F
     end
 
-    subgraph Gestion["3. Hub Operativo Bienestar"]
-        F --> H[Panel de Alertas]
-        H -->|Abrir Caso| I[(bienestar.caso_bienestar)]
-        H -->|Cita Directa| J[(bienestar.cita)]
-        H -->|Descartar justificado| K[Alerta Descartada]
-        I -->|Consentimiento informado| L[(bienestar.derivacion)]
+    subgraph FiltroSec["3. Filtro de Secretaría (Ley 29733)"]
+        F --> H{Bandeja Secretaría}
+        H -->|Salvaguarda: No descartable si es Alto Riesgo| H1[Pasar a Bienestar]
+        H -->|Descarte justificado con motivo| H2[(bienestar.alerta_bitacora: descartado)]
+        H1 --> H3[(bienestar.alerta_bitacora: pasado_a_bienestar)]
+    end
+
+    subgraph Tramites["4. Catálogo y Solicitudes UNT"]
+        T1[Catálogo UNT Administrable] --> T2[Estudiante sube requisitos obligatorios]
+        T2 -->|enviada| T3[Secretaría: Revisión requisito x requisito]
+        T3 -->|observar| T4[Estudiante subsana únicamente lo observado]
+        T4 -->|recibida| T3
+        T3 -->|remitir + confirmación folio externo| T5[(Solicitud remitida con folio confirmado)]
+    end
+
+    subgraph Gestion["5. Hub Operativo Bienestar"]
+        H3 --> I[Alertas Remitidas]
+        H2 -.->|Consulta y reapertura| I
+        T5 -->|Dictamen| I1[Aprobar / Rechazar Solicitud]
+        I -->|Abrir Caso| J[(bienestar.caso_bienestar)]
+        I -->|Cita Directa| K[(bienestar.cita)]
+        J -->|Consentimiento informado| L[(bienestar.derivacion)]
         L --> M[Ficha Imprimible HTML]
         L --> N[Registro de Contrarreferencia]
     end
 
-    subgraph Direccion["4. Dirección de Escuela"]
-        F --> O[Estadísticas Agregadas]
-        O -->|K-Anonimato < 5| P[Reporte Consolidado]
+    subgraph Direccion["6. Dirección de Escuela y Estadísticas"]
+        I --> O[Estadísticas e Indicadores KPI]
+        O -->|Chart.js + Tablas Accesibles| P[Reporte Completo sin censura < 5]
+        P --> Q[Exportación CSV y Vista Imprimible]
     end
 ```
 
@@ -56,6 +73,7 @@ flowchart TD
 ### Flujo 2: Detección Automática de Riesgo Académico
 - **Programación:** Comando diario `bienestar:detectar-riesgo` a las **02:00 America/Lima** (07:00 UTC) mediante el Scheduler de Laravel.
 - **Desacoplamiento:** Consume `FuenteAcademicaInterface` para abstraer la interacción con el módulo de Matrícula desarrollado por otro equipo.
+- **Estado Inicial:** Todas las alertas detectadas se crean en estado `en_revision` para ingresar a la bandeja de Secretaría.
 - **Evaluación de reglas:**
   1. *Desaprobación reiterada:* 3ra matrícula (prioridad alta) y 4ta matrícula (prioridad alta).
   2. *Inasistencias:* 20.00% a 30.00% (alerta preventiva, prioridad media); >30.00% (inhabilitación y retiro automático, prioridad alta). Valores menores a 20.00% (ej. 19.99%) no generan alerta.
@@ -63,53 +81,78 @@ flowchart TD
 - **Unicidad e Idempotencia:**
   * Índice único parcial `bie_alerta_automatica_uq` sobre `(id_estudiante, periodo, curso, regla)` con cláusula `WHERE origen = 'automatica'`.
   * Si la condición cesa en el periodo, la alerta pasa a `resuelta_automaticamente` y se estampa `fecha_resolucion`.
-  * Si la condición reaparece, solo se reabre si estaba en `resuelta_automaticamente`. **Nunca** se reabre si fue `atendida` o `descartada` por el personal.
-  * Si un estudiante recibido en el DTO no existe en `core.estudiante`, se omite y se registra en el log del sistema.
+  * Si la condición reaparece, solo se reabre si estaba en `resuelta_automaticamente`. **Nunca** se reabre automáticamente si fue `atendida` o `descartada`.
 
 ---
 
 ### Flujo 3: Reporte Docente de Estudiantes en Riesgo
 - **Acceso:** Docente autenticado con rol `profesor` (`bienestar.reportar`) en `/bienestar/profesor`.
 - **Vínculo académico:** El sistema resuelve el `codigo_docente` mediante `core.docente`. El adaptador precarga la nómina de estudiantes a cargo del docente en el periodo lectivo.
-- **Búsqueda puntual:** Si el estudiante no está en su lista inmediata, se permite la búsqueda por código universitario exacto (`/bienestar/profesor/buscar-estudiante`) con **límite de tasa (Rate Limiting de 10 intentos/minuto)** y registro de auditoría en los logs. Sin autocompletado masivo para proteger la privacidad.
-- **Confidencialidad:**
-  * El docente registra motivo, descripción detallada y prioridad estimada.
+- **Búsqueda puntual:** Búsqueda por código universitario exacto (`/bienestar/profesor/buscar-estudiante`) con Rate Limiting (10 intentos/minuto).
+- **Confidencialidad y Estados:**
+  * El reporte se crea en estado inicial `en_revision`.
   * La descripción se cifra en base de datos (`encrypted`).
-  * El docente solo puede visualizar el **estado administrativo** de su reporte (`pendiente`, `en_atencion`, `atendida`, `descartada`), sin acceder a notas clínicas ni respuestas internas de Bienestar.
+  * El docente sigue viendo únicamente el estado de su reporte (`en revisión`, `en atención en bienestar`, `atendida`, `descartado`), **sin mostrar jamás el motivo del descarte** (Ley 29733).
 
 ---
 
-### Flujo 4: Panel Operativo de Bienestar (Hub de Atención)
-- **Acceso:** Personal de Bienestar con rol `secretaria` (`bienestar.gestionar`) en `/bienestar/panel`.
-- **Bandeja unificada:** Filtros dinámicos por origen (automático vs docente), prioridad, estado y buscador por estudiante.
-- **Acciones resolutivas:**
-  1. *Apertura de Caso:* Crea un registro en `bienestar.caso_bienestar` y vincula la alerta, pasando su estado a `en_atencion`.
-  2. *Agendamiento Directo de Citas:* Bienestar agenda citas directamente en `bienestar.cita` con fecha, hora, modalidad (Presencial/Virtual) y notas de atención cifradas, sin depender de horarios de disponibilidad externos.
-  3. *Descarte Justificado:* Permite descartar una alerta infundada registrando el motivo en los detalles.
-- **Derivaciones interdisciplinarias:**
-  * Selección de especialista activo del catálogo (`bienestar.especialista`) o entidad externa de salud mental.
-  * **Consentimiento informado obligatorio:** El checkbox de consentimiento informado del estudiante debe ser marcado; de lo contrario, el sistema bloquea la derivación.
-  * **Ficha imprimible:** Genera una vista HTML optimizada con estilos `@media print` conteniendo membrete institucional UNT, datos del estudiante, especialista de destino y secciones de firma. Si el consentimiento no fue otorgado, el endpoint devuelve `403 Forbidden`.
-  * **Contrarreferencia:** Registro del informe o resultado remitido por el especialista externo con cifrado en reposo.
+### Flujo 4: Filtro de la Secretaría sobre las Alertas (Mesa de Entrada)
+- **Acceso:** Personal con rol `secretaria` (`bienestar.secretaria`) en `/bienestar/secretaria/alertas`.
+- **Principio de mínimo privilegio (Ley 29733):**
+  * Ve solo datos administrativos del estudiante (código, nombres, ciclo) y metadatos mínimos de la alerta (tipo, regla, urgencia, categoría del motivo).
+  * No ve casos, citas, notas clínicas ni descripciones en texto libre confidencial.
+- **Acciones y Bitácora:**
+  1. *Pasar a Bienestar:* Estado cambia a `remitida_bienestar`. Se registra en `bienestar.alerta_bitacora` (acción `pasado_a_bienestar`).
+  2. *Descartar:* Exige obligatoriamente un motivo justificado. Estado cambia a `descartada` y se audita en `bienestar.alerta_bitacora` con usuario, fecha y motivo.
+  3. **Salvaguarda Institucional:** Las alertas automáticas de riesgo alto (ej. tercera matrícula o prioridad alta) **no se pueden descartar**. La Secretaría solo puede pasarlas a Bienestar.
 
 ---
 
-### Flujo 5: Dirección de Escuela (Solo Lectura y K-Anonimato)
-- **Acceso:** Usuario con rol `director_escuela` (`bienestar.estadisticas`) en `/bienestar/director`.
-- **K-Anonimato:** Cualquier frecuencia o conteo **menor a 5** se enmascara automáticamente con el texto `"menos de 5"`.
-- **Privacidad absoluta:** La vista no expone nombres, apellidos, códigos universitarios ni identificadores seudoanonimizados (`EST-***`).
-- **Bloqueo de mutación:** Cualquier solicitud `POST`, `PUT`, `PATCH` o `DELETE` dirigida a endpoints de dirección devuelve de forma inmediata `403 Forbidden`.
+### Flujo 5: Hub Operativo de Bienestar
+- **Acceso:** Personal especializado de Bienestar con rol `bienestar` (`bienestar.gestionar`) en `/bienestar/panel`.
+- **Bandeja de Alertas:** Ve únicamente las alertas que Secretaría le remitió (`remitida_bienestar`, `en_atencion`, `atendida`).
+- **Pestaña de Descartadas y Reapertura:** Bienestar puede consultar la lista de alertas descartadas por Secretaría y reabrirlas justificadamente (`bienestar.alerta_bitacora: reabierto`), devolviéndolas a `remitida_bienestar`.
+- **Apertura de Caso y Citas:** Apertura de casos (`bienestar.caso_bienestar`), agendamiento de citas y derivaciones con consentimiento informado.
 
 ---
 
-### Flujo 6: Alerta Manual por Personal de Bienestar
-- **Acceso:** Personal de Bienestar con permiso `bienestar.gestionar` en `/bienestar/panel/alertas/crear-manual`.
-- **Propósito:** Permitir al equipo de Bienestar registrar preventivamente alertas para cualquier estudiante detectado en ventanilla, entrevista espontánea o coordinación interna.
-- **Atributos:**
-  * Origen: `manual_bienestar`.
-  * Requiere estudiante (por código universitario), periodo, prioridad y motivo detallado (cifrado en reposo).
-- **Inmunidad ante automatización:**
-  * El comando diario `bienestar:detectar-riesgo` **nunca modifica, resuelve ni reabre** alertas con origen `manual_bienestar` o `reporte_docente`. Trabaja exclusivamente con `origen = 'automatica'`.
+### Flujo 6: Catálogo de Trámites UNT y Solicitud del Estudiante
+- **Catálogo Administrable por Bienestar:** Creación, edición y activación/desactivación de tipos (`/bienestar/catalogo-solicitudes`).
+  * Incluye: nombre, descripción, unidad responsable, plazo hábil, base normativa y estado de verificación ("pendiente de verificar con la Dirección de Bienestar de la UNT").
+  * Seeder inicial basado en el TUPA y la convocatoria del comedor UNT (6 procedimientos oficiales).
+- **Postulación del Estudiante:**
+  * El estudiante selecciona el tipo y visualiza la lista de requisitos con descripción, obligatoriedad, formatos (PDF, JPG, PNG), tamaño máximo y plantilla descargable si existe.
+  * Carga obligatoria con almacenamiento privado y nombres UUID. Validación cliente y servidor: bloqueo si falta algún requisito obligatorio.
+  * Solicitud se crea en estado inicial `enviada`.
+- **Revisión por Secretaría y Foliado Externo:**
+  * Secretaría revisa requisito por requisito marcando `conforme` u `observado` con comentario específico.
+  * *Observar:* Solicitud pasa a `observada`. El estudiante accede a `/bienestar/alumno/solicitudes/{id}/subsanar` y **solo resube los requisitos observados**, retornando la solicitud a `recibida`.
+  * *Foliado Externo:* El sistema **no genera folio, número correlativo, carátula, índice ni PDF del folio**. La Secretaría arma el folio por su cuenta fuera del sistema y, al remitir, confirma obligatoriamente mediante una casilla de verificación que armó el folio fuera del sistema.
+  * *Remisión:* Pasa a estado `remitida`.
+- **Dictamen de Bienestar:** Bienestar dictamina (`aprobada` o `rechazada`) **únicamente** las solicitudes remitidas con folio confirmado.
+
+---
+
+### Casos, citas y notificaciones
+
+- **Casos y citas** (`/bienestar/panel/casos`): citas, resultado, derivación y cierre se gestionan en ventanas modales. Cada cambio queda en el historial y un caso cerrado no admite citas ni derivaciones.
+- **Dictamen**: aprobar abre un caso; rechazar exige motivo, visible para el estudiante.
+- **Notificaciones**: solicitud nueva o corregida (Secretaría) y remitida (Bienestar), sin datos sensibles. El estudiante recibe un aviso en **cada** cambio de estado (por ejemplo «Tu solicitud #12 pasó a revisión») y el docente, el estado de su reporte sin el motivo. Aparecen en pantalla sin recargar y en la campana.
+- **Modal o página**: modal si la tarea es breve y no necesita consultar otra información (nueva solicitud en dos pasos, corregir, reportar, alerta, derivar, trámite, citas, dictamen). Página con breadcrumb si se consulta o compara (expediente, caso, revisión documental, artículo, edición del trámite con sus requisitos).
+
+### Flujo 7: Reportes, Indicadores y Estadísticas (Dirección y Bienestar)
+- **Acceso:** Dirección de Escuela (`bienestar.estadisticas`) y Personal de Bienestar en `/bienestar/director`.
+- **Librería de Gráficos:** Implementación ligera con **Chart.js v4 vía CDN** (sin dependencias npm complejas).
+- **Visualizaciones mínimas:**
+  * Casos por estado (barras).
+  * Alertas por regla o prioridad (barras).
+  * Solicitudes por tipo y estado (barras apiladas).
+  * Citas por mes (barras).
+  * Tendencia histórica por periodo académico (línea).
+  * Origen de alertas: automáticas vs reporte docente (dona/anillo).
+- **Accesibilidad y Filtros:** Cada gráfico incluye su tabla HTML con valores idénticos (WCAG AA), contraste adecuado, títulos en español, filtros por periodo lectivo y rango de fechas.
+- **Eliminación estricta de la regla `< 5`:** Se eliminó cualquier enmascaramiento. Todos los reportes, gráficos, tablas y exportación CSV muestran valores reales exactos (incluso 1 o 2 casos).
+- **Exportación:** Descarga en formato CSV y vista imprimible/PDF limpia con membrete institucional.
 
 ---
 
