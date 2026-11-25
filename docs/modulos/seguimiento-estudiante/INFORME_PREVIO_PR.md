@@ -1,7 +1,7 @@
 # Informe previo al PR de Seguimiento al Estudiante
 
 **Fecha de revisión:** 24 de noviembre de 2026  
-**Estado:** integración parcial. El PR #12 sigue en borrador. Este informe describe su contenido actual y el alcance previsto para presentarlo a revisión final.
+**Estado:** integración parcial. El PR #12 está abierto para revisión. Este informe describe su contenido actual y el alcance previsto para presentarlo a revisión final.
 
 ## Objetivo
 
@@ -44,6 +44,15 @@ Estas acciones existen en el código original. Su equivalencia en el portal qued
 | Secretaría y Dirección | Localizar plantillas, análisis de cobertura, contacto, registro y revisión de indicadores, respaldo documental, designaciones y auditoría académica. |
 
 Fuente de comparación: [rutas de SSE-EPI en la versión de referencia](https://github.com/zoldrix05/SSE_EPI/tree/67381dd43887686b40dce6ec248132f5dc68e479/src/routes).
+
+### Implementación posterior a la referencia inicial
+
+- El directorio busca por nombre o código en los expedientes autorizados. Un tutor con permiso de consulta puede descargar en CSV los resultados filtrados del directorio. La prueba vuelve a descargar el archivo tras vencer la asignación y comprueba que el expediente desaparece.
+- El estudiante consulta las sesiones del grupo publicado en que está inscrito y distingue la asistencia pendiente de una falta registrada.
+- La agenda docente lista las sesiones próximas en los grupos publicados del docente activo vinculado a la cuenta. Requiere los permisos `seguimiento-estudiante.view` y `seguimiento-estudiante.nivelacion.agenda-docente`. El responsable de permisos del portal debe asignar este último a quienes gestionen sus sesiones.
+- Secretaría descarga plantillas de matrículas, notas y asistencia desde la pantalla de prevalidación. Sus columnas se obtienen de las mismas reglas que utiliza el lector del portal. La interfaz de aplicación oficial y la regla de retiro siguen pendientes de decisión de Matrículas.
+
+Se compiló el frontend y se ejecutaron las pruebas de Seguimiento, rutas, estructura y aislamiento en una base descartable con PHP 8.5.4 y PostgreSQL 18.6. Resultado de esta revisión: 67 pruebas y 743 aserciones. Sigue pendiente repetir esta versión en PHP 8.4 y PostgreSQL 17.
 
 ## Cómo probar
 
