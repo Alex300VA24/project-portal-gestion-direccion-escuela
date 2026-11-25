@@ -19,6 +19,9 @@ final class RiesgoAcademicoTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('Requiere PostgreSQL migrado mediante module:migrate all.');
+        }
         $this->seed(BienestarDemoSeeder::class);
     }
 
@@ -201,20 +204,20 @@ final class RiesgoAcademicoTest extends TestCase
         $serviceActivo = new RiesgoAcademicoService($mockActivo);
         $serviceLimpio = new RiesgoAcademicoService($mockLimpio);
 
-        // 1. Detección inicial -> crea alerta en 'pendiente'
+        // 1. Detección inicial -> crea alerta en 'en_revision' (para filtro de Secretaría)
         $serviceActivo->detectarYActualizarAlertas($periodo);
         $alerta = AlertaRiesgo::where('periodo', $periodo)->where('regla', 'tercera_matricula')->firstOrFail();
-        $this->assertEquals('pendiente', $alerta->estado);
+        $this->assertEquals('en_revision', $alerta->estado);
 
         // 2. Condición cesa -> se resuelve automáticamente
         $serviceLimpio->detectarYActualizarAlertas($periodo);
         $alerta->refresh();
         $this->assertEquals('resuelta_automaticamente', $alerta->estado);
 
-        // 3. Condición reaparece -> se reabre a 'pendiente'
+        // 3. Condición reaparece -> se reabre a 'en_revision'
         $serviceActivo->detectarYActualizarAlertas($periodo);
         $alerta->refresh();
-        $this->assertEquals('pendiente', $alerta->estado);
+        $this->assertEquals('en_revision', $alerta->estado);
 
         // 4. Bienestar atiende la alerta -> estado 'atendida'
         $alerta->update(['estado' => 'atendida']);

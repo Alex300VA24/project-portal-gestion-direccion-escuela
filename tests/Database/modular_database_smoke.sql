@@ -14,7 +14,7 @@ BEGIN
             ('gestion_practicas', 11),
             ('calidad', 12),
             ('tesis', 22),
-            ('bienestar', 20),
+            ('bienestar', 25),
             ('investigacion_formativa', 11),
             ('seguimiento_estudiante', 23),
             ('web_institucional', 13),

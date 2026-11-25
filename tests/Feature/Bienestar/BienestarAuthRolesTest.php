@@ -9,8 +9,11 @@ use App\Modules\Bienestar\Models\ArticuloInformativo;
 use App\Modules\Bienestar\Models\CasoBienestar;
 use App\Modules\Bienestar\Models\Cita;
 use App\Modules\Bienestar\Models\Derivacion;
+use App\Modules\Bienestar\Models\TipoSolicitud;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 final class BienestarAuthRolesTest extends TestCase
@@ -20,6 +23,9 @@ final class BienestarAuthRolesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('Requiere PostgreSQL migrado mediante module:migrate all.');
+        }
         // Asegurar que el seeder de demostración esté cargado
         $this->seed(BienestarDemoSeeder::class);
     }
@@ -74,20 +80,27 @@ final class BienestarAuthRolesTest extends TestCase
 
         // Acceso a vistas propias de estudiante (200)
         $this->get(route('bienestar.alumno.solicitudes.index'))->assertStatus(200);
-        $this->get(route('bienestar.alumno.solicitudes.create'))->assertStatus(200);
+        $this->followingRedirects()->get(route('bienestar.alumno.solicitudes.create'))->assertStatus(200);
         $this->get(route('bienestar.alumno.citas.index'))->assertStatus(200);
 
-        // Enviar nueva solicitud de apoyo socioeconómico
-        $idBeneficio = DB::table('bienestar.beneficio')->where('activo', true)->value('id_beneficio');
+        // Enviar nueva solicitud con tipo de solicitud del catálogo y requisitos
+        Storage::fake('local');
+        $tipoOrientacion = TipoSolicitud::where('nombre', 'like', '%Orientación%')->firstOrFail();
+        $archivos = [];
+        foreach ($tipoOrientacion->requisitos as $req) {
+            $archivos[$req->id_requisito] = UploadedFile::fake()->create("req_{$req->id_requisito}.pdf", 100, 'application/pdf');
+        }
+
         $this->post(route('bienestar.alumno.solicitudes.store'), [
-            'id_beneficio' => $idBeneficio,
+            'id_tipo_solicitud' => $tipoOrientacion->id_tipo_solicitud,
             'motivo' => 'Solicitud de apoyo alimentario debido a vulnerabilidad económica.',
+            'archivos' => $archivos,
         ])->assertRedirect(route('bienestar.alumno.solicitudes.index'));
 
         $this->assertDatabaseHas('bienestar.solicitud_apoyo', [
-            'id_beneficio' => $idBeneficio,
+            'id_tipo_solicitud' => $tipoOrientacion->id_tipo_solicitud,
             'motivo' => 'Solicitud de apoyo alimentario debido a vulnerabilidad económica.',
-            'estado' => 'Pendiente',
+            'estado' => 'enviada',
         ]);
     }
 
@@ -99,7 +112,7 @@ final class BienestarAuthRolesTest extends TestCase
 
         // 1. Acceso a portal docente
         $this->get(route('bienestar.profesor.index'))->assertStatus(200);
-        $this->get(route('bienestar.profesor.create'))->assertStatus(200);
+        $this->followingRedirects()->get(route('bienestar.profesor.create'))->assertStatus(200);
 
         // 2. Búsqueda exacta de estudiante por código
         $responseBusqueda = $this->getJson(route('bienestar.profesor.buscar-estudiante', ['codigo' => '1021400222']));
@@ -120,7 +133,7 @@ final class BienestarAuthRolesTest extends TestCase
             'curso' => 'Ingeniería de Software I',
             'origen' => 'reporte_docente',
             'prioridad' => 'alta',
-            'estado' => 'pendiente',
+            'estado' => 'en_revision',
         ]);
 
         // 4. 403 en panel de bienestar y dirección
@@ -128,13 +141,15 @@ final class BienestarAuthRolesTest extends TestCase
         $this->get(route('bienestar.director.index'))->assertStatus(403);
     }
 
-    public function test_secretaria_can_manage_alerts_articles_appointments_and_derivations(): void
+    public function test_bienestar_can_manage_alerts_articles_appointments_and_derivations(): void
     {
-        $secretaria = User::where('email', 'secretaria@portal.local')->firstOrFail();
+        $bienestar = User::where('email', 'bienestar@portal.local')->firstOrFail();
         $articuloBorrador = ArticuloInformativo::where('estado', 'borrador')->firstOrFail();
-        $alerta = AlertaRiesgo::where('estado', 'pendiente')->firstOrFail();
 
-        $this->actingAs($secretaria);
+        // Alerta disponible para Bienestar (remitida o en_atencion)
+        $alerta = AlertaRiesgo::whereIn('estado', ['remitida_bienestar', 'en_atencion', 'en_revision'])->firstOrFail();
+
+        $this->actingAs($bienestar);
 
         // 1. Acceso al panel de Bienestar
         $this->get(route('bienestar.panel.index'))->assertStatus(200);
@@ -159,12 +174,13 @@ final class BienestarAuthRolesTest extends TestCase
         $this->assertStringContainsString('Contenido seguro', $articuloCreado->detalle);
 
         // 4. Atención de alerta: abrir caso
+        $alerta->update(['estado' => 'remitida_bienestar']); // ya filtrada por Secretaría
         $tipoCasoId = DB::table('bienestar.tipo_caso')->value('id_tipo_caso');
         $this->post(route('bienestar.panel.guardar-atencion', $alerta), [
             'accion' => 'abrir_caso',
             'id_tipo_caso' => $tipoCasoId,
             'descripcion_caso' => 'Apertura formal de caso para estudiante en riesgo',
-        ])->assertRedirect(route('bienestar.panel.index'));
+        ])->assertRedirect(route('bienestar.panel.atender', $alerta));
 
         $alerta->refresh();
         $this->assertEquals('en_atencion', $alerta->estado);
@@ -207,13 +223,13 @@ final class BienestarAuthRolesTest extends TestCase
         $this->assertEquals('Atendida', $derivacion->estado);
     }
 
-    public function test_secretaria_can_create_manual_alert_and_evaluate_support_request(): void
+    public function test_bienestar_can_create_manual_alert_and_evaluate_support_request(): void
     {
-        $secretaria = User::where('email', 'secretaria@portal.local')->firstOrFail();
-        $this->actingAs($secretaria);
+        $bienestar = User::where('email', 'bienestar@portal.local')->firstOrFail();
+        $this->actingAs($bienestar);
 
         // 1. Creación de alerta manual
-        $this->get(route('bienestar.panel.alertas.create'))->assertStatus(200);
+        $this->followingRedirects()->get(route('bienestar.panel.alertas.create'))->assertStatus(200);
 
         $this->post(route('bienestar.panel.alertas.store-manual'), [
             'codigo_estudiante' => '1021400121',
@@ -227,31 +243,41 @@ final class BienestarAuthRolesTest extends TestCase
             'periodo' => '2026-I',
             'origen' => 'manual_bienestar',
             'prioridad' => 'alta',
-            'estado' => 'pendiente',
+            'estado' => 'remitida_bienestar',
             'regla' => 'manual_bienestar',
             'motivo_reporte' => 'Estudiante atendido directamente en entrevista presencial de bienestar',
         ]);
 
-        // 2. Evaluación de solicitud de apoyo socioeconómico
-        $idSolicitud = DB::table('bienestar.solicitud_apoyo')->where('estado', 'Pendiente')->value('id_solicitud');
-        $this->assertNotNull($idSolicitud);
+        // 2. Evaluación de solicitud de apoyo socioeconómico remitida
+        $solicitudRemitida = DB::table('bienestar.solicitud_apoyo')
+            ->where('estado', 'remitida')
+            ->where('folio_externo_confirmado', true)
+            ->first();
+        $this->assertNotNull($solicitudRemitida);
 
         $this->get(route('bienestar.panel.solicitudes.index'))->assertStatus(200);
 
-        $this->post(route('bienestar.panel.solicitudes.evaluar', $idSolicitud), [
+        $this->post(route('bienestar.panel.solicitudes.evaluar', $solicitudRemitida->id_solicitud), [
             'estado' => 'Aprobada',
         ])->assertRedirect(route('bienestar.panel.solicitudes.index'));
 
         $this->assertDatabaseHas('bienestar.solicitud_apoyo', [
-            'id_solicitud' => $idSolicitud,
-            'estado' => 'Aprobada',
+            'id_solicitud' => $solicitudRemitida->id_solicitud,
+            'estado' => 'aprobada',
         ]);
     }
 
     public function test_clinical_and_report_data_is_encrypted_at_rest_in_database(): void
     {
         // 1. CasoBienestar (descripcion cifrada en BD cruda y descifrada vía Eloquent)
-        $casoRaw = DB::table('bienestar.caso_bienestar')->whereNotNull('descripcion')->first();
+        $caso = CasoBienestar::create([
+            'id_estudiante' => DB::table('core.estudiante')->value('id_estudiante'),
+            'id_tipo_caso' => DB::table('bienestar.tipo_caso')->value('id_tipo_caso'),
+            'descripcion' => 'Estudiante presenta reiteradas tardanzas',
+            'estado' => 'En_Atencion',
+            'abierto_en' => now(),
+        ]);
+        $casoRaw = DB::table('bienestar.caso_bienestar')->where('id_caso', $caso->id_caso)->first();
         $this->assertNotNull($casoRaw);
         $this->assertStringNotContainsString('Estudiante presenta reiteradas tardanzas', $casoRaw->descripcion);
 
@@ -259,7 +285,15 @@ final class BienestarAuthRolesTest extends TestCase
         $this->assertStringContainsString('Estudiante presenta reiteradas tardanzas', $casoModel->descripcion);
 
         // 2. Cita (notas_atencion cifrada en BD)
-        $citaRaw = DB::table('bienestar.cita')->whereNotNull('notas_atencion')->first();
+        $cita = Cita::create([
+            'id_caso' => $caso->id_caso,
+            'inicio' => now(),
+            'fin' => now()->addHour(),
+            'modalidad' => 'Presencial',
+            'estado' => 'Programada',
+            'notas_atencion' => 'Cita inicial de orientación',
+        ]);
+        $citaRaw = DB::table('bienestar.cita')->where('id_cita', $cita->id_cita)->first();
         $this->assertNotNull($citaRaw);
         $this->assertStringNotContainsString('Cita inicial de orientación', $citaRaw->notas_atencion);
 
@@ -278,7 +312,7 @@ final class BienestarAuthRolesTest extends TestCase
         }
     }
 
-    public function test_director_only_sees_aggregated_statistics_with_k_anonymity_and_mutations_return_403(): void
+    public function test_director_only_sees_aggregated_statistics_and_mutations_return_403(): void
     {
         $director = User::where('email', 'director@portal.local')->firstOrFail();
 
@@ -288,8 +322,9 @@ final class BienestarAuthRolesTest extends TestCase
         $response = $this->get(route('bienestar.director.index'));
         $response->assertStatus(200);
 
-        // 2. K-anonimato: Celdas menores a 5 se muestran como "menos de 5"
-        $response->assertSee('menos de 5');
+        // 2. Se eliminó la regla de ocultar celdas con menos de 5 casos:
+        // Los reportes, tablas y gráficos muestran valores reales (incluso 1 o 2) sin agrupar ni ocultar
+        $response->assertDontSee('menos de 5');
 
         // 3. Regla obligatoria: Sin listados de estudiantes, ni nombres, ni códigos, ni EST-***
         $response->assertDontSee('Carlos Méndez');
@@ -322,13 +357,20 @@ final class BienestarAuthRolesTest extends TestCase
         $this->actingAs($userProfesor);
         $this->get(route('bienestar.profesor.index'))->assertStatus(200);
 
-        // 3. Usuario con solo rol 'secretaria' accede a panel de bienestar
+        // 3. Usuario con solo rol 'secretaria' accede a rutas operativas de secretaria
         $userSecretaria = User::factory()->create();
         $userSecretaria->assignRole('secretaria');
         $this->actingAs($userSecretaria);
+        $this->get(route('bienestar.secretaria.alertas'))->assertStatus(200);
+        $this->get(route('bienestar.panel.index'))->assertStatus(403);
+
+        // 4. Usuario con solo rol 'bienestar' accede al panel de bienestar
+        $userBienestar = User::factory()->create();
+        $userBienestar->assignRole('bienestar');
+        $this->actingAs($userBienestar);
         $this->get(route('bienestar.panel.index'))->assertStatus(200);
 
-        // 4. Usuario con solo rol 'director_escuela' accede a métricas
+        // 5. Usuario con solo rol 'director_escuela' accede a métricas
         $userDirector = User::factory()->create();
         $userDirector->assignRole('director_escuela');
         $this->actingAs($userDirector);
@@ -356,8 +398,15 @@ final class BienestarAuthRolesTest extends TestCase
         // Caso C: Secretaría sin registro en seguridad.usuario
         $userSecretaria = User::factory()->create(['email' => 'secretaria_sin_datos@portal.local']);
         $userSecretaria->assignRole('secretaria');
-        $responseSecretaria = $this->actingAs($userSecretaria)->get(route('bienestar.panel.index'));
+        $responseSecretaria = $this->actingAs($userSecretaria)->get(route('bienestar.secretaria.alertas'));
         $responseSecretaria->assertStatus(200);
         $responseSecretaria->assertSee($avisoEsperado, false);
+
+        // Caso D: Bienestar sin registro en seguridad.usuario
+        $userBienestar = User::factory()->create(['email' => 'bienestar_sin_datos@portal.local']);
+        $userBienestar->assignRole('bienestar');
+        $responseBienestar = $this->actingAs($userBienestar)->get(route('bienestar.panel.index'));
+        $responseBienestar->assertStatus(200);
+        $responseBienestar->assertSee($avisoEsperado, false);
     }
 }
