@@ -18,8 +18,9 @@
             padding: 20px;
         }
         .no-print {
-            background: #f1f5f9;
-            padding: 12px;
+            background: #F5F7FA;
+            border: 1px solid #E3E6EA;
+            padding: 12px 18px;
             margin-bottom: 24px;
             border-radius: 8px;
             display: flex;
@@ -27,13 +28,18 @@
             align-items: center;
         }
         .btn-print {
-            background: #1e293b;
-            color: white;
+            background: #12377B;
+            color: #FFFFFF;
             border: none;
-            padding: 8px 16px;
+            padding: 8px 18px;
             border-radius: 6px;
-            font-weight: bold;
+            font-weight: 700;
+            font-size: 13px;
             cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-print:hover {
+            background: #092C6C;
         }
         .header {
             text-align: center;

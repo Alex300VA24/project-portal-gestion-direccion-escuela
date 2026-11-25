@@ -5,69 +5,71 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--unt-borde)]">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Mis Solicitudes de Beneficios</h1>
-            <p class="text-xs text-slate-600 mt-1">
+            <h1 class="text-2xl font-bold tracking-tight" style="color: var(--unt-azul-tinta); font-family: 'Roboto Slab', serif;">Mis Solicitudes y Trámites UNT</h1>
+            <p class="text-xs mt-1" style="color: var(--unt-texto-suave);">
                 Estudiante: <strong>{{ $actor->nombreCompleto }}</strong> · Cód. {{ $actor->codigoEstudiante }}
             </p>
         </div>
-        <a href="{{ route('bienestar.alumno.solicitudes.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-xs transition">
-            + Nueva Solicitud de Apoyo
-        </a>
+        <button type="button" class="btn-unt-primary" data-abrir-modal="m-solicitud">Nueva solicitud</button>
     </div>
-            </a>
-        </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-semibold">
-                    <tr>
-                        <th class="px-6 py-3 text-left">Beneficio Solicitado</th>
-                        <th class="px-6 py-3 text-left">Motivo / Sustento Explicado</th>
-                        <th class="px-6 py-3 text-center">Fecha de Envío</th>
-                        <th class="px-6 py-3 text-center">Estado</th>
-                        <th class="px-6 py-3 text-right">Fecha de Resolución</th>
+
+    <div class="card-unt overflow-hidden">
+        <table class="min-w-full divide-y divide-[var(--unt-borde)] text-sm">
+            <thead class="text-xs uppercase tracking-wider font-bold" style="background-color: var(--unt-fondo-alt); border-bottom: 2px solid var(--unt-azul-tinta); color: var(--unt-azul-tinta);">
+                <tr>
+                    <th class="px-6 py-3 text-left">N° Trámite</th>
+                    <th class="px-6 py-3 text-left">Procedimiento / Trámite UNT</th>
+                    <th class="px-6 py-3 text-left">Motivo Explicado</th>
+                    <th class="px-6 py-3 text-center">Fecha de Envío</th>
+                    <th class="px-6 py-3 text-center">Estado del Trámite</th>
+                    <th class="px-6 py-3 text-right">Acción / Resolución</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--unt-borde)] bg-white">
+                @forelse ($solicitudes as $sol)
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap font-mono font-bold text-[var(--unt-texto)]">
+                            #{{ $sol->id_solicitud }}
+                        </td>
+                        <td class="px-6 py-4 text-xs font-bold text-[var(--unt-texto)]">
+                            {{ $sol->tipoSolicitud?->nombre ?? $sol->beneficio?->nombre ?? 'General (migrado)' }}
+                        </td>
+                        <td class="px-6 py-4 text-xs max-w-xs truncate" style="color: var(--unt-texto-suave);" title="{{ $sol->motivo }}">
+                            {{ $sol->motivo }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-xs font-mono" style="color: var(--unt-texto-suave);">
+                            {{ $sol->solicitada_en?->setTimezone('America/Lima')->format('d/m/Y H:i') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="etiqueta etiqueta-{{ \App\Modules\Bienestar\Support\EstadoSolicitud::tono($sol->estado) }}">{{ \App\Modules\Bienestar\Support\EstadoSolicitud::texto($sol->estado) }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-xs">
+                            <div class="acciones">
+                                @if ($sol->estado === 'observada')<button type="button" class="btn-unt-secondary" data-abrir-modal="m-subsanar-{{ $sol->id_solicitud }}">Corregir</button>@endif
+                                <a href="{{ route('bienestar.alumno.solicitudes.show', $sol) }}" class="btn-unt-outline">Ver seguimiento</a>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse ($solicitudes as $sol)
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 whitespace-nowrap font-bold text-slate-900">
-                                {{ $sol->beneficio?->nombre }}
-                            </td>
-                            <td class="px-6 py-4 text-xs text-slate-600 max-w-md">
-                                {{ $sol->motivo }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-xs text-slate-500 font-mono">
-                                {{ $sol->solicitada_en?->format('d/m/Y H:i') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                @if ($sol->estado === 'Pendiente')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">En Revisión</span>
-                                @elseif ($sol->estado === 'Aprobada')
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Aprobada</span>
-                                @else
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">No Aprobada</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-xs text-slate-500">
-                                {{ $sol->resuelta_en ? $sol->resuelta_en->format('d/m/Y') : 'Pendiente' }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                                No has presentado solicitudes de apoyo socioeconómico aún.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-xs" style="color: var(--unt-texto-suave);">
+                            No has presentado solicitudes de apoyo socioeconómico aún.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
-        <div class="mt-6">
-            {{ $solicitudes->links() }}
-        </div>
+    <div>
+        {{ $solicitudes->links() }}
+    </div>
 </div>
+@include('modules.bienestar.alumno.solicitudes._nueva')
+@foreach ($solicitudes->where('estado', 'observada') as $solicitud)
+    @include('modules.bienestar.alumno.solicitudes._subsanar')
+@endforeach
 @endsection
