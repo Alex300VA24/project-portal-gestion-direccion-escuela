@@ -1,5 +1,12 @@
 # Arquitectura actual — Gestión de Horarios Académicos
 
+## Actualización de arquitectura local
+
+**Regla requerida:** cierre oficial → consolidación persistida de demanda y vacantes → escritura y verificación de secciones → asignación docente. La consulta provisional permanece disponible. Los servicios de escritura deben validar las compuertas en servidor y comprobar versión/huella bajo bloqueo; aún no existe acreditación de estas compuertas en el ensayo anterior. Véase [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md).
+
+La vista de secciones incorpora `DistribucionAutomaticaLocal` y reutiliza los servicios de oferta, sección y asociación, bajo el bloqueo de demanda y el contrato compartido de cierre. Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md). No sustituye las autorizaciones ni el contrato institucional.
+
+
 ## 1. Alcance y estado
 
 Módulo Laravel 13 con vistas Blade, componentes Livewire, servicios y repositorios PHP; persistencia PostgreSQL. Integra **consultas y preparación académica parcial**. La generación, aprobación y publicación institucional de horarios permanecen **deshabilitadas**. La ejecución CP-SAT con Python/OR-Tools está validada únicamente para escenarios ficticios controlados.

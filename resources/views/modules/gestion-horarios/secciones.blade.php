@@ -20,6 +20,9 @@
         'workspacePlan' => ($planValido ?? false) ? $plan : '',
         'workspacePeriodo' => ($planValido ?? false) && isset($periodos) && $periodos->contains('id_periodo', (int) $periodo) ? $periodo : '',
     ])
+    @if ($automaticoLocal ?? false)
+        @include('modules.gestion-horarios.secciones-automaticas-local')
+    @else
     @if ($errorConsulta)
         <div class="quality-alert" role="alert">No se pudieron consultar las secciones. Intente nuevamente o comuníquese con soporte.</div>
     @else
@@ -169,5 +172,6 @@
                 </details>
             @endforeach
         @endif
+    @endif
     @endif
 </div>

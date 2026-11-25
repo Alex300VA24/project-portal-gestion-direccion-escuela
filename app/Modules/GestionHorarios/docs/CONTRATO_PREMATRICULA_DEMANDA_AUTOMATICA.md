@@ -1,5 +1,10 @@
 # Contrato propuesto: demanda automática de Prematrícula
 
+## Nota sobre el ensayo integrado
+
+Existe una implementación local posterior basada en un proveedor compartido y una tarea programada. Debe verificarse en la base aislada; no implica sincronización productiva. La propuesta de secciones se actualiza en pantalla, pero no escribe automáticamente al llegar solicitudes. Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md).
+
+
 La demanda agregada vigente no demuestra población por sección. `id_seccion_preferida` en una solicitud es una preferencia y no debe transformarse en una asignación. Para población real o estimada por sección se necesita un proveedor y un contrato institucionales independientes, con cobertura, estados y corte verificables; consulte `POBLACION_COHORTES_SUBGRUPOS.md`.
 
 Estado: propuesta pendiente de acuerdo e implementación por el proveedor. No existe sincronización automática activa en el portal.
@@ -7,6 +12,8 @@ Estado: propuesta pendiente de acuerdo e implementación por el proveedor. No ex
 El consumidor no debe importar clases de Prematrícula ni consultar sus tablas internas. El proveedor institucional debe publicar una interfaz autorizada que entregue una instantánea coherente por periodo y un mecanismo de notificación durable. La API independiente de referencia describe demanda estimada; no debe confundirse con matrícula definitiva.
 
 ## Datos mínimos
+
+Para la integración institucional se requiere además estado de cierre oficial, identificación de la captura final completa y procedencia del cierre. La demanda provisional no habilita escrituras de secciones. El consumidor debe registrar consolidación de demanda efectiva y vacantes por escuela/plan/periodo, asociada a versión y huella vigentes; la asignación docente depende de secciones verificadas. La ampliación del contrato y las compuertas permanecen pendientes. Véase [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md).
 
 - Identificador institucional del periodo, estado y versión monotónica de la instantánea.
 - Identificador institucional de curso-plan y curso, con totales de solicitudes y preferencias de mañana y tarde, desglosados por estado de validación.

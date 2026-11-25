@@ -47,6 +47,7 @@ final class PlanificarSeccionesPorDemanda
     {
         (new AutorizacionGestionAcademica)->exigir($usuario);
         abort_unless($this->db->getDriverName() === 'pgsql', 422);
+        if (DistribucionAutomaticaLocal::esBaseIntegracion($this->db)) self::rechazar('Utilice la planificación automática con vacantes consolidadas.');
         $repo = new RepositorioDemandaPostgres($this->db);
 
         return $repo->conBloqueo($periodo, function () use ($usuario, $periodo, $plan, $curso, $capacidad, $huella) {
@@ -98,7 +99,9 @@ final class PlanificarSeccionesPorDemanda
         if ($demanda->requiere_revision) {
             self::rechazar('La demanda está marcada para revisión.');
         }
-        $total = $this->db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->where('id_curso_plan', $curso)->value('total');
+        $fila = $this->db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->where('id_curso_plan', $curso)->first();
+        if ($fila) (new \App\Modules\GestionHorarios\Demand\AjustesDemanda($this->db))->filas($periodo, (int) $demanda->id_demanda, [$fila]);
+        $total = $fila?->total;
         $secciones = $this->db->table('core.seccion')->where('id_periodo', $periodo)->where('id_curso_plan', $curso)->orderBy('id_seccion')->get(['id_seccion', 'codigo', 'estado', 'capacidad']);
         $oferta = (int) $ofertas->first()->id_oferta;
         $asociacion = $this->db->getSchemaBuilder()->hasTable('gestion_horarios.oferta_seccion');

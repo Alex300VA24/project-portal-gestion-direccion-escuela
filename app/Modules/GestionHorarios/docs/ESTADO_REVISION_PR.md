@@ -1,5 +1,12 @@
 # Estado de Gestión de Horarios para Draft PR
 
+## Actualización del ensayo integrado
+
+**Pendiente obligatorio:** bloquear escrituras de secciones hasta cierre oficial y consolidación vigente, y asignación docente hasta verificar las secciones. El ensayo local previo no acredita estas compuertas. Véase [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md).
+
+La generación CLI desde PostgreSQL obtuvo OPTIMAL con 9/9 sesiones y 20 horas, con limitaciones de acreditación institucional. Se incorporan sincronización local, ajuste posterior al cierre y pantalla de secciones por aforo; sus nuevas pruebas de aplicación y navegador siguen pendientes. Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md).
+
+
 **Rama:** `feature/gestion-horarios-integracion`
 **Objeto de revisión:** consultas protegidas y preparación académica parcial dentro del portal institucional.
 

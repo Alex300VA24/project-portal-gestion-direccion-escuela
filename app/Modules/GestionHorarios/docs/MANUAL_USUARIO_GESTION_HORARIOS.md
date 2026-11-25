@@ -1,5 +1,10 @@
 # Manual de usuario — Gestión de Horarios Académicos
 
+## Actualización de la prueba local
+
+En Secciones, elija plan y periodo y revise la tabla por ciclo. Durante Prematrícula solo se permite consultar y simular; al cierre oficial, revise y consolide la demanda efectiva y las vacantes. Confirme la creación de secciones por aforo únicamente con cierre y consolidación vigentes. Continúe a Asignación docente después de verificar las secciones y subgrupos. Esta es la regla requerida; las compuertas todavía deben implementarse y verificarse. Consulte [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md). No se solicita capacidad manual en la vista local. Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md). Fuera del entorno aislado se conserva el alcance institucional descrito a continuación.
+
+
 **Dirigido a:** dirección de escuela, secretaría y docentes.
 **Estado del módulo:** consulta y preparación parcial; varias acciones requieren adscripción y contratos institucionales que todavía no están conectados.
 

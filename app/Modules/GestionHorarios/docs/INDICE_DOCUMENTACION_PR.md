@@ -1,5 +1,12 @@
 # Documentación de Gestión de Horarios — índice para revisión
 
+## Integración local de Prematrícula y secciones
+
+[Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md) — regla de secuencia, compuertas obligatorias, responsabilidades, estados y pruebas pendientes. Consultar antes de los documentos de planificación y asignación.
+
+[Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md). Consultar estos documentos para el ensayo integrado posterior a la revisión original. No acreditan producción.
+
+
 **Estado:** paquete de documentación candidato a un *Draft Pull Request* hacia `develop`. No representa autorización institucional, despliegue ni funcionalidad completa.
 
 **Alcance:** módulo Gestión de Horarios del portal; las integraciones con Core, Seguridad y Prematrícula requieren contratos aprobados por sus responsables.

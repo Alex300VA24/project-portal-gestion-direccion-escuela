@@ -1,8 +1,15 @@
 # Contrato de generación CP-SAT — estado y decisiones pendientes
 
+## Nota del ensayo integrado
+
+La ejecución CLI con demanda agregada de Prematrícula produjo OPTIMAL, 9 sesiones y 20 horas, sin persistir sesiones. El nuevo cálculo de secciones no activa por sí mismo la generación institucional. Véase [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md).
+
+
 **Estado actual:** existe un motor Python/OR-Tools invocado desde PHP en pruebas ficticias. No hay generación, aprobación ni publicación institucional habilitada en el portal.
 
 ## 1. Flujo esperado
+
+Precondición requerida: Prematrícula cerrada oficialmente, demanda final y vacantes consolidadas y vigentes, secciones verificadas y asignación docente completada. No se debe iniciar generación institucional desde una propuesta provisional o una consolidación invalidada. Las compuertas requieren implementación y pruebas. Véase [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md).
 
 1. **Autorizar ámbito:** identificar usuario, escuela, periodo, plan y recursos compartidos permitidos.
 2. **Capturar datos consistentes:** oferta vigente, secciones, asignación docente, disponibilidad, espacios, calendario, bloqueos, restricciones y demanda versionada.

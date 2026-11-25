@@ -1,5 +1,10 @@
 # Población, cohortes y subgrupos
 
+## Nota del ensayo de planificación por aforo
+
+La nueva vista local estima población y subgrupos de forma numérica, sin crear matrículas ni acreditar disyunción nominal. Véase [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md).
+
+
 ## Fuentes observadas y límites
 
 La demanda recibida en `gestion_horarios.demanda_instantanea` y `demanda_curso` ofrece versión, fecha de recepción y totales agregados por curso-plan y preferencias. Representa solicitudes estimadas, no estudiantes asignados. `core.seccion` identifica periodo, curso-plan, sección y capacidad máxima, no población. `oferta_seccion` identifica la oferta solo cuando su vínculo vigente supera conciliación.

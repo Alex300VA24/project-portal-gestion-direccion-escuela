@@ -53,7 +53,7 @@ final class OfertaAcademicaRepository
             $ids->union($this->db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda)->select('id_curso_plan'));
         }
 
-        return $this->db->query()->fromSub($ids, 'ids')
+        $filas = $this->db->query()->fromSub($ids, 'ids')
             ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'ids.id_curso_plan')
             ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
             ->when($plan !== null, fn ($q) => $q->where('cp.id_plan', $plan))
@@ -71,5 +71,8 @@ final class OfertaAcademicaRepository
             ->select(['cp.id_curso_plan', 'cp.ciclo', 'c.codigo', 'c.nombre', 'o.id_oferta', 'o.tipo_oferta', 'o.estado', 'o.docentes_minimos'])
             ->selectRaw($demanda === null ? 'NULL AS total, NULL AS manana, NULL AS tarde' : 'd.total, d.manana, d.tarde')
             ->get();
+        (new \App\Modules\GestionHorarios\Demand\AjustesDemanda($this->db))->filas($periodo, $demanda, $filas);
+
+        return $filas;
     }
 }

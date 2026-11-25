@@ -1,5 +1,10 @@
 # Manual de flujos y casos de comprobación — Gestión de Horarios
 
+## Flujo adicional de integración local
+
+Prematrícula abierta → demanda provisional sincronizada → cierre oficial de Prematrícula → consolidación de demanda efectiva y vacantes por curso → creación y verificación de secciones por aforo → asignación docente T/P/L → disponibilidad y restricciones → generación CP-SAT. El programador actualiza demanda, no autoriza escrituras de secciones ni asignaciones. Esta secuencia es obligatoria como requisito funcional; las compuertas de cierre y consolidación aún deben implementarse y probarse. Consulte [Cierre de Prematrícula y consolidación de vacantes](CIERRE_PREMATRICULA_CONSOLIDACION_VACANTES.md). Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md).
+
+
 Este documento permite al equipo de revisión recorrer las pantallas y verificar resultados esperados. **Los casos positivos que requieren adscripción deben ejecutarse solo cuando exista un proveedor oficial o un entorno de ensayo explícitamente aislado y ficticio.** No probar escrituras contra la base institucional.
 
 | ID | Flujo | Condición previa | Pasos principales | Resultado esperado |

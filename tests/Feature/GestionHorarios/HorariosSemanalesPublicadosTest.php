@@ -32,7 +32,9 @@ final class HorariosSemanalesPublicadosTest extends TestCase
             'CREATE TABLE gestion_horarios.asignacion_docente (id_actividad INTEGER, id_docente INTEGER, estado TEXT)',
             'CREATE TABLE core.seccion (id_seccion INTEGER, id_periodo INTEGER, id_curso_plan INTEGER, codigo TEXT)',
             'CREATE TABLE core.curso_plan (id_curso_plan INTEGER, id_curso INTEGER, ciclo INTEGER, id_plan INTEGER DEFAULT 1)',
-            'CREATE TABLE core.plan_estudios (id_plan INTEGER, nombre TEXT)',
+            'CREATE TABLE core.plan_estudios (id_plan INTEGER, nombre TEXT, id_escuela INTEGER)',
+            'CREATE TABLE core.escuela_profesional (id_escuela INTEGER, nombre TEXT, id_facultad INTEGER)',
+            'CREATE TABLE core.facultad (id_facultad INTEGER, nombre TEXT)',
             'CREATE TABLE core.periodo_academico (id_periodo INTEGER, codigo TEXT)',
             'CREATE TABLE core.curso (id_curso INTEGER, codigo TEXT, nombre TEXT)',
             'CREATE TABLE core.ambiente (id_ambiente INTEGER, codigo TEXT, nombre TEXT)',
@@ -42,7 +44,9 @@ final class HorariosSemanalesPublicadosTest extends TestCase
             DB::statement($sql);
         }
         DB::table('core.periodo_academico')->insert([['id_periodo' => 1, 'codigo' => '2026-I'], ['id_periodo' => 2, 'codigo' => '2026-II'], ['id_periodo' => 3, 'codigo' => '2027-I']]);
-        DB::table('core.plan_estudios')->insert(['id_plan' => 1, 'nombre' => 'Plan A']);
+        DB::table('core.facultad')->insert(['id_facultad' => 1, 'nombre' => 'Facultad de prueba']);
+        DB::table('core.escuela_profesional')->insert(['id_escuela' => 1, 'nombre' => 'Escuela de prueba', 'id_facultad' => 1]);
+        DB::table('core.plan_estudios')->insert(['id_plan' => 1, 'nombre' => 'Plan A', 'id_escuela' => 1]);
         DB::table('gestion_horarios.horario')->insert([
             ['id_horario' => 1, 'id_periodo' => 1, 'estado' => 'PUBLICADO', 'publicado_en' => '2026-01-01'],
             ['id_horario' => 2, 'id_periodo' => 1, 'estado' => 'BORRADOR', 'publicado_en' => null],
@@ -74,7 +78,7 @@ final class HorariosSemanalesPublicadosTest extends TestCase
         $this->get('/gestion-horarios/consulta-publicados?periodo=3')->assertOk()->assertDontSee('Beatriz')->assertDontSee('A7')->assertSee('no tiene actividades publicadas');
         foreach (['ciclo&valor=2&seccion=A', 'ambiente&valor=7', 'docente&valor=8'] as $filtro) {
             $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad='.$filtro)->assertOk()
-                ->assertSee('Curso publicado')->assertSee('Ana Docente')->assertSee('Aula 7')->assertSee('07 am a 08 am')->assertSee('SABADO')->assertDontSee('Curso privado');
+                ->assertSee('Curso publicado')->assertSee('Ana Docente')->assertSee('Aula 7')->assertSee('07 am a 08 am')->assertSee('SÁBADO')->assertDontSee('Curso privado');
         }
         $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad=docente&valor=99')->assertSessionHasErrors('valor');
         $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad=ciclo&valor=2&seccion=B')->assertSessionHasErrors('seccion');

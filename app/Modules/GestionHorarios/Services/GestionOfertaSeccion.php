@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 final class GestionOfertaSeccion
 {
-    public function __construct(private readonly ConnectionInterface $db, private readonly ?ProveedorEscuelasAutorizadas $escuelas = null) {}
+    public function __construct(private readonly ConnectionInterface $db, private readonly ?ProveedorEscuelasAutorizadas $escuelas = null, private readonly ?DistribucionAutomaticaLocal $automatico = null) {}
 
     public function asociar(User $usuario, int $periodo, int $seccion, int $oferta, ?int $asociacionEsperada): void
     {
@@ -23,6 +23,12 @@ final class GestionOfertaSeccion
         $this->db->transaction(function () use ($usuario, $periodo, $seccion, $oferta, $asociacionEsperada) {
             $cursoPlan = $this->db->table('core.seccion')->where('id_seccion', $seccion)->value('id_curso_plan');
             (new AmbitoEscrituraAcademica($this->db, $this->escuelas))->autorizarCurso($usuario, (int) $cursoPlan);
+            if (DistribucionAutomaticaLocal::esBaseIntegracion($this->db)) {
+                $plan = (int) $this->db->table('core.curso_plan')->where('id_curso_plan', $cursoPlan)->value('id_plan');
+                if (! $this->automatico?->autorizaEscritura($periodo, $plan)) {
+                    throw ValidationException::withMessages(['asociacion' => 'Utilice la planificación automática con vacantes consolidadas.']);
+                }
+            }
             // Bloquea solo la fila compartida y después las tablas propias, en el orden usado por gestión de oferta.
             $s = $this->db->table('core.seccion')->where('id_seccion', $seccion)->sharedLock()->first();
             abort_unless($s && (int) $s->id_curso_plan === (int) $cursoPlan, 403);

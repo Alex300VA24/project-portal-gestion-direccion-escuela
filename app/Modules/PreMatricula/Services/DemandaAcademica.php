@@ -41,6 +41,8 @@ final class DemandaAcademica
             ->groupBy('rc.id_curso_plan', 'c.codigo', 'c.nombre', 'cp.ciclo', 'c.creditos')
             ->select(['rc.id_curso_plan', 'c.codigo', 'c.nombre', 'cp.ciclo', 'c.creditos'])
             ->selectRaw('COUNT(DISTINCT s.id_estudiante)::int AS estudiantes')
+            ->selectRaw("COUNT(DISTINCT s.id_estudiante) FILTER (WHERE rc.preferencia_turno = 'MANANA')::int AS manana")
+            ->selectRaw("COUNT(DISTINCT s.id_estudiante) FILTER (WHERE rc.preferencia_turno = 'TARDE')::int AS tarde")
             ->selectRaw("COUNT(*) FILTER (WHERE val.estado = 'VALIDA')::int AS valida")
             ->selectRaw("COUNT(*) FILTER (WHERE val.estado = 'PENDIENTE_RESULTADOS')::int AS pendiente")
             ->selectRaw("COUNT(*) FILTER (WHERE val.estado = 'REQUIERE_AJUSTE' OR s.id_cronograma_correccion IS NOT NULL)::int AS requiere_ajuste")

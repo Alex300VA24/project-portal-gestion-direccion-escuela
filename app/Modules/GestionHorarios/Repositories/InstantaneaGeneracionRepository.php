@@ -30,6 +30,9 @@ final class InstantaneaGeneracionRepository
             $cursosIds->union($db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->select('id_curso_plan'));
         }
 
+        $demandaFilas = $demanda ? $db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->orderBy('id_curso_plan')->get(['id_curso_plan','total','manana','tarde']) : collect();
+        (new \App\Modules\GestionHorarios\Demand\AjustesDemanda($db))->filas($periodo, $demanda ? (int) $demanda->id_demanda : null, $demandaFilas);
+
         return [
             'periodo' => $p ? (array) $p : null,
             'cursos' => $this->filas($db->table('core.curso_plan as cp')->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')->leftJoin('core.plan_estudios as pe', 'pe.id_plan', '=', 'cp.id_plan')->whereIn('cp.id_curso_plan', $cursosIds)->orderBy('cp.id_curso_plan')->select('cp.id_curso_plan', 'cp.id_curso', 'cp.id_plan', 'pe.id_escuela', 'cp.ciclo', 'c.codigo', 'c.nombre', 'c.horas_teoria', 'c.horas_practica', 'c.horas_laboratorio')),
@@ -46,7 +49,7 @@ final class InstantaneaGeneracionRepository
             'ambientes' => $this->filas($db->table('core.ambiente')->orderBy('id_ambiente')->select('id_ambiente', 'codigo', 'nombre', 'tipo', 'capacidad', 'estado')),
             'bloqueos' => $this->filas($db->table('gestion_horarios.ambiente_bloqueo')->where('id_periodo', $periodo)->orderBy('id_bloqueo')->select('id_bloqueo', 'id_periodo', 'id_ambiente', 'fecha_inicio', 'fecha_fin', 'dia_semana', 'hora_inicio', 'hora_fin')),
             'restricciones' => $this->filas($db->table('gestion_horarios.restriccion as r')->leftJoin('gestion_horarios.detalle_restriccion as d', 'd.id_restriccion', '=', 'r.id_restriccion')->where(fn ($q) => $q->whereNull('d.id_detalle_restriccion')->orWhereIn('d.ambito', ['GLOBAL', 'DOCENTE', 'AMBIENTE'])->orWhere(fn ($q) => $q->where('d.ambito', 'PERIODO')->where('d.id_periodo', $periodo)))->orderBy('r.id_restriccion')->orderBy('d.id_detalle_restriccion')->select('r.id_restriccion', 'r.codigo', 'r.tipo', 'r.severidad', 'r.activa', 'd.id_detalle_restriccion', 'd.ambito', 'd.id_periodo', 'd.id_docente', 'd.id_ambiente', 'd.prioridad')),
-            'demanda' => $demanda ? ['version' => $demanda->version, 'huella' => $demanda->huella, 'recibida_en' => $demanda->recibida_en, 'cursos' => $this->filas($db->table('gestion_horarios.demanda_curso')->where('id_demanda', $demanda->id_demanda)->orderBy('id_curso_plan')->select('id_curso_plan', 'total', 'manana', 'tarde'))] : null,
+            'demanda' => $demanda ? ['version' => $demanda->version, 'huella' => $demanda->huella, 'recibida_en' => $demanda->recibida_en, 'cursos' => $demandaFilas->map(fn ($fila) => (array) $fila)->all()] : null,
             'horarios' => $this->filas($db->table('gestion_horarios.horario')->where('id_periodo', $periodo)->orderBy('id_horario')->select('id_horario', 'id_periodo', 'estado', 'version', 'id_demanda')),
         ];
     }

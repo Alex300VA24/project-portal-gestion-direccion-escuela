@@ -10,12 +10,15 @@ use Illuminate\Validation\ValidationException;
 
 final class PlanificarSeccion
 {
-    public function __construct(private readonly ConnectionInterface $db) {}
+    public function __construct(private readonly ConnectionInterface $db, private readonly ?DistribucionAutomaticaLocal $automatico = null) {}
 
     public function guardar(User $usuario, int $periodo, int $plan, int $curso, string $codigo, mixed $capacidad, ?int $seccion = null, array $original = []): void
     {
         $permiso = new AutorizacionGestionAcademica;
         $permiso->exigir($usuario);
+        if (DistribucionAutomaticaLocal::esBaseIntegracion($this->db) && ! $this->automatico?->autorizaEscritura($periodo, $plan)) {
+            throw ValidationException::withMessages(['seccion' => 'Utilice la planificación automática con vacantes consolidadas.']);
+        }
         if ($periodo <= 0 || $plan <= 0 || $curso <= 0) {
             throw ValidationException::withMessages(['seccion' => 'Seleccione un periodo, un plan y un curso válidos.']);
         }

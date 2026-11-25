@@ -4,6 +4,7 @@ namespace App\Modules\GestionHorarios\Livewire;
 
 use App\Modules\GestionHorarios\Livewire\Concerns\SeleccionPlan;
 use App\Modules\GestionHorarios\Policies\RegistroPolicy;
+use App\Modules\GestionHorarios\Demand\AjustesDemanda;
 use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
 use App\Modules\GestionHorarios\Services\AmbitoEscrituraAcademica;
 use App\Modules\GestionHorarios\Services\AmbitoPlanes;
@@ -39,6 +40,13 @@ final class OfertaAcademica extends Component
     public string $tipoFormulario = 'REGULAR';
 
     public string $docentesFormulario = '1';
+
+    #[Locked]
+    public array $demandaDetalle = [];
+
+    public string $demandaFormulario = '';
+
+    public string $motivoAjuste = '';
 
     public string $estadoFormulario = 'PLANIFICADA';
 
@@ -87,6 +95,7 @@ final class OfertaAcademica extends Component
         (new AutorizacionGestionAcademica)->exigir(auth()->user());
         $this->resetValidation();
         $this->ofertaEditar = null;
+        $this->reset('demandaDetalle', 'demandaFormulario', 'motivoAjuste');
         $this->reset('cursoFormulario', 'codigoPeriodoFormulario', 'tipoFormulario', 'docentesFormulario', 'estadoFormulario', 'mensaje');
         $this->formularioAbierto = true;
     }
@@ -119,9 +128,21 @@ final class OfertaAcademica extends Component
         $this->estadoFormulario = $oferta->estado;
         $this->estadoOriginal = $oferta->estado;
         $this->docentesOriginales = (int) $oferta->docentes_minimos;
+        $this->demandaDetalle = (new AjustesDemanda(DB::connection()))->detalle((int) $this->periodo, (int) $oferta->id_curso_plan);
+        $this->demandaDetalle['habilitado'] = $this->demandaDetalle['habilitado'] && $oferta->tipo_oferta === 'REGULAR' && $oferta->estado !== 'CERRADA';
+        $this->demandaFormulario = (string) ($this->demandaDetalle['efectiva'] ?? '');
+        $this->motivoAjuste = '';
         $this->detalleOferta = $oferta->codigo.' · '.$oferta->nombre.' · Ciclo '.$oferta->ciclo.' · '.$oferta->tipo_oferta;
         $this->formularioAbierto = true;
         $this->mensaje = '';
+    }
+
+    public function guardarDemanda(): void
+    {
+        abort_unless($this->ofertaEditar !== null && $this->formularioAbierto, 422);
+        (new AjustesDemanda(DB::connection()))->guardar(auth()->user(), (int) $this->periodo, $this->ofertaEditar, $this->demandaDetalle['id_demanda'] ?? null, $this->demandaDetalle['id_ajuste'] ?? null, $this->demandaFormulario, $this->motivoAjuste);
+        $this->formularioAbierto = false;
+        $this->mensaje = 'Demanda ajustada. Revise la capacidad y las secciones antes de generar.';
     }
 
     public function guardar(): void
@@ -130,7 +151,7 @@ final class OfertaAcademica extends Component
         $servicio = new GestionOfertaAcademica(DB::connection());
         try {
             if ($this->ofertaEditar !== null) {
-                $servicio->actualizar(auth()->user(), $this->ofertaEditar, ['docentes' => $this->docentesFormulario, 'estado' => $this->estadoFormulario], $this->estadoOriginal, $this->docentesOriginales);
+                $servicio->actualizar(auth()->user(), $this->ofertaEditar, ['docentes' => $this->docentesOriginales, 'estado' => $this->estadoFormulario], $this->estadoOriginal, $this->docentesOriginales);
             } else {
                 if (! ctype_digit($this->plan) || strlen($this->plan) >= 19 || ! app(AmbitoPlanes::class)->contiene(auth()->user(), (int) $this->plan) || ! DB::table('core.curso_plan')->where('id_plan', $this->plan)->where('id_curso_plan', $this->cursoFormulario)->exists()) {
                     $this->addError('curso', 'Seleccione un curso del plan elegido.');
@@ -149,7 +170,7 @@ final class OfertaAcademica extends Component
                         return;
                     }
                 }
-                $servicio->crear(auth()->user(), ['periodo' => $periodo, 'curso' => $this->cursoFormulario, 'tipo' => $this->tipoFormulario, 'docentes' => $this->docentesFormulario]);
+                $servicio->crear(auth()->user(), ['periodo' => $periodo, 'curso' => $this->cursoFormulario, 'tipo' => $this->tipoFormulario, 'docentes' => 1]);
                 $this->periodo = (string) $periodo;
             }
         } catch (QueryException $e) {

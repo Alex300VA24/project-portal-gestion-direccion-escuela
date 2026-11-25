@@ -8,6 +8,7 @@ use App\Modules\GestionHorarios\Repositories\ConsultaSeccionesRepository;
 use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
 use App\Modules\GestionHorarios\Services\AutorizacionGestionAcademica;
 use App\Modules\GestionHorarios\Services\ConsultaDistribucionSecciones;
+use App\Modules\GestionHorarios\Services\DistribucionAutomaticaLocal;
 use App\Modules\GestionHorarios\Services\GestionOfertaSeccion;
 use App\Modules\GestionHorarios\Services\PlanificarSeccion;
 use App\Modules\GestionHorarios\Services\PlanificarSeccionesPorDemanda;
@@ -24,6 +25,62 @@ final class DistribucionSecciones extends Component
     use SeleccionPlan { updatedPlan as private cambiarPlan; }
 
     public string $periodo = '';
+
+    public bool $mostrarSinDemanda = false;
+
+    #[Locked]
+    public ?array $confirmacionAutomatica = null;
+
+    public function consolidarVacantes(string $huella): void
+    {
+        $this->resetErrorBag('planAutomatico');
+        $this->confirmacionAutomatica = null;
+        (new AutorizacionGestionAcademica)->exigir(auth()->user());
+        $contexto = $this->contextoPlan();
+        abort_unless($contexto['planValido'] && ctype_digit($this->periodo), 403);
+        (new DistribucionAutomaticaLocal(DB::connection()))->consolidar(auth()->user(), (int) $this->periodo, $contexto['planId'], $huella);
+        $this->mensajeAsociacion = 'Vacantes consolidadas. Ahora puede crear las secciones del plan.';
+    }
+
+    public function revisarPlanAutomatico(): void
+    {
+        $this->resetErrorBag('planAutomatico');
+        $this->confirmacionAutomatica = null;
+        (new AutorizacionGestionAcademica)->exigir(auth()->user());
+        $contexto = $this->contextoPlan();
+        abort_unless($contexto['planValido'], 403);
+        $p = (new DistribucionAutomaticaLocal(DB::connection()))->previsualizar(auth()->user(), (int) $this->periodo, $contexto['planId']);
+        if ($p['bloqueo'] === null && ! in_array($p['estadoConsolidacion'], ['consolidada', 'secciones_verificadas'], true)) {
+            $this->addError('planAutomatico', 'Primero cierre Prematrícula y consolide las vacantes.');
+            return;
+        }
+        if ($p['bloqueo'] !== null) {
+            $this->addError('planAutomatico', $p['bloqueo']);
+            return;
+        }
+        $this->confirmacionAutomatica = ['huella' => $p['huella'], 'periodo' => $p['periodo'], 'plan' => $p['plan'], 'version' => $p['version'], 'cursos' => array_values(array_map(fn ($c) => ['codigo' => $c['codigo'], 'nombre' => $c['nombre'], 'propuesta' => $c['propuesta']], array_filter($p['cursos'], fn ($c) => $c['estado'] === 'pendiente')))];
+    }
+
+    public function aplicarPlanAutomatico(): void
+    {
+        $p = $this->confirmacionAutomatica;
+        abort_unless($p && $p['periodo'] === (int) $this->periodo && $p['plan'] === (int) $this->plan, 422);
+        try {
+            $r = (new DistribucionAutomaticaLocal(DB::connection()))->aplicar(auth()->user(), $p['periodo'], $p['plan'], $p['huella']);
+            $this->mensajeAsociacion = sprintf('Planificación actualizada: %d ofertas, %d secciones nuevas y %d capacidades ajustadas.', $r['ofertas'], $r['creadas'], $r['ajustadas']);
+        } catch (QueryException $e) {
+            report($e);
+            $this->addError('planAutomatico', 'No se pudo aplicar la planificación. No se guardaron cambios parciales.');
+        } finally {
+            $this->confirmacionAutomatica = null;
+        }
+    }
+
+    public function cancelarPlanAutomatico(): void
+    {
+        $this->confirmacionAutomatica = null;
+        $this->resetErrorBag('planAutomatico');
+    }
 
     public string $buscar = '';
 
@@ -169,6 +226,7 @@ final class DistribucionSecciones extends Component
     {
         $this->cancelarEdicion();
         $this->cancelarPropuesta();
+        $this->cancelarPlanAutomatico();
         $this->reset('ofertasSeleccionadas', 'mensajeAsociacion', 'seccionSemana', 'capacidadObjetivo', 'verEditorSemana');
     }
 
@@ -229,6 +287,13 @@ final class DistribucionSecciones extends Component
                         $curso->secciones,
                     );
                 }
+            }
+            $automatico = new DistribucionAutomaticaLocal(DB::connection());
+            $datos['automaticoLocal'] = $automatico->disponible();
+            $datos['planAutomatico'] = null;
+            if ($datos['automaticoLocal'] && $contexto['planValido'] && $id && $datos['periodos']->contains(fn ($p) => (int) $p->id_periodo === $id && $p->codigo === '2026-II')
+                && $contexto['planes']->contains(fn ($p) => (int) $p->id_plan === $contexto['planId'] && $p->codigo === 'PLAN-2018-INF')) {
+                $datos['planAutomatico'] = $automatico->previsualizar(auth()->user(), $id, $contexto['planId']);
             }
             $datos['errorConsulta'] = false;
             $datos['escrituraDisponible'] = $contexto['planValido'] && (new AutorizacionGestionAcademica)->permite(auth()->user());

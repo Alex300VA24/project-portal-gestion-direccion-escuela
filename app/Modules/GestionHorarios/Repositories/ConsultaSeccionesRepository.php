@@ -45,6 +45,7 @@ final class ConsultaSeccionesRepository
             ->selectRaw($demanda === null ? 'NULL AS total, NULL AS manana, NULL AS tarde' : 'd.total, d.manana, d.tarde')
             ->get();
 
+        (new \App\Modules\GestionHorarios\Demand\AjustesDemanda($this->db))->filas($periodo, $demanda, $cursos);
         $cursoIds = $cursos->pluck('id_curso_plan')->all();
         $secciones = $this->db->table('core.seccion as s')
             ->where('s.id_periodo', $periodo)->whereIn('s.id_curso_plan', $cursoIds)

@@ -1,5 +1,10 @@
 # Gestión de Horarios: integración, entorno y preparación del Draft PR
 
+## Anexo: integración local Prematrícula–Horarios
+
+La prueba conjunta utiliza el worktree de integración y la base `portal_integracion_pm_gh` (puerto 5433). No ejecutar las pruebas de escritura contra la base original. Consulte [Planificación automática de secciones](PLANIFICACION_AUTOMATICA_SECCIONES.md) · [Ajuste de demanda](AJUSTE_DEMANDA_POST_PREMATRICULA.md) · [Prioridad docente](PRIORIDAD_DOCENTE_CPSAT.md) para las nuevas operaciones y sus pruebas de aceptación.
+
+
 Actualización: 25 de noviembre de 2026. **Estado: candidato a revisión, no listo para fusión o despliegue institucional.**
 
 Este documento complementa el índice de documentación, los manuales y los contratos anteriores. No cambia las decisiones de seguridad del portal. Distingue las funciones institucionales de la demostración aislada (QA). La revisión final debe hacerse sobre el diff real de la rama respecto de `develop`, no sobre los parches por separado.

@@ -23,9 +23,15 @@ final class RevisionesOferta extends Component
         try {
             $escuelas = (new AmbitoConsultaAdministrativa)->escuelas(auth()->user());
             $adscripcionPendiente = $escuelas === [];
-            $db = DB::connection();
-            $revisionDisponible = $db->getSchemaBuilder()->hasTable('gestion_horarios.revision_oferta_pendiente');
-            $revisiones = $adscripcionPendiente || ! $revisionDisponible ? collect() : (new ConsultaRevisionesRepository($db))->pendientes($escuelas);
+            $revisiones = collect();
+            // Sin adscripción verificada no se debe consultar siquiera el esquema.
+            if (! $adscripcionPendiente) {
+                $db = DB::connection();
+                $revisionDisponible = $db->getSchemaBuilder()->hasTable('gestion_horarios.revision_oferta_pendiente');
+                if ($revisionDisponible) {
+                    $revisiones = (new ConsultaRevisionesRepository($db))->pendientes($escuelas);
+                }
+            }
             $error = false;
         } catch (QueryException $e) {
             report($e);
