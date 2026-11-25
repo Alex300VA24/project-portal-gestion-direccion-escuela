@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\GestionHorarios;
 
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
-use App\Modules\GestionHorarios\Engine\ErrorEjecucionPythonPrueba;
-use App\Modules\GestionHorarios\Engine\PoliticaReintentoPrueba;
-use App\Modules\GestionHorarios\Engine\ValidarResultadoFicticio;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\ErrorEjecucionPythonPrueba;
+use Tests\Support\GestionHorarios\Engine\PoliticaReintentoPrueba;
+use Tests\Support\GestionHorarios\Engine\ValidarResultadoFicticio;
 use DomainException;
 use Tests\TestCase;
 

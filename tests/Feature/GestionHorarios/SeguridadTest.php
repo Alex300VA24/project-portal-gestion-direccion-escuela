@@ -61,6 +61,8 @@ final class SeguridadTest extends TestCase
             ['id_horario' => 2, 'id_periodo' => 1, 'ambito' => 'GENERAL', 'version' => 2, 'estado' => 'APROBADO', 'publicado_en' => null, 'id_creado_por' => 42],
             ['id_horario' => 3, 'id_periodo' => 1, 'ambito' => 'GENERAL', 'version' => 3, 'estado' => 'PUBLICADO', 'publicado_en' => null, 'id_creado_por' => 42],
         ]);
+        $this->get('/gestion-horarios/catalogo-publico')->assertOk()->assertSee('GENERAL · versión 1')
+            ->assertDontSee('GENERAL · versión 2')->assertDontSee('GENERAL · versión 3')->assertDontSee('id_creado_por');
         $this->getJson('/gestion-horarios/publicados')->assertOk()->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id_horario', 1)->assertJsonMissingPath('data.0.id_creado_por');
     }

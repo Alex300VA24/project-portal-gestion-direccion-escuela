@@ -17,6 +17,9 @@ final class GestionOfertaSeccion
         if ($periodo <= 0 || $seccion <= 0 || $oferta <= 0 || ($asociacionEsperada !== null && $asociacionEsperada <= 0)) {
             throw ValidationException::withMessages(['asociacion' => 'Seleccione una sección y una oferta válidas.']);
         }
+        if (! $this->db->getSchemaBuilder()->hasTable('gestion_horarios.oferta_seccion')) {
+            throw ValidationException::withMessages(['asociacion' => 'La asociación por tipo de oferta no está disponible: falta la actualización institucional del módulo.']);
+        }
         $this->db->transaction(function () use ($usuario, $periodo, $seccion, $oferta, $asociacionEsperada) {
             $cursoPlan = $this->db->table('core.seccion')->where('id_seccion', $seccion)->value('id_curso_plan');
             (new AmbitoEscrituraAcademica($this->db, $this->escuelas))->autorizarCurso($usuario, (int) $cursoPlan);

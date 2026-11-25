@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\GestionHorarios\soporte;
 
-use App\Modules\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
+use Tests\Support\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
 use App\Modules\GestionHorarios\Services\InstantaneaGeneracion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;

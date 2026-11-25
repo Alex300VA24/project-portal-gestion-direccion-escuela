@@ -8,7 +8,7 @@ use App\Modules\GestionHorarios\Repositories\CalendarioAcademicoRepository;
 use App\Modules\GestionHorarios\Repositories\ConsultaPeriodosRepository;
 use App\Modules\GestionHorarios\Repositories\OfertaAcademicaRepository;
 use App\Modules\GestionHorarios\Repositories\PoblacionAcademicaRepository;
-use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
+use App\Modules\GestionHorarios\Services\ConsultaLocalDemostracion;
 use App\Modules\GestionHorarios\Services\CalendarioAcademico;
 use App\Modules\GestionHorarios\Services\PoblacionAcademica;
 use App\Modules\GestionHorarios\Services\PrevalidacionGeneracion;
@@ -30,12 +30,13 @@ final class PreparacionGeneracion extends Component
     public function boot(): void
     {
         abort_unless(auth()->user() && (new RegistroPolicy)->viewAny(auth()->user()), 403);
-        (new AmbitoConsultaAdministrativa)->denegarRecursoGlobal(auth()->user());
+        ConsultaLocalDemostracion::exigir(auth()->user());
     }
 
     public function mount(): void
     {
-        $this->periodo = (string) session('gestion_horarios.periodo_seleccionado', '');
+        $valor = request()->query('periodo', session('gestion_horarios.periodo_seleccionado', ''));
+        if ((is_string($valor) || is_int($valor)) && ctype_digit((string)$valor) && strlen((string)$valor)<19) { $this->periodo=(string)$valor; }
     }
 
     private function idPeriodo(): int

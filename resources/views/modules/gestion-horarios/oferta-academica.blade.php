@@ -1,9 +1,16 @@
-<div class="quality-page" style="padding: 2rem 1rem; margin: 0 auto; max-width: 1180px">
-    <nav aria-label="Ruta actual"><a href="{{ route('dashboard') }}">Portal</a> / <a href="{{ route('gestion-horarios.administracion') }}">Gestión de Horarios</a> / Oferta académica</nav>
-    <header class="quality-page-heading">
-        <div><span class="quality-eyebrow">Gestión de Horarios</span><h1>Oferta académica</h1><p>Consulte los cursos ofertados y la demanda registrada para cada periodo.</p></div>
-    </header>
+<div class="quality-page gh-ui gh-oferta" style="padding: 2rem 1rem; margin: 0 auto; max-width: 1180px">
+    @include('modules.gestion-horarios.ui-estilos')
+    <style>
+        .gh-oferta .quality-page-heading { display:block; }
+        .gh-oferta label,.gh-oferta select,.gh-oferta input { min-width:0;max-width:100%; }
+    </style>
+    @include('modules.gestion-horarios.cabecera-administrativa', ['titulo'=>'Preparación académica', 'subtitulo'=>'Oferta académica', 'descripcion'=>'Consulte los cursos ofertados y la demanda registrada para cada periodo.'])
 
+    @include('modules.gestion-horarios.workspace-navegacion', [
+        'workspaceEtapa' => 'preparacion', 'workspaceSub' => 'oferta',
+        'workspacePlan' => ($planValido ?? false) ? $plan : '',
+        'workspacePeriodo' => ($planValido ?? false) && isset($periodos) && $periodos->contains('id_periodo', (int) $periodo) ? $periodo : '',
+    ])
     @if ($errorConsulta)
         <div class="quality-alert" role="alert">No se pudo consultar la información. Intente nuevamente o comuníquese con soporte.</div>
     @else
@@ -21,6 +28,31 @@
         </section>
         <p wire:loading role="status" aria-live="polite">Actualizando información…</p>
         @if ($mensaje)<p class="auth-status" role="status">{{ $mensaje }}</p>@endif
+            @if ($escrituraDisponible)<div style="margin-top:1rem"><button class="institutional-primary" type="button" wire:click="nueva">Crear oferta</button></div>@endif
+            @if ($formularioAbierto && $escrituraDisponible)
+                <section class="quality-panel" style="margin-top:1rem; padding:1.25rem" aria-labelledby="formulario-oferta">
+                    <h2 id="formulario-oferta">{{ $ofertaEditar ? 'Detalle y edición de oferta' : 'Nueva oferta académica' }}</h2>
+                    @if ($ofertaEditar)<p>{{ $detalleOferta }}</p>@endif
+                    @if ($errors->any())<div class="auth-error-summary" role="alert"><strong>Revise la información:</strong><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+                    <form wire:submit="guardar" wire:confirm="¿Desea guardar los cambios en la oferta académica?">
+                        <div style="display:flex; flex-wrap:wrap; gap:1rem">
+                            @if (! $ofertaEditar)
+                                @if ($periodo === '')
+                                    <label>Código del periodo académico<br><input class="quality-select" wire:model="codigoPeriodoFormulario" maxlength="20" placeholder="2026-II" required></label>
+                                @endif
+                                <label>Asignatura del plan<br><select class="quality-select" wire:model="cursoFormulario" required><option value="">Seleccione un curso</option>@foreach ($catalogo as $item)<option value="{{ $item->id_curso_plan }}">{{ $item->codigo }} · {{ $item->nombre }} · ciclo {{ $item->ciclo }}</option>@endforeach</select></label>
+                                <label>Tipo<br><select class="quality-select" wire:model="tipoFormulario"><option value="REGULAR">Regular</option><option value="REPETICION">Repetición</option></select></label>
+                            @else
+                                <label>Estado<br><select class="quality-select" wire:model="estadoFormulario"><option value="PLANIFICADA">Planificada</option><option value="OFERTADA">Ofertada</option><option value="CERRADA">Cerrada</option></select></label>
+                            @endif
+                            <label>Docentes mínimos<br><input class="quality-select" type="number" min="1" max="32767" wire:model="docentesFormulario" required></label>
+                        </div>
+                        @if ($ofertaEditar)<p>Las ofertas con secciones requieren revisión antes de modificarse.</p>@endif
+                        <button class="institutional-primary" type="submit" wire:loading.attr="disabled">Guardar oferta</button>
+                        <button class="institutional-secondary" type="button" wire:click="$set('formularioAbierto', false)">Cancelar</button>
+                    </form>
+                </section>
+            @endif
         @if (! $planValido)
             <div class="quality-empty"><h2>Seleccione un plan autorizado</h2><p>Los periodos se muestran cuando tienen datos vinculados al plan.</p></div>
         @elseif ($periodos->isEmpty())
@@ -38,31 +70,9 @@
                             <li><strong>{{ $diagnostico['nivel'] }}:</strong> {{ $diagnostico['mensaje'] }}</li>
                         @endforeach
                     </ul>
-                    <p><a href="{{ route('gestion-horarios.secciones', ['plan' => $plan, 'periodo' => $periodo]) }}">Continuar a secciones</a></p>
                 @endif
+                <p><a href="{{ route('gestion-horarios.secciones', ['plan' => $plan, 'periodo' => $periodo]) }}">Continuar a secciones</a></p>
             </section>
-            @if ($escrituraDisponible)<div style="margin-top:1rem"><button class="institutional-primary" type="button" wire:click="nueva">Crear oferta</button></div>@else<p role="status">La edición requiere verificar la escuela autorizada y seleccionar un plan disponible.</p>@endif
-            @if ($formularioAbierto && $escrituraDisponible)
-                <section class="quality-panel" style="margin-top:1rem; padding:1.25rem" aria-labelledby="formulario-oferta">
-                    <h2 id="formulario-oferta">{{ $ofertaEditar ? 'Detalle y edición de oferta' : 'Nueva oferta académica' }}</h2>
-                    @if ($ofertaEditar)<p>{{ $detalleOferta }}</p>@endif
-                    @if ($errors->any())<div class="auth-error-summary" role="alert"><strong>Revise la información:</strong><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-                    <form wire:submit="guardar" wire:confirm="¿Desea guardar los cambios en la oferta académica?">
-                        <div style="display:flex; flex-wrap:wrap; gap:1rem">
-                            @if (! $ofertaEditar)
-                                <label>Asignatura del plan<br><select class="quality-select" wire:model="cursoFormulario" required><option value="">Seleccione un curso</option>@foreach ($catalogo as $item)<option value="{{ $item->id_curso_plan }}">{{ $item->codigo }} · {{ $item->nombre }} · ciclo {{ $item->ciclo }}</option>@endforeach</select></label>
-                                <label>Tipo<br><select class="quality-select" wire:model="tipoFormulario"><option value="REGULAR">Regular</option><option value="REPETICION">Repetición</option></select></label>
-                            @else
-                                <label>Estado<br><select class="quality-select" wire:model="estadoFormulario"><option value="PLANIFICADA">Planificada</option><option value="OFERTADA">Ofertada</option><option value="CERRADA">Cerrada</option></select></label>
-                            @endif
-                            <label>Docentes mínimos<br><input class="quality-select" type="number" min="1" max="32767" wire:model="docentesFormulario" required></label>
-                        </div>
-                        <p>Al cerrar o modificar una oferta con secciones se solicitará una revisión; los horarios no se cambiarán automáticamente.</p>
-                        <button class="institutional-primary" type="submit" wire:loading.attr="disabled">Guardar oferta</button>
-                        <button class="institutional-secondary" type="button" wire:click="$set('formularioAbierto', false)">Cancelar</button>
-                    </form>
-                </section>
-            @endif
             <section class="quality-panel" style="margin-top:1rem" aria-labelledby="demanda-titulo">
                 <header class="quality-panel-heading"><div><h2 id="demanda-titulo">Demanda académica</h2>
                     <p>Los totales visibles corresponden a cursos del plan seleccionado; son estimaciones y no representan matrícula.</p>

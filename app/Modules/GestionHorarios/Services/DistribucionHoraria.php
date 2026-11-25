@@ -21,7 +21,7 @@ final class DistribucionHoraria
     ];
 
     /** @param array<int, object> $sesiones @param array<int|string, list<string>> $docentes */
-    public function preparar(array $sesiones, array $docentes, array $bloques = []): array
+    public function preparar(array $sesiones, array $docentes, array $bloques = [], string $alcance = '', bool $semanaCompleta = false): array
     {
         $grupos = [];
         foreach ($sesiones as $indice => $sesion) {
@@ -41,7 +41,7 @@ final class DistribucionHoraria
             }
             $curso = trim((string) $sesion->curso_nombre);
             $tipo = strtoupper(trim((string) $sesion->tipo_actividad));
-            $clave = json_encode([(string) $sesion->id_plan, $ciclo, $seccion], JSON_THROW_ON_ERROR);
+            $clave = json_encode($alcance !== '' ? [(string) $sesion->id_plan, $alcance] : [(string) $sesion->id_plan, $ciclo, $seccion], JSON_THROW_ON_ERROR);
             $profesores = $docentes[(string) $sesion->id_actividad] ?? [];
             $grupos[$clave]['sesiones'][] = [
                 'id' => (string) ($sesion->id_detalle ?? 'pos-'.$indice),
@@ -52,11 +52,11 @@ final class DistribucionHoraria
                 'codigo' => (string) ($sesion->curso_codigo ?? ''),
                 'curso' => $curso,
                 'tipo' => ['TEORIA' => 'Teoría', 'PRACTICA' => 'Práctica', 'LABORATORIO' => 'Laboratorio', 'TALLER' => 'Taller'][$tipo] ?? $tipo,
-                'grupo' => $esGrupoTesis ? $seccionOriginal : '',
+                'grupo' => $esGrupoTesis ? $seccionOriginal : (string) ($sesion->grupo_actividad ?? ''),
                 'docente' => $profesores ? implode(', ', array_values(array_unique($profesores))) : 'Sin asignación confirmada',
                 'ambiente' => trim((string) ($sesion->ambiente ?? '')) ?: 'Sin ambiente registrado',
                 'color' => self::color($curso),
-                'seccion_original' => $seccionOriginal,
+                'seccion_original' => $seccionOriginal, 'alcance_sesion' => 'Ciclo '.$ciclo.' · Sección '.$seccion,
             ];
             $grupos[$clave]['datos'] = [
                 'plan' => $sesion->id_plan,
@@ -64,7 +64,7 @@ final class DistribucionHoraria
                 'facultad' => $sesion->facultad_nombre ?? 'Facultad no registrada',
                 'escuela' => $sesion->escuela_nombre ?? 'Escuela no registrada',
                 'ciclo' => $ciclo,
-                'seccion' => $seccion,
+                'seccion' => $seccion, 'alcance' => $alcance,
             ];
         }
 
@@ -96,7 +96,7 @@ final class DistribucionHoraria
             }
             $desde = intdiv(min($inicios), 60) * 60;
             $hasta = (int) ceil(max($finales) / 60) * 60;
-            $dias = array_values(array_filter(self::DIAS, fn (string $dia) => in_array($dia, array_column($eventos, 'dia'), true)));
+            $dias = array_values(array_filter(self::DIAS, fn (string $dia) => $semanaCompleta || in_array($dia, array_column($eventos, 'dia'), true)));
             $tarjetas = [];
             foreach ($dias as $dia) {
                 $tarjetas[$dia] = $this->distribuirDia(array_values(array_filter($eventos, fn (array $s) => $s['dia'] === $dia)), $desde, $hasta);
@@ -166,6 +166,21 @@ final class DistribucionHoraria
         return $resultado;
     }
 
+    /** Filas de presentación, con receso solo cuando no existe bloque ni sesión. */
+    public static function filasAcademicas(array $grupo, array $bloques): array
+    {
+        $filas = [];
+        for ($h=$grupo['desde']; $h<$grupo['hasta']; $h+=60) {
+            $activas=[];
+            foreach ($grupo['dias'] as $dia) {
+                $activas[$dia] = array_values(array_filter($grupo['sesiones'], fn ($s) => $s['dia']===$dia && $s['inicio']<$h+60 && $s['fin']>$h));
+            }
+            $receso = $h===780 && $bloques && !array_filter($activas) && !array_filter($bloques, fn ($b) => self::minutos((string)$b->hora_inicio)<840 && self::minutos((string)$b->hora_fin)>780);
+            $filas[]=['inicio'=>$h,'fin'=>$h+60,'activas'=>$activas,'receso'=>$receso];
+        }
+        return $filas;
+    }
+
     public static function minutos(string $hora): int
     {
         if (! preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $hora, $partes)
@@ -179,6 +194,18 @@ final class DistribucionHoraria
     public static function hora(int $minutos): string
     {
         return sprintf('%02d:%02d', intdiv($minutos, 60), $minutos % 60);
+    }
+
+    /** Formato visual únicamente; no cambia el valor de las horas almacenadas. */
+    public static function hora12(int $minutos): string
+    {
+        $h = intdiv($minutos, 60) % 24;
+        return sprintf('%02d', $h % 12 ?: 12).($minutos % 60 ? sprintf(':%02d', $minutos % 60) : '').($h < 12 ? ' am' : ' pm');
+    }
+
+    public static function rango12(int $inicio, int $fin): string
+    {
+        return self::hora12($inicio).' a '.self::hora12($fin);
     }
 
     public static function color(string $curso): string

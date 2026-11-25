@@ -9,6 +9,19 @@ final class ConsultaSeccionesRepository
 {
     public function __construct(private readonly ConnectionInterface $db) {}
 
+    public function semana(int $periodo, int $plan, int $ciclo, string $seccion, bool $soloActivas = false): Collection
+    {
+        return $this->db->table('core.seccion as s')
+            ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
+            ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
+            ->join('gestion_horarios.actividad_academica as a', 'a.id_seccion', '=', 's.id_seccion')
+            ->where('s.id_periodo', $periodo)->where('cp.id_plan', $plan)
+            ->where('cp.ciclo', $ciclo)->where('s.codigo', $seccion)->when($soloActivas, fn ($q) => $q->where('s.estado', 'ACTIVA'))
+            ->orderBy('a.hora_inicio')->orderBy('c.codigo')->orderBy('a.id_actividad')
+            ->get(['a.id_actividad', 'a.hora_inicio', 'a.hora_fin', 'a.dia_semana', 'a.tipo_actividad',
+                'cp.ciclo', 's.codigo as seccion', 'c.codigo as curso_codigo', 'c.nombre as curso_nombre']);
+    }
+
     public function cursos(int $periodo, ?int $demanda, string $buscar, string $ciclo, ?int $plan = null): Collection
     {
         $ids = $this->db->table('core.seccion')->where('id_periodo', $periodo)->select('id_curso_plan')
@@ -21,19 +34,23 @@ final class ConsultaSeccionesRepository
             ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'ids.id_curso_plan')
             ->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')
             ->when($plan !== null, fn ($q) => $q->where('cp.id_plan', $plan))
-            ->leftJoin('gestion_horarios.demanda_curso as d', function ($join) use ($demanda) {
+            ->when($demanda !== null, fn ($q) => $q->leftJoin('gestion_horarios.demanda_curso as d', function ($join) use ($demanda) {
                 $join->on('d.id_curso_plan', '=', 'cp.id_curso_plan')->where('d.id_demanda', '=', $demanda);
-            })
+            }))
             ->when($buscar !== '', fn ($q) => $q->where(fn ($q) => $q->where('c.codigo', 'ilike', '%'.$buscar.'%')->orWhere('c.nombre', 'ilike', '%'.$buscar.'%')
                 ->orWhereExists(fn ($sub) => $sub->selectRaw('1')->from('core.seccion as busqueda')->whereColumn('busqueda.id_curso_plan', 'cp.id_curso_plan')->where('busqueda.id_periodo', $periodo)->where('busqueda.codigo', 'ilike', '%'.$buscar.'%'))))
             ->when($ciclo !== '' && ctype_digit($ciclo), fn ($q) => $q->where('cp.ciclo', (int) $ciclo))
             ->orderBy('cp.ciclo')->orderBy('c.nombre')
-            ->get(['cp.id_curso_plan', 'cp.ciclo', 'c.codigo', 'c.nombre', 'd.total', 'd.manana', 'd.tarde']);
+            ->select(['cp.id_curso_plan', 'cp.ciclo', 'c.codigo', 'c.nombre'])
+            ->selectRaw($demanda === null ? 'NULL AS total, NULL AS manana, NULL AS tarde' : 'd.total, d.manana, d.tarde')
+            ->get();
 
         $cursoIds = $cursos->pluck('id_curso_plan')->all();
         $secciones = $this->db->table('core.seccion as s')
             ->where('s.id_periodo', $periodo)->whereIn('s.id_curso_plan', $cursoIds)
-            ->orderBy('s.codigo')->get(['s.id_seccion', 's.id_curso_plan', 's.codigo', 's.capacidad', 's.estado'])
+            ->select(['s.id_seccion', 's.id_curso_plan', 's.codigo', 's.capacidad', 's.estado'])
+            ->selectRaw('EXISTS (SELECT 1 FROM gestion_horarios.actividad_academica a JOIN gestion_horarios.detalle_horario d ON d.id_actividad = a.id_actividad WHERE a.id_seccion = s.id_seccion) AS programada')
+            ->orderBy('s.codigo')->get()
             ->groupBy('id_curso_plan');
         $ofertas = $this->db->table('gestion_horarios.oferta_curso')->where('id_periodo', $periodo)->whereIn('id_curso_plan', $cursoIds)
             ->orderBy('tipo_oferta')->get(['id_oferta', 'id_curso_plan', 'tipo_oferta', 'estado'])->groupBy('id_curso_plan');

@@ -15,6 +15,8 @@ final class HorariosSemanalesPublicadosTest extends TestCase
     public function test_invitado_no_accede(): void
     {
         $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad=ciclo&valor=1')->assertRedirect('/login');
+        $this->get('/gestion-horarios/consulta')->assertRedirect('/login');
+        $this->get('/gestion-horarios/panel')->assertRedirect('/login');
     }
 
     #[RunInSeparateProcess]
@@ -64,13 +66,15 @@ final class HorariosSemanalesPublicadosTest extends TestCase
         DB::table('gestion_horarios.asignacion_docente')->insert(['id_actividad' => 5, 'id_docente' => 9, 'estado' => 'CONFIRMADA']);
         $this->actingAs(User::factory()->create());
         $this->get('/gestion-horarios/consulta-publicados?periodo=1')->assertOk()
-            ->assertSee('2026-I')->assertSee('A7')->assertSee('Ana')->assertDontSee('Beatriz')->assertDontSee('B8')->assertDontSee('PR99')->assertDontSee('Docente privado')
-            ->assertSee('Seleccione un ciclo')->assertSee('Seleccione un docente');
-        $this->get('/gestion-horarios/consulta-publicados?periodo=2')->assertOk()->assertSee('Beatriz')->assertSee('B8')->assertDontSee('A7');
+            ->assertSee('2026-I')->assertSee('Seleccione un ciclo')->assertSee('Por docente')->assertDontSee('Docente privado');
+        $this->get('/gestion-horarios/consulta?periodo=1&modalidad=docente')->assertOk()->assertSee('Ana')->assertDontSee('Beatriz')->assertDontSee('Docente privado');
+        $this->get('/gestion-horarios/consulta?periodo=1&modalidad=ambiente')->assertOk()->assertSee('A7')->assertDontSee('B8')->assertDontSee('PR99');
+        $this->get('/gestion-horarios/consulta?periodo=2&modalidad=docente')->assertOk()->assertSee('Beatriz')->assertDontSee('Ana');
+        $this->get('/gestion-horarios/consulta?periodo=2&modalidad=ambiente')->assertOk()->assertSee('B8')->assertDontSee('A7');
         $this->get('/gestion-horarios/consulta-publicados?periodo=3')->assertOk()->assertDontSee('Beatriz')->assertDontSee('A7')->assertSee('no tiene actividades publicadas');
         foreach (['ciclo&valor=2&seccion=A', 'ambiente&valor=7', 'docente&valor=8'] as $filtro) {
             $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad='.$filtro)->assertOk()
-                ->assertSee('Curso publicado')->assertSee('Ana Docente')->assertSee('Aula 7')->assertDontSee('Curso privado');
+                ->assertSee('Curso publicado')->assertSee('Ana Docente')->assertSee('Aula 7')->assertSee('07 am a 08 am')->assertSee('SABADO')->assertDontSee('Curso privado');
         }
         $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad=docente&valor=99')->assertSessionHasErrors('valor');
         $this->get('/gestion-horarios/semana-publicada?periodo=1&modalidad=ciclo&valor=2&seccion=B')->assertSessionHasErrors('seccion');

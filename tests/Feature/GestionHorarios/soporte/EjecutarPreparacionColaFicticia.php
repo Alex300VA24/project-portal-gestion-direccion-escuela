@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\GestionHorarios\soporte;
 
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
-use App\Modules\GestionHorarios\Engine\ErrorEjecucionPythonPrueba;
-use App\Modules\GestionHorarios\Engine\ProteccionPropuestaPrueba;
-use App\Modules\GestionHorarios\Engine\ReconciliarIntentosPrueba;
-use App\Modules\GestionHorarios\Engine\TrazabilidadEjecucionPrueba;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\ErrorEjecucionPythonPrueba;
+use Tests\Support\GestionHorarios\Engine\ProteccionPropuestaPrueba;
+use Tests\Support\GestionHorarios\Engine\ReconciliarIntentosPrueba;
+use Tests\Support\GestionHorarios\Engine\TrazabilidadEjecucionPrueba;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

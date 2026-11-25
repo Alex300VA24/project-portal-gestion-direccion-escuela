@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\GestionHorarios;
 
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
 use DomainException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

@@ -3,9 +3,9 @@
 namespace Tests\Feature\GestionHorarios;
 
 use App\Modules\GestionHorarios\Contracts\ProveedorComplementosTransaccional;
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
-use App\Modules\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
-use App\Modules\GestionHorarios\Engine\ProteccionPropuestaPrueba;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
+use Tests\Support\GestionHorarios\Engine\ProteccionPropuestaPrueba;
 use App\Modules\GestionHorarios\Services\InstantaneaGeneracion;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\DB;

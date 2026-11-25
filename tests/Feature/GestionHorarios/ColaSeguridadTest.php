@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\GestionHorarios;
 
-use App\Modules\GestionHorarios\Services\EjecucionesCpsatPrueba;
+use Tests\Support\GestionHorarios\Services\EjecucionesCpsatPrueba;
 use RuntimeException;
 use Tests\TestCase;
 

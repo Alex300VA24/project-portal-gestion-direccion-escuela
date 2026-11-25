@@ -60,7 +60,7 @@
                     @php($pos = 100 * ($minutos - $grupo['desde']) / ($grupo['hasta'] - $grupo['desde']))
                     <div class="linea-hora" style="top:{{ $pos }}%"></div>
                     @if ($minutos < $grupo['hasta'])
-                        <span class="hora" style="top:{{ $pos + .4 }}%">{{ \App\Modules\GestionHorarios\Services\DistribucionHoraria::hora($minutos) }}–{{ \App\Modules\GestionHorarios\Services\DistribucionHoraria::hora($minutos + 60) }}</span>
+                        <span class="hora" style="top:{{ $pos + .4 }}%">{{ \App\Modules\GestionHorarios\Services\DistribucionHoraria::rango12($minutos, $minutos + 60) }}</span>
                     @endif
                 @endfor
                 @foreach ($diasPagina as $indice => $dia)

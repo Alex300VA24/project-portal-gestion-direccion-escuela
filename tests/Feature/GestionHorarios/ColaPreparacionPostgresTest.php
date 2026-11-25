@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\GestionHorarios;
 
-use App\Modules\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
-use App\Modules\GestionHorarios\Engine\PoliticaReintentoPrueba;
-use App\Modules\GestionHorarios\Engine\ProteccionPropuestaPrueba;
-use App\Modules\GestionHorarios\Engine\ReconciliarIntentosPrueba;
-use App\Modules\GestionHorarios\Engine\RecuperarEjecucionPrueba;
-use App\Modules\GestionHorarios\Engine\TrazabilidadEjecucionPrueba;
-use App\Modules\GestionHorarios\Engine\ValidarResultadoFicticio;
+use Tests\Support\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
+use Tests\Support\GestionHorarios\Engine\PoliticaReintentoPrueba;
+use Tests\Support\GestionHorarios\Engine\ProteccionPropuestaPrueba;
+use Tests\Support\GestionHorarios\Engine\ReconciliarIntentosPrueba;
+use Tests\Support\GestionHorarios\Engine\RecuperarEjecucionPrueba;
+use Tests\Support\GestionHorarios\Engine\TrazabilidadEjecucionPrueba;
+use Tests\Support\GestionHorarios\Engine\ValidarResultadoFicticio;
 use App\Modules\GestionHorarios\Services\InstantaneaGeneracion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;

@@ -4,7 +4,7 @@ namespace App\Modules\GestionHorarios\Livewire;
 
 use App\Modules\GestionHorarios\Policies\RegistroPolicy;
 use App\Modules\GestionHorarios\Repositories\ConsultaPeriodosRepository;
-use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
+use App\Modules\GestionHorarios\Services\ConsultaLocalDemostracion;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -21,7 +21,13 @@ final class PeriodosAcademicos extends Component
     public function boot(): void
     {
         abort_unless(auth()->user() && (new RegistroPolicy)->viewAny(auth()->user()), 403);
-        (new AmbitoConsultaAdministrativa)->denegarRecursoGlobal(auth()->user());
+        ConsultaLocalDemostracion::exigir(auth()->user());
+    }
+
+    public function mount(): void
+    {
+        $valor = request()->query('periodo', session('gestion_horarios.periodo_seleccionado', ''));
+        if ((is_string($valor) || is_int($valor)) && ctype_digit((string)$valor) && strlen((string)$valor)<19) { $this->detalle=(string)$valor; }
     }
 
     public function seleccionar(int $id): void

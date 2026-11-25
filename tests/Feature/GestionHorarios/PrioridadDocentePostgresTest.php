@@ -3,10 +3,10 @@
 namespace Tests\Feature\GestionHorarios;
 
 use App\Models\User;
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
-use App\Modules\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
-use App\Modules\GestionHorarios\Engine\ProteccionPropuestaPrueba;
-use App\Modules\GestionHorarios\Engine\ValidarResultadoFicticio;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
+use Tests\Support\GestionHorarios\Engine\ProteccionPropuestaPrueba;
+use Tests\Support\GestionHorarios\Engine\ValidarResultadoFicticio;
 use App\Modules\GestionHorarios\Services\InstantaneaGeneracion;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;

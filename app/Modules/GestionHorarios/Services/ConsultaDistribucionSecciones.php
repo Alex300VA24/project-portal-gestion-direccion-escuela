@@ -16,7 +16,7 @@ final class ConsultaDistribucionSecciones
         $periodosRepo = new OfertaAcademicaRepository($this->db);
         $periodos = $plan !== null ? $periodosRepo->periodosParaPlan($plan) : $periodosRepo->periodos();
         if (! $periodo || ! $periodos->contains('id_periodo', $periodo)) {
-            return ['periodos' => $periodos, 'demanda' => null, 'cursos' => collect(), 'integridad' => null, 'asociacionDisponible' => $this->db->getSchemaBuilder()->hasTable('gestion_horarios.oferta_seccion')];
+            return ['periodos' => $periodos, 'demanda' => null, 'cursos' => collect(), 'integridad' => null, 'periodoProtegido' => false, 'asociacionDisponible' => $this->db->getSchemaBuilder()->hasTable('gestion_horarios.oferta_seccion')];
         }
         $demanda = (new RepositorioDemandaPostgres($this->db))->vigente($periodo);
         $cursos = (new ConsultaSeccionesRepository($this->db))->cursos($periodo, $demanda ? (int) $demanda->id_demanda : null, $buscar, $ciclo, $plan);
@@ -31,6 +31,9 @@ final class ConsultaDistribucionSecciones
         // La conciliación existente examina todo el periodo y no acredita alcance por escuela.
         $integridad = null;
 
-        return compact('periodos', 'demanda', 'cursos', 'asociacionDisponible', 'integridad');
+        $periodoProtegido = $this->db->table('gestion_horarios.horario')->where('id_periodo', $periodo)
+            ->whereIn('estado', ['APROBADO', 'PUBLICADO'])->exists();
+
+        return compact('periodos', 'demanda', 'cursos', 'asociacionDisponible', 'integridad', 'periodoProtegido');
     }
 }

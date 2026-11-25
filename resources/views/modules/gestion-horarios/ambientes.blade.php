@@ -1,6 +1,7 @@
-<div class="quality-page" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
-    <nav aria-label="Ruta actual"><a href="{{ route('dashboard') }}">Portal</a> / <a href="{{ route('gestion-horarios.administracion') }}">Gestión de Horarios Académicos</a> / Ambientes</nav>
-    <header class="quality-page-heading"><div><span class="quality-eyebrow">Gestión de Horarios Académicos</span><h1>Ambientes y laboratorios</h1><p>Consulte el catálogo institucional y la información de ocupación registrada.</p></div></header>
+<div class="quality-page gh-ui" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
+    @include('modules.gestion-horarios.ui-estilos')
+    @include('modules.gestion-horarios.cabecera-administrativa', ['titulo'=>'Recursos académicos', 'subtitulo'=>'Ambientes y laboratorios', 'descripcion'=>'Consulte el catálogo institucional y la información de ocupación registrada.'])
+    @include('modules.gestion-horarios.workspace-navegacion', ['workspaceEtapa' => 'recursos', 'workspaceSub' => ($tipo === 'LABORATORIO' ? 'laboratorios' : ($tipo === 'AULA' ? 'aulas' : '')), 'workspacePlan' => $plan ?? session('gestion_horarios.workspace.plan', ''), 'workspacePeriodo' => $periodo ?? session('gestion_horarios.periodo_seleccionado', '')])
     @if ($errorConsulta)
         <div class="quality-alert" role="alert">No se pudo consultar la información de ambientes. Intente nuevamente o comuníquese con soporte.</div>
     @else
@@ -8,7 +9,7 @@
             <label>Periodo académico<br><select class="quality-select" wire:model.live="periodo"><option value="">Seleccione un periodo</option>@foreach ($periodos as $p)<option value="{{ $p->id_periodo }}">{{ $p->codigo }}</option>@endforeach</select></label>
             <label>Buscar por nombre o código<br><input class="quality-select" type="search" maxlength="120" wire:model.live.debounce.400ms="buscar"></label>
             <label>Tipo de ambiente<br><select class="quality-select" wire:model.live="tipo"><option value="">Todos</option>@foreach ($tipos as $item)<option value="{{ $item }}">{{ $item }}</option>@endforeach</select></label>
-            <label>Ambiente<br><select class="quality-select" wire:model.live="ambiente"><option value="">Seleccione un ambiente</option>@foreach ($ambientes as $item)<option value="{{ $item->id_ambiente }}">{{ $item->codigo ?: 'Sin código' }} · {{ $item->nombre ?: 'Sin nombre' }}</option>@endforeach</select></label>
+            <label>Ambiente<br><select class="quality-select" wire:model.live="ambiente"><option value="">Seleccione un ambiente</option>@foreach ($ambientes as $item)<option value="{{ $item->id_ambiente }}">{{ $item->nombre ?: ($item->codigo ?: 'Sin nombre') }}</option>@endforeach</select></label>
         </div></section>
         <p wire:loading role="status" aria-live="polite">Actualizando información…</p>
         @if ($periodos->isEmpty())<div class="quality-empty"><h2>No hay periodos disponibles</h2></div>

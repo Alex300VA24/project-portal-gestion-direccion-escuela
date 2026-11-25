@@ -1,6 +1,6 @@
 <?php
 
-use App\Modules\GestionHorarios\Engine\RecuperarEjecucionPrueba;
+use Tests\Support\GestionHorarios\Engine\RecuperarEjecucionPrueba;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\GestionHorarios\soporte\EjecutarPreparacionColaFicticia;

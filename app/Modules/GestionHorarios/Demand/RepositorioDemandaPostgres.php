@@ -40,8 +40,20 @@ final class RepositorioDemandaPostgres implements RepositorioDemanda
         return $fila ? ['version' => (int) $fila->version, 'hash' => $fila->huella] : null;
     }
 
+    public function disponible(): bool
+    {
+        $schema = $this->db->getSchemaBuilder();
+
+        return $schema->hasTable('gestion_horarios.demanda_instantanea') && $schema->hasTable('gestion_horarios.demanda_curso');
+    }
+
     public function vigente(int $periodo): ?object
     {
+        if (! $this->disponible()) {
+            return null;
+        }
+
+
         return $this->db->table('gestion_horarios.demanda_instantanea')
             ->where('id_periodo', $periodo)->orderByDesc('version')
             ->first(['id_demanda', 'version', 'recibida_en', 'requiere_revision']);

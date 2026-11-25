@@ -1,6 +1,6 @@
 <?php
 
-use App\Modules\GestionHorarios\Engine\ReconciliarIntentosPrueba;
+use Tests\Support\GestionHorarios\Engine\ReconciliarIntentosPrueba;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 

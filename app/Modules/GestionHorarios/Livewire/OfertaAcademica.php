@@ -2,7 +2,6 @@
 
 namespace App\Modules\GestionHorarios\Livewire;
 
-use App\Modules\GestionHorarios\Contracts\ProveedorEscuelasAutorizadas;
 use App\Modules\GestionHorarios\Livewire\Concerns\SeleccionPlan;
 use App\Modules\GestionHorarios\Policies\RegistroPolicy;
 use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
@@ -34,6 +33,8 @@ final class OfertaAcademica extends Component
     public string $tipoFiltro = '';
 
     public string $cursoFormulario = '';
+
+    public string $codigoPeriodoFormulario = '';
 
     public string $tipoFormulario = 'REGULAR';
 
@@ -71,6 +72,10 @@ final class OfertaAcademica extends Component
         if ($periodo !== '' && ctype_digit($periodo) && strlen($periodo) < 19) {
             $this->periodo = $periodo;
         }
+        $plan = (string) request()->query('plan', '');
+        if (ctype_digit($plan) && strlen($plan) < 19) {
+            $this->plan = $plan;
+        }
         $oferta = (string) request()->query('oferta', '');
         if ($this->periodo !== '' && $oferta !== '' && ctype_digit($oferta) && strlen($oferta) < 19) {
             $this->editar((int) $oferta);
@@ -82,7 +87,7 @@ final class OfertaAcademica extends Component
         (new AutorizacionGestionAcademica)->exigir(auth()->user());
         $this->resetValidation();
         $this->ofertaEditar = null;
-        $this->reset('cursoFormulario', 'tipoFormulario', 'docentesFormulario', 'estadoFormulario', 'mensaje');
+        $this->reset('cursoFormulario', 'codigoPeriodoFormulario', 'tipoFormulario', 'docentesFormulario', 'estadoFormulario', 'mensaje');
         $this->formularioAbierto = true;
     }
 
@@ -107,8 +112,7 @@ final class OfertaAcademica extends Component
         $planesAutorizados = app(AmbitoPlanes::class)->consultar(auth()->user())->select('id_plan');
         $oferta = DB::table('gestion_horarios.oferta_curso as o')->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'o.id_curso_plan')->join('core.curso as c', 'c.id_curso', '=', 'cp.id_curso')->whereIn('cp.id_plan', $planesAutorizados)->where('o.id_oferta', $id)->where('o.id_periodo', $this->periodo)->first(['o.*', 'c.codigo', 'c.nombre', 'cp.ciclo', 'cp.id_plan']);
         abort_unless($oferta, 404);
-        $proveedor = app()->bound(ProveedorEscuelasAutorizadas::class) ? app(ProveedorEscuelasAutorizadas::class) : null;
-        (new AmbitoEscrituraAcademica(DB::connection(), $proveedor))->autorizarCurso(auth()->user(), (int) $oferta->id_curso_plan);
+        (new AmbitoEscrituraAcademica(DB::connection()))->autorizarCurso(auth()->user(), (int) $oferta->id_curso_plan);
         $this->plan = (string) $oferta->id_plan;
         $this->ofertaEditar = $id;
         $this->docentesFormulario = (string) $oferta->docentes_minimos;
@@ -123,8 +127,7 @@ final class OfertaAcademica extends Component
     public function guardar(): void
     {
         (new AutorizacionGestionAcademica)->exigir(auth()->user());
-        $proveedor = app()->bound(ProveedorEscuelasAutorizadas::class) ? app(ProveedorEscuelasAutorizadas::class) : null;
-        $servicio = new GestionOfertaAcademica(DB::connection(), $proveedor);
+        $servicio = new GestionOfertaAcademica(DB::connection());
         try {
             if ($this->ofertaEditar !== null) {
                 $servicio->actualizar(auth()->user(), $this->ofertaEditar, ['docentes' => $this->docentesFormulario, 'estado' => $this->estadoFormulario], $this->estadoOriginal, $this->docentesOriginales);
@@ -134,7 +137,20 @@ final class OfertaAcademica extends Component
 
                     return;
                 }
-                $servicio->crear(auth()->user(), ['periodo' => $this->periodo, 'curso' => $this->cursoFormulario, 'tipo' => $this->tipoFormulario, 'docentes' => $this->docentesFormulario]);
+                $periodo = $this->periodo;
+                if ($periodo === '') {
+                    $codigo = trim($this->codigoPeriodoFormulario);
+                    $periodo = $codigo !== '' && mb_strlen($codigo) <= 20
+                        ? DB::table('core.periodo_academico')->where('codigo', $codigo)->value('id_periodo')
+                        : null;
+                    if (! $periodo) {
+                        $this->addError('codigoPeriodoFormulario', 'Indique el código de un periodo académico registrado.');
+
+                        return;
+                    }
+                }
+                $servicio->crear(auth()->user(), ['periodo' => $periodo, 'curso' => $this->cursoFormulario, 'tipo' => $this->tipoFormulario, 'docentes' => $this->docentesFormulario]);
+                $this->periodo = (string) $periodo;
             }
         } catch (QueryException $e) {
             report($e);

@@ -1,10 +1,13 @@
-<div class="quality-page" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
-    <nav aria-label="Ruta actual"><a href="{{ route('dashboard') }}">Portal</a> / <a href="{{ route('gestion-horarios.administracion') }}">Gestión de Horarios</a> / Revisiones</nav>
-    <header class="quality-page-heading"><div><span class="quality-eyebrow">Gestión de Horarios</span><h1>Revisiones de oferta</h1><p>Solicitudes registradas al intentar modificar ofertas con secciones relacionadas.</p></div></header>
+<div class="quality-page gh-ui" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
+    @include('modules.gestion-horarios.ui-estilos')
+    @include('modules.gestion-horarios.cabecera-administrativa', ['titulo'=>'Revisión y publicación', 'subtitulo'=>'Revisiones de oferta', 'descripcion'=>'Solicitudes registradas al intentar modificar ofertas con secciones relacionadas.'])
+    @include('modules.gestion-horarios.workspace-navegacion', ['workspaceEtapa' => 'revision', 'workspaceSub' => 'oferta-revision', 'workspacePlan' => $plan ?? session('gestion_horarios.workspace.plan', ''), 'workspacePeriodo' => $periodo ?? session('gestion_horarios.periodo_seleccionado', '')])
     @if ($error)
         <div class="quality-alert" role="alert">No se pudieron consultar las revisiones. Intente nuevamente o comuníquese con soporte.</div>
     @elseif ($adscripcionPendiente)
         <div class="quality-alert" role="status">Para consultar las revisiones es necesario verificar la escuela autorizada de su cuenta institucional.</div>
+    @elseif (! $revisionDisponible)
+        <div class="quality-alert" role="status">El registro de revisiones de oferta está pendiente de una actualización institucional del módulo.</div>
     @elseif ($revisiones->isEmpty())
         <div class="quality-empty"><h2>No hay revisiones registradas</h2><p>Las solicitudes aparecerán aquí cuando una oferta necesite revisión.</p></div>
     @else

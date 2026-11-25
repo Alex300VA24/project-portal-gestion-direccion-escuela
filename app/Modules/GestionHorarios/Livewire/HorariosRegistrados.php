@@ -3,7 +3,7 @@
 namespace App\Modules\GestionHorarios\Livewire;
 
 use App\Modules\GestionHorarios\Policies\RegistroPolicy;
-use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
+use App\Modules\GestionHorarios\Services\ConsultaLocalDemostracion;
 use App\Modules\GestionHorarios\Services\ConsultaHorarios;
 use App\Modules\GestionHorarios\Services\ExportacionHorarios;
 use Illuminate\Database\QueryException;
@@ -27,7 +27,15 @@ final class HorariosRegistrados extends Component
     public function boot(): void
     {
         abort_unless(auth()->user() && (new RegistroPolicy)->viewAny(auth()->user()), 403);
-        (new AmbitoConsultaAdministrativa)->denegarRecursoGlobal(auth()->user());
+        ConsultaLocalDemostracion::exigir(auth()->user());
+    }
+
+    public function mount(): void
+    {
+        $periodo = request()->query('periodo', session('gestion_horarios.periodo_seleccionado', ''));
+        if ((is_string($periodo) || is_int($periodo)) && ctype_digit((string) $periodo) && strlen((string) $periodo) < 19) {
+            $this->periodo = (string) $periodo;
+        }
     }
 
     public function updatedPeriodo(): void
@@ -38,7 +46,7 @@ final class HorariosRegistrados extends Component
     public function descargar(string $formato): ?StreamedResponse
     {
         abort_unless(auth()->user() && (new RegistroPolicy)->viewAny(auth()->user()), 403);
-        (new AmbitoConsultaAdministrativa)->denegarRecursoGlobal(auth()->user());
+        ConsultaLocalDemostracion::exigir(auth()->user());
         abort_unless(in_array($formato, ['pdf', 'xlsx'], true), 404);
         $this->errorDescarga = '';
         if (! ctype_digit($this->periodo) || strlen($this->periodo) >= 19 || ! ctype_digit($this->horario) || strlen($this->horario) >= 19 || ($this->ciclo !== '' && (! ctype_digit($this->ciclo) || strlen($this->ciclo) > 2)) || mb_strlen($this->seccion) > 30) {

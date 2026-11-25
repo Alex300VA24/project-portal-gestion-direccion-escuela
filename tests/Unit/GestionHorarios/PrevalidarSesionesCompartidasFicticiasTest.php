@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\GestionHorarios;
 
-use App\Modules\GestionHorarios\Engine\PrevalidarSesionesCompartidasFicticias;
+use Tests\Support\GestionHorarios\Engine\PrevalidarSesionesCompartidasFicticias;
 use PHPUnit\Framework\TestCase;
 
 final class PrevalidarSesionesCompartidasFicticiasTest extends TestCase

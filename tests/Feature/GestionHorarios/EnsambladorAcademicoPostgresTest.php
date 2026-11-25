@@ -4,9 +4,9 @@ namespace Tests\Feature\GestionHorarios;
 
 use App\Modules\GestionHorarios\Contracts\ProveedorComplementosAcademicos;
 use App\Modules\GestionHorarios\Contracts\ProveedorComplementosTransaccional;
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
-use App\Modules\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
-use App\Modules\GestionHorarios\Engine\ValidarResultadoFicticio;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\EnsambladorAcademicoPrueba;
+use Tests\Support\GestionHorarios\Engine\ValidarResultadoFicticio;
 use App\Modules\GestionHorarios\Engine\VerificarEvidenciaMotor;
 use App\Modules\GestionHorarios\Services\InstantaneaGeneracion;
 use Illuminate\Database\ConnectionInterface;

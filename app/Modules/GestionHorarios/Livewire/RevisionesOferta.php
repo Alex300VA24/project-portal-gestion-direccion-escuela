@@ -19,10 +19,13 @@ final class RevisionesOferta extends Component
 
     public function render(): View
     {
+        $revisionDisponible = false;
         try {
             $escuelas = (new AmbitoConsultaAdministrativa)->escuelas(auth()->user());
             $adscripcionPendiente = $escuelas === [];
-            $revisiones = $adscripcionPendiente ? collect() : (new ConsultaRevisionesRepository(DB::connection()))->pendientes($escuelas);
+            $db = DB::connection();
+            $revisionDisponible = $db->getSchemaBuilder()->hasTable('gestion_horarios.revision_oferta_pendiente');
+            $revisiones = $adscripcionPendiente || ! $revisionDisponible ? collect() : (new ConsultaRevisionesRepository($db))->pendientes($escuelas);
             $error = false;
         } catch (QueryException $e) {
             report($e);
@@ -31,6 +34,6 @@ final class RevisionesOferta extends Component
             $error = true;
         }
 
-        return view('modules.gestion-horarios.revisiones', compact('revisiones', 'error', 'adscripcionPendiente'));
+        return view('modules.gestion-horarios.revisiones', compact('revisiones', 'error', 'adscripcionPendiente', 'revisionDisponible'));
     }
 }

@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\GestionHorarios;
 
-use App\Modules\GestionHorarios\Jobs\EjecutarCpsatPrueba;
-use App\Modules\GestionHorarios\Services\EjecucionesCpsatPrueba;
+use Tests\Support\GestionHorarios\Jobs\EjecutarCpsatPrueba;
+use Tests\Support\GestionHorarios\Services\EjecucionesCpsatPrueba;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -38,7 +38,7 @@ final class ColaCpsatPostgresTest extends TestCase
             DB::statement('CREATE TABLE gestion_horarios.horario (id_horario bigint primary key, estado text not null)');
             DB::statement("INSERT INTO gestion_horarios.horario VALUES (1,'APROBADO'),(2,'PUBLICADO')");
             (require base_path('database/migrations/0001_01_01_000002_create_jobs_table.php'))->up();
-            (require base_path('app/Modules/GestionHorarios/Database/Migrations/2026_11_17_000004_create_ejecucion_cpsat_prueba.php'))->up();
+            (require base_path('tests/Support/GestionHorarios/Database/2026_11_17_000004_create_ejecucion_cpsat_prueba.php'))->up();
             self::$preparado = true;
         }
     }
@@ -197,7 +197,7 @@ final class ColaCpsatPostgresTest extends TestCase
 
     public function test_migracion_se_revierte_solo_en_transaccion_desechable(): void
     {
-        $migration = require base_path('app/Modules/GestionHorarios/Database/Migrations/2026_11_17_000004_create_ejecucion_cpsat_prueba.php');
+        $migration = require base_path('tests/Support/GestionHorarios/Database/2026_11_17_000004_create_ejecucion_cpsat_prueba.php');
         DB::beginTransaction();
         try {
             $migration->down();

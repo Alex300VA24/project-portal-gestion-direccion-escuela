@@ -52,7 +52,8 @@ final class ExportacionHorarios
         return (new DistribucionHoraria)->preparar(
             $datos['sesiones']->all(),
             $docentes,
-            ($datos['bloquesPeriodo'] ?? collect())->all()
+            ($datos['bloquesPeriodo'] ?? collect())->all(),
+            $datos['alcanceExportacion'] ?? '', (bool)($datos['exportacionAcademicaQa'] ?? false)
         );
     }
 
@@ -63,12 +64,15 @@ final class ExportacionHorarios
         if (! is_file($logo)) {
             $logo = public_path('img/logo-informatica.png');
         }
+        if ($datos['exportacionAcademicaQa'] ?? false) {
+            return (new PdfAcademicoA4)->generar($datos['gruposExportacion'], $datos, is_file($logo) ? $logo : null);
+        }
         $datos['logoInstitucional'] = is_file($logo)
             ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($logo))
             : null;
         $dompdf = new Dompdf;
         $dompdf->setPaper('A4', 'landscape');
-        $dompdf->loadHtml(view('modules.gestion-horarios.exportacion-pdf', $datos)->render(), 'UTF-8');
+        $dompdf->loadHtml(view(($datos['exportacionAcademicaQa'] ?? false) ? 'modules.gestion-horarios.exportacion-academica-qa-pdf' : 'modules.gestion-horarios.exportacion-pdf', $datos)->render(), 'UTF-8');
         $dompdf->render();
 
         return $dompdf->output();
@@ -77,11 +81,14 @@ final class ExportacionHorarios
     public function xlsx(array $datos): string
     {
         $grupos = $this->preparar($datos);
+        if ($datos['exportacionAcademicaQa'] ?? false) {
+            return (new XlsxAcademicoA4)->generar($grupos, $datos);
+        }
         $libro = new Spreadsheet;
         try {
             foreach ($grupos as $numero => $grupo) {
                 $hoja = $numero === 0 ? $libro->getActiveSheet() : $libro->createSheet();
-                $nombre = preg_replace('/[\\\\\/*?:\[\]]/', '-', 'P'.$grupo['plan'].'-C'.$grupo['ciclo'].'-'.$grupo['seccion']);
+                $nombre = preg_replace('/[\\\\\/*?:\[\]]/', '-', ($grupo['alcance'] ?? '') !== '' ? 'Horario seleccionado' : 'P'.$grupo['plan'].'-C'.$grupo['ciclo'].'-'.$grupo['seccion']);
                 $hoja->setTitle(mb_substr($nombre, 0, 23).'-'.($numero + 1));
                 $hoja->setShowGridLines(false);
                 $dias = $grupo['dias'];
@@ -91,9 +98,9 @@ final class ExportacionHorarios
                     'UNIVERSIDAD NACIONAL DE TRUJILLO',
                     (string) $grupo['facultad'],
                     (string) $grupo['escuela'],
-                    'HORARIO ACADÉMICO · PERIODO '.($datos['periodoSeleccionado']->codigo ?? 'sin especificar').' · CICLO '.$grupo['ciclo'].' · SECCIÓN '.$grupo['seccion'],
+                    'HORARIO ACADÉMICO · PERIODO '.($datos['periodoSeleccionado']->codigo ?? 'sin especificar').' · '.(($grupo['alcance'] ?? '') ?: 'CICLO '.$grupo['ciclo'].' · SECCIÓN '.$grupo['seccion']),
                     'Plan curricular: '.$grupo['plan_nombre'].' · Estado: '.($datos['seleccion']->estado ?? 'No registrado'),
-                    'Franjas según sesiones y bloques del periodo. Receso académico: no confirmado.',
+                    ($datos['exportacionAcademicaQa'] ?? false) ? 'Franjas según la versión guardada.' : 'Franjas según sesiones y bloques del periodo. Receso académico: no confirmado.',
                 ];
                 foreach ($encabezados as $fila => $texto) {
                     $r = $fila + 1;
@@ -116,7 +123,16 @@ final class ExportacionHorarios
                 $hoja->getRowDimension(7)->setRowHeight(24);
 
                 $r = 8;
+                $filasQa = ($datos['exportacionAcademicaQa'] ?? false) ? array_column(DistribucionHoraria::filasAcademicas($grupo, ($datos['bloquesPeriodo'] ?? collect())->all()), null, 'inicio') : [];
                 for ($hora = $grupo['desde']; $hora < $grupo['hasta']; $hora += 60) {
+                    if ($filasQa[$hora]['receso'] ?? false) {
+                        $this->texto($hoja, 1, $r, DistribucionHoraria::rango12($hora,$hora+60));
+                        $hoja->mergeCells('B'.$r.':'.$ultima.$r);
+                        $this->texto($hoja, 2, $r, 'RECESO');
+                        $hoja->getStyle('A'.$r.':'.$ultima.$r)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFDFE6EB');
+                        $hoja->getRowDimension($r++)->setRowHeight(22);
+                        continue;
+                    }
                     $activas = [];
                     $maximo = 1;
                     foreach ($dias as $dia) {
@@ -129,7 +145,7 @@ final class ExportacionHorarios
                     if ($maximo > 1) {
                         $hoja->mergeCells('A'.$r.':A'.($r + $maximo - 1));
                     }
-                    $this->texto($hoja, 1, $r, DistribucionHoraria::hora($hora).' – '.DistribucionHoraria::hora($hora + 60));
+                    $this->texto($hoja, 1, $r, DistribucionHoraria::rango12($hora,$hora+60));
                     $hoja->getStyle('A'.$r)->getFont()->setBold(true);
                     for ($subfila = 0; $subfila < $maximo; $subfila++) {
                         $hoja->getRowDimension($r + $subfila)->setRowHeight($maximo > 1 ? 51 : (array_filter($activas) ? 49 : 21));
@@ -137,11 +153,15 @@ final class ExportacionHorarios
                             if (isset($activas[$dia][$subfila])) {
                                 $s = $activas[$dia][$subfila];
                                 $tipo = $s['tipo'].($s['grupo'] !== '' ? ' · Grupo '.$s['grupo'] : '');
-                                $valor = $s['codigo'].' · '.$s['curso']."\n".$tipo.' · '.$s['horario']."\n".$s['ambiente']."\n".$s['docente'];
+                                $valor = $s['codigo'].' · '.$s['curso']."\n".$tipo.' · '.$s['horario']."\n".$s['ambiente']."\n".$s['docente'].(($grupo['alcance'] ?? '') ? "\n".$s['alcance_sesion'] : '');
                                 $this->texto($hoja, $i + 2, $r + $subfila, $valor);
                                 $celda = Coordinate::stringFromColumnIndex($i + 2).($r + $subfila);
                                 $hoja->getStyle($celda)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF'.$s['color']);
                                 $hoja->getStyle($celda)->getFont()->setSize(8);
+                                if ($datos['exportacionAcademicaQa'] ?? false) {
+                                    $lineas = array_sum(array_map(fn ($t) => max(1,(int)ceil(mb_strlen($t)/26)), explode("\n",$valor)));
+                                    $dim = $hoja->getRowDimension($r+$subfila); $dim->setRowHeight(max($dim->getRowHeight(), 8+12*$lineas));
+                                }
                             } else {
                                 $this->texto($hoja, $i + 2, $r + $subfila, '');
                             }
@@ -171,7 +191,7 @@ final class ExportacionHorarios
                 foreach ($grupo['sesiones'] as $s) {
                     $datosFila = [
                         $s['dia'], $s['horario'], $s['codigo'].' · '.$s['curso'],
-                        $s['tipo'].($s['grupo'] ? ' · '.$s['grupo'] : ''),
+                        $s['tipo'].($s['grupo'] ? ' · '.$s['grupo'] : '').(($grupo['alcance'] ?? '') ? ' · '.$s['alcance_sesion'] : ''),
                         $s['docente'], $s['ambiente'],
                     ];
                     foreach ($datosFila as $i => $valor) {
@@ -199,7 +219,7 @@ final class ExportacionHorarios
                 $hoja->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(1, 7);
                 $hoja->getPageSetup()->setPrintArea('A1:'.$ultima.$finCuadricula);
                 $hoja->getPageMargins()->setLeft(.2)->setRight(.2)->setTop(.3)->setBottom(.3);
-                $hoja->getHeaderFooter()->setOddFooter('&CUNT · '.($datos['periodoSeleccionado']->codigo ?? '').' · Ciclo '.$grupo['ciclo'].' · '.$grupo['seccion']);
+                $hoja->getHeaderFooter()->setOddFooter('&CUNT · '.($datos['periodoSeleccionado']->codigo ?? '').' · '.(($grupo['alcance'] ?? '') ?: 'Ciclo '.$grupo['ciclo'].' · '.$grupo['seccion']));
             }
             ob_start();
             try {

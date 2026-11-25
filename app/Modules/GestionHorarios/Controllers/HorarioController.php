@@ -4,6 +4,9 @@ namespace App\Modules\GestionHorarios\Controllers;
 
 use App\Modules\GestionHorarios\Repositories\HorariosPublicadosRepository;
 use App\Modules\GestionHorarios\Requests\HorarioRequest;
+use App\Modules\GestionHorarios\Services\AmbitoConsultaAdministrativa;
+use App\Modules\GestionHorarios\Services\ConsultaPublicadaPresentacion;
+use App\Modules\GestionHorarios\Services\DescargaConsultaPublicada;
 use App\Shared\Controllers\ModuleController;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\QueryException;
@@ -14,6 +17,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 final class HorarioController extends ModuleController
 {
@@ -23,28 +28,75 @@ final class HorarioController extends ModuleController
 
     protected const VIEW = 'modules.gestion-horarios.index';
 
-    public function publicados(): JsonResponse
+    public function index(): View
     {
+        /** @var User|null $usuario */
+        $usuario = Auth::user();
+        $puedeAdministrar = $usuario
+            && $usuario->hasAnyRole(['director_escuela', 'secretaria'])
+            && (new AmbitoConsultaAdministrativa)->escuelas($usuario) !== [];
+        $revisionesDisponibles = false;
+
+        if ($puedeAdministrar) {
+            try {
+                $revisionesDisponibles = DB::connection()
+                    ->getSchemaBuilder()
+                    ->hasTable('gestion_horarios.revision_oferta_pendiente');
+            } catch (QueryException $e) {
+                report($e);
+            }
+        }
+
+        return parent::index()->with([
+            'puedeAdministrar' => $puedeAdministrar,
+            'revisionesDisponibles' => $revisionesDisponibles,
+        ]);
+    }
+
+    public function publicados(Request $request): JsonResponse|RedirectResponse
+    {
+        // Conservar el contrato JSON para clientes que lo solicitan explícitamente.
+        if (!$request->wantsJson()) {
+            return redirect()->route('gestion-horarios.consulta-publicados', $request->only(['periodo','modalidad','valor','seccion']));
+        }
         return response()->json(['data' => $this->consultaPublicados()->get()]);
+    }
+
+    public function catalogoPublico(): View|Response
+    {
+        try {
+            $horarios = $this->consultaPublicados()->reorder('publicado_en', 'desc')->orderByDesc('id_horario')->paginate(20);
+
+            return view('modules.gestion-horarios.catalogo-publico', compact('horarios'));
+        } catch (QueryException $e) {
+            report($e);
+
+            return response()->view('modules.gestion-horarios.catalogo-publico', ['horarios' => null], 503);
+        }
     }
 
     public function consultarPublicados(Request $request): View|Response
     {
-        $filtros = $request->validate(['periodo' => ['nullable', 'integer', 'min:1']]);
+        if (ConsultaPublicacionDemoController::habilitada($request)) return (new ConsultaPublicacionDemoController)->consulta($request);
+        if ($request->filled('valor')) {
+            return $this->semanaPublicada($request);
+        }
+        $filtros = $request->validate(['periodo' => ['nullable', 'integer', 'min:1'], 'modalidad'=>['nullable','in:ciclo,docente,ambiente'], 'descargar'=>['nullable','in:pdf']]);
+        abort_if(isset($filtros['descargar']),422,'Seleccione un horario publicado.');
         try {
             $repo = new HorariosPublicadosRepository(DB::connection());
             $periodos = $repo->periodos();
-            $periodo = isset($filtros['periodo']) ? (int) $filtros['periodo'] : null;
+            $periodo = isset($filtros['periodo']) ? (int) $filtros['periodo'] : ($periodos->isNotEmpty() ? (int) $periodos->first()->id_periodo : null);
             $catalogos = $periodo && $periodos->contains(fn ($p) => (int) $p->id_periodo === $periodo)
                 ? $repo->catalogos($periodo) : ['ciclos' => collect(), 'secciones' => collect(), 'ambientes' => collect(), 'docentes' => collect()];
             $consulta = $this->consultaPublicados();
-            if (isset($filtros['periodo'])) {
-                $consulta->where('id_periodo', $filtros['periodo']);
+            if ($periodo) {
+                $consulta->where('id_periodo', $periodo);
             }
 
             return view('modules.gestion-horarios.publicados-pagina', [
                 'horarios' => $consulta->paginate(20)->withQueryString(),
-                'periodo' => $filtros['periodo'] ?? '',
+                'periodo' => $periodo ?? '',
                 'periodos' => $periodos,
                 'catalogos' => $catalogos,
             ]);
@@ -57,11 +109,13 @@ final class HorarioController extends ModuleController
 
     public function semanaPublicada(Request $request): View|Response
     {
+        if (ConsultaPublicacionDemoController::habilitada($request)) return (new ConsultaPublicacionDemoController)->consulta($request);
         $filtros = $request->validate([
             'periodo' => ['required', 'integer', 'min:1'],
             'modalidad' => ['required', 'in:ciclo,ambiente,docente'],
             'valor' => ['required', 'integer', 'min:1'],
-            'seccion' => ['nullable', 'string', 'max:20', 'regex:/^[\pL\pN -]+$/u'],
+            'seccion' => ['nullable', 'string', 'max:30', 'regex:/^[\pL\pN -]+$/u'],
+            'descargar'=>['nullable','in:pdf'],
         ]);
         try {
             $repo = new HorariosPublicadosRepository(DB::connection());
@@ -91,10 +145,42 @@ final class HorarioController extends ModuleController
                 'docente' => $catalogos['docentes']->firstWhere('id', $valor)['nombre'] ?? '',
             };
 
-            return view('modules.gestion-horarios.semana-publicada', compact('filtros', 'sesiones', 'periodo', 'descripcion'));
+            $consulta = $this->consultaPublicados()->where('id_periodo', $periodo->id_periodo);
+            $planos = ConsultaPublicadaPresentacion::cuadriculas($sesiones->all(), $filtros['modalidad'], $descripcion);
+            if (($filtros['descargar']??null)==='pdf') return DescargaConsultaPublicada::pdf($planos,$periodo);
+            return view('modules.gestion-horarios.publicados-pagina', [
+                'filtrosConsulta'=>$filtros,
+                'horarios' => $consulta->paginate(20)->withQueryString(), 'periodo' => $periodo->id_periodo,
+                'periodos' => $repo->periodos(), 'catalogos' => $catalogos,
+                'planos' => $planos, 'descripcion' => $descripcion,
+            ]);
         } catch (QueryException $e) {
             report($e);
 
+            return response()->view('modules.gestion-horarios.publicados-error', [], 503);
+        }
+    }
+
+    public function panel(Request $request): View|Response
+    {
+        if (ConsultaPublicacionDemoController::habilitada($request)) return (new ConsultaPublicacionDemoController)->panel($request);
+        $f = $request->validate(['periodo' => ['nullable','integer','min:1'], 'fragmento' => ['nullable','in:1']]);
+        try {
+            $repo = new HorariosPublicadosRepository(DB::connection());
+            $ahora = \Illuminate\Support\Carbon::now('America/Lima');
+            $periodos = $repo->periodosConVigencia();
+            $vigente = fn ($p) => ConsultaPublicadaPresentacion::vigente($p, $ahora->format('Y-m-d'));
+            $periodo = isset($f['periodo']) ? $periodos->firstWhere('id_periodo', (int)$f['periodo']) : ($periodos->first($vigente) ?? $periodos->first());
+            if (isset($f['periodo']) && !$periodo) throw ValidationException::withMessages(['periodo'=>'Seleccione un periodo publicado.']);
+            $enVigencia = $periodo && $vigente($periodo);
+            $dia = ['DOMINGO','LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO'][$ahora->dayOfWeek];
+            $ambientes = $periodo ? $repo->catalogos((int)$periodo->id_periodo)['ambientes']->all() : [];
+            $sesiones = $enVigencia ? $repo->sesionesDeAmbientes((int)$periodo->id_periodo, $dia)->all() : [];
+            $tarjetas = ConsultaPublicadaPresentacion::ocupacion($ambientes, $sesiones, $ahora->hour*60+$ahora->minute, (bool)$enVigencia);
+            $vista = isset($f['fragmento']) ? 'panel-ocupacion-contenido' : 'panel-ocupacion';
+            return response()->view('modules.gestion-horarios.'.$vista, compact('periodos','periodo','ahora','enVigencia','tarjetas'))->header('Cache-Control','no-store, private');
+        } catch (QueryException $e) {
+            report($e);
             return response()->view('modules.gestion-horarios.publicados-error', [], 503);
         }
     }

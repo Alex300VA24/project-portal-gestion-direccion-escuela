@@ -1,6 +1,7 @@
-<div class="quality-page" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
-    <nav aria-label="Ruta actual"><a href="{{ route('dashboard') }}">Portal</a> / <a href="{{ route('gestion-horarios.administracion') }}">Gestión de Horarios</a> / Preparación de generación</nav>
-    <header class="quality-page-heading"><div><span class="quality-eyebrow">Gestión de Horarios Académicos</span><h1>Preparación de generación</h1><p>Revise el periodo y compruebe sus datos antes de planificar horarios.</p></div></header>
+<div class="quality-page gh-ui" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
+    @include('modules.gestion-horarios.ui-estilos')
+    @include('modules.gestion-horarios.cabecera-administrativa', ['titulo'=>'Elaboración de horarios', 'subtitulo'=>'Preparación de generación', 'descripcion'=>'Revise el periodo y compruebe sus datos antes de planificar horarios.'])
+    @include('modules.gestion-horarios.workspace-navegacion', ['workspaceEtapa' => 'elaboracion', 'workspaceSub' => 'comprobar', 'workspacePlan' => $plan ?? session('gestion_horarios.workspace.plan', ''), 'workspacePeriodo' => $periodo ?? session('gestion_horarios.periodo_seleccionado', '')])
     @if ($errorConsulta)
         <div class="quality-alert" role="alert">No se pudo consultar la información. Verifique con soporte que las actualizaciones de Gestión de Horarios estén instaladas e intente nuevamente.</div>
     @else
@@ -20,12 +21,18 @@
             @if ($falloComprobacion)<p class="quality-alert" role="alert">No se pudo completar la comprobación. Intente nuevamente o comuníquese con soporte.</p>@endif
             @if ($comprobado)
                 <div aria-live="polite">
-                    <p><strong>Resultado:</strong> {{ collect($resultados)->where('nivel', 'ERROR')->count() }} errores · {{ collect($resultados)->where('nivel', 'ADVERTENCIA')->count() }} advertencias · {{ collect($resultados)->where('nivel', 'INFORMACION')->count() }} informaciones</p>
+                    <div class="gh-ui-metrics" aria-label="Resultado de prevalidación">
+                        <div class="gh-ui-metric"><strong>{{ collect($resultados)->where('nivel', 'ERROR')->count() }}</strong><small>Errores</small></div>
+                        <div class="gh-ui-metric"><strong>{{ collect($resultados)->where('nivel', 'ADVERTENCIA')->count() }}</strong><small>Advertencias</small></div>
+                        <div class="gh-ui-metric"><strong>{{ collect($resultados)->where('nivel', 'INFORMACION')->count() }}</strong><small>Informaciones</small></div>
+                    </div>
                     <ul>@foreach ($resultados as $resultado)<li><strong>{{ $resultado['nivel'] === 'INFORMACION' ? 'INFORMACIÓN' : $resultado['nivel'] }}:</strong> {{ $resultado['mensaje'] }}</li>@endforeach</ul>
                 </div>
             @endif
         </section>
-        @if ($detalle)
+        @if ($detalle && \App\Modules\GestionHorarios\Services\ConsultaLocalDemostracion::permitida(auth()->user()))
+            <section class="quality-panel" style="padding:1.25rem;margin-top:1rem"><h2>Revisión para generar</h2><p>La comprobación de esta pantalla es preliminar. Revise la preparación completa desde el horario de trabajo.</p><a class="institutional-primary" href="{{ route('gestion-horarios.borradores-qa') }}#gh-generacion-titulo">Revisar y generar horario</a></section>
+        @elseif ($detalle)
             <section class="quality-panel" style="padding:1.25rem; margin-top:1rem" aria-labelledby="prioridad-docente-titulo">
                 <h2 id="prioridad-docente-titulo">Prioridad docente</h2>
                 <p>La administración del orden de prioridad requiere verificar la escuela autorizada y contar con una fuente institucional versionada. Todavía no está disponible para este periodo.</p>
@@ -34,11 +41,11 @@
             <section class="quality-panel" style="padding:1.25rem; margin-top:1rem" aria-labelledby="servicio-calculo-titulo">
                 <h2 id="servicio-calculo-titulo">Estado del servicio de cálculo</h2>
                 <p>La generación institucional sigue deshabilitada. El motor y la cola requieren una integración y una configuración de infraestructura verificadas antes de su uso.</p>
-                <p>Conexión de cola configurada: {{ config('queue.default') }}. Esta información no confirma que haya un trabajador activo ni que Python esté disponible.</p>
+                <p>La configuración del servicio debe verificarse antes de habilitar la generación.</p>
                 <p>Las ejecuciones ficticias se limitan a pruebas aisladas y no son horarios institucionales.</p>
             </section>
             <section class="quality-panel" style="padding:1.25rem; margin-top:1rem" aria-labelledby="compatibilidad-titulo">
-                <h2 id="compatibilidad-titulo">Compatibilidad con el motor CP-SAT</h2>
+                <h2 id="compatibilidad-titulo">Compatibilidad de datos académicos</h2>
                 <p><strong>Contrato institucional: pendiente.</strong> La generación no está habilitada.</p>
                 <p>La preparación conserva las referencias de curso, plan, escuela, oferta y sección cuando están disponibles. La consulta detallada por escuela requiere completar la autorización institucional.</p>
                 <p>Se pueden revisar la identidad del periodo, {{ count($calendario['bloques']) }} franjas registradas y {{ count($poblacion['secciones']) }} secciones. Estos datos aún no constituyen una entrada completa.</p>

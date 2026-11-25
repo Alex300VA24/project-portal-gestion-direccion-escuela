@@ -79,6 +79,9 @@ final class GestionOfertaAcademica
             (new AmbitoEscrituraAcademica($this->db, $this->escuelas))->autorizarCurso($usuario, (int) $cursoPlan);
             $tieneSecciones = $this->db->table('core.seccion')->where('id_periodo', $oferta->id_periodo)->where('id_curso_plan', $oferta->id_curso_plan)->exists();
             if ($tieneSecciones) {
+                if (! $this->db->getSchemaBuilder()->hasTable('gestion_horarios.revision_oferta_pendiente')) {
+                    throw ValidationException::withMessages(['formulario' => 'La oferta tiene secciones. Solicite una revisión a coordinación antes de modificarla.']);
+                }
                 $this->db->table('gestion_horarios.revision_oferta_pendiente')->insert(['id_oferta' => $id, 'id_usuario' => $usuario->getKey(), 'motivo' => 'La oferta tiene secciones relacionadas; revisar sus actividades y horarios antes de modificarla.']);
 
                 return true;

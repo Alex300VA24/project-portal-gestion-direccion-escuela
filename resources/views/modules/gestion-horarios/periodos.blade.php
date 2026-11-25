@@ -1,6 +1,7 @@
-<div class="quality-page" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
-    <nav aria-label="Ruta actual"><a href="{{ route('dashboard') }}">Portal</a> / <a href="{{ route('gestion-horarios.administracion') }}">Gestión de Horarios</a> / Periodos</nav>
-    <header class="quality-page-heading"><div><span class="quality-eyebrow">Gestión de Horarios</span><h1>Periodos académicos</h1><p>Consulte los periodos institucionales y la configuración disponible para horarios.</p></div></header>
+<div class="quality-page gh-ui" style="padding:2rem 1rem; margin:0 auto; max-width:1180px">
+    @include('modules.gestion-horarios.ui-estilos')
+    @include('modules.gestion-horarios.cabecera-administrativa', ['titulo'=>'Elaboración de horarios', 'subtitulo'=>'Periodos académicos', 'descripcion'=>'Consulte los periodos institucionales y la configuración disponible para horarios.'])
+    @include('modules.gestion-horarios.workspace-navegacion', ['workspaceEtapa' => 'elaboracion', 'workspaceSub' => 'calendario', 'workspacePlan' => $plan ?? session('gestion_horarios.workspace.plan', ''), 'workspacePeriodo' => $periodo ?? session('gestion_horarios.periodo_seleccionado', '')])
     @if ($error)
         <div class="quality-alert" role="alert">No se pudo consultar la información de periodos. Intente nuevamente o comuníquese con soporte.</div>
     @else
@@ -29,7 +30,20 @@
                 @forelse ($bloqueos as $bloqueo)<p>{{ $bloqueo->nombre }} · {{ $bloqueo->fecha_inicio }} – {{ $bloqueo->fecha_fin }} · {{ $bloqueo->dia_semana ?? 'Todos los días' }} · {{ $bloqueo->hora_inicio ?? 'Todo el día' }}{{ $bloqueo->hora_fin ? ' – '.$bloqueo->hora_fin : '' }} · {{ $bloqueo->motivo }}</p>@empty<p>No hay bloqueos de ambientes registrados.</p>@endforelse
                 <h3>Restricciones globales y del periodo</h3>
                 @forelse ($restricciones as $restriccion)<p>{{ $restriccion->nombre }} · {{ $restriccion->severidad }} · {{ $restriccion->ambito }}</p>@empty<p>No hay restricciones globales o de periodo registradas.</p>@endforelse
-                <p>No hay una configuración confirmada para días laborables, receso o sábado por ciclo. Los bloques registrados no determinan esas reglas.</p>
+                @if(\App\Modules\GestionHorarios\Services\CicloVidaHorarioDemo::disponible())
+                    @php($cal=\App\Modules\GestionHorarios\Services\CicloVidaHorarioDemo::calendario())
+                    <h3>Configurar calendario semanal</h3>
+                    @if(session('gh_aviso'))<p role="status">{{ session('gh_aviso') }}</p>@endif
+                    @foreach($errors->all() as $error)<p role="alert" class="quality-alert">{{ $error }}</p>@endforeach
+                    <form method="post" action="{{ route('gestion-horarios.calendario-qa.guardar') }}">
+                        @csrf <input type="hidden" name="version" value="{{ $cal['version'] }}">
+                        <fieldset><legend>Días laborables</legend><div style="display:flex;gap:1rem;flex-wrap:wrap">@foreach(\App\Modules\GestionHorarios\Services\CicloVidaHorarioDemo::DIAS as $dia)<label><input type="checkbox" name="dias[]" value="{{ $dia }}" @checked(in_array($dia,$cal['dias'],true))> {{ ucfirst(strtolower($dia)) }}</label>@endforeach</div></fieldset>
+                        <fieldset style="margin-top:1rem"><legend>Sábados: autorización excepcional para cursos regulares por ciclo</legend><div style="display:flex;gap:1rem;flex-wrap:wrap">@for($c=1;$c<=10;$c++)<label><input type="checkbox" name="sabados[]" value="{{ $c }}" @checked(in_array($c,$cal['sabados_ciclos'],true))> {{ $c }}</label>@endfor</div></fieldset>
+                        <p>Repetición: sábado permitido con disponibilidad docente declarada. Jornada de 07:00 a 20:00; receso 13:00–14:00. Los bloques y fechas del periodo siguen gestionados por Core.</p>
+                        <button type="submit" class="institutional-primary">Guardar calendario</button>
+                    </form>
+                    <details class="gh-ui-group"><summary>Historial de configuración</summary>@foreach(\Illuminate\Support\Facades\DB::table(\App\Modules\GestionHorarios\Services\CicloVidaHorarioDemo::CALENDARIO)->orderByDesc('version')->get() as $r)<p>V{{ $r->version }} · {{ $r->actor }} · {{ \Illuminate\Support\Carbon::parse($r->creado_en)->timezone('America/Lima')->format('d/m/Y H:i') }}</p>@endforeach</details>
+                @else<p>Prepare el almacenamiento de configuración local.</p>@endif
             </section>
         @endif
     @endif

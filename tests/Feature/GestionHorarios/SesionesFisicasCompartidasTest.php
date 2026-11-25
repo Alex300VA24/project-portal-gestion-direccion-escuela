@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\GestionHorarios;
 
-use App\Modules\GestionHorarios\Engine\AdaptadorMotorFicticio;
-use App\Modules\GestionHorarios\Engine\EjecutorPythonPruebas;
-use App\Modules\GestionHorarios\Engine\ValidarResultadoFicticio;
+use Tests\Support\GestionHorarios\Engine\AdaptadorMotorFicticio;
+use Tests\Support\GestionHorarios\Engine\EjecutorPythonPruebas;
+use Tests\Support\GestionHorarios\Engine\ValidarResultadoFicticio;
 use DomainException;
 use PHPUnit\Framework\TestCase;
 

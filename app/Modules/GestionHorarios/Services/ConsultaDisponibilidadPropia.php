@@ -12,12 +12,13 @@ use Throwable;
 /** Solo lectura: el docente se obtiene exclusivamente del proveedor de identidad. */
 final class ConsultaDisponibilidadPropia
 {
-    public function __construct(private readonly ConnectionInterface $db, private readonly ProveedorIdentidadDocente $identidad) {}
+    public function __construct(private readonly ConnectionInterface $db, private readonly ?ProveedorIdentidadDocente $identidad = null) {}
 
     public function consultar(User $usuario, ?int $periodo): array
     {
         try {
-            $docente = $this->identidad->docenteId($usuario);
+            $identidad = $this->identidad ?? (app()->bound(ProveedorIdentidadDocente::class) ? app(ProveedorIdentidadDocente::class) : null);
+            $docente = $identidad?->docenteId($usuario);
         } catch (Throwable $e) {
             // No consultar asignaciones si la vinculación del guard no se pudo resolver.
             report($e);

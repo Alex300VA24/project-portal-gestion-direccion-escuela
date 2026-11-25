@@ -1,7 +1,7 @@
 <?php
 
 // Proceso hijo exclusivo de la prueba de concurrencia; no se registra como ruta ni trabajo.
-use App\Modules\GestionHorarios\Engine\ProteccionPropuestaPrueba;
+use Tests\Support\GestionHorarios\Engine\ProteccionPropuestaPrueba;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\GestionHorarios\soporte\ProveedorComplementosPostgresFicticio;

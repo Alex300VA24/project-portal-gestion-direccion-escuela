@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\GestionHorarios\soporte;
 
-use App\Modules\GestionHorarios\Engine\ReconciliarIntentosPrueba;
+use Tests\Support\GestionHorarios\Engine\ReconciliarIntentosPrueba;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

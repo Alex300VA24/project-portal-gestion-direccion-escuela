@@ -2,6 +2,7 @@
 
 namespace App\Modules\GestionHorarios\Repositories;
 
+use App\Modules\GestionHorarios\Demand\RepositorioDemandaPostgres;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Collection;
 
@@ -27,7 +28,11 @@ final class OfertaAcademicaRepository
                     $sub->selectRaw('1')->from('core.seccion as s')
                         ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 's.id_curso_plan')
                         ->whereColumn('s.id_periodo', 'p.id_periodo')->where('cp.id_plan', $plan);
-                })->orWhereExists(function ($sub) use ($plan) {
+                });
+                if (! (new RepositorioDemandaPostgres($this->db))->disponible()) {
+                    return;
+                }
+                $q->orWhereExists(function ($sub) use ($plan) {
                     $sub->selectRaw('1')->from('gestion_horarios.demanda_instantanea as di')
                         ->join('gestion_horarios.demanda_curso as dc', 'dc.id_demanda', '=', 'di.id_demanda')
                         ->join('core.curso_plan as cp', 'cp.id_curso_plan', '=', 'dc.id_curso_plan')
@@ -55,14 +60,16 @@ final class OfertaAcademicaRepository
             ->leftJoin('gestion_horarios.oferta_curso as o', function ($join) use ($periodo) {
                 $join->on('o.id_curso_plan', '=', 'cp.id_curso_plan')->where('o.id_periodo', '=', $periodo);
             })
-            ->leftJoin('gestion_horarios.demanda_curso as d', function ($join) use ($demanda) {
+            ->when($demanda !== null, fn ($q) => $q->leftJoin('gestion_horarios.demanda_curso as d', function ($join) use ($demanda) {
                 $join->on('d.id_curso_plan', '=', 'cp.id_curso_plan')->where('d.id_demanda', '=', $demanda);
-            })
+            }))
             ->when($buscar !== '', fn ($q) => $q->where(fn ($q) => $q->where('c.codigo', 'ilike', '%'.$buscar.'%')->orWhere('c.nombre', 'ilike', '%'.$buscar.'%')))
             ->when($ciclo !== '' && ctype_digit($ciclo), fn ($q) => $q->where('cp.ciclo', (int) $ciclo))
             ->when(in_array($estado, ['PLANIFICADA', 'OFERTADA', 'CERRADA'], true), fn ($q) => $q->where('o.estado', $estado))
             ->when(in_array($tipo, ['REGULAR', 'REPETICION'], true), fn ($q) => $q->where('o.tipo_oferta', $tipo))
             ->orderBy('cp.ciclo')->orderBy('c.nombre')->orderBy('o.tipo_oferta')
-            ->get(['cp.id_curso_plan', 'cp.ciclo', 'c.codigo', 'c.nombre', 'o.id_oferta', 'o.tipo_oferta', 'o.estado', 'o.docentes_minimos', 'd.total', 'd.manana', 'd.tarde']);
+            ->select(['cp.id_curso_plan', 'cp.ciclo', 'c.codigo', 'c.nombre', 'o.id_oferta', 'o.tipo_oferta', 'o.estado', 'o.docentes_minimos'])
+            ->selectRaw($demanda === null ? 'NULL AS total, NULL AS manana, NULL AS tarde' : 'd.total, d.manana, d.tarde')
+            ->get();
     }
 }

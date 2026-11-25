@@ -1,11 +1,12 @@
-<div class="quality-page gh-docente" style="padding:2rem 1rem;margin:0 auto;max-width:1180px">
+<div class="quality-page gh-ui gh-docente" style="padding:2rem 1rem;margin:0 auto;max-width:1180px">
+    @include('modules.gestion-horarios.ui-estilos')
     <style>
         .gh-docente__hero{padding:26px;border-radius:16px;background:#17224d;color:#fff;margin:20px 0}
         .gh-docente__hero h1{color:#fff;margin:6px 0;font-size:clamp(1.7rem,3vw,2.3rem)}
         .gh-docente__hero p{color:#e5eaf3;margin:0}
         .gh-docente__nav{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
-        .gh-docente__nav a{padding:10px 14px;border:1px solid #d9e1e8;background:#fff;border-radius:10px;color:#09613f;font-weight:700}
-        .gh-docente__panel{padding:22px;margin-top:18px;border:1px solid #d9e1e8;border-radius:14px;background:#fff;scroll-margin-top:30px}
+        .gh-docente__nav a{padding:10px 14px;border:1px solid var(--gh-ui-border,#dfe3ea);background:var(--gh-ui-surface,#fff);border-radius:10px;color:#09613f;font-weight:700}
+        .gh-docente__panel{padding:22px;margin-top:18px;border:1px solid var(--gh-ui-border,#dfe3ea);border-radius:14px;background:var(--gh-ui-surface,#fff);scroll-margin-top:30px}
         .gh-docente__panel h2{margin:0 0 8px;font-size:20px}
         .gh-docente__panel p{line-height:1.6}
         .gh-docente__courses{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:11px;margin-top:16px}
@@ -14,15 +15,16 @@
         .gh-docente__course small{color:#4a5170}
         .gh-docente__slots{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none}
         .gh-docente__slots li{padding:9px 12px;background:#e7f4ec;border-radius:8px;color:#09613f;font-weight:600}
-        .gh-docente__status{padding:13px 15px;background:#fff4d6;border-left:4px solid #c28c25;border-radius:8px}
+        .gh-docente__status{padding:13px 15px;background:var(--gh-ui-surface,#fff)4d6;border-left:4px solid #c28c25;border-radius:8px}
         .gh-docente a:focus-visible,.gh-docente select:focus-visible{outline:3px solid #16a273;outline-offset:3px}
     </style>
     <nav aria-label="Ruta actual"><a href="{{ route('gestion-horarios.index') }}">Gestión de Horarios Académicos</a> / Mi espacio docente</nav>
-    <header class="gh-docente__hero">
-        <span>Universidad Nacional de Trujillo · Gestión de Horarios</span>
-        <h1>Mi espacio docente</h1>
+    <header class="quality-page-heading">
+        <span class="quality-eyebrow">Gestión de Horarios</span>
+        <h1>Mi disponibilidad</h1>
         <p>Sus cursos, declaración de disponibilidad y horario académico en un solo lugar.</p>
     </header>
+    @include('modules.gestion-horarios.navegacion-lectura')
     @if ($error_consulta)
         <div class="quality-alert" role="alert">No se pudo consultar la información. Intente nuevamente o contacte con soporte.</div>
     @elseif (! $acceso)
