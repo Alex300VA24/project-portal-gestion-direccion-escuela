@@ -8,7 +8,7 @@ use Tests\TestCase;
 final class ModularDatabaseStructureTest extends TestCase
 {
     private const EXPECTED_COUNTS = [
-        'prematricula' => 3,
+        'prematricula' => 10,
         'gestion_matriculas' => 9,
         'cotecu' => 10,
         'gestion_horarios' => 15,
