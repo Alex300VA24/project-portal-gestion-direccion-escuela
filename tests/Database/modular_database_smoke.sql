@@ -16,7 +16,7 @@ BEGIN
             ('tesis', 22),
             ('bienestar', 18),
             ('investigacion_formativa', 11),
-            ('seguimiento_estudiante', 23),
+            ('seguimiento_estudiante', 39),
             ('web_institucional', 13),
             ('seguimiento_egresado', 40),
             ('core', 22),
