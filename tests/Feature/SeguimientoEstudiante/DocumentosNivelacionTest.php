@@ -147,6 +147,27 @@ final class DocumentosNivelacionTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $cierre->getContent());
     }
 
+    public function test_agenda_docente_filtra_por_identidad_publicacion_y_fecha(): void
+    {
+        [$programa] = $this->crearPrograma();
+        $grupo = DB::table('seguimiento_estudiante.nivelacion_grupo')->where('id_programa', $programa)->value('id_grupo');
+        DB::table('seguimiento_estudiante.nivelacion_sesion')->insert([
+            ['id_grupo' => $grupo, 'fecha' => '2026-11-20', 'tema' => 'Práctica de sistemas'],
+            ['id_grupo' => $grupo, 'fecha' => '2026-11-17', 'tema' => 'Sesión pasada'],
+        ]);
+        $url = route('seguimiento-estudiante.nivelacion.agenda-docente');
+        $docente = $this->crearCuenta(1002, 'nivelacion.agenda-docente');
+        $this->actingAs($docente)->get($url)->assertOk()->assertDontSee('Práctica de sistemas');
+        DB::table('seguimiento_estudiante.programa_nivelacion')->where('id_programa', $programa)->update([
+            'publicado_en' => '2026-11-15T08:00:00-05:00', 'fecha_fin' => '2026-11-22',
+        ]);
+        $this->get($url)->assertOk()->assertSee('Práctica de sistemas')->assertDontSee('Sesión pasada');
+        $ajeno = $this->crearCuenta(1001);
+        $this->actingAs($ajeno)->get($url)->assertForbidden();
+        $ajeno->givePermissionTo('seguimiento-estudiante.nivelacion.agenda-docente');
+        $this->get($url)->assertOk()->assertDontSee('Práctica de sistemas');
+    }
+
     private function crearPrograma(): array
     {
         DB::table('core.docente')->insert([

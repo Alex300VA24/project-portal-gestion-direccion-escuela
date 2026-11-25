@@ -87,13 +87,20 @@ final class AccesoTest extends TestCase
 
         $this->actingAs($user);
         $url = route('seguimiento-estudiante.expediente', 1001);
+        $exportar = route('seguimiento-estudiante.directorio.exportar');
+        $this->get($exportar)->assertForbidden();
         $this->get($url)->assertNotFound();
 
         $this->grantPermission($user, 'seguimiento-estudiante.tutoria.view');
         $this->get(route('seguimiento-estudiante.index'))->assertOk()->assertSee('E2026001');
+        $this->get(route('seguimiento-estudiante.index', ['q' => 'e2026001']))->assertOk()->assertSee('E2026001');
+        $this->get(route('seguimiento-estudiante.index', ['q' => 'sin coincidencia']))->assertOk()->assertDontSee('E2026001');
+        $this->assertStringContainsString('E2026001', $this->get($exportar)->assertOk()->streamedContent());
+        $this->assertStringNotContainsString('E2026001', $this->get($exportar.'?q=ausente')->assertOk()->streamedContent());
         $this->get($url)->assertOk();
 
         DB::table('seguimiento_estudiante.tutor_asignacion')->where('id_docente', 101)->update(['fecha_fin' => '2026-11-18']);
+        $this->assertStringNotContainsString('E2026001', $this->get($exportar)->assertOk()->streamedContent());
         $this->get($url)->assertNotFound();
         DB::table('seguimiento_estudiante.tutor_asignacion')->where('id_docente', 101)->update(['fecha_fin' => null]);
         $this->travelTo(Carbon::parse('2026-12-21 12:00', 'America/Lima'));
@@ -509,6 +516,11 @@ final class AccesoTest extends TestCase
             CSV);
         $this->actingAs($user)->post($url, ['tipo' => 'notas', 'archivo' => $archivo()])->assertForbidden();
         $this->grantPermission($user, 'seguimiento-estudiante.secretaria.prevalidar');
+        foreach (['matriculas' => 'times', 'notas' => 'unit', 'asistencia' => 'absent'] as $tipo => $columna) {
+            $plantilla = $this->get(route('seguimiento-estudiante.secretaria.plantilla', $tipo));
+            $plantilla->assertDownload('plantilla-'.$tipo.'.csv');
+            $this->assertStringContainsString($columna, $plantilla->streamedContent());
+        }
         $this->post($url, ['tipo' => 'notas', 'archivo' => $archivo()])->assertOk()
             ->assertSee('3 filas revisadas')->assertSee('2 filas con errores')->assertSee('repite la referencia')
             ->assertDontSee('00123');
@@ -567,6 +579,12 @@ final class AccesoTest extends TestCase
             'id_sesion' => $sesion, 'id_participante' => $participante, 'estado' => 'Presente',
         ]);
 
+        $pendiente = DB::table('seguimiento_estudiante.nivelacion_sesion')->insertGetId([
+            'id_grupo' => $grupo, 'fecha' => '2026-11-23', 'tema' => 'Repaso de ecuaciones',
+        ], 'id_sesion');
+        DB::table('seguimiento_estudiante.nivelacion_asistencia')->insert([
+            'id_sesion' => $pendiente, 'id_participante' => $otro, 'estado' => 'Ausente',
+        ]);
         $this->get($url)->assertOk()->assertDontSee('Nivelación matemática');
         DB::table('seguimiento_estudiante.programa_nivelacion')->where('id_programa', $programa)
             ->update(['publicado_en' => '2026-11-02T12:00:00-05:00']);
@@ -576,6 +594,7 @@ final class AccesoTest extends TestCase
         $this->get($url.'?estudiante=1002')->assertOk()
             ->assertSee('85.50')->assertSee('Nivelación matemática')->assertSee('Ejercicios')
             ->assertSee('15.30')->assertSee('Funciones básicas')->assertSee('Presente')
+            ->assertSee('Repaso de ecuaciones')->assertSee('Asistencia pendiente')->assertDontSee('Ausente')
             ->assertDontSee('91.75')->assertDontSee('19.71');
     }
 

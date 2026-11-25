@@ -10,6 +10,7 @@ use App\Modules\SeguimientoEstudiante\Services\SeguimientoEstudianteService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class RecepcionSecretariaController extends Controller
 {
@@ -18,6 +19,19 @@ final class RecepcionSecretariaController extends Controller
         $seguimiento->personaVinculada($request->user());
 
         return view('modules.seguimiento-estudiante.recepcion-secretaria');
+    }
+
+    public function plantilla(Request $request, SeguimientoEstudianteService $seguimiento, PrevalidarRecepcion $servicio, string $tipo): StreamedResponse
+    {
+        $seguimiento->personaVinculada($request->user());
+        $campos = $servicio->encabezados($tipo);
+
+        return response()->streamDownload(static function () use ($campos): void {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            fputcsv($salida, $campos, ',', '"', '');
+            fclose($salida);
+        }, 'plantilla-'.$tipo.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'private, no-store']);
     }
 
     public function prevalidar(RecepcionSecretariaRequest $request, PrevalidarRecepcion $servicio): View

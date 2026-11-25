@@ -27,17 +27,6 @@ final class SeguimientoEstudianteController extends Controller
         private readonly SolicitudTutoriaService $solicitudes,
     ) {}
 
-    public function index(Request $request): View
-    {
-        $persona = $this->service->personaVinculada($request->user());
-        $estudiantes = $this->policy->visibles($request->user(), $persona)
-            ->with('persona:id_persona,nombres,apellido_paterno,apellido_materno')
-            ->orderBy('codigo_universitario')
-            ->paginate(25, ['id_estudiante', 'id_persona', 'codigo_universitario']);
-
-        return view('modules.seguimiento-estudiante.index', compact('estudiantes'));
-    }
-
     public function expediente(Request $request, EvidenciaExpedienteService $evidencia, string $estudiante): View
     {
         $persona = $this->service->personaVinculada($request->user());

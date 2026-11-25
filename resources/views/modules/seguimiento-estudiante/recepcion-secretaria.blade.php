@@ -5,6 +5,12 @@
 
     <section class="mx-auto max-w-5xl space-y-4 px-4 py-8 sm:px-6">
         <a class="text-indigo-700 underline" href="{{ route('seguimiento-estudiante.index') }}">Volver a expedientes</a>
+        <nav aria-label="Plantillas CSV" class="space-y-2 rounded-lg bg-white p-5">
+            <h2 class="font-semibold">Descargar plantilla CSV</h2>
+            @foreach (['matriculas' => 'Matrículas', 'notas' => 'Notas', 'asistencia' => 'Asistencia'] as $tipo => $nombre)
+                <a class="mr-4 text-indigo-700 underline" href="{{ route('seguimiento-estudiante.secretaria.plantilla', $tipo) }}">{{ $nombre }}</a>
+            @endforeach
+        </nav>
         <form method="POST" enctype="multipart/form-data" action="{{ route('seguimiento-estudiante.secretaria.prevalidar') }}"
               class="space-y-4 rounded-lg bg-white p-5">
             @csrf

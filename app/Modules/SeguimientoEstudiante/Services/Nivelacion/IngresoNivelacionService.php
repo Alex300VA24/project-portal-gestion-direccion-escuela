@@ -57,15 +57,15 @@ final class IngresoNivelacionService
             ->get(['participante.id_participante', 'criterio.nombre', 'criterio.peso', 'calificacion.nota'])
             ->groupBy('id_participante');
 
-        $asistencias = DB::table('seguimiento_estudiante.nivelacion_asistencia as asistencia')
-            ->join('seguimiento_estudiante.nivelacion_participante as participante', 'participante.id_participante', '=', 'asistencia.id_participante')
-            ->join('seguimiento_estudiante.nivelacion_sesion as sesion', function ($join): void {
-                $join->on('sesion.id_sesion', '=', 'asistencia.id_sesion')
-                    ->on('sesion.id_grupo', '=', 'participante.id_grupo');
+        $sesiones = DB::table('seguimiento_estudiante.nivelacion_participante as participante')
+            ->join('seguimiento_estudiante.nivelacion_sesion as sesion', 'sesion.id_grupo', '=', 'participante.id_grupo')
+            ->leftJoin('seguimiento_estudiante.nivelacion_asistencia as asistencia', function ($join): void {
+                $join->on('asistencia.id_sesion', '=', 'sesion.id_sesion')
+                    ->on('asistencia.id_participante', '=', 'participante.id_participante');
             })
             ->where('participante.id_estudiante', $id)
             ->whereIn('participante.id_participante', $participantes)
-            ->orderBy('sesion.fecha')
+            ->orderBy('sesion.fecha')->orderBy('sesion.id_sesion')
             ->get(['participante.id_participante', 'sesion.fecha', 'sesion.tema', 'asistencia.estado'])
             ->groupBy('id_participante');
 
@@ -74,6 +74,6 @@ final class IngresoNivelacionService
             ->get(['participante.id_participante', 'material.id_archivo', 'material.titulo'])
             ->groupBy('id_participante');
 
-        return compact('perfil', 'brechas', 'inscripciones', 'calificaciones', 'asistencias', 'materiales');
+        return compact('perfil', 'brechas', 'inscripciones', 'calificaciones', 'sesiones', 'materiales');
     }
 }

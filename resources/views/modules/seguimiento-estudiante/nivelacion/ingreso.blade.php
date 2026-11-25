@@ -54,12 +54,12 @@
                             <li>Sin calificaciones registradas.</li>
                         @endforelse
                     </ul>
-                    <h4 class="font-medium">Asistencia registrada</h4>
+                    <h4 class="font-medium">Sesiones y asistencia</h4>
                     <ul class="list-disc pl-5">
-                        @forelse ($asistencias->get($inscripcion->id_participante, []) as $asistencia)
-                            <li>{{ $asistencia->fecha }} · {{ $asistencia->tema ?? 'Sesión' }} · {{ $asistencia->estado }}</li>
+                        @forelse ($sesiones->get($inscripcion->id_participante, []) as $sesion)
+                            <li>{{ $sesion->fecha }} · {{ $sesion->tema ?? 'Sesión' }} · {{ $sesion->estado ?? 'Asistencia pendiente' }}</li>
                         @empty
-                            <li>Sin asistencias registradas.</li>
+                            <li>Sin sesiones registradas.</li>
                         @endforelse
                     </ul>
                 </article>

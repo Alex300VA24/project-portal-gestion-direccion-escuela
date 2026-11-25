@@ -50,9 +50,13 @@ final class PrevalidarRecepcion
         return $resultado;
     }
 
-    public function normalizar(string $tipo, string $bytes): array
+    public function encabezados(string $tipo): array
     {
-        $csv = $this->lector->read($bytes);
+        return array_keys($this->reglas($tipo));
+    }
+
+    private function reglas(string $tipo): array
+    {
         $reglas = self::REGLAS[$tipo];
         if ($tipo !== 'matriculas') {
             $reglas += [
@@ -63,6 +67,13 @@ final class PrevalidarRecepcion
             ];
         }
 
+        return $reglas;
+    }
+
+    public function normalizar(string $tipo, string $bytes): array
+    {
+        $csv = $this->lector->read($bytes);
+        $reglas = $this->reglas($tipo);
         $columnas = $this->correspondencia(array_keys($reglas), $csv['headers']);
         $resultados = [];
         $vistos = [];

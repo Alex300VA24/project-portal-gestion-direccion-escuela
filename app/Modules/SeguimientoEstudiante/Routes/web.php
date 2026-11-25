@@ -1,7 +1,9 @@
 <?php
 
+use App\Modules\SeguimientoEstudiante\Controllers\AgendaDocenteController;
 use App\Modules\SeguimientoEstudiante\Controllers\AsignacionTutoriaController;
 use App\Modules\SeguimientoEstudiante\Controllers\AvisoTutoriaController;
+use App\Modules\SeguimientoEstudiante\Controllers\DirectorioController;
 use App\Modules\SeguimientoEstudiante\Controllers\DocumentosNivelacionController;
 use App\Modules\SeguimientoEstudiante\Controllers\PlanGeneralTutoriaController;
 use App\Modules\SeguimientoEstudiante\Controllers\PlanTutoriaController;
@@ -13,7 +15,9 @@ Route::prefix('seguimiento-estudiante')
     ->name('seguimiento-estudiante.')
     ->middleware(['auth', 'can:seguimiento-estudiante.view'])
     ->group(function () {
-        Route::get('/', [SeguimientoEstudianteController::class, 'index'])->name('index');
+        Route::get('/', [DirectorioController::class, 'index'])->name('index');
+        Route::get('/expedientes/exportar', [DirectorioController::class, 'exportar'])
+            ->middleware('can:seguimiento-estudiante.tutoria.view')->name('directorio.exportar');
         Route::get('/avisos-de-tutoria', [AvisoTutoriaController::class, 'index'])->name('avisos.index');
         Route::post('/avisos-de-tutoria/{aviso}/leer', [AvisoTutoriaController::class, 'leer'])
             ->whereNumber('aviso')->name('avisos.leer');
@@ -41,6 +45,8 @@ Route::prefix('seguimiento-estudiante')
                 ->whereNumber(['lote', 'revision'])->name('secretaria.lotes.confirmar');
         });
         Route::middleware('can:seguimiento-estudiante.secretaria.prevalidar')->group(function () {
+            Route::get('/secretaria/plantillas/{tipo}', [RecepcionSecretariaController::class, 'plantilla'])
+                ->whereIn('tipo', ['matriculas', 'notas', 'asistencia'])->name('secretaria.plantilla');
             Route::get('/secretaria/recepcion', [RecepcionSecretariaController::class, 'index'])->name('secretaria.recepcion');
             Route::post('/secretaria/recepcion', [RecepcionSecretariaController::class, 'prevalidar'])->name('secretaria.prevalidar');
         });
@@ -71,6 +77,8 @@ Route::prefix('seguimiento-estudiante')
             Route::post('/planes-de-tutoria/{escuela}/{periodo}', [PlanTutoriaController::class, 'guardar'])
                 ->whereNumber(['escuela', 'periodo'])->name('planes.guardar');
         });
+        Route::get('/nivelacion/docencia/agenda', [AgendaDocenteController::class, 'index'])
+            ->middleware('can:seguimiento-estudiante.nivelacion.agenda-docente')->name('nivelacion.agenda-docente');
         Route::get('/mi-ingreso-y-nivelacion/{estudiante?}', [SeguimientoEstudianteController::class, 'ingresoNivelacion'])
             ->whereNumber('estudiante')->name('nivelacion.ingreso');
         Route::get('/mi-ingreso-y-nivelacion/{inscripcion}/resumen.pdf', [DocumentosNivelacionController::class, 'resumen'])
