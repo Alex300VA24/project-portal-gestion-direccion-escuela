@@ -13,7 +13,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | Módulo | `prematricula` | 3 | Pre Matrícula |
 | Módulo | `bienestar` | 18 | Bienestar |
 | Módulo | `investigacion_formativa` | 11 | Investigación Formativa |
-| Módulo | `seguimiento_estudiante` | 23 | Seguimiento al Estudiante |
+| Módulo | `seguimiento_estudiante` | 38 | Seguimiento al Estudiante |
 | Módulo | `web_institucional` | 13 | Web Institucional |
 | Módulo | `calidad` | 12 | Calidad |
 | Módulo | `gestion_horarios` | 15 | Gestión de Horarios |
@@ -51,7 +51,7 @@ PostgreSQL 17 con un único catálogo (`portal_gestion_direccion`) dividido en e
 | `prematricula` | cronograma_prematricula, detalle_solicitud, solicitud_prematricula |
 | `bienestar` | beneficio, caso_bienestar, cita, deporte, derivacion, especialidad, especialista, estudiante_condicion, estudiante_deporte, historial_estado_caso, horario_disponible, perfil_socioeconomico, reporte, seguimiento_derivacion, solicitud_apoyo, solicitud_documento, tipo_caso, tipo_condicion |
 | `investigacion_formativa` | criterio, entrega, entregable, evaluacion, evaluacion_criterio, grupo, grupo_estudiante, observacion, proyecto, rubrica, tipo_producto |
-| `seguimiento_estudiante` | alerta_sat, atencion, atencion_compromiso, atencion_derivacion, atencion_evidencia, atencion_motivo, brecha_ingreso, dimension_brecha, motivo_atencion, nivelacion_asistencia, nivelacion_calificacion, nivelacion_criterio_evaluacion, nivelacion_grupo, nivelacion_material, nivelacion_participante, nivelacion_sesion, parametro_sat, perfil_ingreso, programa_nivelacion, situacion_academica, solicitud_estudiante, tipo_atencion, tutor_asignacion |
+| `seguimiento_estudiante` | alerta_sat, atencion, atencion_compromiso, atencion_derivacion, atencion_evento, atencion_evidencia, atencion_motivo, atencion_participante, atencion_sesion_revision, brecha_ingreso, consejeria_ambito, consejeria_registro, coordinacion_ambito, dimension_brecha, expediente, identidad_cuenta, motivo_atencion, nivelacion_asistencia, nivelacion_calificacion, nivelacion_criterio_evaluacion, nivelacion_grupo, nivelacion_material, nivelacion_participante, nivelacion_sesion, operacion, parametro_sat, perfil_ingreso, programa_nivelacion, recepcion_lote, recepcion_revision, secretaria_ambito, situacion_academica, solicitud_cambio_cita, solicitud_estudiante, tipo_atencion, tutor_asignacion, tutor_habilitado, tutoria_aviso |
 | `web_institucional` | campana_admision, campana_modalidad, categoria_publicacion, consulta_contacto, cronograma_admision, docente_especialidad, documento_oficial, especialidad, perfil_docente_web, plan_estudios_publicacion, publicacion, publicacion_archivo, registro_visita |
 | `calidad` | accion_mejora, comite_calidad_miembro, dimension_acreditacion, estandar, evidencia, indicador, indicador_estandar, medicion_indicador, meta_indicador, modelo_acreditacion, plan_mejora, proceso |
 | `gestion_horarios` | actividad_academica, ambiente_bloqueo, apertura_repeticion, asignacion_docente, bloque_horario, conflicto_horario, declaracion_disponibilidad, detalle_horario, detalle_restriccion, disponibilidad_docente, horario, horario_revision, oferta_curso, restriccion, validacion_horario |

@@ -7,6 +7,14 @@ use Tests\TestCase;
 
 final class ModularRouteTest extends TestCase
 {
+    public function test_seguimiento_routes_require_the_portal_session(): void
+    {
+        $this->get(route('seguimiento-estudiante.index'))->assertRedirect(route('login'));
+        $this->get(route('seguimiento-estudiante.expediente', 1))->assertRedirect(route('login'));
+        $this->post(route('seguimiento-estudiante.solicitudes.tutoria.store', 1))->assertRedirect(route('login'));
+        $this->getJson(route('api.seguimiento-estudiante.index'))->assertUnauthorized();
+    }
+
     #[DataProvider('modules')]
     public function test_each_module_exposes_a_named_web_route(
         string $slug,
@@ -42,7 +50,6 @@ final class ModularRouteTest extends TestCase
             'prematricula' => ['pre-matricula', 'Pre Matrícula', 'prematricula'],
             'bienestar' => ['bienestar', 'Bienestar', 'bienestar'],
             'investigacion_formativa' => ['investigacion-formativa', 'Investigación Formativa', 'investigacion_formativa'],
-            'seguimiento_estudiante' => ['seguimiento-estudiante', 'Seguimiento al Estudiante', 'seguimiento_estudiante'],
             'calidad' => ['calidad', 'Calidad', 'calidad'],
             'gestion_horarios' => ['gestion-horarios', 'Gestión de Horarios', 'gestion_horarios'],
             'cotecu' => ['cotecu', 'COTECU', 'cotecu'],

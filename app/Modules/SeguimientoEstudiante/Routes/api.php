@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('seguimiento-estudiante')
     ->name('api.seguimiento-estudiante.')
+    ->middleware(['web', 'auth', 'can:seguimiento-estudiante.view'])
     ->group(function () {
         Route::get('/', [SeguimientoEstudianteController::class, 'apiIndex'])->name('index');
     });
