@@ -4,6 +4,10 @@
 
 **Alcance:** módulo Gestión de Horarios del portal; las integraciones con Core, Seguridad y Prematrícula requieren contratos aprobados por sus responsables.
 
+## Actualización del 25/11/2026
+
+Consultar la [auditoría del ZIP y stash](AUDITORIA_PREPARACION_PR.md) y después [Integración, entorno QA y preparación del Draft PR](INTEGRACION_ENTORNO_PR.md). Resume las entregas recientes, distingue la evidencia local de las capacidades institucionales y documenta el [ejemplo de entorno](horarios.qa.env.example). Los documentos de etapas anteriores se conservan como antecedentes; no certifican el estado de la rama actual.
+
 ## Lectura recomendada para revisores
 
 | Orden | Documento | Propósito |
